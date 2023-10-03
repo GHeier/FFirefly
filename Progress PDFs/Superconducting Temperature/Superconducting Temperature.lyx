@@ -1,0 +1,899 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+%\documentclass{article}
+
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{extramarks}
+%\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{tikz}
+\usepackage[plain]{algorithm}
+\usepackage{algpseudocode}
+
+\usetikzlibrary{automata,positioning}
+%
+% Personal Customizations
+%
+
+\newcommand*\circled[1]{\tikz[baseline=(char.base)]{
+   \node[shape=circle,draw,inner sep=1pt] (char) {#1};}}
+
+%
+% Basic Document Settings
+%
+
+\topmargin=-0.45in
+\evensidemargin=0in
+\oddsidemargin=0in
+\textwidth=6.5in
+\textheight=9.0in
+\headsep=0.25in
+
+\linespread{1.1}
+
+\pagestyle{fancy}
+\lhead{\hmwkAuthorName}
+\chead{\hmwkClass\  \hmwkTitle}
+%\rhead{\firstxmark}
+\lfoot{\lastxmark}
+\cfoot{\thepage}
+
+\renewcommand\headrulewidth{0.4pt}
+\renewcommand\footrulewidth{0.4pt}
+\renewcommand{\baselinestretch}{1.2} 
+
+\setlength\parindent{0pt}
+
+%
+% Create Problem Sections
+%
+
+\newcommand{\enterProblemHeader}[1]{
+    \nobreak\extramarks{}{Problem \arabic{#1} continued on next page\ldots}\nobreak{}
+    \nobreak\extramarks{Problem \arabic{#1} (continued)}{Problem \arabic{#1} continued on next page\ldots}\nobreak{}
+}
+
+\newcommand{\exitProblemHeader}[1]{
+    \nobreak\extramarks{Problem \arabic{#1} (continued)}{Problem \arabic{#1} continued on next page\ldots}\nobreak{}
+    \stepcounter{#1}
+    \nobreak\extramarks{Problem \arabic{#1}}{}\nobreak{}
+}
+
+\setcounter{secnumdepth}{0}
+\newcounter{partCounter}
+\newcounter{homeworkProblemCounter}
+\setcounter{homeworkProblemCounter}{1}
+\nobreak\extramarks{Problem \arabic{homeworkProblemCounter}}{}\nobreak{}
+
+%
+% Homework Problem Environment
+%
+% This environment takes an optional argument. When given, it will adjust the
+% problem counter. This is useful for when the problems given for your
+% assignment aren't sequential. See the last 3 problems of this template for an
+% example.
+%
+\newenvironment{homeworkProblem}[1][-1]{
+%    \ifnum#1>0
+%        \setcounter{homeworkProblemCounter}{#1}
+%    \fi
+%    \section{Problem \arabic{homeworkProblemCounter}}
+    \section{Problem #1}
+    \setcounter{partCounter}{1}
+    \enterProblemHeader{homeworkProblemCounter}
+}{
+    \exitProblemHeader{homeworkProblemCounter}
+}
+
+
+%
+% Homework Details
+%   - Title
+%   - Due date
+%   - Class
+%   - Section/Time
+%   - Instructor
+%   - Author
+%
+
+\newcommand{\hmwkTitle}{Superconducting Critical Temperature}
+\newcommand{\hmwkDueDate}{November 9, 2021}
+\newcommand{\hmwkClass}{Research:}
+\newcommand{\hmwkClassTime}{}
+\newcommand{\hmwkClassInstructor}{Problems: 1, 2, 3, 4, 5, 6}
+\newcommand{\hmwkAuthorName}{\textbf{Griffin Heier}}
+
+%
+% Title Page
+%
+
+\title{
+    \vspace{2in}
+    \textmd{\textbf{\hmwkClass\\ \hmwkTitle}}\\
+    \normalsize\vspace{0.1in}\large{\hmwkDueDate}\\
+    \vspace{0.1in}\large{\textbf{\hmwkClassInstructor}}
+    \vspace{3in}
+}
+
+\author{\hmwkAuthorName}
+\date{}
+
+\renewcommand{\part}[1]{\textbf{\large Part \Alph{partCounter}}\stepcounter{partCounter}\\}
+
+%
+% Various Helper Commands
+%
+
+% Useful for algorithms
+\newcommand{\alg}[1]{\textsc{\bfseries \footnotesize #1}}
+
+% For derivatives
+\newcommand{\deriv}[1]{\frac{\mathrm{d}}{\mathrm{d}x} (#1)}
+
+% For partial derivatives
+\newcommand{\pderiv}[2]{\frac{\partial}{\partial #1} (#2)}
+
+% Integral dx
+\newcommand{\dx}{\mathrm{d}x}
+
+% Alias for the Solution section header
+\newcommand{\solution}{\textbf{\large Solution}}
+
+% Probability commands: Expectation, Variance, Covariance, Bias
+\newcommand{\E}{\mathrm{E}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Bias}{\mathrm{Bias}}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+%
+\backslash
+maketitle
+\end_layout
+
+\begin_layout Plain Layout
+
+%
+\backslash
+pagebreak 
+\end_layout
+
+\begin_layout Plain Layout
+
+% Problem 1 
+\end_layout
+
+\begin_layout Plain Layout
+
+%
+\backslash
+begin{homeworkProblem}[1]
+\end_layout
+
+\begin_layout Plain Layout
+
+%
+\backslash
+end{homeworkProblem} 
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Solving Method
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\left(\sum_{k'}P_{kk'}f(\epsilon_{k'})-\delta_{kk'}\right)\Delta_{k'}=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\epsilon_{k}=k^{2}$
+\end_inset
+
+,
+\begin_inset Formula $\vec{k}=r(cos\theta\hat{i}+sin\theta\hat{j})\rightarrow\epsilon_{k}(r)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\sum_{r',\theta'}P_{r,\theta,r',\theta'}f(\epsilon_{k'}(r'))\Delta_{r',\theta'}=\Delta_{r,\theta}\rightarrow\int P(r,\theta,r',\theta')f(\epsilon_{k'}(r'))\Delta((r',\theta')dr'd\theta'=\Delta(r,\theta)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+The integral is split into radial and angular components.
+ If there is radial dependence in 
+\begin_inset Formula $P$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta$
+\end_inset
+
+ then we first define the 
+\begin_inset Formula $P$
+\end_inset
+
+ matrix along angular components, and then integrate radially for each of
+ those angular values.
+ However in this instance we will assume that 
+\begin_inset Formula $P$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta$
+\end_inset
+
+ are only dependent on 
+\begin_inset Formula $\theta$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+Now we assume that 
+\begin_inset Formula $\Delta$
+\end_inset
+
+ and 
+\begin_inset Formula $P$
+\end_inset
+
+ are only dependent upon 
+\begin_inset Formula $\theta$
+\end_inset
+
+, so the above equation transforms to
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\intop P(\theta,\theta')f(\epsilon_{k})\Delta(\theta')dr'd\theta'=\Delta(\theta)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+The radial bounds are given by 
+\begin_inset Formula $\epsilon=\pm\omega_{c}$
+\end_inset
+
+, or from 
+\begin_inset Formula $0$
+\end_inset
+
+ to 
+\begin_inset Formula $\omega_{c}$
+\end_inset
+
+, since the only function that depends on 
+\begin_inset Formula $r$
+\end_inset
+
+ is 
+\begin_inset Formula $f(\epsilon_{k})$
+\end_inset
+
+, which is symmetric around 
+\begin_inset Formula $0$
+\end_inset
+
+.
+ Therefore the radial bounds are from 
+\begin_inset Formula $0$
+\end_inset
+
+ to 
+\begin_inset Formula $\sqrt{\omega_{c}}$
+\end_inset
+
+ and we multiply the integral by 2.
+ This cannot be done analytically, so we do it numerically.
+\end_layout
+
+\begin_layout Enumerate
+In this instance, 
+\begin_inset Formula $f(\epsilon)$
+\end_inset
+
+ is a constant that multiplies the entire matrix 
+\begin_inset Formula $P$
+\end_inset
+
+, so we find the lowest eigenvalue of 
+\begin_inset Formula $P$
+\end_inset
+
+, and set 
+\begin_inset Formula $f=P^{-1}$
+\end_inset
+
+ so that 
+\begin_inset Formula $fP=1$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $f=\int_{-\omega_{c}}^{\omega_{c}}tanh(\frac{\epsilon}{2T_{c}})\frac{d\epsilon}{2\epsilon}$
+\end_inset
+
+, so we use the value of 
+\begin_inset Formula $f$
+\end_inset
+
+ found above and solve numerically for the value of 
+\begin_inset Formula $T_{c}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Note: The matrix 
+\begin_inset Formula $P$
+\end_inset
+
+ is normalized so that regardless of size the eigenvalues remain the same
+ for a given function.
+ This is done by dividing the matrix by the number of elements in it.
+\end_layout
+
+\begin_layout Standard
+Note: 
+\end_layout
+
+\begin_layout Section*
+Checks
+\end_layout
+
+\begin_layout Enumerate
+Constant matrix 
+\begin_inset Formula $\left(\begin{array}{cc}
+1 & 1\\
+1 & 1
+\end{array}\right)$
+\end_inset
+
+ results in 
+\begin_inset Formula $\Delta(\theta)$
+\end_inset
+
+ is independent of 
+\begin_inset Formula $\theta$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Check that for function 
+\begin_inset Formula $P=\frac{1}{|k-k'|}$
+\end_inset
+
+, 
+\begin_inset Formula $\Delta(\theta)$
+\end_inset
+
+ follows spherical harmonics (s-wave, p-wave, d-wave)
+\end_layout
+
+\begin_layout Enumerate
+Not sure how to verify solution of function in paper
+\end_layout
+
+\begin_layout Enumerate
+For each function 
+\begin_inset Formula $P$
+\end_inset
+
+ test temperature against approximation function 
+\begin_inset Formula $T_{c}=1.134\omega_{c}e^{-1/\lambda}$
+\end_inset
+
+, under the condition that 
+\begin_inset Formula $\omega_{c}>>T_{c}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Also test that eigenvalues are stable as matrix size increases
+\end_layout
+
+\begin_layout Section*
+Check Results
+\end_layout
+
+\begin_layout Standard
+#1: 
+\begin_inset Graphics
+	filename swaveconst.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+P is normalized by 1/n
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename tempconst.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename shapeconst.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+#2: 
+\end_layout
+
+\begin_layout Standard
+Gap function of lowest positive eigenvalue (normalized to 1)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eig0inv.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+d-wave functions
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eiginv2.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eiginv3.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eiginv4.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eiginv5.png
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eiginv6.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+p-wave functions
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eiginv7.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eiginv8.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eiginv9.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+s-wave function
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eiginv10.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename tempinv.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename shapeinv.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+P is normalized by n
+\end_layout
+
+\begin_layout Standard
+#3: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename papertemp.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename shapepaper.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+(Gap functions for highest 5-9 eigenvalues)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eig11paper.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eig12paper.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eig13paper.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eig14paper.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eig15paper.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+(Gap function for highest eigenvalues 2-4)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eig16paper.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eig17paper.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eig18paper.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+p-wave function (highest eigenvalue)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename eig19paper.png
+	scale 80
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Issues
+\end_layout
+
+\begin_layout Enumerate
+Sometimes (rarely) eigenvalues are identical with different eigenvectors.
+ Must fix this by implementing more advanced computational methods when
+ diagonalizing matrices
+\end_layout
+
+\begin_layout Enumerate
+Not sure how to test results for the function in the paper
+\end_layout
+
+\begin_layout Enumerate
+Normalizing the matrix is more difficult than dividing the eigenvalues by
+ the number of elements, unfortunately.
+ That might work for the highest eigenvalue, as that corresponds to an s-wave,
+ and would scale with the length of the matrix, but for the lowest eigenvalue
+ this does not work.
+ The Eigenvalue vs.
+ Shape graphs above show the eigenvalue changing as the size of the matrix
+ changes.
+ However each matrix was normalized with a different scale in order for
+ the eigenvalues to level off.
+ The first was normalized with 
+\begin_inset Formula $1/n$
+\end_inset
+
+, and the second was normalized with 
+\begin_inset Formula $n$
+\end_inset
+
+.
+ I'm working on using matrix norms to stabilize the eigenvalues in general
+ with regards to shape.
+ 
+\end_layout
+
+\begin_layout Enumerate
+The paper's wavefunctions look a bit odd after the first couple.
+\end_layout
+
+\begin_layout Section*
+Questions
+\end_layout
+
+\begin_layout Standard
+Why is the lowest positive eigenvalue selected to become 1? The math I've
+ done seems to indicate that the higher the eigenvalue the higher the supercondu
+cting temperature, and as shown above the higher eigenvalues also correspond
+ to the gap functions with the lowest angular momentum.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Pf\psi=\psi\rightarrow pf=1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\int_{-1}^{1}\frac{\tanh(x/0.1)}{x}dx=6.24,\int_{-1}^{1}\frac{\tanh(x/0.2)}{x}dx=4.86
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Clearly the lowest positive eigenvalue is the one to use, as it perfectly
+ corresponds to the approximate function, but why is that the case?
+\end_layout
+
+\end_body
+\end_document

@@ -1,0 +1,294 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+%
+\backslash
+maketitle
+\end_layout
+
+\begin_layout Plain Layout
+
+%
+\backslash
+pagebreak 
+\end_layout
+
+\begin_layout Plain Layout
+
+% Problem 1 
+\end_layout
+
+\begin_layout Plain Layout
+
+%
+\backslash
+begin{homeworkProblem}[1]
+\end_layout
+
+\begin_layout Plain Layout
+
+%
+\backslash
+end{homeworkProblem} 
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Temperature Prediction Check (
+\begin_inset Formula $E_{k}=0$
+\end_inset
+
+ case)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q=\left(\begin{array}{cc}
+a+b(g_{x}^{2}-1) & bg_{x}g_{y}\\
+bg_{x}g_{y} & a+b(g_{y}^{2}-1)
+\end{array}\right),g=[0,1]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q=\left(\begin{array}{cc}
+a-b & 0\\
+0 & a+b(\alpha^{2}-1)
+\end{array}\right),b=a+s
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q=\left(\begin{array}{cc}
+-s & 0\\
+0 & a\alpha^{2}+s\alpha^{2}-s
+\end{array}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Higher eigenvalue is 
+\begin_inset Formula $max(a\alpha^{2}+s\alpha^{2}-s,-s)$
+\end_inset
+
+, and as it turns out 
+\begin_inset Formula $s$
+\end_inset
+
+ is always greater than or equal to 
+\begin_inset Formula $-a$
+\end_inset
+
+, since
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+a=-\frac{1}{2\alpha}\tanh(\beta\alpha/2),s=\frac{\beta}{2\cosh(\beta\alpha)+1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Therefore the highest eigenvalue is 
+\begin_inset Formula $a\alpha^{2}+s\alpha^{2}-s$
+\end_inset
+
+, which is what is found both analytically and numerically.
+ One interesting note is in the 
+\begin_inset Formula $E_{k}=0$
+\end_inset
+
+ limit, there is a point where a critical superconducting temperature cannot
+ be found, around roughly the 
+\begin_inset Formula $\alpha=0.52$
+\end_inset
+
+ point.
+ A graph of the temperature up until that point is shown below.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename alpha_test.png
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This can also be seen in some sample plots of the highest eigenvalue vs
+ temperature, where it is clear that as alpha increases, the maximum point
+ of 1 can no longer be reached.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename alpha0.png
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename alpha1.png
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename alpha2.png
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename alpha5.png
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename dwavedirection2.png
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename dwavedirection.png
+
+\end_inset
+
+The last two plots show the d-wave direction(red) as the g-vector(blue)
+ changes.
+ The first plot lines up with what we expect, and the second one seems wrong.
+ I'm still double-checking all of my physics/code to but I haven't found
+ anything so far.
+\end_layout
+
+\end_body
+\end_document

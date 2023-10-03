@@ -1,0 +1,332 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+%
+\backslash
+maketitle
+\end_layout
+
+\begin_layout Plain Layout
+
+%
+\backslash
+pagebreak 
+\end_layout
+
+\begin_layout Plain Layout
+
+% Problem 1 
+\end_layout
+
+\begin_layout Plain Layout
+
+%
+\backslash
+begin{homeworkProblem}[1]
+\end_layout
+
+\begin_layout Plain Layout
+
+%
+\backslash
+end{homeworkProblem} 
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Wave direction check
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\hat{Q}_{k'}\cdot\hat{Q}_{k}=\left(\begin{array}{ccc}
+(a+b(g_{x}^{2}-1))(a'+b'(g_{x'}^{2}-1)) & bg_{x}g_{y} & bg_{x}g_{z}\\
+bg_{x}g_{y} & a+b(g_{y}^{2}-1) & bg_{y}g_{z}\\
+bg_{x}g_{z} & bg_{y}g_{z} & a+b(g_{z}^{2}-1)
+\end{array}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d(k)=-k_{B}T\sum_{k'}V_{kk'}\{(G_{+}G_{+}+G_{-}G_{-})d(k')+2G_{-}G_{-}[\hat{\hat{g}_{k'}(\hat{g}_{k'}\cdot d(k')-d(k')]\}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d(k)=\sum_{k'}V_{kk'}(a(d(k')+b(\hat{g}_{k'}(\hat{g}_{k'}\cdot d(k')-d(k')))
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d_{x}(k)=\sum_{k'}V_{kk'}\{ad_{x}(k')+b(g_{x}^{2}-1)d_{x}(k')+bg_{x}g_{y}d_{y}(k')+bg_{y}g_{z}d_{z}(k')\}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d_{x}(k)=\sum_{k'}V_{kk'}(q_{11}(k')d_{x}(k')+q_{12}d_{y}(k')+q_{13}d_{z}(k'))
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q(k)d(k)=\sum_{k'}V_{kk'}Q(k)Q(k')d(k')
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+0=\sum_{k'}(V_{kk'}Q(k)Q(k')-\lambda Q(k)\delta_{kk'})d(k')
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d(k)=V_{kk'}\otimes Q(k')d(k')
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $V_{kk'}$
+\end_inset
+
+ is Hermitian, but 
+\begin_inset Formula $V_{kk'}\otimes Q_{k'}$
+\end_inset
+
+ is not.
+ We can multiply each side by 
+\begin_inset Formula $Q_{k}$
+\end_inset
+
+ to make the matrix Hermitian.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q(k)d(k)=V_{kk'}\otimes Q(k')Q(k)d(k')
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+but that won't change the final answer, since we have to then apply 
+\begin_inset Formula $Q^{-1}(k)$
+\end_inset
+
+ to each side to solve for 
+\begin_inset Formula $d(k)$
+\end_inset
+
+, which will be unchanged.
+ Just as in the spin singlet case, where the equation reads 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\psi(k)\tanh(\beta\epsilon_{k}/2)/(2\epsilon_{k})=\sum_{k'}V_{kk'}\tanh(\beta\epsilon_{k}/2)/(2\epsilon_{k})\tanh(\beta\epsilon_{k'}/2)/(2\epsilon_{k'})\psi(k')
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\lambda\psi(k)=\sum_{k'}V_{kk'}\tanh(\beta\epsilon_{k'}/2)/(2\epsilon_{k'})\psi(k')
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+0=\sum_{k'}V_{kk'}\tanh(\beta\epsilon_{k}/2)/(2\epsilon_{k})\tanh(\beta\epsilon_{k'}/2)/(2\epsilon_{k'})\psi(k')-\lambda\psi(k)\tanh(\beta\epsilon_{k}/2)/(2\epsilon_{k})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+0=\sum_{k'}\varint d\epsilon d\epsilon'\delta(\epsilon-\epsilon_{k})\delta(\epsilon'-\epsilon_{k'})(V_{kk'}\tanh(\beta\epsilon_{k}/2)/(2\epsilon_{k})\tanh(\beta\epsilon_{k'}/2)/(2\epsilon_{k'})-\lambda'\delta_{kk'})\psi(k')
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+0=\sum_{\theta'}\varint d\epsilon d\epsilon'\delta(\epsilon-\epsilon_{k})\delta(\epsilon'-\epsilon_{k'})(V_{\theta\theta'}\tanh(\beta\epsilon/2)/(2\epsilon)\tanh(\beta\epsilon'/2)/(2\epsilon')-\lambda'\tanh(\beta\epsilon/2)/(2\epsilon)\delta_{\theta\theta'})\psi(\theta')
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\lambda'=\lambda\varint_{-\omega_{D}}^{\omega_{D}}d\epsilon\tanh(\beta\epsilon/2)/(2\epsilon)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+with a constant potential, only an s-wave will result.
+\end_layout
+
+\end_body
+\end_document
