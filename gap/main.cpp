@@ -30,6 +30,10 @@ int main() {
     vector<Vec> FS = tetrahedron_method(mu);
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
     save_FS(FS);
+    double DOS = 0;
+    for (int i = 0; i < FS.size(); i++)
+        DOS += FS[i].area / vp(FS[i]);
+    DOS /= pow(2*M_PI, 3);
 
 /* 
  * ========================================================================================
@@ -47,7 +51,7 @@ int main() {
    ========================================================================================
  */
     vector<vector<vector<double>>> cube;
-    if (potential_name != "test") cube = chi_cube(T, mu);
+    if (potential_name != "test") cube = chi_cube(T, mu, DOS);
 
     MatrixXd P = create_P(FS, T, cube);
     double f = f_singlet_integral(T);

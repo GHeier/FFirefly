@@ -118,6 +118,9 @@ double ratio(Vec q, Vec k, double T, double mu) {
 
     double dE = e_qk - e_k;
     if (fabs(dE) < 0.0001) {
+        if (exp(e_k/T) > 1000000) {
+            return 0;
+        }
         double term1 = 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
         return term1;
     }
@@ -128,9 +131,9 @@ double ratio(Vec q, Vec k, double T, double mu) {
 
 double chi_trapezoidal(Vec q, double T, double mu, int num_points) {
     double sum = 0;
-    #pragma omp parallel for reduction(+:sum)
+    //#pragma omp parallel for reduction(+:sum)
     //int num_skipped = 0;
-    //ofstream file("chi_temp2.txt");
+    ofstream file("chi_temp2.txt");
     for (int i = 0; i < num_points; i++) {
         double temp = i;
         double x = get_k(temp, num_points); 
@@ -146,6 +149,7 @@ double chi_trapezoidal(Vec q, double T, double mu, int num_points) {
                 Vec k_val(x, y, z);
 
                 double r = ratio(q, k_val, T, mu);
+                file << k_val << r << endl;
                 sum += w*r;
             }
         }
@@ -155,16 +159,25 @@ double chi_trapezoidal(Vec q, double T, double mu, int num_points) {
 
 double integrate_susceptibility(Vec q, double T, double mu) {
     auto func = [q, T, mu] (double kx, double ky, double kz) {
-        //return 1.0;
-        //return kx*kx;
-        //double sigma = 0.1;
-        //return exp( - 0.5 * (kx*kx + ky*ky + kz*kz) / pow(sigma,2) ) / (pow(sigma,3) * pow(2*M_PI,1.5));
         return ratio(q, Vec(kx, ky, kz), T, mu);
     };
-    //return trap_8_cubes(func, -k_max, k_max, -k_max, k_max, -k_max, k_max) / pow(2*k_max,dim);
-    //return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 10, 0.0001);// / pow(2*k_max,dim);
+
+    double sum = 0; 
+    int num_threads = 16;
+    int base_div = 60;
+    int xdivs = ceil(1.0*base_div / num_threads), ydivs = base_div, zdivs = base_div * (dim % 2) + 1 * ((dim+1)%2);
+    //cout << "xdivs: " << xdivs << " ydivs: " << ydivs << " zdivs: " << zdivs << endl;
+    #pragma omp parallel for reduction(+:sum)
+    for (int i = 0; i < num_threads; i++) {
+        double lower_x = -k_max + 2*k_max*i/num_threads;
+        double upper_x = -k_max + 2*k_max*(i+1)/num_threads;
+        //cout << lower_x << " " << upper_x << endl;
+        sum += adaptive_trapezoidal(func, lower_x, upper_x, -k_max, k_max, -k_max, k_max, xdivs, ydivs, zdivs, 0.001);
+    }
+    return sum / pow(2*k_max,dim);
+    //return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 60, 60, 60, 0.001) / pow(2*k_max,dim);
     //return chi_trapezoidal(q, T, mu, 60);
-    return trapezoidal_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 60) / pow(2*k_max,dim);
+    //return trapezoidal_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 100) / pow(2*k_max,dim);
 }
 
 double trapezoidal_integration(auto &f, double x0, double x1, double y0, double y1, double z0, double z1, int num_points) {
@@ -173,7 +186,7 @@ double trapezoidal_integration(auto &f, double x0, double x1, double y0, double 
     double dy = (y1 - y0) / (num_points - 1);
     double dz = (z1 - z0) / (num_points - 1);
     if (dim == 2) dz = 1;
-    #pragma omp parallel for reduction(+:sum)
+    //#pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < num_points; i++) {
         double x = x0 + i*dx;
         for (int j = 0; j < num_points; j++) {
@@ -207,48 +220,38 @@ double trap_8_cubes(auto &f, double x0, double x1, double y0, double y1, double 
         + trap_cube(f, (x0+x1)/2, x1, (y0+y1)/2, y1, (z0+z1)/2, z1);
 }
 
-double adaptive_trapezoidal(auto &f, double x0, double x1, double y0, double y1, double z0, double z1, int divisions, double error_relative) {
+double adaptive_trapezoidal(auto &f, double x0, double x1, double y0, double y1, double z0, double z1, int xdivs, int ydivs, int zdivs, double error_relative) {
     double sum = 0;
 
-    double dx = (x1 - x0) / (divisions);
-    double dy = (y1 - y0) / (divisions);
-    double dz = (z1 - z0) / (divisions);
+    double dx = (x1 - x0) / (xdivs);
+    double dy = (y1 - y0) / (ydivs);
+    double dz = (z1 - z0) / (zdivs);
     if (dim == 2) dz = 1;
 
-//    #pragma omp parallel for reduction(+:sum)
-    int num_splits = 0, num_no_splits = 0;
-    vector<double> values(pow(divisions,3));
-    for (int i = 0; i < divisions; i++) {
+    for (int i = 0; i < xdivs; i++) {
         double x = x0 + i*dx;
-        for (int j = 0; j < divisions; j++) {
+        for (int j = 0; j < ydivs; j++) {
             double y = y0 + j*dy;
-            for (double k = 0; k < (divisions) * (dim%2) + 1 * ((dim+1)%2); k++) {
+            for (double k = 0; k < zdivs; k++) {
                 double z = z0 + k*dz;
 
                 double t1 = trap_cube(f, x, x+dx, y, y+dy, z, z+dz);
                 double t2 = trap_8_cubes(f, x, x+dx, y, y+dy, z, z+dz);
 
-#pragma omp task 
-                {
-                if (fabs(t1 - t2) < error_relative * fabs(t2)) {
-                    //sum += t2;
-                    values[i*divisions*divisions + j*divisions + k] = t2;
+                //if (fabs(t1 - t2) < error_relative) {
+                if (fabs(t1 - t2) < error_relative * fabs(t2) or fabs(t2) < 0.00001) {
+                    sum += t2;
                 }
                 else {
+                    //sum += t2;
                     //sum += iteratively_splitting_cubes(f, x, x+dx, y, y+dy, z, z+dz, fabs(t2-t1), error_relative);
-                    values[i*divisions*divisions + j*divisions + k] = iteratively_splitting_cubes(f, x, x+dx, y, y+dy, z, z+dz, fabs(t2-t1), error_relative);
-                    //sum += adaptive_trapezoidal(f, x, x+dx, y, y+dy, z, z+dz, 2, error_tol);
-                }
+                    double new_zdiv = 2 * (dim % 2) + 1 * ((dim+1)%2);
+                    sum += adaptive_trapezoidal(f, x, x+dx, y, y+dy, z, z+dz, 2, 2, new_zdiv, error_relative);
                 }
 
             }
         }
     }
-#pragma omp taskwait
-    cout << num_splits << endl;
-    cout << num_no_splits << endl;
-    for (auto x : values) sum += x;
-
     return sum;
 }
 
@@ -282,22 +285,24 @@ double iteratively_splitting_cubes(auto &f, double x0, double x1, double y0, dou
     return total_sum;
 }
 
-vector<vector<vector<double>>> chi_cube(double T, double mu) {
+vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS) {
     int m_z = m*(dim%2) + 3*((dim+1)%2);
     vector<vector<vector<double>>> cube(m, vector<vector<double>> (m, vector<double> (m_z)));
     unordered_map<string, double> map;
     cout << "Calculating Chi Cube...\n";
+    map[vec_to_string(Vec(0,0,0))] = DOS;
     //#pragma omp parallel for 
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < m; j++) {
             for (int k = 0; k < m_z; k++) {
                 Vec q((2*k_max*i)/(m-1), (2*k_max*j)/(m-1), (2*k_max*k)/(m_z-1));
                 Vec q2 = to_IBZ_2(q);
+                if (q2.vals.norm() < 0.001) map[vec_to_string(q2)] = DOS;
                 if (map.find(vec_to_string(q2)) == map.end())
                     map[vec_to_string(q2)] = integrate_susceptibility(q2, T, mu);
                 cube[i][j][k] = map[vec_to_string(q2)];
                 //if ( fabs(cube[i][j][k]) > 0.1) cout << "----";
-                //progress_bar( (i*m*m + j*m + k) / (pow(m,3)));
+                progress_bar( (i*m*m + j*m + k) / (pow(m,3)));
             }
         }
     }

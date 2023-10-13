@@ -137,7 +137,9 @@ MatrixXd create_P(vector<Vec> k, double T, const vector<vector<vector<double>>> 
 // By finding the root of eig-1, we find the temperature where eig=1
 double f(vector<Vec> k, double T) {
     cout << "\nTemperature point: " << T << endl;
-    auto cube = chi_cube(T, mu);
+    double DOS = 0; for (auto k1 : k) DOS += k1.area;
+    DOS /= pow(2*M_PI, dim);
+    auto cube = chi_cube(T, mu, DOS);
     MatrixXd P = create_P(k, T, cube);
     double f_integrated = f_singlet_integral(T);
 

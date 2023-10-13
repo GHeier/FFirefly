@@ -10,16 +10,16 @@ using namespace std;
 // Global Variables
 int n = 10; // Number of k points
 int m = 41; // Number of chi points
-int dim = 3; // Number of dimensions)
+int dim = 2; // Number of dimensions)
 string potential_name = "scalapino";
 string band_name = "simple_cubic";
                
 // Constants
-double t = 1.0;
+double t = 5.0;
 double tn = 0.0;
 double U = 2.0;
 double k_max = M_PI;
-double mu = 0.9;
+double mu = 1.0;
 double w_D = 1.0;
 
 void init_config(double &mu, double &U, double &t, double &tn, double new_mu, double new_U, double new_t, double new_tn) {
