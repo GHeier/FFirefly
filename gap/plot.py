@@ -596,34 +596,42 @@ def plot_spin_susceptibility(file_addon, title, u):
     spots = [0, 0.5, 1.0, 1.5]
     labels = ["G", "X", "M", "G"]
     plt.xticks(spots, labels)
+    bilayers = ["cState=Ni@2::3d        ; cState=Ni@1::3d", "cState=Ni@2::3d        ; cState=Ni@2::3d"]
 
     for orbital in orbitals:
-        even, zero, x1, x2 = list(), list(), list(), list()
-        for line in ["gamma_m", "x_m", "gamma_x"]:
-            for i in range(1, 351):
-                file = file_base
+        for layer in bilayers:
+            even, zero, x1, x2 = list(), list(), list(), list()
+            for line in ["gamma_m", "x_m", "gamma_x"]:
+                for i in range(1, 351):
+                    file = file_base
 
-                if i < 10:
-                    file = file_base + "0"
-                if i < 100:
-                    file += "0"
+                    if i < 10:
+                        file = file_base + "0"
+                    if i < 100:
+                        file += "0"
 
-                values = get_SAV_chi(file+str(i), orbital)
-                for ind in range(len(values)):
-                    if (symmetry_line_condition(values[ind], line)):
+                    values = get_SAV_chi(file+str(i), orbital)
+                    for ind in range(len(values)):
+                        if symmetry_line_condition(values[ind], line):
+                            if layer in values[ind].category:
+                                if values[ind].category[-12:-1] == "Up-Up Up-Up": 
+                                    even.append(values[ind].chi)
+                                    x1.append(symmetry_line_result(values[ind], line))
 
-                        if values[ind].category[-12:-1] == "Up-Up Up-Up": 
-                            even.append(values[ind].chi)
-                            x1.append(symmetry_line_result(values[ind], line))
+                                if values[ind].category[-12:-1] == "Up-Up Dn-Dn": 
+                                    zero.append(values[ind].chi)
+                                    x2.append(symmetry_line_result(values[ind], line))
 
-                        if values[ind].category[-12:-1] == "Up-Up Dn-Dn": 
-                            zero.append(values[ind].chi)
-                            x2.append(symmetry_line_result(values[ind], line))
-
-        y = list()
-        for i in range(len(even)):
-            y.append(even[i] - zero[i])
-        plt.scatter(x1, y, s=4.0, color='blue')
+            y = list()
+            for i in range(len(even)):
+                y.append(even[i] - zero[i])
+            color = 'blue'
+            if layer == bilayers[0]:
+                color = 'red'
+            plt.scatter(x1, y, s=4.0, color=color)
+        red_patch = mpatches.Patch(color='red', label='Different atoms')
+        blue_patch = mpatches.Patch(color='blue', label='Same atom')
+        plt.legend(handles=[red_patch, blue_patch])
         plt.savefig("/home/g/PhDResearch/Figures/susceptibility/symmetry_plots/Nickelate/" + title + ".png")
 
 def plot_symmetry_SAV_gap():

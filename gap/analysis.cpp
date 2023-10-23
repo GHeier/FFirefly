@@ -24,3 +24,14 @@ void plot_hopping_integral_ratios() {
         file << tn << " " << T << endl;
     }
 }
+
+void plot_coupling_constants() {
+    ofstream file("coupling_constants.dat");
+    for (int i = 0; i < 10; i++) {
+        double new_tn = (0.4-0.1)*i/10 + 0.1;
+        init_config(mu, U, t, tn, mu, U, t, new_tn);
+        vector<Vec> FS = tetrahedron_method(mu);
+        double T = get_Tc(FS);
+        file << tn << " " << T << endl;
+    }
+}

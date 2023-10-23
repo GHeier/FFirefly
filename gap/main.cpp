@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -30,17 +31,15 @@ int main() {
     vector<Vec> FS = tetrahedron_method(mu);
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
     save_FS(FS);
-    double DOS = 0;
-    for (int i = 0; i < FS.size(); i++)
-        DOS += FS[i].area / vp(FS[i]);
-    DOS /= pow(2*M_PI, 3);
-
+    double DOS = get_DOS(FS);
 /* 
  * ========================================================================================
  * =========================== CRITICAL TEMPERATURE CALCULATION  ==========================
    ========================================================================================
  */
     double T = 0.25;
+    cout << setprecision(10);
+    cout << coupling_calc(FS, T) << endl;
     //T = 0.065;
     T = get_Tc(FS);
     printf("Temperature: %f \n", T);

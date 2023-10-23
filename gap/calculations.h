@@ -5,6 +5,7 @@
 #include <vector>
 #include <Eigen/Dense>
 
+#include "cfg.h"
 #include "vec.h"
 
 using namespace Eigen;
@@ -30,5 +31,7 @@ double get_Tc(vector<Vec> k);
 bool operator<(const EigAndVec& left, const EigAndVec& right);
 vector<EigAndVec> combine_eigs_and_vecs(VectorXd eigenvalues, EigenSolver<MatrixXd>::EigenvectorsType eigenvectors);
 void vector_to_wave(vector<Vec> &FS, vector<EigAndVec> &vectors);
+double get_DOS(vector<Vec> &FS);
+double coupling_calc(vector<Vec> &FS, double T);
 
 #endif

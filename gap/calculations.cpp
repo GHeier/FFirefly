@@ -210,3 +210,36 @@ void vector_to_wave(vector<Vec> &FS, vector<EigAndVec> &vectors) {
         vectors[i].vec = temp;
     }
 }
+
+double get_DOS(vector<Vec> &FS) {
+    double sum = 0;
+    for (auto k : FS) 
+        sum += k.area / vp(k);
+    return sum / pow(2*M_PI, dim);
+}
+
+double coupling_calc(vector<Vec> &FS, double T) {
+    cout << "Calculating Coupling Constant...\n";
+    int size = FS.size();
+    double DOS = get_DOS(FS);
+    auto cube = chi_cube(T, mu, DOS);
+    double f_integrated = f_singlet_integral(T);
+
+    double lambda = 0, normalization = 0;
+    auto wave = [](Vec k) {
+        Vec q = k; if (k.cartesian == false) q.to_cartesian();
+        return cos(q.vals(1)) - cos(q.vals(0));
+    };
+    for (int i = 0; i < size; i++) {
+        Vec k1 = FS[i];
+        for (int j = 0; j < size; j++) {
+            Vec k2 = FS[j];
+            //lambda += - k1.area * k2.area / vp(k1) * wave(k1) * V(k1, k2, T, cube) / vp(k2) * wave(k2);
+            lambda += V(k1, k2, T, cube)*k1.area*k2.area;
+        }
+        normalization += pow(wave(k1),2) * k1.area / vp(k1);
+    }
+    cout << "Normalization: " << normalization << endl;
+    cout << "Lambda: " << lambda << endl;
+    return lambda / normalization * (2 / pow(2*M_PI, 3)) ;
+}
