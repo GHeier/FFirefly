@@ -39,11 +39,11 @@ using std::unordered_map;
 void plot_chi(double T) {
     ofstream file("chi_plot.dat");
     file << "q chi " << endl;
-    double n = 3.0;
+    double n = 10.0;
     for (double mu = 0.0; mu > -4.0; mu--) {
         for (double i = 0; i < n; i++) {
             double q_mag = i/(n-1) * M_PI;
-            Vec q(q_mag, q_mag, 0);
+            Vec q(q_mag, q_mag, q_mag);
             double c = chi_trapezoidal(q, T, mu, 60);
             //double c2 = varied_chi_trapezoidal(q, T, mu, 40);
             file << q_mag << " " << c << endl;
@@ -80,13 +80,13 @@ void plot_chi2(double T) {
     ofstream file("chi_plot2.dat");
     file << "q chi " << endl;
     double n = 10.0;
-    for (double mu = -0.1; mu > -1.2; mu-=0.3) {
+    for (double mu = -0.0; mu > -4.0; mu-=1.0) {
         vector<Vec> FS = tetrahedron_method(mu);
         double DOS = get_DOS(FS);
         vector<vector<vector<double>>> cube = chi_cube(T, mu, DOS);
         for (double i = 0; i < n; i++) {
             double q_mag = i/(n-1) * M_PI;
-            Vec q(q_mag, q_mag, 0);
+            Vec q(q_mag, q_mag, q_mag);
             double c = calculate_chi_from_cube(cube, q);
             file << q_mag << " " << c << endl;
         }
@@ -97,11 +97,11 @@ void plot_chi2(double T) {
 void plot_chi4(double T) {
     ofstream file("chi_plot4.dat");
     file << "q chi " << endl;
-    double n = 3.0;
+    double n = 10.0;
     for (double mu = 0.0; mu > -4.0; mu--) {
         for (double i = 0; i < n; i++) {
             double q_mag = i/(n-1) * M_PI;
-            Vec q(q_mag, q_mag, 0);
+            Vec q(q_mag, q_mag, q_mag);
             double c = integrate_susceptibility(q, T, mu);
             file << q_mag << " " << c << endl;
         }

@@ -162,7 +162,10 @@ double integrate_susceptibility(Vec q, double T, double mu) {
         return ratio(q, Vec(kx, ky, kz), T, mu);
     };
 
-    return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 30, 30, 30, 0.001) / pow(2*k_max,dim);
+    int base_div = 20;
+    int x_divs = base_div, y_divs = base_div, z_divs = base_div;
+    if (dim == 2) z_divs = 1;
+    return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, x_divs, y_divs, z_divs, 0.01) / pow(2*k_max,dim);
     //return chi_trapezoidal(q, T, mu, 60);
     //return trapezoidal_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 100) / pow(2*k_max,dim);
 }
@@ -230,7 +233,7 @@ double adaptive_trapezoidal(auto &f, double x0, double x1, double y0, double y1,
                 }
                 else {
                     double new_zdiv = 2 * (dim % 2) + 1 * ((dim+1)%2);
-                    //sum += adaptive_trapezoidal(f, x, x+dx, y, y+dy, z, z+dz, 2, 2, new_zdiv, error_relative);
+                    sum += adaptive_trapezoidal(f, x, x+dx, y, y+dy, z, z+dz, 2, 2, new_zdiv, error_relative);
                 }
 
             }
@@ -270,6 +273,7 @@ double iteratively_splitting_cubes(auto &f, double x0, double x1, double y0, dou
 }
 
 vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS) {
+    return chi_cube2(T, mu, DOS);
     int m_z = m*(dim%2) + 3*((dim+1)%2);
     vector<vector<vector<double>>> cube(m, vector<vector<double>> (m, vector<double> (m_z)));
     unordered_map<string, double> map;
@@ -311,16 +315,21 @@ vector<vector<vector<double>>> chi_cube2(double T, double mu, double DOS) {
             }
         }
     }
+    
+    cout << "Taking " << map.size() << " integrals in " << dim << " dimensions.\n";
+    #pragma omp parallel for
+    for(unsigned int i = 0; i < map.size(); i++) {
+        auto datIt = map.begin();
+        advance(datIt, i);
+        string key = datIt->first;
+        map[key] = integrate_susceptibility(string_to_vec(key), T, mu);
+    }
 
-    //#pragma omp parallel for
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < m; j++) {
             for (int k = 0; k < m_z; k++) {
                 Vec q((2*k_max*i)/(m-1), (2*k_max*j)/(m-1), (2*k_max*k)/(m_z-1));
                 Vec q2 = to_IBZ_2(q);
-                if (map[vec_to_string(q2)] == empty_val) {
-                    map[vec_to_string(q2)] = integrate_susceptibility(q2, T, mu);
-                }
                 cube[i][j][k] = map[vec_to_string(q2)];
             }
         }

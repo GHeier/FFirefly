@@ -774,7 +774,7 @@ def plot_test_waves_SAV_gap():
 
 if __name__ == "__main__":
     plot_chi_test("../tests/chi_plot.dat")
-    plot_chi_test("../tests/chi_plot4.dat")
+    plot_chi_test("../tests/chi_plot2.dat")
     plt.show()
     #file_addon = "U=1/HII-u=1"
     #title = "Nickelate"
