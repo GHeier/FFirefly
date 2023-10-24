@@ -773,19 +773,20 @@ def plot_test_waves_SAV_gap():
     plt.show()
 
 if __name__ == "__main__":
-    #plot_chi_test("../tests/chi_plot.dat")
-    #plt.show()
-    file_addon = "U=1/HII-u=1"
-    title = "Nickelate"
-    #plot_all_SAV_chis(file_addon, title)
-    for u in [1, 15, 2]:
-        u = str(u)
-        for d in range(0,1):
-            dope = str(d/10)
-            file_addon = "HII-u="+u
-            title = "Nickelate hi(q) for U="+u+", for x2-y2"
-            #plot_symmetry_SAV_chis(file_addon, title)
-            plot_spin_susceptibility(file_addon, title, u)
-            #plot_SAV_gap(file_addon, title)
+    plot_chi_test("../tests/chi_plot.dat")
+    plot_chi_test("../tests/chi_plot4.dat")
+    plt.show()
+    #file_addon = "U=1/HII-u=1"
+    #title = "Nickelate"
+    ##plot_all_SAV_chis(file_addon, title)
+    #for u in [1, 15, 2]:
+    #    u = str(u)
+    #    for d in range(0,1):
+    #        dope = str(d/10)
+    #        file_addon = "HII-u="+u
+    #        title = "Nickelate hi(q) for U="+u+", for x2-y2"
+    #        #plot_symmetry_SAV_chis(file_addon, title)
+    #        plot_spin_susceptibility(file_addon, title, u)
+    #        #plot_SAV_gap(file_addon, title)
     #plot_2D_SAV_gap("cacuo2-u=2-dope=0.0", "CaCuO2 Gap for U=2, dope=0.0 for x2-y2")
     #plot_test_waves_SAV_gap()
