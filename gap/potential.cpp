@@ -133,7 +133,7 @@ double chi_trapezoidal(Vec q, double T, double mu, int num_points) {
     double sum = 0;
     //#pragma omp parallel for reduction(+:sum)
     //int num_skipped = 0;
-    ofstream file("chi_temp2.txt");
+    //ofstream file("chi_temp2.txt");
     for (int i = 0; i < num_points; i++) {
         double temp = i;
         double x = get_k(temp, num_points); 
@@ -149,7 +149,7 @@ double chi_trapezoidal(Vec q, double T, double mu, int num_points) {
                 Vec k_val(x, y, z);
 
                 double r = ratio(q, k_val, T, mu);
-                file << k_val << r << endl;
+                //file << k_val << r << endl;
                 sum += w*r;
             }
         }
@@ -165,8 +165,8 @@ double integrate_susceptibility(Vec q, double T, double mu) {
     int base_div = 20;
     int x_divs = base_div, y_divs = base_div, z_divs = base_div;
     if (dim == 2) z_divs = 1;
-    return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, x_divs, y_divs, z_divs, 0.01) / pow(2*k_max,dim);
-    //return chi_trapezoidal(q, T, mu, 60);
+    //return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, x_divs, y_divs, z_divs, 0.01) / pow(2*k_max,dim);
+    return chi_trapezoidal(q, T, mu, 80);
     //return trapezoidal_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 100) / pow(2*k_max,dim);
 }
 

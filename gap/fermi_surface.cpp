@@ -283,5 +283,4 @@ void filter_FS(vector<Vec> &FS) {
         if (small_sum > 0.005*sum) break;
     }
     FS.erase(FS.begin(), FS.begin()+i);
-
 }

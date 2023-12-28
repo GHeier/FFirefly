@@ -39,7 +39,7 @@ using std::unordered_map;
 void plot_chi(double T) {
     ofstream file("chi_plot.dat");
     file << "q chi " << endl;
-    double n = 10.0;
+    double n = 100.0;
     for (double mu = 0.0; mu > -4.0; mu--) {
         for (double i = 0; i < n; i++) {
             double q_mag = i/(n-1) * M_PI;
@@ -79,7 +79,7 @@ void plot_potential(double T) {
 void plot_chi2(double T) {
     ofstream file("chi_plot2.dat");
     file << "q chi " << endl;
-    double n = 10.0;
+    double n = 100.0;
     for (double mu = -0.0; mu > -4.0; mu-=1.0) {
         vector<Vec> FS = tetrahedron_method(mu);
         double DOS = get_DOS(FS);

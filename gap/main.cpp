@@ -32,6 +32,7 @@ int main() {
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
     save_FS(FS);
     double DOS = get_DOS(FS);
+    return 0;
 /* 
  * ========================================================================================
  * =========================== CRITICAL TEMPERATURE CALCULATION  ==========================

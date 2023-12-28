@@ -121,12 +121,12 @@ double test_4d_surface_integral4(vector<Vec> &FS_vecs, const vector<vector<vecto
         return pow(wave(k, mu),2) / vp(k);
     };
     auto func = [&wave, &V](Vec p1, Vec p2, double T, double mu, const vector<vector<vector<double>>> &chi_cube) { 
-        return V(p1, p2, T, chi_cube);
+        //return V(p1, p2, T, chi_cube);
         return wave(p1, mu) * V(p1,p2,T,chi_cube) * wave(p2, mu) / (vp(p1) * vp(p2)); 
     };
 
     double normalized = test_surface_integral4(FS_vecs, FS_vecs[0], T, mu, chi_cube, norm_func);
-    cout << "Normalized: " << normalized << endl;
+    //cout << "Normalized: " << normalized << endl;
 
     double sum = 0;
     #pragma omp parallel for reduction(+:sum)
@@ -135,8 +135,8 @@ double test_4d_surface_integral4(vector<Vec> &FS_vecs, const vector<vector<vecto
         double f = test_surface_integral4(FS_vecs, k, T, mu, chi_cube, func);
         sum += f*k.area;
     }
-    cout << "Sum: " << sum << endl;
-    return -sum / normalized * (2 / pow(2*M_PI,3));
+    //cout << "Sum: " << sum << endl;
+    return -sum / normalized * (2 / pow(2*M_PI,dim));
 }
 
 
@@ -270,7 +270,6 @@ void plot_coupling() {
         return V(p1, p2, T, chi_cube);
     };
     auto Vt = [](Vec p1, Vec p2, double T, const auto &chi_cube) { 
-        return 1.0;
         Vec q = to_IBZ_2(p1 - p2);
         double chi = calculate_chi_from_cube(chi_cube, q);
         return -pow(U,2)*chi / (1 - pow(U*chi,2));
@@ -287,25 +286,25 @@ void plot_coupling() {
     double mu = -0.9;
     ofstream file("coupling.dat");
 
-    while (mu > -2.3) {
+    while (mu > -4.5) {
         cout << "Mu: " << mu << endl;
         vector<Vec> FS = tetrahedron_method(mu); 
         cout << "Fermi Surface Size: " << FS.size() << endl;
         double DOS = get_DOS(FS);
 
         vector<vector<vector<double>>> cube = chi_cube(T, mu, DOS);
-        //MatrixXd P = create_P(FS, T, cube);
-        //vector<EigAndVec> solutions = power_iteration(P, 0.0001);
+        MatrixXd P = create_P(FS, T, cube);
+        vector<EigAndVec> solutions = power_iteration(P, 0.0001);
         cout << "Power Iteration Done\n";
         //cout << P.eigenvalues().real().maxCoeff();
 
-        //double eig = solutions[solutions.size()-1].eig;
-        double eig = 0;
+        double eig = solutions[solutions.size()-1].eig;
+        //double eig = 0;
         cout << "Eig Found: " << eig << " \n";
 
         // Renormalization
-        //double renormalization = test_4d_surface_integral4(FS, cube, T, mu, wave_norm, V_norm)+1.0;
-        double renormalization = 1;
+        double renormalization = test_4d_surface_integral4(FS, cube, T, mu, wave_norm, V_norm)+1.0;
+        //double renormalization = 1;
         //cout << "\nEigs: " << endl;
         //for (auto x : solutions) {
         //    cout << x.eig / renormalization << endl;
@@ -313,24 +312,22 @@ void plot_coupling() {
         //cout << endl;
         // D-waves
         double dx2_y2_coupling = test_4d_surface_integral4(FS, cube, T, mu, dx2_y2, Vs);
-        cout << setprecision(10);
-        cout << dx2_y2_coupling << endl;
         //double dz2_1_coupling, dxy_coupling, dxz_coupling, dyz_coupling, px_coupling, py_coupling, pz_coupling, s_coupling, extended_s_coupling, dx_coupling = 0;
-        double dz2_1_coupling = test_4d_surface_integral4(FS, cube, T, mu, dz2_1, Vs);
+        //double dz2_1_coupling = test_4d_surface_integral4(FS, cube, T, mu, dz2_1, Vs);
         double dxy_coupling = test_4d_surface_integral4(FS, cube, T, mu, dxy, Vs);
-        double dxz_coupling = test_4d_surface_integral4(FS, cube, T, mu, dxz, Vs);
-        double dyz_coupling = test_4d_surface_integral4(FS, cube, T, mu, dyz, Vs);
+        //double dxz_coupling = test_4d_surface_integral4(FS, cube, T, mu, dxz, Vs);
+        //double dyz_coupling = test_4d_surface_integral4(FS, cube, T, mu, dyz, Vs);
         // P-waves
         double px_coupling = test_4d_surface_integral4(FS, cube, T, mu, px, Vt);
-        double py_coupling = test_4d_surface_integral4(FS, cube, T, mu, py, Vt);
-        double pz_coupling = test_4d_surface_integral4(FS, cube, T, mu, pz, Vt);
+        //double py_coupling = test_4d_surface_integral4(FS, cube, T, mu, py, Vt);
+        //double pz_coupling = test_4d_surface_integral4(FS, cube, T, mu, pz, Vt);
 
         //// P-wave for singlet potential
-        double dx_coupling = test_4d_surface_integral4(FS, cube, T, mu, px, Vs);
+        //double dx_coupling = test_4d_surface_integral4(FS, cube, T, mu, px, Vs);
         ////double dy_coupling = test_4d_surface_integral4(FS, cube, T, mu, py, Vs);
         ////double dz_coupling = test_4d_surface_integral4(FS, cube, T, mu, pz, Vs);
         ////double p_coupling2 = test_4d_surface_integral4(FS, cube, T, mu, p_wave2, Vs);
-        double s_coupling = test_4d_surface_integral4(FS, cube, T, mu, wave_norm, Vs);
+        //double s_coupling = test_4d_surface_integral4(FS, cube, T, mu, wave_norm, Vs);
         double extended_s_coupling = test_4d_surface_integral4(FS, cube, T, mu, extended_s_wave, Vs);
         //double dumb_wave_coupling = test_4d_surface_integral_discrete(FS, cube, T, Vs);
         //double dz2_1_coupling = 0, dxz_coupling = 0, dyz_coupling = 0, px_coupling = 0, py_coupling = 0, pz_coupling = 0, s_coupling = 0; 
@@ -339,20 +336,20 @@ void plot_coupling() {
         file << renormalization << " ";
 
         file << dx2_y2_coupling / renormalization << " "<< " ";
-        file << dz2_1_coupling / renormalization << " "<< " ";
+        //file << dz2_1_coupling / renormalization << " "<< " ";
         file << dxy_coupling / renormalization << " "<< " ";
-        file << dxz_coupling / renormalization << " "<< " ";
-        file << dyz_coupling / renormalization << " "<< " ";
+        //file << dxz_coupling / renormalization << " "<< " ";
+        //file << dyz_coupling / renormalization << " "<< " ";
 
         file << px_coupling / renormalization << " "<< " ";
-        file << py_coupling / renormalization << " "<< " ";
-        file << pz_coupling / renormalization << " "<< " ";
+        //file << py_coupling / renormalization << " "<< " ";
+        //file << pz_coupling / renormalization << " "<< " ";
 
         //cout << dy_coupling / renormalization << " ";
         //cout << dz_coupling / renormalization << " ";
         //cout << "P-coupling2:  p_coupling2 / renormalization << " ";
-        cout << s_coupling << " " << s_coupling / renormalization << endl;
-        file << s_coupling / renormalization << " ";
+        //cout << s_coupling << " " << s_coupling / renormalization << endl;
+        //file << s_coupling / renormalization << " ";
         file << extended_s_coupling / renormalization  << " ";
         //cout << "Dumb Wave:  dumb_wave_coupling / renormalization  << " ";
 

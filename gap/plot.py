@@ -196,6 +196,18 @@ def plotFS(file):
     plt.title("Fermi Surface")
     plt.show()
 
+def plot_FS():
+    plt.figure()
+    plt.title("Fermi Surfaces")
+    plt.xlabel("$k_x$")
+    plt.ylabel("$k_y$")
+    file = 'FS'
+    for i in range(0,4):
+        df = pd.read_csv(file+str(i)+'.dat', delim_whitespace=True)
+        plt.scatter(df.iloc[:,0], df.iloc[:,1], s=3)
+    plt.legend(["mu=0", "mu=-1", "mu=-2", "mu=-3"])
+    plt.show()
+    
 def test(file):
     df = pd.read_csv(file, delim_whitespace=True)
 
@@ -223,7 +235,7 @@ def plot_chi_test(file):
     size = int(len(df)/4)
     q_vals = df.iloc[0:size,0]
     plt.figure(1)
-    plt.title("Chi(q) @ T=750K along (1,1,1)")
+    plt.title("$\chi$(q) @ T=750K along (1,1,1)")
     for i in range(4):
         col = df.iloc[i*size:(i+1)*size,1]
         plt.plot(q_vals, col)
@@ -315,35 +327,37 @@ def plot_coupling(file):
     mu = df.iloc[:,0]
     renormalization = df.iloc[:,1]
     dx2y2 = df.iloc[:,2]
-    dz2_1 = df.iloc[:,3]
-    dxy = df.iloc[:,4]
-    dxz = df.iloc[:,5]
-    dyz = df.iloc[:,6]
-    px = df.iloc[:,7]
-    py = df.iloc[:,8]
-    pz = df.iloc[:,9]
-    s = df.iloc[:,10]
-    ext_s = df.iloc[:,11]
-    eig = df.iloc[:,12]
+    #dz2_1 = df.iloc[:,3]
+    dxy = df.iloc[:,3]
+    #dxz = df.iloc[:,5]
+    #dyz = df.iloc[:,6]
+    px = df.iloc[:,4]
+    #py = df.iloc[:,8]
+    #pz = df.iloc[:,9]
+    #s = df.iloc[:,10]
+    ext_s = df.iloc[:,5]
+    eig = df.iloc[:,6]
     #dx = df.iloc[:,10]
     #dy = df.iloc[:,11]
     #dz = df.iloc[:,12]
     plt.plot(mu, dx2y2, label='dx2y2')
-    plt.plot(mu, dz2_1, label='dz2-1')
+    #plt.plot(mu, dz2_1, label='dz2-1')
     plt.plot(mu, dxy , label='dxy')
-    plt.plot(mu, dxz , label='dxz')
-    plt.plot(mu, dyz , label='dyz')
+    #plt.plot(mu, dxz , label='dxz')
+    #plt.plot(mu, dyz , label='dyz')
     plt.plot(mu, px , label = 'px')
-    plt.plot(mu, py , label='py')
-    plt.plot(mu, s , label='s')
+    #plt.plot(mu, py , label='py')
+    #plt.plot(mu, s , label='s')
     plt.plot(mu, ext_s , label='ext_s')
     plt.plot(mu, eig , label='eig')
     #plt.plot(mu, dx , label = 'dx')
     #plt.plot(mu, dy )
     #plt.plot(mu, dz )
     plt.title("Coupling Constants")
-    plt.xlabel('mu')
+    plt.xlabel('$\mu$')
     plt.ylabel('$\lambda$')
+    plt.xlim(-4.8,-0.4)
+    plt.ylim(-0.05,0.10)
     plt.legend()
     plt.show()
 
@@ -773,9 +787,11 @@ def plot_test_waves_SAV_gap():
     plt.show()
 
 if __name__ == "__main__":
-    plot_chi_test("../tests/chi_plot.dat")
-    plot_chi_test("../tests/chi_plot2.dat")
-    plt.show()
+    plot_coupling("../tests/coupling.dat")
+    #plot_chi_test("../tests/chi_plot.dat")
+    #plot_chi_test("../tests/chi_plot2.dat")
+    #plt.show()
+    #plot_FS()
     #file_addon = "U=1/HII-u=1"
     #title = "Nickelate"
     ##plot_all_SAV_chis(file_addon, title)

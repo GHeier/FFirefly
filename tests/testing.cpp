@@ -253,12 +253,8 @@ int f(unsigned ndim, const double *x, void *fdata, unsigned fdim, double *fval) 
 
 
 int main() {
-    //plot_coupling();
-    Vec q(1, 0.0, 0.8); double T = 0.0025; double mu = 0.0;
-    cout << integrate_susceptibility(q, T, mu) << endl;
-    cout << chi_trapezoidal(q, T, mu, 60) << endl;
-    //plot_DOS();
-    plot_chi(T);
-    plot_chi2(T);
+    //plot_chi(0.25);
+    //plot_chi2(0.25);
+    plot_coupling();
     return 0;
 }
