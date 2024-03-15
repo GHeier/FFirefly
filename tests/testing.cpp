@@ -251,10 +251,29 @@ int f(unsigned ndim, const double *x, void *fdata, unsigned fdim, double *fval) 
     return 0; // success*
 }
 
+bool test_potential_test() { 
+    vector<Vec> FS = tetrahedron_method(mu); cout << "FS created\n";
+    double T = 0.25;
+    vector<vector<vector<double>>> cube;
+    MatrixXd P = create_P(FS, T, cube); cout << "Matrix Created\n";
+
+    EigenSolver<MatrixXd> s(P);
+    
+    VectorXcd vals = s.eigenvalues();// * f / FS.size();
+    //VectorXcd vals = s.eigenvalues() * f / FS.size();
+    EigenSolver<MatrixXd>::EigenvectorsType vecs;
+    vecs = s.eigenvectors(); 
+    
+    cout << vals << endl;
+
+    //if (vals(0) == 1.0 and vals(1) == 0.5) return true;
+    return false;
+}
 
 int main() {
+    test_potential_test();
     //plot_chi(0.25);
     //plot_chi2(0.25);
-    plot_coupling();
+    //plot_coupling();
     return 0;
 }

@@ -116,15 +116,9 @@ MatrixXd create_P(vector<Vec> k, double T, const vector<vector<vector<double>>> 
     #pragma omp parallel for
     for (int i = 0; i < size; i++) {
         Vec k1 = k[i];
-        //assert(k1.area != 0);
-        //assert( vp(k1) > 0);
         for (int j = 0; j < size; j++) {
             Vec k2 = k[j];
             P(i,j) = -pow(k1.area/vp(k1),0.5) * V(k1, k2, T, chi_cube2) * pow(k2.area/vp(k2),0.5);
-            //assert(V(k1, k2, T, chi_cube2) != 0);
-
-            //double progress = 1.0 * (i*size + j) / (size*size);
-            //progress_bar(progress);
         }
     }
     cout << "P Matrix Created\n";

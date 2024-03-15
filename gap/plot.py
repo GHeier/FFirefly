@@ -787,7 +787,7 @@ def plot_test_waves_SAV_gap():
     plt.show()
 
 if __name__ == "__main__":
-    plot_coupling("../tests/coupling.dat")
+    #plot_coupling("../tests/coupling.dat")
     #plot_chi_test("../tests/chi_plot.dat")
     #plot_chi_test("../tests/chi_plot2.dat")
     #plt.show()
@@ -805,4 +805,5 @@ if __name__ == "__main__":
     #        plot_spin_susceptibility(file_addon, title, u)
     #        #plot_SAV_gap(file_addon, title)
     #plot_2D_SAV_gap("cacuo2-u=2-dope=0.0", "CaCuO2 Gap for U=2, dope=0.0 for x2-y2")
+    plotGap_cart("test", 8, 0.0, 3, 4.0, 2)
     #plot_test_waves_SAV_gap()

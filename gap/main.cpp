@@ -32,7 +32,7 @@ int main() {
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
     save_FS(FS);
     double DOS = get_DOS(FS);
-    return 0;
+    cout << "Density of States: " << DOS << endl;
 /* 
  * ========================================================================================
  * =========================== CRITICAL TEMPERATURE CALCULATION  ==========================
@@ -40,9 +40,9 @@ int main() {
  */
     double T = 0.25;
     cout << setprecision(10);
-    cout << coupling_calc(FS, T) << endl;
+    //cout << coupling_calc(FS, T) << endl;
     //T = 0.065;
-    T = get_Tc(FS);
+    //T = get_Tc(FS);
     printf("Temperature: %f \n", T);
 
 /* 
@@ -76,7 +76,7 @@ int main() {
     }
     double mag = first_vec.transpose() * first_vec;
     if ( fabs(mag - 1.0) > 0.01 ) cout << "Eigenvector not normalized\n";
-    vals = vals * f;
+    //vals = vals * f;
 
     cout << "Saving Potential and Susceptibility Functions\n";
     save_potential_vs_q(FS, P, "potential.dat");

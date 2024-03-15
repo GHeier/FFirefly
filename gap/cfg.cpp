@@ -8,10 +8,10 @@
 using namespace std;
 
 // Global Variables
-int n = 10000; // Number of k points
+int n = 8; // Number of k points
 int m = 41; // Number of chi points
-int dim = 2; // Number of dimensions)
-string potential_name = "scalapino";
+int dim = 3; // Number of dimensions)
+string potential_name = "test";
 string band_name = "simple_cubic";
                
 // Constants
@@ -67,7 +67,7 @@ double V(const Vec k1, const Vec k2, const double T, const vector<vector<vector<
     if (potential_name == "scalapino_triplet") 
         return potential_scalapino_triplet(k1, k2, T, chi_cube);
     if (potential_name == "test") 
-        return potential_test(k1, k2) / pow(2*M_PI, dim);
+        return potential_test(k1, k2);// / pow(2*M_PI, dim);
     else {
         cout << "Unknown Potential Function: " << potential_name << endl;
         assert(1==2);

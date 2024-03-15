@@ -27,6 +27,8 @@ double potential_const(Vec k1, Vec k2) {
 }
 
 double potential_test(Vec k1, Vec k2) {
+    double volume_scaling = (2 / pow(2*M_PI, dim));
+    return -1.0;
     Vec q1 = k1;
     Vec q2 = k2;
     if (q1.cartesian == false) q1.to_cartesian();
@@ -38,7 +40,7 @@ double potential_test(Vec k1, Vec k2) {
     //return ( cos( q1.vals(0) ) - cos( q1.vals(1) ) )*( cos( q2.vals(0) ) + cos( q2.vals(1) ) );
     //return cos(q1.vals(0))*cos(q2.vals(0))/M_PI + 1 / (2*M_PI);
     //return -1*( sin(q1.vals(0)) + sin(q1.vals(1)) )*( sin(q2.vals(0)) + sin(q2.vals(1)) );
-    return -1*( cos(q1.vals(0)) - cos(q1.vals(1)) )*( cos(q2.vals(0)) - cos(q2.vals(1)) );
+    return -1*( cos(q1.vals(0)) - cos(q1.vals(1)) )*( cos(q2.vals(0)) - cos(q2.vals(1)) ) + (-0.5)*sin(q1.vals(0))*sin(q1.vals(1))*sin(q2.vals(0))*sin(q2.vals(1));
     //return 100*( 2*cos(q1.vals(2)) - cos( q1.vals(0) ) - cos( q1.vals(1) ) ) 
     //    * ( 2*cos(q2.vals(2)) - cos( q2.vals(0) ) - cos( q2.vals(1) ) ) + 0;
 }
@@ -131,7 +133,7 @@ double ratio(Vec q, Vec k, double T, double mu) {
 
 double chi_trapezoidal(Vec q, double T, double mu, int num_points) {
     double sum = 0;
-    //#pragma omp parallel for reduction(+:sum)
+    #pragma omp parallel for reduction(+:sum)
     //int num_skipped = 0;
     //ofstream file("chi_temp2.txt");
     for (int i = 0; i < num_points; i++) {
@@ -165,7 +167,7 @@ double integrate_susceptibility(Vec q, double T, double mu) {
     int base_div = 20;
     int x_divs = base_div, y_divs = base_div, z_divs = base_div;
     if (dim == 2) z_divs = 1;
-    //return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, x_divs, y_divs, z_divs, 0.01) / pow(2*k_max,dim);
+    return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, x_divs, y_divs, z_divs, 0.01) / pow(2*k_max,dim);
     return chi_trapezoidal(q, T, mu, 80);
     //return trapezoidal_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 100) / pow(2*k_max,dim);
 }
