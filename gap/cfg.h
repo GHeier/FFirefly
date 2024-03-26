@@ -5,6 +5,7 @@ using namespace std;
 
 extern int n;
 extern int m;
+extern int l;
 extern int dim;
 extern string potential_name;
 extern string band_name;

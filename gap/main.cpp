@@ -12,6 +12,7 @@
 
 #include "cfg.h"
 #include "fermi_surface.h"
+#include "frequency_inclusion.hpp"
 #include "calculations.h"
 #include "potential.h"
 #include "save_data.h"
@@ -22,16 +23,25 @@ using namespace Eigen;
 using std::string;
 
 int main() {
+
 /* 
  * ========================================================================================
  * ======================== FERMI SURFACE CREATION AND FILE SAVING ========================
    ========================================================================================
  */
     cout << "Calculating Fermi Surface..." << endl;
+
+    vector<vector<Vec>> freq_FS;
+    freq_FS = freq_tetrahedron_method(mu);
     vector<Vec> FS = tetrahedron_method(mu);
-    cout << "Number of points along Fermi Surface: " << FS.size() << endl;
-    save_FS(FS);
-    double DOS = get_DOS(FS);
+
+
+    cout << "Number of points along Fermi Surface: " << freq_FS[(l+1)/2 - 1].size() << endl;
+    save_FS(freq_FS[(l+1)/2 - 1]);
+    double DOS = get_DOS(freq_FS[(l+1)/2 - 1]);
+    for (int i = 0; i < l; i++) {
+        cout << get_DOS(freq_FS[i]) << endl;
+    }
     cout << "Density of States: " << DOS << endl;
 /* 
  * ========================================================================================
@@ -53,11 +63,30 @@ int main() {
     vector<vector<vector<double>>> cube;
     if (potential_name != "test") cube = chi_cube(T, mu, DOS);
 
+    MatrixXd Pf1 = create_P_freq(freq_FS, T, cube);
+    MatrixXd Pf2 = create_P_freq2(freq_FS, T, cube);
+    for (int i = 0; i < Pf1.size(); i++) {
+        for (int j = 0; j < Pf2.size(); j++) {
+            if (Pf1(i,j) != Pf2(i,j) and Pf2(i,j) != 0)
+                cout << Pf1(i,j) << " " << Pf2(i,j) << endl;
+        }
+    }
     MatrixXd P = create_P(FS, T, cube);
     double f = f_singlet_integral(T);
     cout << "F-integral value: " << f << endl;
 
     cout << "Finding Eigenspace..." << endl;
+    vector<EigAndVec> answers = power_iteration(P, 0.001);
+    vector<EigAndVec> answersf1 = power_iteration(Pf1, 0.001);
+    vector<EigAndVec> answersf2 = power_iteration(Pf2, 0.001);
+    double eig = answers[answers.size() - 1].eig;
+    double eigf1 = answersf1[answersf1.size() - 1].eig;
+    double eigf2 = answersf2[answersf2.size() - 1].eig;
+    cout << "Eig: " << f*eig << endl;
+    cout << "Eig: " << eigf1 << endl;
+    cout << "Eig: " << eigf2 << endl;
+    cout << "Test integral: " << f_singlet_integral_test(T) << endl;
+    return 0;
     // Solving every vector using Eigen method
     EigenSolver<MatrixXd> s(P);
     
@@ -79,8 +108,8 @@ int main() {
     //vals = vals * f;
 
     cout << "Saving Potential and Susceptibility Functions\n";
-    save_potential_vs_q(FS, P, "potential.dat");
-    if (cube.size() != 0 ) save_chi_vs_q(cube, FS, "chi.dat");
+    save_potential_vs_q(freq_FS[0], P, "potential.dat");
+    if (cube.size() != 0 ) save_chi_vs_q(cube, freq_FS[0], "chi.dat");
 
 /* 
  * ========================================================================================
@@ -91,7 +120,7 @@ int main() {
     std::vector<EigAndVec> solutions;
     solutions = combine_eigs_and_vecs(vals.real(), vecs.real());
     sort(solutions.rbegin(), solutions.rend());
-    vector_to_wave(FS, solutions);
+    vector_to_wave(freq_FS[0], solutions);
     //for (int i = 0; i < 6; i++) cout << solutions[0].vec(i) << " "; cout << endl;
     //vector_to_wave(FS, solutions);
     //for (int i = 0; i < 6; i++) cout << solutions[0].vec(i) << " "; cout << endl;
@@ -105,7 +134,7 @@ int main() {
     string file_name = std::move(out).str();
 
     // Save file in cartesian coordinates for the sake of plotting easier
-    save(file_name, T, FS, solutions);
+    save(file_name, T, freq_FS[0], solutions);
     /*
      Using Spectre/LambdaLanczos algorithm to find only first few eigenvectors, (not that much faster)
         auto mv_mul = [&](const vector<double>& in, vector<double>& out) {

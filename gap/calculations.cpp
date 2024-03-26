@@ -95,6 +95,7 @@ vector<EigAndVec> power_iteration(MatrixXd A, double error) {
  *  f_singlet(E_k, T) = tanh(E_k / 2*T) / (2*E_k)
  */
 double f_singlet(double x, double T) {
+    if (abs(x) < 0.00001) return 1/(4*T);
     return tanh(x/(2*T))/(2*x);
 }
 

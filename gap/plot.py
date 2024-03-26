@@ -202,12 +202,22 @@ def plot_FS():
     plt.xlabel("$k_x$")
     plt.ylabel("$k_y$")
     file = 'FS'
-    for i in range(0,4):
-        df = pd.read_csv(file+str(i)+'.dat', delim_whitespace=True)
-        plt.scatter(df.iloc[:,0], df.iloc[:,1], s=3)
-    plt.legend(["mu=0", "mu=-1", "mu=-2", "mu=-3"])
+    #for i in range(0,4):
+    #    df = pd.read_csv(file+str(i)+'.dat', delim_whitespace=True)
+    #    plt.scatter(df.iloc[:,0], df.iloc[:,1], s=3)
+    df = pd.read_csv(file+'.dat', delim_whitespace=True)
+    plt.scatter(df.iloc[:,0], df.iloc[:,1], s=3)
+    #plt.legend(["mu=0", "mu=-1", "mu=-2", "mu=-3"])
     plt.show()
     
+def plot_DOS():
+    file = open("DOS.txt")
+    freq = -5
+    for l in file:
+        freq += 0.1
+        plt.scatter(freq, float(l))
+    plt.show()
+
 def test(file):
     df = pd.read_csv(file, delim_whitespace=True)
 
@@ -787,6 +797,7 @@ def plot_test_waves_SAV_gap():
     plt.show()
 
 if __name__ == "__main__":
+    plot_DOS()
     #plot_coupling("../tests/coupling.dat")
     #plot_chi_test("../tests/chi_plot.dat")
     #plot_chi_test("../tests/chi_plot2.dat")
@@ -805,5 +816,5 @@ if __name__ == "__main__":
     #        plot_spin_susceptibility(file_addon, title, u)
     #        #plot_SAV_gap(file_addon, title)
     #plot_2D_SAV_gap("cacuo2-u=2-dope=0.0", "CaCuO2 Gap for U=2, dope=0.0 for x2-y2")
-    plotGap_cart("test", 8, 0.0, 3, 4.0, 2)
+    #plotGap_cart("test", 8, 0.0, 3, 4.0, 2)
     #plot_test_waves_SAV_gap()

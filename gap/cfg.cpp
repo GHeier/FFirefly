@@ -10,7 +10,8 @@ using namespace std;
 // Global Variables
 int n = 8; // Number of k points
 int m = 41; // Number of chi points
-int dim = 3; // Number of dimensions)
+int l = 5; // Number of frequency points
+int dim = 2; // Number of dimensions)
 string potential_name = "test";
 string band_name = "simple_cubic";
                
@@ -19,8 +20,8 @@ double t = 1.0;
 double tn = 0.0;
 double U = 4.0;
 double k_max = M_PI;
-double mu = 0.0;
-double w_D = 1.0;
+double mu = 1.0;
+double w_D = 0.5;
 
 void init_config(double &mu, double &U, double &t, double &tn, double new_mu, double new_U, double new_t, double new_tn) {
     mu = new_mu;
