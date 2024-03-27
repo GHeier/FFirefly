@@ -211,12 +211,38 @@ def plot_FS():
     plt.show()
     
 def plot_DOS():
+    plt.rcParams.update({'font.size': 18})
+    mpl.rcParams['lines.linewidth'] = 2
+    mpl.rcParams['pdf.fonttype'] = 42
+    mpl.rcParams['ps.fonttype'] = 42
     file = open("DOS.txt")
-    freq = -5
-    for l in file:
-        freq += 0.1
-        plt.scatter(freq, float(l))
+    df = pd.read_csv(file, delim_whitespace = True, header=None)
+    plt.scatter(df.iloc[:,0], df.iloc[:,1], s=3, c='green')
+    plt.xlabel("$\mu$")
+    plt.ylabel("$N(\epsilon)$")
+    plt.tight_layout() # to fit everything in the prescribed area
     plt.show()
+
+def plot_eigenvalue_divergence():
+    file = open("../tests/eigenvalue_divergence.txt")
+    df = pd.read_csv(file, delim_whitespace=True, header=None)
+    x1, x2, wc = list(), list(), list()
+    error = list()
+    for i, row in df.iterrows():
+        if i%2 == 0:
+            wc.append(df.iloc[i,0])
+            x1.append(df.iloc[i,1])
+        else:
+            x2.append(df.iloc[i,1])
+
+    plt.figure(0)
+    plt.xlabel("$\omega_C$")
+    plt.ylabel("$\lambda$")
+    plt.plot(wc, x1, label="$\omega$ independent")
+    plt.plot(wc, x2, label="$\omega$ dependent")
+    plt.show()
+
+
 
 def test(file):
     df = pd.read_csv(file, delim_whitespace=True)
@@ -797,6 +823,7 @@ def plot_test_waves_SAV_gap():
     plt.show()
 
 if __name__ == "__main__":
+    #plot_eigenvalue_divergence()
     plot_DOS()
     #plot_coupling("../tests/coupling.dat")
     #plot_chi_test("../tests/chi_plot.dat")

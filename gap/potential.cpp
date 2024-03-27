@@ -106,7 +106,7 @@ double f(double E, double T) {
     return 1 / (1 + exp(E/T));
 }
 
-double ratio(Vec q, Vec k, double T, double mu) {
+double ratio(Vec q, Vec k, double T, double mu, double w) {
     //Vec empty;
     //if (q == empty) {
     //    Vec temp(0.01,0.01,0.01);
@@ -119,7 +119,7 @@ double ratio(Vec q, Vec k, double T, double mu) {
     //if (e_qk == e_k) return 0;
 
     double dE = e_qk - e_k;
-    if (fabs(dE) < 0.0001) {
+    if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
         if (exp(e_k/T) > 1000000) {
             return 0;
         }
@@ -128,7 +128,7 @@ double ratio(Vec q, Vec k, double T, double mu) {
     }
     //if (fabs(f_qk - f_k) < 0.00001) return 0;
     //return 1 / (e_k - e_qk);
-    return (f_qk - f_k) / (e_k - e_qk);
+    return (f_qk - f_k) / (e_k - e_qk - w);
 }
 
 double chi_trapezoidal(Vec q, double T, double mu, int num_points) {
@@ -150,7 +150,7 @@ double chi_trapezoidal(Vec q, double T, double mu, int num_points) {
 
                 Vec k_val(x, y, z);
 
-                double r = ratio(q, k_val, T, mu);
+                double r = ratio(q, k_val, T, mu, 0);
                 //file << k_val << r << endl;
                 sum += w*r;
             }
@@ -159,9 +159,9 @@ double chi_trapezoidal(Vec q, double T, double mu, int num_points) {
     return sum / pow(num_points-1,dim); 
 }
 
-double integrate_susceptibility(Vec q, double T, double mu) {
-    auto func = [q, T, mu] (double kx, double ky, double kz) {
-        return ratio(q, Vec(kx, ky, kz), T, mu);
+double integrate_susceptibility(Vec q, double T, double mu, double w) {
+    auto func = [q, T, mu, w] (double kx, double ky, double kz) {
+        return ratio(q, Vec(kx, ky, kz), T, mu, w);
     };
 
     int base_div = 20;
@@ -230,10 +230,11 @@ double adaptive_trapezoidal(auto &f, double x0, double x1, double y0, double y1,
                 double t1 = trap_cube(f, x, x+dx, y, y+dy, z, z+dz);
                 double t2 = trap_8_cubes(f, x, x+dx, y, y+dy, z, z+dz);
 
-                if (fabs(t1 - t2) < error_relative * fabs(t2) or fabs(t2) < 0.00001) {
+                if (fabs(t1 - t2) < error_relative * fabs(t2) or fabs(t1 - t2) < 0.0001) {
                     sum += t2;
                 }
                 else {
+//                    cout << t1 << " " << t2 << " " << fabs(t1 - t2) << " " << error_relative * fabs(t2) << endl;
                     double new_zdiv = 2 * (dim % 2) + 1 * ((dim+1)%2);
                     sum += adaptive_trapezoidal(f, x, x+dx, y, y+dy, z, z+dz, 2, 2, new_zdiv, error_relative);
                 }
@@ -274,33 +275,7 @@ double iteratively_splitting_cubes(auto &f, double x0, double x1, double y0, dou
     return total_sum;
 }
 
-vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS) {
-    return chi_cube2(T, mu, DOS);
-    int m_z = m*(dim%2) + 3*((dim+1)%2);
-    vector<vector<vector<double>>> cube(m, vector<vector<double>> (m, vector<double> (m_z)));
-    unordered_map<string, double> map;
-    cout << "Calculating Chi Cube...\n";
-    map[vec_to_string(Vec(0,0,0))] = DOS;
-    //#pragma omp parallel for 
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < m; j++) {
-            for (int k = 0; k < m_z; k++) {
-                Vec q((2*k_max*i)/(m-1), (2*k_max*j)/(m-1), (2*k_max*k)/(m_z-1));
-                Vec q2 = to_IBZ_2(q);
-                if (q2.vals.norm() < 0.001) map[vec_to_string(q2)] = DOS;
-                if (map.find(vec_to_string(q)) == map.end())
-                    map[vec_to_string(q)] = integrate_susceptibility(q, T, mu);
-                cube[i][j][k] = map[vec_to_string(q)];
-                //if ( fabs(cube[i][j][k]) > 0.1) cout << "----";
-                progress_bar( (i*m*m + j*m + k) / (pow(m,3)));
-            }
-        }
-    }
-    cout << "\nChi Cube Created.\n";
-    return cube;
-}
-
-vector<vector<vector<double>>> chi_cube2(double T, double mu, double DOS) {
+vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS, double w) {
     int m_z = m*(dim%2) + 3*((dim+1)%2);
     vector<vector<vector<double>>> cube(m, vector<vector<double>> (m, vector<double> (m_z)));
     unordered_map<string, double> map;
@@ -324,7 +299,7 @@ vector<vector<vector<double>>> chi_cube2(double T, double mu, double DOS) {
         auto datIt = map.begin();
         advance(datIt, i);
         string key = datIt->first;
-        map[key] = integrate_susceptibility(string_to_vec(key), T, mu);
+        map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w);
     }
 
     for (int i = 0; i < m; i++) {

@@ -39,9 +39,6 @@ int main() {
     cout << "Number of points along Fermi Surface: " << freq_FS[(l+1)/2 - 1].size() << endl;
     save_FS(freq_FS[(l+1)/2 - 1]);
     double DOS = get_DOS(freq_FS[(l+1)/2 - 1]);
-    for (int i = 0; i < l; i++) {
-        cout << get_DOS(freq_FS[i]) << endl;
-    }
     cout << "Density of States: " << DOS << endl;
 /* 
  * ========================================================================================
@@ -63,27 +60,27 @@ int main() {
     vector<vector<vector<double>>> cube;
     if (potential_name != "test") cube = chi_cube(T, mu, DOS);
 
-    MatrixXd Pf1 = create_P_freq(freq_FS, T, cube);
+//    MatrixXd Pf1 = create_P_freq(freq_FS, T, cube);
     MatrixXd Pf2 = create_P_freq2(freq_FS, T, cube);
-    for (int i = 0; i < Pf1.size(); i++) {
-        for (int j = 0; j < Pf2.size(); j++) {
-            if (Pf1(i,j) != Pf2(i,j) and Pf2(i,j) != 0)
-                cout << Pf1(i,j) << " " << Pf2(i,j) << endl;
-        }
-    }
+//    for (int i = 0; i < Pf1.size(); i++) {
+//        for (int j = 0; j < Pf2.size(); j++) {
+//            if (Pf1(i,j) != Pf2(i,j) and Pf2(i,j) != 0)
+//                cout << Pf1(i,j) << " " << Pf2(i,j) << endl;
+//        }
+//    }
     MatrixXd P = create_P(FS, T, cube);
     double f = f_singlet_integral(T);
     cout << "F-integral value: " << f << endl;
 
     cout << "Finding Eigenspace..." << endl;
     vector<EigAndVec> answers = power_iteration(P, 0.001);
-    vector<EigAndVec> answersf1 = power_iteration(Pf1, 0.001);
+//    vector<EigAndVec> answersf1 = power_iteration(Pf1, 0.001);
     vector<EigAndVec> answersf2 = power_iteration(Pf2, 0.001);
     double eig = answers[answers.size() - 1].eig;
-    double eigf1 = answersf1[answersf1.size() - 1].eig;
+//    double eigf1 = answersf1[answersf1.size() - 1].eig;
     double eigf2 = answersf2[answersf2.size() - 1].eig;
     cout << "Eig: " << f*eig << endl;
-    cout << "Eig: " << eigf1 << endl;
+//    cout << "Eig: " << eigf1 << endl;
     cout << "Eig: " << eigf2 << endl;
     cout << "Test integral: " << f_singlet_integral_test(T) << endl;
     return 0;

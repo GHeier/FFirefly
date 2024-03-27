@@ -8,11 +8,11 @@
 using namespace std;
 
 // Global Variables
-int n = 8; // Number of k points
-int m = 41; // Number of chi points
+int n = 12; // Number of k points
+int m = 20; // Number of chi points
 int l = 5; // Number of frequency points
-int dim = 2; // Number of dimensions)
-string potential_name = "test";
+int dim = 3; // Number of dimensions)
+string potential_name = "scalapino";
 string band_name = "simple_cubic";
                
 // Constants
@@ -20,14 +20,15 @@ double t = 1.0;
 double tn = 0.0;
 double U = 4.0;
 double k_max = M_PI;
-double mu = 1.0;
+double mu = 0.0;
 double w_D = 0.5;
 
-void init_config(double &mu, double &U, double &t, double &tn, double new_mu, double new_U, double new_t, double new_tn) {
+void init_config(double &mu, double &U, double &t, double &tn, double &w_D, double new_mu, double new_U, double new_t, double new_tn, double new_w_D) {
     mu = new_mu;
     U = new_U;
     t = new_t;
     tn = new_tn;
+    w_D = new_w_D;
 }
 
 // Energy band functions
@@ -76,3 +77,18 @@ double V(const Vec k1, const Vec k2, const double T, const vector<vector<vector<
     }
 }
 
+// Gaussian integration constants
+double weights_0th[1] = {2.0}; double * w0 = weights_0th;
+double weights_1st[2] = {1.0, 1.0}; double * w1 = weights_1st;
+double weights_2nd[3] = {5.0/9.0, 8.0/9.0, 5.0/9.0}; double * w2 = weights_2nd;
+double weights_3rd[4] = {0.347855, 0.652145, 0.652145, 0.347855}; double * w3 = weights_3rd;
+double weights_4th[5] = {0.236927, 0.478629, 0.568889, 0.478629, 0.236927}; double * w4 = weights_4th;
+double *weights[5] = {w0, w1, w2, w3, w4};
+
+double points_0th[1] = {0}; double *p0 = points_0th;
+double points_1st[2] = {-1/pow(3,0.5), 1/pow(3,0.5)}; double *p1 = points_1st;
+double points_2nd[3] = {-pow(3/5,0.5), 0, pow(3/5,0.5)}; double *p2 = points_2nd;
+double points_3rd[4] = {-0.861136, -0.339981, 0.339981, 0.861136}; double *p3 = points_3rd;
+double points_4th[5] = {-0.90618, -0.538469, 0, 0.538469, 0.90618}; double *p4 = points_4th;
+
+double *points[5] = {p0, p1, p2, p3, p4};

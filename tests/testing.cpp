@@ -27,6 +27,7 @@
 #include "save_data.h"
 #include "utilities.h"
 #include "potential.h"
+#include "frequency_inclusion.hpp"
 
 #include "plot.cpp"
 #include "surface_integrals.cpp"
@@ -212,7 +213,7 @@ void test_diagonalization() {
 void test_pairing_interaction_parity(vector<Vec> &FS, double T, double mu) {
     double DOS = 0; for (auto x : FS) DOS += x.area / vp(x);
     DOS /= pow(2*M_PI, 3);
-    auto cube = chi_cube(T, mu, DOS);
+    auto cube = chi_cube(T, mu, DOS, 0);
     Vec k2;
     double num = 10;
     for (double i = 0; i < num; i++) {
@@ -245,7 +246,7 @@ int f(unsigned ndim, const double *x, void *fdata, unsigned fdim, double *fval) 
     //fval[0] = exp(-sigma * sum);
     Vec k_val(x[0], x[1], x[2]);
     double T = 0.25;
-    fval[0] = ratio(q, k_val, T, mu);
+    fval[0] = ratio(q, k_val, T, mu, 0);
     //cout << k_val << fval[0] << endl;
     //fval[0] = x[0]*x[0] * x[1]*x[1] * x[2]*x[2];
     return 0; // success*
@@ -270,8 +271,38 @@ bool test_potential_test() {
     return false;
 }
 
+void eigenvalue_divergence() {
+    ofstream temporary_file("eigenvalue_divergence.txt");
+    for (int i = 1; i < 50; i++) {
+        printf("Plot Progress: %i out of 50\n", i);
+
+        double cutoff = 0.04 * i;
+        init_config(mu, U, t, tn, w_D, mu, U, t, tn, cutoff);
+
+        vector<vector<Vec>> freq_FS;
+        freq_FS = freq_tetrahedron_method(mu);
+        vector<Vec> FS = tetrahedron_method(mu);
+        double T = 0.065;
+
+        double DOS = get_DOS(freq_FS[(l+1)/2 - 1]);
+        vector<vector<vector<double>>> cube;
+        if (potential_name != "test") cube = chi_cube(T, mu, DOS, w);
+
+        MatrixXd Pf2 = create_P_freq2(freq_FS, T, cube);
+        MatrixXd P = create_P(FS, T, cube);
+        double f = f_singlet_integral(T);
+
+        vector<EigAndVec> answers = power_iteration(P, 0.001);
+        vector<EigAndVec> answersf2 = power_iteration(Pf2, 0.001);
+        double eig = answers[answers.size() - 1].eig;
+        double eigf2 = answersf2[answersf2.size() - 1].eig;
+        temporary_file << w_D << " " << f*eig << " " << eigf2 << endl;
+    }
+}
+
+
 int main() {
-    test_potential_test();
+    eigenvalue_divergence();
     //plot_chi(0.25);
     //plot_chi2(0.25);
     //plot_coupling();

@@ -156,7 +156,7 @@ void test_integral_pairing_interaction_parity(vector<Vec> &FS, double T, double 
 
     double DOS = 0; for (auto x : FS) DOS += x.area / vp(x);
     DOS /= pow(2*M_PI,3);
-    auto cube = chi_cube(T, mu, DOS);
+    auto cube = chi_cube(T, mu, DOS, 0);
     double num = 10;
     for (double i = 0; i < num; i++) {
         for (double j = 0; j < num; j++) {
@@ -292,7 +292,7 @@ void plot_coupling() {
         cout << "Fermi Surface Size: " << FS.size() << endl;
         double DOS = get_DOS(FS);
 
-        vector<vector<vector<double>>> cube = chi_cube(T, mu, DOS);
+        vector<vector<vector<double>>> cube = chi_cube(T, mu, DOS, 0);
         MatrixXd P = create_P(FS, T, cube);
         vector<EigAndVec> solutions = power_iteration(P, 0.0001);
         cout << "Power Iteration Done\n";
@@ -369,7 +369,7 @@ void plot_DOS() {
     for (int i = 0; i < num; i++) {
         double new_mu = -mu_max + 2.0*mu_max*i/(num-1);
         new_mu = 0.0;
-        init_config(mu, U, t, tn, new_mu, U, t, tn);
+        init_config(mu, U, t, tn, w_D, new_mu, U, t, tn, w_D);
 
         auto wave = [](Vec k, double mu) { 
             return 1.0;

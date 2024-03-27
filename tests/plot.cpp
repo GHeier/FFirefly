@@ -61,7 +61,7 @@ void plot_potential(double T) {
         DOS += FS[i].area / vp(FS[i]);
     double n = 80.0;
     for (double mu = 0.0; mu > -2.0; mu--) {
-        vector<vector<vector<double>>> cube = chi_cube(T, mu, DOS);
+        vector<vector<vector<double>>> cube = chi_cube(T, mu, DOS, 0);
         for (double i = 0; i < n; i++) {
             double q_mag = i/(n-1) * M_PI;
             Vec q(q_mag, q_mag, 0);
@@ -83,7 +83,7 @@ void plot_chi2(double T) {
     for (double mu = -0.0; mu > -4.0; mu-=1.0) {
         vector<Vec> FS = tetrahedron_method(mu);
         double DOS = get_DOS(FS);
-        vector<vector<vector<double>>> cube = chi_cube(T, mu, DOS);
+        vector<vector<vector<double>>> cube = chi_cube(T, mu, DOS, 0);
         for (double i = 0; i < n; i++) {
             double q_mag = i/(n-1) * M_PI;
             Vec q(q_mag, q_mag, q_mag);
@@ -102,7 +102,7 @@ void plot_chi4(double T) {
         for (double i = 0; i < n; i++) {
             double q_mag = i/(n-1) * M_PI;
             Vec q(q_mag, q_mag, q_mag);
-            double c = integrate_susceptibility(q, T, mu);
+            double c = integrate_susceptibility(q, T, mu, 0);
             file << q_mag << " " << c << endl;
         }
         file << endl;
