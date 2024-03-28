@@ -62,6 +62,7 @@ int main() {
 //    vector<vector<vector<double>>> cube;
 //    if (potential_name != "test") cube = chi_cube(T, mu, DOS, 0);
     if (potential_name != "test" or potential_name != "const") cube_freq_map = chi_cube_freq(T, mu, DOS);
+    return 0;
 
     int size = 0;
     for (int i = 0; i < freq_FS.size(); i++) {

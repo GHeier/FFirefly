@@ -94,18 +94,18 @@ bool operator<(const Eigenvector& left, const Eigenvector& right) {
     return left.eigenvalue < right.eigenvalue;
 }
 
-double norm(const Eigenvector& k) {
+double Eigenvector::norm() {
     double sum = 0;
-    for (int i = 0; i < k.size; i++) {
-        sum += k.eigenvector[i] * k.eigenvector[i];
+    for (int i = 0; i < this->size; i++) {
+        sum += this->eigenvector[i] * this->eigenvector[i];
     }
     return sqrt(sum);
 }
 
-void normalize(Eigenvector& k) {
-    double norm = ::norm(k);
-    for (int i = 0; i < k.size; i++) {
-        k.eigenvector[i] /= norm;
+void Eigenvector::normalize() {
+    double norm = this->norm();
+    for (int i = 0; i < this->size; i++) {
+        this->eigenvector[i] /= norm;
     }
 }
 

@@ -161,7 +161,7 @@ double integrate_susceptibility(Vec q, double T, double mu, double w) {
     int base_div = 20;
     int x_divs = base_div, y_divs = base_div, z_divs = base_div;
     if (dim == 2) z_divs = 1;
-    return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, x_divs, y_divs, z_divs, 0.01) / pow(2*k_max,dim);
+    //return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, x_divs, y_divs, z_divs, 0.05, 0) / pow(2*k_max,dim);
     return chi_trapezoidal(q, T, mu, 80);
     //return trapezoidal_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 100) / pow(2*k_max,dim);
 }
@@ -206,7 +206,7 @@ double trap_8_cubes(auto &f, double x0, double x1, double y0, double y1, double 
         + trap_cube(f, (x0+x1)/2, x1, (y0+y1)/2, y1, (z0+z1)/2, z1);
 }
 
-double adaptive_trapezoidal(auto &f, double x0, double x1, double y0, double y1, double z0, double z1, int xdivs, int ydivs, int zdivs, double error_relative) {
+double adaptive_trapezoidal(auto &f, double x0, double x1, double y0, double y1, double z0, double z1, int xdivs, int ydivs, int zdivs, double error_relative, int num_splits) {
     double sum = 0;
 
     double dx = (x1 - x0) / (xdivs);
@@ -224,13 +224,13 @@ double adaptive_trapezoidal(auto &f, double x0, double x1, double y0, double y1,
                 double t1 = trap_cube(f, x, x+dx, y, y+dy, z, z+dz);
                 double t2 = trap_8_cubes(f, x, x+dx, y, y+dy, z, z+dz);
 
-                if (fabs(t1 - t2) < error_relative * fabs(t2) or fabs(t1 - t2) < 0.0001) {
+                if (fabs(t1 - t2) < error_relative * fabs(t2) or num_splits > 0) {
                     sum += t2;
                 }
                 else {
 //                    cout << t1 << " " << t2 << " " << fabs(t1 - t2) << " " << error_relative * fabs(t2) << endl;
                     double new_zdiv = 2 * (dim % 2) + 1 * ((dim+1)%2);
-                    sum += adaptive_trapezoidal(f, x, x+dx, y, y+dy, z, z+dz, 2, 2, new_zdiv, error_relative);
+                    sum += adaptive_trapezoidal(f, x, x+dx, y, y+dy, z, z+dz, 2, 2, new_zdiv, error_relative, num_splits+1);
                 }
 
             }
