@@ -4,19 +4,19 @@
 
 #include <iostream>
 #include <string>
-#include <Eigen/Dense>
 
 using namespace std;
 
 class Vec {
     public:
-        Eigen::Vector3d vals = Eigen::Vector3d(0,0,0);
+        double vals[3];
         bool cartesian = false;
         double area = 0;
 
         Vec(double x = 0, double y = 0, double z = 0, bool is_cartesian=true, double area = 0);
         void to_cartesian();
         void to_spherical();
+        double norm();
 
 };
 

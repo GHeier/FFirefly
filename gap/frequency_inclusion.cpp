@@ -11,8 +11,6 @@
 #include <map>
 #include <boost/functional/hash.hpp>
 
-#include <Eigen/Dense>
-#include <Eigen/Eigenvalues> 
 //#include <lambda_lanczos/lambda_lanczos.hpp>
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/quadrature/gauss.hpp>
@@ -30,7 +28,6 @@ using std::sort;
 using std::vector;
 using std::unordered_map;
 //using lambda_lanczos::LambdaLanczos;
-using namespace Eigen;
 
 vector<vector<Vec>> freq_tetrahedron_method(double mu) {
     assert( l % 2 != 0); // N must be odd that way frequencies are evenly spaced
@@ -52,13 +49,8 @@ vector<vector<Vec>> freq_tetrahedron_method(double mu) {
     return basis;
 }
 
-MatrixXd create_P_freq(vector<vector<Vec>> &k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2) {
-    int size = 0;
-    for (int i = 0; i < k.size(); i++) {
-        size += k[i].size();
-    }
+void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2) {
 
-    MatrixXd P(size, size);
     cout << "Creating P Matrix with frequency\n";
     int ind1 = 0;
     for (int i = 0; i < k.size(); i++) {
@@ -91,7 +83,7 @@ MatrixXd create_P_freq(vector<vector<Vec>> &k, double T, const unordered_map<dou
     cout << "P Matrix Created\n";
 
     //return P * 2 * w_D / (l * k_size);
-    return P * w_D * (2 / pow(2*M_PI, dim)); 
+    P = P * w_D * (2 / pow(2*M_PI, dim)); 
 }
 
 unordered_map <double, vector<vector<vector<double>>>> chi_cube_freq(double T, double mu, double DOS) {

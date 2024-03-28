@@ -9,6 +9,7 @@
 #include <boost/functional/hash.hpp>
 #include <tuple>
 #include <unordered_map>
+#include <algorithm>
 
 #include "utilities.h"
 #include "potential.h"
@@ -18,8 +19,6 @@
 #include "cfg.h"
 
 using namespace std;
-using Eigen::Vector4d;
-using Eigen::Matrix4d;
 
 
 double potential_const(Vec k1, Vec k2) {
@@ -33,25 +32,16 @@ double potential_test(Vec k1, Vec k2) {
     Vec q2 = k2;
     if (q1.cartesian == false) q1.to_cartesian();
     if (q2.cartesian == false) q2.to_cartesian();
-    //return -1 * pow(sin(q1.vals(0))*sin(q2.vals(0)),2);
-    //return -1 * (sin(q1.vals(0)) - sin(q1.vals(1)))*(sin(q2.vals(0)) - sin(q2.vals(1)));
-    //return -1*(sin(q1.vals(0))*sin(q1.vals(1)) * sin(q2.vals(0))*sin(q2.vals(1)));
-    //return ( cos( q1.vals(0) + q1.vals(1) ) )*( cos( q2.vals(0) + q2.vals(1) ) );
-    //return ( cos( q1.vals(0) ) - cos( q1.vals(1) ) )*( cos( q2.vals(0) ) + cos( q2.vals(1) ) );
-    //return cos(q1.vals(0))*cos(q2.vals(0))/M_PI + 1 / (2*M_PI);
-    //return -1*( sin(q1.vals(0)) + sin(q1.vals(1)) )*( sin(q2.vals(0)) + sin(q2.vals(1)) );
-    return -1*( cos(q1.vals(0)) - cos(q1.vals(1)) )*( cos(q2.vals(0)) - cos(q2.vals(1)) ) + (-0.5)*sin(q1.vals(0))*sin(q1.vals(1))*sin(q2.vals(0))*sin(q2.vals(1));
-    //return 100*( 2*cos(q1.vals(2)) - cos( q1.vals(0) ) - cos( q1.vals(1) ) ) 
-    //    * ( 2*cos(q2.vals(2)) - cos( q2.vals(0) ) - cos( q2.vals(1) ) ) + 0;
 }
+
 double phonon_coulomb(Vec q) {
     if (q.cartesian == false) q.to_cartesian();
-    double qx = q.vals(0);
+    double qx = q.vals[0];
     double Vp = 1/3;
-    if (q.vals.norm() != 0) {
-        Vp = 1/(1+2*qx*qx / q.vals.squaredNorm());
+    if (q.norm() != 0) {
+        Vp = 1/(1+2*qx*qx / pow(q.norm(),2));
     }
-    double Vc = 1 / (1 + q.vals.norm());
+    double Vc = 1 / (1 + q.norm());
     return Vp + Vc;
 }
 
@@ -325,7 +315,7 @@ double calculate_chi_from_cube(const vector<vector<vector<double>>> &chi_cube, V
     Vec v = to_IBZ_2(q);
     double d = 2*k_max/(m-1);
 
-    double x = v.vals(0), y = v.vals(1), z = v.vals(2);
+    double x = v.vals[0], y = v.vals[1], z = v.vals[2];
     if (dim == 2) z = 0;
 
     int i = floor(x / d);
@@ -401,7 +391,7 @@ double calculate_chi_from_cube(const vector<vector<vector<double>>> &chi_cube, V
 Vec to_IBZ_2(const Vec k) {
     Vec q = k;
     if (q.cartesian == false) q.to_cartesian();
-    double x = q.vals(0), y = q.vals(1), z = q.vals(2);
+    double x = q.vals[0], y = q.vals[1], z = q.vals[2];
     x = abs(x); y = abs(y); z = abs(z);
     if (x > M_PI) x = - (x - 2*M_PI);
     if (y > M_PI) y = - (y - 2*M_PI);
@@ -427,9 +417,9 @@ Vec to_IBZ_2(const Vec k) {
 }
 
 Vec to_IBZ_spherical(const Vec k) {
-    double theta = k.vals(1);
+    double theta = k.vals[1];
     double phi = 0;
-    if (dim == 3) phi = k.vals(2);
+    if (dim == 3) phi = k.vals[2];
 
     if (theta < 0) theta += 2*M_PI; //{cout << theta << ", "; theta += 2*M_PI; cout << theta << ", ";}
     if (theta <= M_PI/2 and theta > M_PI/4) theta = M_PI/2 - theta;
@@ -445,7 +435,7 @@ Vec to_IBZ_spherical(const Vec k) {
     //if (phi <= M_PI/2 and phi > M_PI/4) {cout << "FIRST"; phi = M_PI/2 - phi;}
     //if (phi <= -M_PI/4 and phi > -M_PI/2) {cout << "THIRD" ; phi = M_PI/2 + phi;}
 
-    Vec q(k.vals(0), theta, phi, false);
+    Vec q(k.vals[0], theta, phi, false);
     return q;
 }
 

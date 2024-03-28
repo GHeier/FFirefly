@@ -41,21 +41,21 @@ double epsilon(const Vec k) {
         return epsilon_sphere(k);
     else {
         cout << "Unknown Band structure: " << band_name << endl;
-        assert(1==2);
+        exit(1);
         return 0;
     }
 }
 // Fermi Velocity corresponds to energy band functions above
 double vp(const Vec k) {
     if (band_name == "simple_cubic_layered")
-        return fermi_velocity_SC_layered(k).vals.norm();
+        return fermi_velocity_SC_layered(k).norm();
     if (band_name == "simple_cubic")
-        return fermi_velocity_SC(k).vals.norm();
+        return fermi_velocity_SC(k).norm();
     if (band_name == "sphere")
-        return fermi_velocity_sphere(k).vals.norm();
+        return fermi_velocity_sphere(k).norm();
     else {
         cout << "No band structure specified\n";
-        assert(1==2);
+        exit(1);
         return 0;
     }
 }
@@ -72,7 +72,7 @@ double V(const Vec k1, const Vec k2, double w, const double T, const unordered_m
         return potential_test(k1, k2);// / pow(2*M_PI, dim);
     else {
         cout << "Unknown Potential Function: " << potential_name << endl;
-        assert(1==2);
+        exit(1);
         return 0;
     }
 }
