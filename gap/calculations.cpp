@@ -22,6 +22,7 @@
 #include "potential.h"
 #include "vec.h"
 #include "utilities.h"
+#include "frequency_inclusion.hpp"
 
 using std::cout;
 using std::endl;
@@ -109,7 +110,7 @@ double f_singlet_integral(double T) {
 
 // Create V matrix
 // Picks the potential based on the global variable "potential_name"
-MatrixXd create_P(vector<Vec> k, double T, const vector<vector<vector<double>>> &chi_cube2) {
+MatrixXd create_P(vector<Vec> k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2) {
     int size = k.size();
     MatrixXd P(size, size);
 
@@ -119,7 +120,7 @@ MatrixXd create_P(vector<Vec> k, double T, const vector<vector<vector<double>>> 
         Vec k1 = k[i];
         for (int j = 0; j < size; j++) {
             Vec k2 = k[j];
-            P(i,j) = -pow(k1.area/vp(k1),0.5) * V(k1, k2, T, chi_cube2) * pow(k2.area/vp(k2),0.5);
+            P(i,j) = -pow(k1.area/vp(k1),0.5) * V(k1, k2, 0, T, chi_cube2) * pow(k2.area/vp(k2),0.5);
         }
     }
     cout << "P Matrix Created\n";
@@ -134,8 +135,9 @@ double f(vector<Vec> k, double T) {
     cout << "\nTemperature point: " << T << endl;
     double DOS = 0; for (auto k1 : k) DOS += k1.area;
     DOS /= pow(2*M_PI, dim);
-    auto cube = chi_cube(T, mu, DOS);
-    MatrixXd P = create_P(k, T, cube);
+    auto cube_map = chi_cube_freq(T, mu, DOS);
+    //auto cube = chi_cube(T, mu, DOS, 0);
+    MatrixXd P = create_P(k, T, cube_map);
     double f_integrated = f_singlet_integral(T);
 
     vector<EigAndVec> answers = power_iteration(P, 0.0001);
@@ -217,7 +219,8 @@ double coupling_calc(vector<Vec> &FS, double T) {
     cout << "Calculating Coupling Constant...\n";
     int size = FS.size();
     double DOS = get_DOS(FS);
-    auto cube = chi_cube(T, mu, DOS);
+    auto cube_map = chi_cube_freq(T, mu, DOS);
+    //auto cube = chi_cube(T, mu, DOS, 0);
     double f_integrated = f_singlet_integral(T);
 
     double lambda = 0, normalization = 0;
@@ -230,7 +233,7 @@ double coupling_calc(vector<Vec> &FS, double T) {
         for (int j = 0; j < size; j++) {
             Vec k2 = FS[j];
             //lambda += - k1.area * k2.area / vp(k1) * wave(k1) * V(k1, k2, T, cube) / vp(k2) * wave(k2);
-            lambda += V(k1, k2, T, cube)*k1.area*k2.area;
+            lambda += V(k1, k2, 0, T, cube_map)*k1.area*k2.area;
         }
         normalization += pow(wave(k1),2) * k1.area / vp(k1);
     }

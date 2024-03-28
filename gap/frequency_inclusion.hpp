@@ -7,8 +7,8 @@
 
 
 vector<vector<Vec>> freq_tetrahedron_method(double mu);
-MatrixXd create_P_freq(vector<vector<Vec>> &k, double T, const vector<vector<vector<double>>> &chi_cube2);
-MatrixXd create_P_freq2(vector<vector<Vec>> &k, double T, const vector<vector<vector<double>>> &chi_cube2);
+MatrixXd create_P_freq(vector<vector<Vec>> &k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2);
+unordered_map<double, vector<vector<vector<double>>>> chi_cube_freq(double T, double mu, double DOS);
 double f_singlet_integral_test(double T);
 
 #endif

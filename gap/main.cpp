@@ -57,18 +57,20 @@ int main() {
  * ========================== MATRIX CREATION AND DIAGONALIZATION  ========================
    ========================================================================================
  */
-    vector<vector<vector<double>>> cube;
-    if (potential_name != "test") cube = chi_cube(T, mu, DOS);
+    unordered_map <double, vector<vector<vector<double>>>> cube_freq_map;
+//    vector<vector<vector<double>>> cube;
+//    if (potential_name != "test") cube = chi_cube(T, mu, DOS, 0);
+    if (potential_name != "test" or potential_name != "const") cube_freq_map = chi_cube_freq(T, mu, DOS);
 
 //    MatrixXd Pf1 = create_P_freq(freq_FS, T, cube);
-    MatrixXd Pf2 = create_P_freq2(freq_FS, T, cube);
+    MatrixXd Pf2 = create_P_freq(freq_FS, T, cube_freq_map);
 //    for (int i = 0; i < Pf1.size(); i++) {
 //        for (int j = 0; j < Pf2.size(); j++) {
 //            if (Pf1(i,j) != Pf2(i,j) and Pf2(i,j) != 0)
 //                cout << Pf1(i,j) << " " << Pf2(i,j) << endl;
 //        }
 //    }
-    MatrixXd P = create_P(FS, T, cube);
+    MatrixXd P = create_P(FS, T, cube_freq_map);
     double f = f_singlet_integral(T);
     cout << "F-integral value: " << f << endl;
 
@@ -106,7 +108,7 @@ int main() {
 
     cout << "Saving Potential and Susceptibility Functions\n";
     save_potential_vs_q(freq_FS[0], P, "potential.dat");
-    if (cube.size() != 0 ) save_chi_vs_q(cube, freq_FS[0], "chi.dat");
+    //if (cube.size() != 0 ) save_chi_vs_q(cube, freq_FS[0], "chi.dat");
 
 /* 
  * ========================================================================================

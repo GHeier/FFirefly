@@ -20,7 +20,7 @@ extern double w_D;
 void init_config(double &mu, double &U, double &t, double &tn, double &w_D, double new_mu, double new_U, double new_t, double new_tn, double new_w_D);
 double epsilon(const Vec k);
 double vp(const Vec k);
-double V(const Vec k1, const Vec k2, const double T, const vector<vector<vector<double>>> &chi_cube);
+double V(const Vec k1, const Vec k2, double w, const double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube);
 
 extern double *weights[5];
 extern double *points[5];

@@ -25,7 +25,7 @@ struct EigsAndVecs {
 vector<EigAndVec> power_iteration(MatrixXd A, double error);
 double f_singlet(double x, double T);
 double f_singlet_integral(double T);
-MatrixXd create_P(vector<Vec> k, double T, const vector<vector<vector<double>>> &chi_cube2);
+MatrixXd create_P(vector<Vec> k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2);
 double f(vector<Vec> k, double T);
 double get_Tc(vector<Vec> k);
 bool operator<(const EigAndVec& left, const EigAndVec& right);

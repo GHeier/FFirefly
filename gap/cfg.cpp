@@ -8,11 +8,11 @@
 using namespace std;
 
 // Global Variables
-int n = 12; // Number of k points
+int n = 8; // Number of k points
 int m = 20; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 3; // Number of dimensions)
-string potential_name = "scalapino";
+string potential_name = "test";
 string band_name = "simple_cubic";
                
 // Constants
@@ -60,14 +60,14 @@ double vp(const Vec k) {
     }
 }
 // Potential functions
-double V(const Vec k1, const Vec k2, const double T, const vector<vector<vector<double>>> &chi_cube) {
+double V(const Vec k1, const Vec k2, double w, const double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube) {
     if (potential_name == "const") 
         return potential_const(k1, k2);
     if (potential_name == "scalapino") 
         //return potential_scal(k1, k2, T);
-        return potential_scalapino_cube(k1, k2, T, chi_cube);
+        return potential_scalapino_cube(k1, k2, T, w, chi_cube);
     if (potential_name == "scalapino_triplet") 
-        return potential_scalapino_triplet(k1, k2, T, chi_cube);
+        return potential_scalapino_triplet(k1, k2, T, w, chi_cube);
     if (potential_name == "test") 
         return potential_test(k1, k2);// / pow(2*M_PI, dim);
     else {

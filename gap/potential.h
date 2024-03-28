@@ -17,8 +17,8 @@ double potential_const(Vec k1, Vec k2);
 double potential_test(Vec k1, Vec k2);
 double phonon_coulomb(Vec q);
 double potential_scal(Vec k1, Vec k2, double T);
-double potential_scalapino_cube(Vec k1, Vec k2, double T, const vector<vector<vector<double>>> &chi_cube);
-double potential_scalapino_triplet(Vec k1, Vec k2, double T, const vector<vector<vector<double>>> &chi_cube);
+double potential_scalapino_cube(Vec k1, Vec k2, double w, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_map);
+double potential_scalapino_triplet(Vec k1, Vec k2, double w, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_map);
 
 // Scalapino Potential Section
 double get_k(double i, double n);

@@ -67,9 +67,11 @@ double potential_scal(Vec k1, Vec k2, double T) {
     return Vs;
 }
 
-double potential_scalapino_cube(Vec k1, Vec k2, double T, const vector<vector<vector<double>>> &chi_cube) {
+double potential_scalapino_cube(Vec k1, Vec k2, double w, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_map) {
     Vec q_minus = to_IBZ_2(k1 - k2);
     Vec q_plus = to_IBZ_2(k1 + k2);
+
+    auto chi_cube = chi_map.at(w);
 
     double chi_minus = calculate_chi_from_cube(chi_cube, q_minus);
     double chi_plus = calculate_chi_from_cube(chi_cube, q_plus);
@@ -83,9 +85,11 @@ double potential_scalapino_cube(Vec k1, Vec k2, double T, const vector<vector<ve
     return 0.5 * (V_minus + V_plus);
 }
 
-double potential_scalapino_triplet(Vec k1, Vec k2, double T, const vector<vector<vector<double>>> &chi_cube) {
+double potential_scalapino_triplet(Vec k1, Vec k2, double w, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_map) {
     Vec q_minus = to_IBZ_2(k1 - k2);
     Vec q_plus = to_IBZ_2(k1 + k2);
+
+    auto chi_cube = chi_map.at(w);
 
     double chi_minus = calculate_chi_from_cube(chi_cube, q_minus);
     double chi_plus = calculate_chi_from_cube(chi_cube, q_plus);
