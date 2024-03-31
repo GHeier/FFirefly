@@ -66,6 +66,7 @@ Matrix Matrix::operator*(const Matrix& k1) {
 
 Eigenvector Matrix::operator*(Eigenvector& k) {
     Eigenvector result(this->size);
+    #pragma omp parallel for
     for (int i = 0; i < this->size; i++) {
         for (int j = 0; j < this->size; j++) {
             result.eigenvector[i] += this->vals[i][j] * k.eigenvector[j];

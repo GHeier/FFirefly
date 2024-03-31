@@ -4,5 +4,6 @@
 
 void progress_bar(double progress);
 void progress_percent(double progress);
+double round(double number, int decimal_places);
 
 #endif

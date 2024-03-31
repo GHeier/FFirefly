@@ -17,6 +17,7 @@
 #include "fermi_surface.h"
 #include "band_structure.h"
 #include "cfg.h"
+#include "frequency_inclusion.hpp"
 
 using namespace std;
 
@@ -60,11 +61,28 @@ double potential_scal(Vec k1, Vec k2, double T) {
 double potential_scalapino_cube(Vec k1, Vec k2, double w, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_map) {
     Vec q_minus = to_IBZ_2(k1 - k2);
     Vec q_plus = to_IBZ_2(k1 + k2);
+    w = round(w, 6);
 
-    auto chi_cube = chi_map.at(w);
+    //cout << setprecision(7);
+    //int i = 0;
+    //for (const auto & [ key, value ] : chi_map) {
+    //    if(key != 0) cout << key << ": " << value[0][0][0] << endl;
+    //}
+//        cout << "Difference: " << x.first - w << endl;
+//        if (x.first == w) cout << "MATCH\n";
+//        cout << x.first << " ";
+//        cout << x.second[0][0][0] << endl;
+//        i++;
+//    }
+    //cout << "Number of Frequencies: " << i << endl;
+    //if(w!=0) cout << "Frequency: " << w << endl;
+    //auto chi_cube = chi_map.at(w);
 
-    double chi_minus = calculate_chi_from_cube(chi_cube, q_minus);
-    double chi_plus = calculate_chi_from_cube(chi_cube, q_plus);
+    //double chi_minus = calculate_chi_from_cube(chi_cube, q_minus);
+    //double chi_plus = calculate_chi_from_cube(chi_cube, q_plus);
+
+    double chi_minus = calculate_chi_from_cube_map(chi_map, q_minus, w);
+    double chi_plus = calculate_chi_from_cube_map(chi_map, q_plus, w);
 
     double V_minus = U*U * chi_minus / (1 - U*chi_minus) 
         + pow(U,3)*chi_minus*chi_minus / (1 - U*U * chi_minus*chi_minus);
@@ -127,7 +145,7 @@ double ratio(Vec q, Vec k, double T, double mu, double w) {
 
 double chi_trapezoidal(Vec q, double T, double mu, int num_points) {
     double sum = 0;
-    #pragma omp parallel for reduction(+:sum)
+    //#pragma omp parallel for reduction(+:sum)
     //int num_skipped = 0;
     //ofstream file("chi_temp2.txt");
     for (int i = 0; i < num_points; i++) {
@@ -158,11 +176,11 @@ double integrate_susceptibility(Vec q, double T, double mu, double w) {
         return ratio(q, Vec(kx, ky, kz), T, mu, w);
     };
 
-    int base_div = 20;
+    int base_div = 80;
     int x_divs = base_div, y_divs = base_div, z_divs = base_div;
     if (dim == 2) z_divs = 1;
     //return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, x_divs, y_divs, z_divs, 0.05, 0) / pow(2*k_max,dim);
-    return chi_trapezoidal(q, T, mu, 80);
+    return chi_trapezoidal(q, T, mu, 40);
     //return trapezoidal_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 100) / pow(2*k_max,dim);
 }
 
@@ -224,7 +242,7 @@ double adaptive_trapezoidal(auto &f, double x0, double x1, double y0, double y1,
                 double t1 = trap_cube(f, x, x+dx, y, y+dy, z, z+dz);
                 double t2 = trap_8_cubes(f, x, x+dx, y, y+dy, z, z+dz);
 
-                if (fabs(t1 - t2) < error_relative * fabs(t2) or num_splits > 0) {
+                if (fabs(t1 - t2) < error_relative * fabs(t2) or num_splits > -1) {
                     sum += t2;
                 }
                 else {

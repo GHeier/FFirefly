@@ -62,13 +62,15 @@ void plot_potential(double T) {
     double n = 80.0;
     for (double mu = 0.0; mu > -2.0; mu--) {
         vector<vector<vector<double>>> cube = chi_cube(T, mu, DOS, 0);
+        unordered_map<double, vector<vector<vector<double>>> > cube_freq_map;
+        cube_freq_map[0] = cube;
         for (double i = 0; i < n; i++) {
             double q_mag = i/(n-1) * M_PI;
             Vec q(q_mag, q_mag, 0);
             double c = calculate_chi_from_cube(cube, q);
             //double c = chi_trapezoidal(q, T, mu, 60);
             Vec zero;
-            double potential = V(zero, q, T, cube);
+            double potential = V(zero, q, 0, T, cube_freq_map);
             //double potential = U*U * c / ( 1 - U * c) + U*U*U * c*c / ( 1 - U*U * c*c);
             file << q_mag << " " << potential << endl;
         }

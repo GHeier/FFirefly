@@ -10,5 +10,6 @@ vector<vector<Vec>> freq_tetrahedron_method(double mu);
 void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2);
 unordered_map<double, vector<vector<vector<double>>>> chi_cube_freq(double T, double mu, double DOS);
 double f_singlet_integral_test(double T);
+double calculate_chi_from_cube_map(const unordered_map<double, vector<vector<vector<double>>>> &chi_cube_map, Vec q, double w);
 
 #endif

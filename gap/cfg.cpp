@@ -12,7 +12,7 @@ int n = 8; // Number of k points
 int m = 20; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 3; // Number of dimensions)
-string potential_name = "test";
+string potential_name = "scalapino";
 string band_name = "simple_cubic";
                
 // Constants
@@ -20,8 +20,9 @@ double t = 1.0;
 double tn = 0.0;
 double U = 4.0;
 double k_max = M_PI;
-double mu = 0.0;
+double mu = -1.7;
 double w_D = 0.5;
+
 
 void init_config(double &mu, double &U, double &t, double &tn, double &w_D, double new_mu, double new_U, double new_t, double new_tn, double new_w_D) {
     mu = new_mu;
@@ -49,8 +50,13 @@ double epsilon(const Vec k) {
 double vp(const Vec k) {
     if (band_name == "simple_cubic_layered")
         return fermi_velocity_SC_layered(k).norm();
-    if (band_name == "simple_cubic")
+    if (band_name == "simple_cubic") {
+        //Vec q = k;
+        //if (q.cartesian == false) q.to_cartesian();
+        //double val = 2 * t * ( sin(q.vals[0]) + sin(q.vals[1]) + sin(q.vals[2]) );
+        //return val;
         return fermi_velocity_SC(k).norm();
+    }
     if (band_name == "sphere")
         return fermi_velocity_sphere(k).norm();
     else {
@@ -65,7 +71,7 @@ double V(const Vec k1, const Vec k2, double w, const double T, const unordered_m
         return potential_const(k1, k2);
     if (potential_name == "scalapino") 
         //return potential_scal(k1, k2, T);
-        return potential_scalapino_cube(k1, k2, T, w, chi_cube);
+        return potential_scalapino_cube(k1, k2, w, T, chi_cube);
     if (potential_name == "scalapino_triplet") 
         return potential_scalapino_triplet(k1, k2, T, w, chi_cube);
     if (potential_name == "test") 
@@ -92,3 +98,27 @@ double points_3rd[4] = {-0.861136, -0.339981, 0.339981, 0.861136}; double *p3 = 
 double points_4th[5] = {-0.90618, -0.538469, 0, 0.538469, 0.90618}; double *p4 = points_4th;
 
 double *points[5] = {p0, p1, p2, p3, p4};
+
+float sin_arr[31416]; 
+float cos_arr[31416]; 
+struct sin_arr_init {
+    sin_arr_init() {
+        for (int i = 0; i < 31416; i++) {
+            sin_arr[i] = sin( (double)i / 10000.0 );
+        }
+    }
+} sin_arr_init;
+struct cos_arr_init {
+    cos_arr_init() {
+        for (int i = 0; i < 31416; i++) {
+            cos_arr[i] = cos( (double)i / 10000.0 );
+        }
+    }
+} cos_arr_init;
+
+double get_sin(double x) {
+    return sin_arr[ (int)(x*10000.0) % 31416 ];
+}
+double get_cos(double x) {
+    return cos_arr[ (int)(x*10000.0) % 31416 ];
+}
