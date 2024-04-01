@@ -60,11 +60,15 @@ MatrixXd create_P_freq(vector<vector<Vec>> &k, double T, const unordered_map<dou
 
     MatrixXd P(size, size);
     cout << "Creating P Matrix with frequency\n";
-    int ind1 = 0;
     for (int i = 0; i < k.size(); i++) {
+
+        int ind1 = 0;
+        for (int temp = 0; temp < i; temp++)
+            ind1 += k[temp].size();
+
+        #pragma omp parallel for
         for (int j = 0; j < k[i].size(); j++) {
             Vec k1 = k[i][j];
-            #pragma omp parallel for
             for (int x = 0; x < k.size(); x++) {
 
                 int ind2 = 0;
@@ -75,17 +79,16 @@ MatrixXd create_P_freq(vector<vector<Vec>> &k, double T, const unordered_map<dou
                     Vec k2 = k[x][y];
                     double d1 = pow(k1.area/vp(k1),0.5); 
                     double d2 = pow(k2.area/vp(k2),0.5); 
-                    double f1 = f_singlet(w_D * points[l-1][x], T);
                     // f * d_epsilon
                     double fde1 = f_singlet(w_D * points[l-1][i], T) * weights[l-1][i];
                     double fde2 = f_singlet(w_D * points[l-1][x], T) * weights[l-1][x];
                     double w = w_D * (points[l-1][x] - points[l-1][i]);
 
-                    P(ind1,ind2) = - d1 * d2 * pow(fde1*fde2,0.5) * V(k1, k2, w, T, chi_cube2); 
-                    ind2++;
+                    P(ind1 + j,ind2 + y) = - d1 * d2 * pow(fde1*fde2,0.5) * V(k1, k2, w, T, chi_cube2); 
+                    if (ind1 + j >= size or ind2 + y >= size)
+                        cout << "Error: " << ind1 + j << " " << ind2 + y << " " << size << endl;
                 }
             }
-            ind1++;
         }
     }
     cout << "P Matrix Created\n";

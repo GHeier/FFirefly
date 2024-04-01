@@ -72,6 +72,7 @@ double potential_scalapino_cube(Vec k1, Vec k2, double w, double T, const unorde
     Vec q_plus = to_IBZ_2(k1 + k2);
 
     auto chi_cube = chi_map.at(w);
+    return 1.0;
 
     double chi_minus = calculate_chi_from_cube(chi_cube, q_minus);
     double chi_plus = calculate_chi_from_cube(chi_cube, q_plus);
@@ -171,8 +172,8 @@ double integrate_susceptibility(Vec q, double T, double mu, double w) {
     int base_div = 20;
     int x_divs = base_div, y_divs = base_div, z_divs = base_div;
     if (dim == 2) z_divs = 1;
-    return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, x_divs, y_divs, z_divs, 0.01) / pow(2*k_max,dim);
-    return chi_trapezoidal(q, T, mu, 80);
+    //return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, x_divs, y_divs, z_divs, 0.01) / pow(2*k_max,dim);
+    return chi_trapezoidal(q, T, mu, 40);
     //return trapezoidal_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 100) / pow(2*k_max,dim);
 }
 

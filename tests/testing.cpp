@@ -29,8 +29,8 @@
 #include "potential.h"
 #include "frequency_inclusion.hpp"
 
-#include "plot.cpp"
-#include "surface_integrals.cpp"
+//#include "plot.cpp"
+//#include "surface_integrals.cpp"
 
 
 using std::cout;
@@ -210,31 +210,31 @@ void test_diagonalization() {
     file2 << solutions[1].vec;
 }
 
-void test_pairing_interaction_parity(vector<Vec> &FS, double T, double mu) {
-    double DOS = 0; for (auto x : FS) DOS += x.area / vp(x);
-    DOS /= pow(2*M_PI, 3);
-    auto cube = chi_cube(T, mu, DOS, 0);
-    Vec k2;
-    double num = 10;
-    for (double i = 0; i < num; i++) {
-        for (double j = 0; j < num; j++) {
-            for (double k = 0; k < num; k++) {
-                double x = get_k(i, num);
-                double y = get_k(j, num);
-                double z = get_k(k, num);
-
-                Vec k1(x, y, z);
-
-                double V1 = potential_scalapino_cube(k1, k2, T, cube);
-                double V2 = potential_scalapino_cube(-1*k1, k2, T, cube);
-
-                if ( fabs(V1 - V2) > 0.00001) 
-                    cout << k1 << "->" << V1 << ", " << V2 << endl;
-            }
-        }
-    }
-
-}
+//void test_pairing_interaction_parity(vector<Vec> &FS, double T, double mu) {
+//    double DOS = 0; for (auto x : FS) DOS += x.area / vp(x);
+//    DOS /= pow(2*M_PI, 3);
+//    auto cube = chi_cube(T, mu, DOS, 0);
+//    Vec k2;
+//    double num = 10;
+//    for (double i = 0; i < num; i++) {
+//        for (double j = 0; j < num; j++) {
+//            for (double k = 0; k < num; k++) {
+//                double x = get_k(i, num);
+//                double y = get_k(j, num);
+//                double z = get_k(k, num);
+//
+//                Vec k1(x, y, z);
+//
+//                double V1 = potential_scalapino_cube(k1, k2, T, cube);
+//                double V2 = potential_scalapino_cube(-1*k1, k2, T, cube);
+//
+//                if ( fabs(V1 - V2) > 0.00001) 
+//                    cout << k1 << "->" << V1 << ", " << V2 << endl;
+//            }
+//        }
+//    }
+//
+//}
 
 int f(unsigned ndim, const double *x, void *fdata, unsigned fdim, double *fval) {
     //double sigma = *((double *) fdata); // we can pass σ via fdata argument
@@ -252,43 +252,43 @@ int f(unsigned ndim, const double *x, void *fdata, unsigned fdim, double *fval) 
     return 0; // success*
 }
 
-bool test_potential_test() { 
-    vector<Vec> FS = tetrahedron_method(mu); cout << "FS created\n";
-    double T = 0.25;
-    vector<vector<vector<double>>> cube;
-    MatrixXd P = create_P(FS, T, cube); cout << "Matrix Created\n";
-
-    EigenSolver<MatrixXd> s(P);
-    
-    VectorXcd vals = s.eigenvalues();// * f / FS.size();
-    //VectorXcd vals = s.eigenvalues() * f / FS.size();
-    EigenSolver<MatrixXd>::EigenvectorsType vecs;
-    vecs = s.eigenvectors(); 
-    
-    cout << vals << endl;
-
-    //if (vals(0) == 1.0 and vals(1) == 0.5) return true;
-    return false;
-}
+//bool test_potential_test() { 
+//    vector<Vec> FS = tetrahedron_method(mu); cout << "FS created\n";
+//    double T = 0.25;
+//    vector<vector<vector<double>>> cube;
+//    MatrixXd P = create_P(FS, T, cube); cout << "Matrix Created\n";
+//
+//    EigenSolver<MatrixXd> s(P);
+//    
+//    VectorXcd vals = s.eigenvalues();// * f / FS.size();
+//    //VectorXcd vals = s.eigenvalues() * f / FS.size();
+//    EigenSolver<MatrixXd>::EigenvectorsType vecs;
+//    vecs = s.eigenvectors(); 
+//    
+//    cout << vals << endl;
+//
+//    //if (vals(0) == 1.0 and vals(1) == 0.5) return true;
+//    return false;
+//}
 
 void eigenvalue_divergence() {
     ofstream temporary_file("eigenvalue_divergence.txt");
-    for (int i = 1; i < 50; i++) {
+    for (int i = 1; i < 20; i++) {
         printf("Plot Progress: %i out of 50\n", i);
 
-        double cutoff = 0.04 * i;
+        double cutoff = 0.03 * i;
         init_config(mu, U, t, tn, w_D, mu, U, t, tn, cutoff);
 
         vector<vector<Vec>> freq_FS;
         freq_FS = freq_tetrahedron_method(mu);
         vector<Vec> FS = tetrahedron_method(mu);
-        double T = 0.065;
+        double T = 0.25;
 
         double DOS = get_DOS(freq_FS[(l+1)/2 - 1]);
-        vector<vector<vector<double>>> cube;
-        if (potential_name != "test") cube = chi_cube(T, mu, DOS, w);
+        unordered_map<double, vector<vector<vector<double>>>> cube;
+        if (potential_name != "test") cube = chi_cube_freq(T, mu, DOS);
 
-        MatrixXd Pf2 = create_P_freq2(freq_FS, T, cube);
+        MatrixXd Pf2 = create_P_freq(freq_FS, T, cube);
         MatrixXd P = create_P(FS, T, cube);
         double f = f_singlet_integral(T);
 
