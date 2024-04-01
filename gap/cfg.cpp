@@ -12,7 +12,7 @@ int n = 8; // Number of k points
 int m = 20; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 3; // Number of dimensions)
-string potential_name = "scalapino";
+string potential_name = "const";
 string band_name = "simple_cubic";
                
 // Constants

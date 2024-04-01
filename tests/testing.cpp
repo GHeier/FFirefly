@@ -310,8 +310,8 @@ void compare_matrix_creation_speed() {
 
 
 int main() {
-    compare_matrix_creation_speed();
-    //eigenvalue_divergence();
+    //compare_matrix_creation_speed();
+    eigenvalue_divergence();
     //plot_chi(0.25);
     //plot_chi2(0.25);
     //plot_coupling();
