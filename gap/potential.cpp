@@ -59,7 +59,7 @@ double potential_scal(Vec k1, Vec k2, double T) {
     Vec q2 = k1 - k2;
     Vec q = to_IBZ_2(q2);
     
-    double chi_sub = chi_trapezoidal(q, T, mu, 30);
+    double chi_sub = chi_trapezoidal(q, T, mu, 0, 30);
     if( chi_sub < 0.1) cout << chi_sub;
 
     double Vs = U*U * chi_sub / (1 - U*chi_sub) 
@@ -70,9 +70,10 @@ double potential_scal(Vec k1, Vec k2, double T) {
 double potential_scalapino_cube(Vec k1, Vec k2, double w, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_map) {
     Vec q_minus = to_IBZ_2(k1 - k2);
     Vec q_plus = to_IBZ_2(k1 + k2);
+    w = round(w,6);
+    //if (w!=0) cout << w << endl;
 
     auto chi_cube = chi_map.at(w);
-    return 1.0;
 
     double chi_minus = calculate_chi_from_cube(chi_cube, q_minus);
     double chi_plus = calculate_chi_from_cube(chi_cube, q_plus);
@@ -108,35 +109,87 @@ double get_k(double i, double n) {
 }
 
 double f(double E, double T) {
+    if (T == 0) {
+        if (E < 0) return 1;
+        return 0;
+    }
     return 1 / (1 + exp(E/T));
 }
 
 double ratio(Vec q, Vec k, double T, double mu, double w) {
-    //Vec empty;
-    //if (q == empty) {
-    //    Vec temp(0.01,0.01,0.01);
-    //    q = q + temp;
-    //}
     double e_qk = epsilon(q+k) - mu;
     double e_k = epsilon(k) - mu;
     double f_k = f(e_k, T);
     double f_qk = f(e_qk, T);
-    //if (e_qk == e_k) return 0;
 
     double dE = e_qk - e_k;
     if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
-        if (exp(e_k/T) > 1000000) {
-            return 0;
+        if (T==0 or exp(e_k/T) > 1e6) {
+            return e_k < 0;
         }
         double term1 = 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
+        //cout << "Ratio: " << term1 << endl;
         return term1;
     }
-    //if (fabs(f_qk - f_k) < 0.00001) return 0;
-    //return 1 / (e_k - e_qk);
-    return (f_qk - f_k) / (e_k - e_qk - w);
+    return (f_qk - f_k) / (e_k - e_qk + w);
 }
 
-double chi_trapezoidal(Vec q, double T, double mu, int num_points) {
+double modified_ratio(Vec q, Vec k, double T, double mu, double w, double delta) {
+    double e_plus = epsilon(k + q/2) - mu;
+    double e_minus = epsilon(k - q/2) - mu;
+    double f_minus = f(e_minus, T);
+    double f_plus = f(e_plus, T);
+    double dE = e_plus - e_minus;
+
+    if (abs(dE - w) < delta) {
+        //cout << "Modified Ratio: " << 0.5 * 1/T * 1/(cosh((epsilon(k)-mu)/T) + 1) << endl;
+        if (w == 0) return 0.5 * 1/T * 1/(cosh((epsilon(k)-mu)/T) + 1);
+        double ep_base = e_base(k,q) - mu;
+        double num = sinh(delta / T) * (cosh(ep_base / T)*cosh(w / (2*T)) + cosh(delta / T));
+        double denom = (cosh((w/2 - delta)/T) + cosh(ep_base/T))*(cosh((w/2 + delta)/T) + cosh(ep_base/T));
+        double avg = num / (2 * delta * denom);
+        if (isnan(avg)) return 0;
+        return avg;
+    }
+    return (f_plus - f_minus) / (w - dE);
+}
+
+double imaginary_ratio(Vec q, Vec k, double T, double mu, double w, double eta) {
+    double e_plus = epsilon(k + q/2) - mu;
+    double e_minus = epsilon(k - q/2) - mu;
+    double f_minus = f(e_minus, T);
+    double f_plus = f(e_plus, T);
+    double dE = e_plus - e_minus;
+
+    if (q.vals.norm() < 0.0001) {
+        if (w == 0) return 0.5 * 1/T * 1/(cosh((epsilon(k)-mu)/T) + 1);
+        return 0;
+       // double ep_base = e_base(k,q);
+       // double num = sinh(delta / T) * (cosh(ep_base / T)*cosh(w / (2*T)) + cosh(delta / T));
+       // double denom = (cosh((w/2 - delta)/T) + cosh(ep_base/T))*(cosh((w/2 + delta)/T) + cosh(ep_base/T));
+       // double avg = num / (2 * delta * denom);
+       // if (isnan(avg)) return 0;
+       // return avg;
+    }
+
+    return (f_plus - f_minus) * (w - dE) / ( pow(w - dE,2) + pow(eta,2));
+}
+
+
+double imaginary_integration(Vec q, double T, double mu, double w, int num_points, double eta) {
+    auto func = [q, T, mu, w, eta] (double kx, double ky, double kz) {
+        //return modified_ratio(q, Vec(kx, ky, kz), T, mu, w, 0.0001);
+        return imaginary_ratio(q, Vec(kx, ky, kz), T, mu, w, eta);
+    };
+    
+    double x0 = -k_max + q.vals(0)/2, x1 = k_max + q.vals(0)/2;
+    double y0 = -k_max + q.vals(1)/2, y1 = k_max + q.vals(1)/2;
+    double z0 = -k_max + q.vals(2)/2, z1 = k_max + q.vals(2)/2;
+
+    return trapezoidal_integration(func, x0, x1, y0, y1, z0, z1, num_points) / pow(2*k_max,dim);
+}
+
+double chi_trapezoidal(Vec q, double T, double mu, double w, int num_points) {
     double sum = 0;
     #pragma omp parallel for reduction(+:sum)
     //int num_skipped = 0;
@@ -148,33 +201,41 @@ double chi_trapezoidal(Vec q, double T, double mu, int num_points) {
             double y = get_k(j, num_points);
             for (double k = 0; k < num_points * (dim%2) + 1 * ((dim+1)%2); k++) {
                 double z = get_k(k, num_points);
-                double w = 1.0;
-                if (i == 0 or i == num_points - 1) w /= 2.0;
-                if (j == 0 or j == num_points - 1) w /= 2.0;
-                if ( (k == 0 or k == num_points - 1) and dim == 3) w /= 2.0;
+                double weight = 1.0;
+                if (i == 0 or i == num_points - 1) weight /= 2.0;
+                if (j == 0 or j == num_points - 1) weight /= 2.0;
+                if ( (k == 0 or k == num_points - 1) and dim == 3) weight /= 2.0;
 
                 Vec k_val(x, y, z);
 
-                double r = ratio(q, k_val, T, mu, 0);
-                //file << k_val << r << endl;
-                sum += w*r;
+                double r = ratio(q, k_val, T, mu, w);
+                //cout << k_val << r << endl;
+                sum += weight*r;
             }
         }
     }
     return sum / pow(num_points-1,dim); 
 }
 
-double integrate_susceptibility(Vec q, double T, double mu, double w) {
+double integrate_susceptibility(Vec q, double T, double mu, double w, int num_points) {
+    //return imaginary_integration(q, T, mu, w, num_points, 0.000);
     auto func = [q, T, mu, w] (double kx, double ky, double kz) {
-        return ratio(q, Vec(kx, ky, kz), T, mu, w);
+        if (epsilon(Vec(kx,ky,kz)) < mu) return 1;
+        return 0;
+        //return ratio(q, Vec(kx, ky, kz), T, mu, w);
+        //return modified_ratio(q, Vec(kx, ky, kz), T, mu, w, 0.0001);
     };
 
     int base_div = 20;
     int x_divs = base_div, y_divs = base_div, z_divs = base_div;
     if (dim == 2) z_divs = 1;
+    double x0 = -k_max + q.vals(0)/2, x1 = k_max + q.vals(0)/2;
+    double y0 = -k_max + q.vals(1)/2, y1 = k_max + q.vals(1)/2;
+    double z0 = -k_max + q.vals(2)/2, z1 = k_max + q.vals(2)/2;
     //return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, x_divs, y_divs, z_divs, 0.01) / pow(2*k_max,dim);
-    return chi_trapezoidal(q, T, mu, 40);
-    //return trapezoidal_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 100) / pow(2*k_max,dim);
+    //return chi_trapezoidal(q, T, mu, 100);
+    //return modified_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 100, 0, 0, 0);
+    return trapezoidal_integration(func, x0, x1, y0, y1, z0, z1, num_points) / pow(2*k_max,dim);
 }
 
 double trapezoidal_integration(auto &f, double x0, double x1, double y0, double y1, double z0, double z1, int num_points) {
@@ -183,7 +244,8 @@ double trapezoidal_integration(auto &f, double x0, double x1, double y0, double 
     double dy = (y1 - y0) / (num_points - 1);
     double dz = (z1 - z0) / (num_points - 1);
     if (dim == 2) dz = 1;
-    //#pragma omp parallel for reduction(+:sum)
+    int counter = 0;
+    #pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < num_points; i++) {
         double x = x0 + i*dx;
         for (int j = 0; j < num_points; j++) {
@@ -195,11 +257,89 @@ double trapezoidal_integration(auto &f, double x0, double x1, double y0, double 
                 if (j == 0 or j == num_points - 1) w /= 2.0;
                 if ( (k == 0 or k == num_points - 1) and dim == 3) w /= 2.0;
 
+                //if (x*x + y*y + z*z > k_max*k_max) continue;
+                //cout << x << " " << y << " " << z << " " << f(x,y,z) << endl;
                 sum += w * f(x,y,z);
             }
         }
     }
     return sum * dx * dy * dz;
+}
+
+double modified_integral_wrapper(Vec q, double T, double mu, double w, double delta, int num_points) {
+    auto func = [q, T, mu, w, delta] (double kx, double ky, double kz) {
+        return modified_ratio(q, Vec(kx, ky, kz), T, mu, w, delta);
+    };
+    auto s_func = [q, mu, w] (double kx, double ky, double kz) {
+        Vec k(kx, ky, kz);
+        return w - e_split(k,q);
+    };
+
+    double x0 = -k_max + q.vals(0)/2, x1 = k_max + q.vals(0)/2;
+    double y0 = -k_max + q.vals(1)/2, y1 = k_max + q.vals(1)/2;
+    double z0 = -k_max + q.vals(2)/2, z1 = k_max + q.vals(2)/2;
+
+    return trapezoidal_integration(func, x0, x1, y0, y1, z0, z1, num_points) / pow(2*k_max,dim);
+    //return modified_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 100, s_func, delta, avg) / pow(2*k_max,dim);
+}
+
+double modified_integral_wrapper_1D(double a, double b, double delta, int num_points) {
+    auto func = [delta] (double x) {
+        return x / (x*x + delta*delta);
+    };
+    auto s_func = [] (double x) {
+        return x;
+    };
+    auto avg = [] (double x) {
+        return 0;
+    };
+    return modified_integration_1D(func, a, b, num_points, s_func, delta, avg);
+}
+
+double modified_integration(auto &f, double x0, double x1, double y0, double y1, double z0, double z1, int num_points, auto &surface, double delta, auto &avg) {
+    double sum = 0;
+    double dx = (x1 - x0) / (num_points - 1);
+    double dy = (y1 - y0) / (num_points - 1);
+    double dz = (z1 - z0) / (num_points - 1);
+    if (dim == 2) dz = 1;
+    #pragma omp parallel for reduction(+:sum) 
+    for (int i = 0; i < num_points; i++) {
+        double x = x0 + i*dx;
+        for (int j = 0; j < num_points; j++) {
+            double y = y0 + j*dy;
+            for (double k = 0; k < num_points * (dim%2) + 1 * ((dim+1)%2); k++) {
+                double z = z0 + k*dz;
+                double w = 1.0;
+                if (i == 0 or i == num_points - 1) w /= 2.0;
+                if (j == 0 or j == num_points - 1) w /= 2.0;
+                if ( (k == 0 or k == num_points - 1) and dim == 3) w /= 2.0;
+
+                double val = f(x,y,z); 
+                if (abs(surface(x,y,z)) < delta) {
+                    //cout << "Surface Hit\n";
+                    val = avg(x,y,z);
+                    //val = 0;
+                }
+
+                sum += w * val; 
+            }
+        }
+    }
+    return sum * dx * dy * dz; 
+}
+
+double modified_integration_1D(auto &f, double x0, double x1, int num_points, auto &surface, double delta, auto &avg) {
+    double sum = 0;
+    double dx = (x1 - x0) / (num_points - 1);
+    #pragma omp parallel for reduction(+:sum) 
+    for (int i = 0; i < num_points; i++) {
+        double x = x0 + i*dx;
+        double w = 1.0;
+        if (i == 0 or i == num_points - 1) w /= 2.0;
+
+        sum += w * f(x) * dx; 
+    }
+    return sum;
 }
 
 double trap_cube(auto &f, double x0, double x1, double y0, double y1, double z0, double z1) {
@@ -304,7 +444,7 @@ vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS, double 
         auto datIt = map.begin();
         advance(datIt, i);
         string key = datIt->first;
-        map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w);
+        map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w, 100);
     }
 
     for (int i = 0; i < m; i++) {

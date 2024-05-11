@@ -148,7 +148,7 @@ void test_integral_pairing_interaction_parity(vector<Vec> &FS, double T, double 
         return cos(q.vals(1))-cos(q.vals(0)); 
     };
     auto Vs = [](Vec p1, Vec p2, double T, const auto &chi_cube) { 
-        return V(p1, p2, T, chi_cube);
+        return V(p1, p2, 0, T, chi_cube);
     };
     auto func = [&wave, &Vs](Vec p1, Vec p2, double T, double mu, const vector<vector<vector<double>>> &chi_cube) { 
         return wave(p1, mu) * Vs(p1,p2,T,chi_cube) * wave(p2, mu);// / (vp(p1) * vp(p2)); 

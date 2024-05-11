@@ -23,6 +23,7 @@
 #include "potential.h"
 #include "vec.h"
 #include "utilities.h"
+#include "frequency_inclusion.hpp"
 
 using std::cout;
 using std::endl;
@@ -46,7 +47,7 @@ vector<vector<Vec>> freq_tetrahedron_method(double mu) {
 
     for (int i = 0; i < l; i++) {
         double ep = w_D * points[l-1][i] + mu;
-        vector<Vec> layer = tetrahedron_method(ep);
+        vector<Vec> layer = tetrahedron_method(e_base_avg, Vec(0,0,0), ep);
         basis.push_back(layer);
     }
     return basis;
@@ -100,10 +101,11 @@ MatrixXd create_P_freq(vector<vector<Vec>> &k, double T, const unordered_map<dou
 unordered_map <double, vector<vector<vector<double>>>> chi_cube_freq(double T, double mu, double DOS) {
     vector<double> des;
     for (int i = 0; i < l; i++) {
-        double p1 = points[l-1][i];
+        double p1 = w_D * points[l-1][i];
         for (int j = 0; j < l; j++) {
-            double p2 = points[l-1][j];
+            double p2 = w_D * points[l-1][j];
             double w = p1 - p2;
+            w = round(w, 6);
             if (count(des.begin(), des.end(), w) == 0)
                 des.push_back(w);
         }
@@ -116,29 +118,393 @@ unordered_map <double, vector<vector<vector<double>>>> chi_cube_freq(double T, d
     return cube_freq_map;
 }
 
-double f_singlet_integral_test(double T) {
-    double weights_0th[1] = {2.0}; double * w0 = weights_0th;
-    double weights_1st[2] = {1.0, 1.0}; double * w1 = weights_1st;
-    double weights_2nd[3] = {5.0/9.0, 8.0/9.0, 5.0/9.0}; double * w2 = weights_2nd;
-    double weights_3rd[4] = {0.347855, 0.652145, 0.652145, 0.347855}; double * w3 = weights_3rd;
-    double weights_4th[5] = {0.236927, 0.478629, 0.568889, 0.478629, 0.236927}; double * w4 = weights_4th;
-    double *weights[5] = {w0, w1, w2, w3, w4};
+//double f_singlet_integral_test(double T) {
+//    double weights_0th[1] = {2.0}; double * w0 = weights_0th;
+//    double weights_1st[2] = {1.0, 1.0}; double * w1 = weights_1st;
+//    double weights_2nd[3] = {5.0/9.0, 8.0/9.0, 5.0/9.0}; double * w2 = weights_2nd;
+//    double weights_3rd[4] = {0.347855, 0.652145, 0.652145, 0.347855}; double * w3 = weights_3rd;
+//    double weights_4th[5] = {0.236927, 0.478629, 0.568889, 0.478629, 0.236927}; double * w4 = weights_4th;
+//    double *weights[5] = {w0, w1, w2, w3, w4};
+//
+//    double points_0th[1] = {0}; double *p0 = points_0th;
+//    double points_1st[2] = {-1/pow(3,0.5), 1/pow(3,0.5)}; double *p1 = points_1st;
+//    double points_2nd[3] = {-pow(3/5,0.5), 0, pow(3/5,0.5)}; double *p2 = points_2nd;
+//    double points_3rd[4] = {-0.861136, -0.339981, 0.339981, 0.861136}; double *p3 = points_3rd;
+//    double points_4th[5] = {-0.90618, -0.538469, 0, 0.538469, 0.90618}; double *p4 = points_4th;
+//
+//    double *points[5] = {p0, p1, p2, p3, p4};
+//
+//    double sum = 0;
+//
+//    for (int i = 0; i < l; i++) {
+//        //double ep = 0 + w_D / (l-1) * i;
+//        //sum += 2*f_singlet(ep, T) * w_D / l;
+//        sum += w_D * f_singlet(w_D * points[l-1][i], T) * weights[l-1][i];
+//    }
+//    return sum;
+//}
+//
+//double zero_temp_func(double w, double dE) {
+//    if (w == dE)
+//        return 0;
+//    return 1 / (w - dE);
+//}
+//
+//double nonzero_ratio(double w, double dE, Vec k, Vec q, double T) {
+//    double e_qk = epsilon(k + q) - mu;
+//    double e_k = epsilon(k) - mu;
+//    double f_k = f(e_k, T);
+//    double f_qk = f(e_qk, T);
+//
+//    if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
+//        //return 0;
+//        if (T == 0 or exp(e_k/T) > 1e6) {
+//            return e_k < 0;
+//        }
+//        double term1 = 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
+//        //cout << "Ratio: " << term1 << endl;
+//        return term1;
+//    }
+//    return (f_qk - f_k) / (w - dE);
+//}
+//
+//double bound_sign(Vec k, Vec q) {
+//    double e_qk = epsilon(k + q) - mu;
+//    double e_k = epsilon(k) - mu;
+//    int s1 = e_qk < 0;
+//    int s2 = e_k < 0;
+//    return s1 - s2;
+//}
+//
+//double other_bound_sign(Vec k, Vec q, double T) {
+//    double e_qk = epsilon(k + q);
+//    double e_k = epsilon(k);
+//
+//    double f_qk = f(e_qk, T);
+//    double f_k = f(e_k, T);
+//
+//    return f_qk - f_k;
+//}
+//
+//vector<vector<Vec>> get_singularity_freq_surfaces(double (*func)(Vec k, Vec q), Vec q, double center, double width) {
+//    vector<vector<Vec>> surfaces;
+//    for (int i = 0; i < l; i++) {
+//        double s = width * points[l-1][i] + center;
+//        vector<Vec> layer = tetrahedron_method(func, q, s);
+//        surfaces.push_back(layer);
+//    }
+//    return surfaces;
+//}
+//
+//vector<vector<Vec>> get_smooth_freq_surfaces(double (*func)(Vec k, Vec q), Vec q, double lower, double upper, double density) {
+//    int num_points = int((upper - lower) / density) + 1;
+//    vector<vector<Vec>> surfaces;
+//    for (int i = 0; i < num_points; i++) {
+//        double s = lower + (upper - lower) / (num_points-1) * i;
+//        vector<Vec> layer = tetrahedron_method(func, q, s);
+//        if(layer.size() > 0)
+//            surfaces.push_back(layer);
+//    }
+//    return surfaces;
+//}
+//
+//double singularity_chi_sum(Vec q, double w, double T, double width) {
+//    double de = 0.01;
+//
+//    double sum = 0;
+//    // Get contours of the surface
+//    vector<double> surfaces;
+//    double upper = w, lower = w - width;
+//    for (int both = 0; both < 2; both++) {
+//        if (both == 1) {
+//            upper = w + width;
+//            lower = w;
+//        }
+//        int num_points = int((upper - lower) / de) + 1;
+//        for (int i = 0; i < num_points; i++) {
+//            if (both == 1 and i == 0) continue;
+//            surfaces.push_back( lower + (upper - lower) / (num_points-1) * i );
+//        }
+//    }
+//
+//    for (auto s : surfaces) {
+//        vector<Vec> layer = tetrahedron_method(e_diff, q, s);
+//        if (s == 0 and w == 0) {
+//            sum += get_DOS(layer) * pow(2*M_PI, dim);
+//            continue;
+//        }
+//        for (int j = 0; j < layer.size(); j++) {
+//            double r = nonzero_ratio(w, layer[j].freq, layer[j], q, T);
+//            if (s == 0 and w == 0) r = 1;
+//            sum += r * layer[j].area / vp_diff(layer[j], q);
+//        }
+//    }
+//    return sum * de;
+//}
+//
+//double gauss_chi_sum(Vec q, double w, double T, double width) {
+//    double sum = 0;
+//    for (int i = 0; i < l; i++) {
+//        double s = width * points[l-1][i] + w;
+//        vector<Vec> layer = tetrahedron_method(e_diff, q, s);
+//        printf("Layer size at s = %f: %d\n", s, layer.size());
+//        if (s == 0 and w == 0) {
+//            vector<Vec> FS = tetrahedron_method(e_base_avg, q, mu);
+//            for (auto k : FS) {
+//                if (abs(epsilon(k) - epsilon(k+q)) < 0.01) {
+//                    sum += k.area / vp(k) * weights[l-1][i];
+//                }
+//            }
+//            continue;
+//        }
+//        for (int j = 0; j < layer.size(); j++) {
+//            double s_val = width * points[l-1][i] + w;
+//            double r = nonzero_ratio(w, s_val, layer[j], q, T) * weights[l-1][i];
+//            //if (s == 0 and w == 0) r = weights[l-1][i];
+//            sum += r * layer[j].area / vp_diff(layer[j], q);
+//            if (r < 0) cout << r << endl;
+//        }
+//        //printf("Layer %d: %f\n", i, sum);
+//    }
+//    return sum;
+//}
+//
+//double bound_chi_sum(Vec q, double w, double T, double de, double width, double b, double a) {
+//    double sum = 0;
+//    // Get contours of the surface
+//    vector<double> surfaces;
+//    double upper = b, lower = w+width;
+//    for (int both = 0; both < 2; both++) {
+//        if (both == 1) {
+//            upper = w-width;
+//            lower = a;
+//        }
+//        int num_points = int((upper - lower) / de) + 1;
+//        for (int i = 0; i < num_points; i++)
+//            surfaces.push_back( lower + (upper - lower) / (num_points-1) * i );
+//    }
+//
+//    for (auto s : surfaces) {
+//        vector<Vec> layer = tetrahedron_method(e_diff, q, s);
+//        for (int j = 0; j < layer.size(); j++) {
+//            double r = nonzero_ratio(w, layer[j].freq, layer[j], q, T);
+//            sum += r * layer[j].area / vp_diff(layer[j], q);
+//        }
+//    }
+//    return sum * de;
+//}
+//
+//double chi_integrate_freq(Vec q, double width, double w, double T) {
+//    double de = 0.01;
+//    double a, b;
+//    get_bounds(q, w, b, a);
+//
+//    double sum = 0;
+//    sum += gauss_chi_sum(q, w, T, width);
+//    //printf("Gauss Sum: %f\n", sum);
+//    //sum = singularity_chi_sum(q, w, T, width);
+//    //printf("Chi Freq Sum: %f\n", sum);
+//    sum += bound_chi_sum(q, w, T, de, width, b, a);
+//    //printf("Bound Sum: %f\n", sum);
+//    return sum / pow(2*k_max, dim);
+//}
+//
+//void get_bounds(Vec q, double w, double &upper, double &lower) { 
+//    vector<Vec> surface = tetrahedron_method(vp_diff, q, 0);
+//    double max = 0; double min = 1000;
+//    for (int i = 0; i < surface.size(); i++) {
+//        double sign = e_diff(surface[i], q) - w;
+//        if (sign > 0 and sign > max) max = sign;
+//        if (sign < 0 and sign < min) min = sign;
+//    }
+//    upper = max;
+//    lower = min;
+//}
+//
+//double imaginary_chi_integrate(Vec q, double w) {
+//    double T = 0.03;
+//    double sum = 0;
+//    double a, b;
+//    vector<Vec> surface1 = tetrahedron_method(e_diff, q, w);
+//    //vector<Vec> surface2 = tetrahedron_method(e_diff, q, -w);
+//    //cout << "Surface 1: " << surface1.size() << endl;
+//    //cout << "Surface 2: " << surface2.size() << endl;
+//
+//    int counter = 0;
+//    //#pragma omp parallel for reduction(+:sum)
+//    for (int i = 0; i < surface1.size(); i++) {
+//        double sign = other_bound_sign(surface1[i], q, T);
+//        sum += sign * surface1[i].area / vp_diff(surface1[i], q);
+//        if (sign != 0) counter++;
+//        //cout << sign << " " << surface1[i].area << " " << vp_diff(surface1[i], q) << endl;
+//        //cout << sum << endl;
+//    }
+//    //cout << "Sum: " << sum << endl;
+//    //cout << "Counter: " << counter << endl;
+//
+//    //#pragma omp parallel for reduction(+:sum)
+//    //for (int i = 0; i < surface2.size(); i++) {
+//    //    double sign = other_bound_sign(surface2[i], q);
+//    //    sum -= sign * surface2[i].area / vp_diff(surface2[i], q);
+//    //    if (sign != 0) counter++;
+//    //}
+//    //cout << "Counter: " << counter << endl;
+//
+//    return sum;
+//}
+//
+//void shift_layers(vector<Vec> &layers, Vec shift, double &max, double &min) {
+//    max = 0; min = 1000;
+//    for (int i = 0; i < layers.size(); i++) {
+//        layers[i] = layers[i] + shift;
+//        if (epsilon(layers[i]) - mu > max) max = epsilon(layers[i]) - mu;
+//        if (epsilon(layers[i]) - mu < min) min = epsilon(layers[i]) - mu;
+//    }
+//}
+//
+//double modified_e_diff(Vec k, Vec q) {
+//    double eqk = epsilon(k + q), ek = epsilon(k);
+//    double f_eqk = f(eqk, 0), f_ek = f(ek, 0);
+//    //if (f_eqk == f_ek) return 0;
+//    return eqk - ek;
+//}
+//
+void get_bounds2(Vec q, double &upper, double &lower) {
+    upper = 0; lower = 1000;
+    int pts = 100;
+    for (double i = 0; i < pts; i++) {
+        double x = get_k(i, pts);
+        for (double j = 0; j < pts; j++) {
+            double y = get_k(j, pts);
+            for (double k = 0; k < pts * (dim%2) + 1 * ((dim+1)%2); k++) {
+                double z = get_k(k, pts);
+                Vec k_val(x, y, z);
+                //double f_qk = f(epsilon(k_val + q), 0);
+                //double f_k = f(epsilon(k_val), 0);
+                //if (f_qk != f_k) {
+                    //double diff = epsilon(k_val + q) - epsilon(k_val);
+                    double diff = sphere_func(k_val, q) - sphere_func(k_val, Vec(0,0,0));
+                    if (diff > upper) upper = diff;
+                    if (diff < lower) lower = diff;
+                //}
+            }
+        }
+    }
+}
+//
+//void get_bounds3(Vec q, double &upper, double &lower) {
+//    upper = 0; lower = 1000;
+//    int pts = 100;
+//    for (double i = 0; i < pts; i++) {
+//        double x = get_k(i, pts);
+//        for (double j = 0; j < pts; j++) {
+//            double y = get_k(j, pts);
+//            for (double k = 0; k < pts * (dim%2) + 1 * ((dim+1)%2); k++) {
+//                double z = get_k(k, pts);
+//                Vec k_val(x, y, z);
+//                double val = e_base_avg(k_val, q);
+//                //cout << val << endl;
+//                if (val > upper) upper = val;
+//                if (val < lower) lower = val;
+//            }
+//        }
+//    }
+//}
+//
+//double gauss_chi_sum2(Vec q, double w, double T, double width) {
+//    double sum = 0;
+//    for (int i = 0; i < l; i++) {
+//        double s = width * points[l-1][i] + w;
+//        vector<Vec> layer = tetrahedron_method(e_diff, q, s);
+//        for (int j = 0; j < layer.size(); j++) {
+//            double s_val = width * points[l-1][i] + w;
+//            double r = nonzero_ratio(w, s_val, layer[j], q, T) * weights[l-1][i];
+//            //if (s == 0 and w == 0) r = weights[l-1][i];
+//            sum += r * layer[j].area / vp_diff(layer[j], q);
+//            //if (i == 2) cout << r << " " << layer[j].area << " " << vp_diff(layer[j], q) << endl;
+//            if (r < 0) cout << r << endl;
+//        }
+//        printf("Layer %d (size: %d): %f\n", i, layer.size(), sum);
+//    }
+//    return sum;
+//}
 
-    double points_0th[1] = {0}; double *p0 = points_0th;
-    double points_1st[2] = {-1/pow(3,0.5), 1/pow(3,0.5)}; double *p1 = points_1st;
-    double points_2nd[3] = {-pow(3/5,0.5), 0, pow(3/5,0.5)}; double *p2 = points_2nd;
-    double points_3rd[4] = {-0.861136, -0.339981, 0.339981, 0.861136}; double *p3 = points_3rd;
-    double points_4th[5] = {-0.90618, -0.538469, 0, 0.538469, 0.90618}; double *p4 = points_4th;
+double sphere_func(Vec k, Vec q) {
+    //if (k.vals.norm() > 1) return 0;
+    return k.vals.squaredNorm();
+}
 
-    double *points[5] = {p0, p1, p2, p3, p4};
+double sphere_func_diff(Vec k, Vec q) {
+    return pow(pow(2*k.vals[0],2) + pow(2*k.vals[1],2) + pow(2*k.vals[2],2),0.5);
+}
 
+//double bound_chi_sum2(Vec q, double w, double T, int pts, double b, double a) {
+//    double sum = 0;
+//    double A = -4*w + 2*(b+a), B = 4*w - b - 3*a, C = a;
+//
+//    double prev_s = 0;
+//    for (double i = 0; i <= pts; i++) {
+//        //double s = A * pow(i/pts, 2) + B * i/pts + C;
+//        double s = a + (b-a) * i/pts;
+//        if (i == 0) continue;
+//        vector<Vec> layer = tetrahedron_method(sphere_func, q, s);
+//        for (auto k : layer) {
+//            double r = nonzero_ratio(w, k.freq, k, q, T);
+//            r = 1;
+//            sum += (r * k.area / sphere_func(k, q)) * (s - prev_s);
+//        }
+//        //cout << "Layer s=" << s << ", ds/dr=" << sphere_func_diff(layer[0],q) 
+//        //    << " ds=" << s - prev_s << " area=" << surface_area
+//        //    << " (size: " << layer.size() << "): " << sum2 << endl;
+//        prev_s = s;
+//    }
+//    //printf("Sum: %f\n", sum);
+//    return sum;
+//}
+//
+//double bound_chi_sum3(Vec q, double w, double T, int pts, double b, double a) {
+//    double sum = 0;
+//    double prev_s = 0;
+//    for (double i = 0; i <= pts; i++) {
+//        double s = a + (b-a) * i/pts;
+//        if (i == 0) continue;
+//        vector<Vec> layer = tetrahedron_method(e_base_avg, q, s);
+//        for (auto k : layer) {
+//            double r = nonzero_ratio(w, k.freq, k, q, T);
+//            sum += r * k.area / vp(k) * (s - prev_s);
+//        }
+//        prev_s = s;
+//    }
+//    return sum;
+//}
+
+double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a) {
     double sum = 0;
-
-    for (int i = 0; i < l; i++) {
-        //double ep = 0 + w_D / (l-1) * i;
-        //sum += 2*f_singlet(ep, T) * w_D / l;
-        sum += w_D * f_singlet(w_D * points[l-1][i], T) * weights[l-1][i];
+    double prev_s = 0;
+    for (double i = 0; i <= pts; i++) {
+        double s = a + (b-a) * i/pts;
+        if (i == 0) continue;
+        vector<Vec> layer = tetrahedron_method(sphere_func, q, s);
+        for (auto k : layer) {
+            //double r = nonzero_ratio(w, k.freq, k, q, T);
+            sum += k.area / vp(k) * (s - prev_s);
+        }
+        prev_s = s;
     }
     return sum;
 }
 
+
+double chi_ep_integrate(Vec q, double w, double T) {
+    double a = 0, b = 1;
+    //get_bounds2(q, b, a);
+    cout << "Bounds: " << a << " " << b << endl;
+
+    double sum = 0;
+    //sum += gauss_chi_sum2(q, w, T, 0.5);
+    //printf("Gauss Sum: %f\n", sum);
+    //sum += bound_chi_sum(q, w, T, de, 0.1, b, a);
+    sum += bound_chi_sum4(q, w, T, 50, b, a);
+    //printf("Bound Sum: %f\n", sum);
+    return sum;// / pow(2*k_max, dim);
+}

@@ -271,20 +271,20 @@ def plot_chi_test(file):
     size = int(len(df)/4)
     q_vals = df.iloc[0:size,0]
     plt.figure(1)
-    plt.title("$\chi$(q) @ T=750K along (1,1,1)")
+    plt.title("$\chi$(q) @ T=300K along (1,1,1)")
     for i in range(4):
         col = df.iloc[i*size:(i+1)*size,1]
         plt.plot(q_vals, col)
-    plt.legend(["mu=0", "mu=-1", "mu=-2", "mu=-3"])
+    plt.legend(["mu=0", "mu=1", "mu=2", "mu=3"])
     plt.ylabel(r'$\chi$')
     plt.xlabel(r'q')
 
 def plot_chi_single_test(file):
     df = pd.read_csv(file, delim_whitespace=True)
-    q_vals = df.iloc[:,0]
+    q_vals = df.iloc[:,0] / np.pi
     plt.figure(1)
-    col = df.iloc[:,1]
-    plt.scatter(q_vals, col, s=0.5)
+    col = df.iloc[:,3] / df.iloc[0,3]
+    plt.plot(q_vals, col)
     plt.show()
 
 
@@ -822,13 +822,24 @@ def plot_test_waves_SAV_gap():
     ax.set_zlabel(r'$k_z$')
     plt.show()
 
+def plot_chi_sphere_3D():
+    q = np.linspace(0, np.pi, 100)
+    f = 1 + (1-(0.5*q)**2)/q * np.log(abs((1+0.5*q)/(1-0.5*q)))
+    plt.plot(q, f * 0.001)
+
 if __name__ == "__main__":
+    #plot_chi_single_test("../tests/chi_freq_v_q.txt")
+    #plot_chi_single_test("../tests/chi_test_analytic.txt")
     #plot_eigenvalue_divergence()
-    plot_DOS()
+    #plot_DOS()
     #plot_coupling("../tests/coupling.dat")
-    #plot_chi_test("../tests/chi_plot.dat")
+    plot_chi_test("../tests/chi_plot.dat")
+    plot_chi_test("../tests/chi_plot5.dat")
+    #plot_chi_test("../tests/chi_plot3.dat")
+    #plot_chi_test("../tests/chi_plot4.dat")
+    #plot_chi_sphere_3D()
     #plot_chi_test("../tests/chi_plot2.dat")
-    #plt.show()
+    plt.show()
     #plot_FS()
     #file_addon = "U=1/HII-u=1"
     #title = "Nickelate"

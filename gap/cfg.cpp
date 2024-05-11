@@ -8,11 +8,11 @@
 using namespace std;
 
 // Global Variables
-int n = 5; // Number of k points
+int n = 30; // Number of k points
 int m = 20; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 3; // Number of dimensions)
-string potential_name = "scalapino";
+string potential_name = "const";
 string band_name = "simple_cubic";
                
 // Constants
@@ -45,13 +45,63 @@ double epsilon(const Vec k) {
         return 0;
     }
 }
+
+double e_diff(const Vec k, const Vec q) {
+    return epsilon(k+q) - epsilon(k);
+}
+
+double e_base_avg(const Vec k, const Vec q) {
+    return epsilon(k);
+    return (epsilon(k+q) + epsilon(k-q))/2;
+}
+
+double e_base(const Vec k, const Vec q) {
+    return epsilon(k+q) + epsilon(k-q);
+}
+
+double e_split(const Vec k, const Vec q) {
+    return epsilon(k+q) - epsilon(k-q);
+}
+
+double vp_diff(const Vec k, const Vec q) {
+    Vec v;
+    if (band_name == "simple_cubic_layered")
+        v = fermi_velocity_SC_layered(k+q) - fermi_velocity_SC_layered(k);
+    else if (band_name == "simple_cubic")
+        v = fermi_velocity_SC(k+q) - fermi_velocity_SC(k);
+    else if (band_name == "sphere")
+        v = fermi_velocity_sphere(k+q) - fermi_velocity_sphere(k);
+    else {
+        cout << "No band structure specified\n";
+        assert(1==2);
+        return 0;
+    }
+    return v.vals.norm();
+}
+
+double vp_split(const Vec k, const Vec q) {
+    Vec v;
+    if (band_name == "simple_cubic_layered")
+        v = fermi_velocity_SC_layered(k+q/2) - fermi_velocity_SC_layered(k-q/2);
+    else if (band_name == "simple_cubic")
+        v = fermi_velocity_SC(k+q/2) - fermi_velocity_SC(k-q/2);
+    else if (band_name == "sphere")
+        v = fermi_velocity_sphere(k+q/2) - fermi_velocity_sphere(k-q/2);
+    else {
+        cout << "No band structure specified\n";
+        assert(1==2);
+        return 0;
+    }
+    return v.vals.norm();
+}
+
 // Fermi Velocity corresponds to energy band functions above
 double vp(const Vec k) {
     if (band_name == "simple_cubic_layered")
         return fermi_velocity_SC_layered(k).vals.norm();
-    if (band_name == "simple_cubic")
+    else if (band_name == "simple_cubic")
         return fermi_velocity_SC(k).vals.norm();
-    if (band_name == "sphere")
+    else if (band_name == "sphere")
         return fermi_velocity_sphere(k).vals.norm();
     else {
         cout << "No band structure specified\n";
@@ -75,6 +125,18 @@ double V(const Vec k1, const Vec k2, double w, const double T, const unordered_m
         assert(1==2);
         return 0;
     }
+}
+
+// NOTE: Changes delta value as well
+int get_num_points_from_delta(double &delta) {
+    if (delta == 0) {
+        delta = 0.0001;
+    }
+    int pts = 10*k_max/delta + 1;
+    if (delta > 0.1) {
+        delta = 0;
+    }
+    return pts;
 }
 
 // Gaussian integration constants

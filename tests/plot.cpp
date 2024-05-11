@@ -36,15 +36,15 @@ using std::vector;
 using std::unordered_map;
 //using namespace Eigen;
 
-void plot_chi(double T) {
+void plot_chi(double T, double w) {
     ofstream file("chi_plot.dat");
     file << "q chi " << endl;
-    double n = 100.0;
-    for (double mu = 0.0; mu > -4.0; mu--) {
+    double n = 300.0;
+    for (double new_mu = mu; new_mu > -4.0; new_mu--) {
         for (double i = 0; i < n; i++) {
             double q_mag = i/(n-1) * M_PI;
             Vec q(q_mag, q_mag, q_mag);
-            double c = chi_trapezoidal(q, T, mu, 60);
+            double c = chi_trapezoidal(q, T, new_mu, w, 100);
             //double c2 = varied_chi_trapezoidal(q, T, mu, 40);
             file << q_mag << " " << c << endl;
         }
@@ -55,20 +55,18 @@ void plot_chi(double T) {
 void plot_potential(double T) {
     ofstream file("info.log");
     file << "q V " << endl;
-    auto FS = tetrahedron_method(mu);
+    auto FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
     double DOS = 0;
     for (int i = 0; i < FS.size(); i++)
         DOS += FS[i].area / vp(FS[i]);
     double n = 80.0;
     for (double mu = 0.0; mu > -2.0; mu--) {
-        vector<vector<vector<double>>> cube = chi_cube(T, mu, DOS, 0);
+        unordered_map<double, vector<vector<vector<double>>>> cube = chi_cube_freq(T, mu, DOS);
         for (double i = 0; i < n; i++) {
             double q_mag = i/(n-1) * M_PI;
             Vec q(q_mag, q_mag, 0);
-            double c = calculate_chi_from_cube(cube, q);
-            //double c = chi_trapezoidal(q, T, mu, 60);
             Vec zero;
-            double potential = V(zero, q, T, cube);
+            double potential = V(zero, q, 0, T, cube);
             //double potential = U*U * c / ( 1 - U * c) + U*U*U * c*c / ( 1 - U*U * c*c);
             file << q_mag << " " << potential << endl;
         }
@@ -79,9 +77,9 @@ void plot_potential(double T) {
 void plot_chi2(double T) {
     ofstream file("chi_plot2.dat");
     file << "q chi " << endl;
-    double n = 100.0;
+    double n = 50.0;
     for (double mu = -0.0; mu > -4.0; mu-=1.0) {
-        vector<Vec> FS = tetrahedron_method(mu);
+        vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
         double DOS = get_DOS(FS);
         vector<vector<vector<double>>> cube = chi_cube(T, mu, DOS, 0);
         for (double i = 0; i < n; i++) {
@@ -94,17 +92,61 @@ void plot_chi2(double T) {
     }
 }
 
-void plot_chi4(double T) {
-    ofstream file("chi_plot4.dat");
+void plot_chi3(double T, double w, double eta, int pts) {
+    ofstream file("chi_plot3.dat");
     file << "q chi " << endl;
-    double n = 10.0;
-    for (double mu = 0.0; mu > -4.0; mu--) {
+    double n = 50.0;
+    for (double mu = 0.0; mu < 4.0; mu++) {
         for (double i = 0; i < n; i++) {
+            printf("\r Mu %.1f: %.3f" , mu, i/(n-1));
             double q_mag = i/(n-1) * M_PI;
             Vec q(q_mag, q_mag, q_mag);
-            double c = integrate_susceptibility(q, T, mu, 0);
+            double c = imaginary_integration(q, T, mu, w, pts, eta);
+            //double c = integrate_susceptibility(q, T, mu, 0, 3*pts);
+            //double c = modified_integral_wrapper(q, T, mu, 0, delta, pts);
             file << q_mag << " " << c << endl;
         }
+        file << endl;
+    }
+}
+
+void plot_chi4(double T, double w, int pts) {
+    ofstream file("chi_plot4.dat");
+    file << "q chi " << endl;
+    Vec q_temp(M_PI, M_PI, M_PI);
+    double n = 50.0;
+    for (double mu = 0.0; mu > -4.0; mu--) {
+        for (double i = 0; i < n; i++) {
+            printf("\r Mu %.1f: %.3f" , mu, 100.0*i/(n-1));
+            double q_mag = i/(n-1) * M_PI;
+            Vec q(q_mag, q_mag, q_mag);
+            double c = integrate_susceptibility(q, T, mu, w, pts);
+            //cout << c << endl;
+            //cout << integrate_susceptibility(q_temp,T,mu,0,30) << endl;
+            file << q_mag << " " << c << endl;
+            fflush(stdout);
+        }
+        file << endl;
+    }
+}
+
+void plot_chi5(double T, double w) {
+    ofstream file("chi_plot5.dat");
+    file << "q chi " << endl;
+    double n = 50.0;
+    for (double new_mu = 0.0; new_mu < 4.0; new_mu++) {
+        init_config(mu, U, t, tn, w_D, new_mu, U, t, tn, w_D);
+        for (double i = 0; i < n; i++) {
+            printf("\r Mu %.1f: %.3f" , new_mu, 100.0*i/(n-1));
+            fflush(stdout);
+            double q_mag = i/(n-1) * M_PI;
+            Vec q(q_mag, q_mag, q_mag);
+            double c = chi_ep_integrate(q, w, T);
+            //cout << c << endl;
+            //cout << integrate_susceptibility(q_temp,T,mu,0,30) << endl;
+            file << q_mag << " " << c << endl;
+        }
+        printf("\n");
         file << endl;
     }
 }
@@ -118,7 +160,7 @@ void plot_potential_q() {
     for (double i = 0; i < n; i++) {
         double q_mag = i/(n-1) * M_PI;
         Vec q_sub(q_mag, q_mag, q_mag);
-        double chi_sub = chi_trapezoidal(q_sub, T, mu, 20);
+        double chi_sub = chi_trapezoidal(q_sub, T, mu, 0, 20);
         double Vs1 = U*U * chi_sub / ( 1 - U * chi_sub);
         double Vs2 = U*U*U * chi_sub*chi_sub / ( 1 - U*U * chi_sub*chi_sub);
         file << q_mag*pow(3,0.5) << " " << Vs1+Vs2 << endl;

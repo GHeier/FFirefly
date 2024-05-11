@@ -13,8 +13,9 @@ class Vec {
         Eigen::Vector3d vals = Eigen::Vector3d(0,0,0);
         bool cartesian = false;
         double area = 0;
+        double freq = 0;
 
-        Vec(double x = 0, double y = 0, double z = 0, bool is_cartesian=true, double area = 0);
+        Vec(double x = 0, double y = 0, double z = 0, bool is_cartesian=true, double area = 0, double freq = 0);
         void to_cartesian();
         void to_spherical();
 

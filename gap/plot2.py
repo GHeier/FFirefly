@@ -7,11 +7,11 @@ from matplotlib.ticker import FormatStrFormatter
 
 
 
-def default_plot():
+def default_plot(labels=['x','y1','y2','y3','y4'], axes=['x_axis', 'y_axis']):
     # Things to edit for plot
     plt.figure(figsize=(6.4,4.8))
-    x_axis, y_axis = ["$\omega_C (eV)$", "$\lambda_{max}$"]
-    line_labels = ['without $\omega$', 'with $\omega$']
+    x_axis, y_axis = axes 
+    line_labels = labels 
 
     file = open(sys.argv[1])
     df = pd.read_csv(file, delim_whitespace=True, header=None)

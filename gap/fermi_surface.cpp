@@ -38,7 +38,7 @@ double triangle_area_from_points(Vec k1, Vec k2, Vec k3) {
     return A;
 }
 
-vector<VecAndEnergy> points_from_indices(int i, int j, int k) {
+vector<VecAndEnergy> points_from_indices(double (*func)(Vec k, Vec q), Vec q, int i, int j, int k) {
     double x1 = 2*k_max * i / n       - k_max; 
     double x2 = 2*k_max * (i+1) / n   - k_max; 
     double y1 = 2*k_max * j / n       - k_max; 
@@ -56,46 +56,46 @@ vector<VecAndEnergy> points_from_indices(int i, int j, int k) {
     Vec p8(x1, y2, z2);
 
     vector<VecAndEnergy> points(8); 
-    VecAndEnergy point1 = {p1, epsilon(p1)}; points[0] = point1;
-    VecAndEnergy point2 = {p2, epsilon(p2)}; points[1] = point2;
-    VecAndEnergy point3 = {p3, epsilon(p3)}; points[2] = point3;
-    VecAndEnergy point4 = {p4, epsilon(p4)}; points[3] = point4;
-    VecAndEnergy point5 = {p5, epsilon(p5)}; points[4] = point5;
-    VecAndEnergy point6 = {p6, epsilon(p6)}; points[5] = point6;
-    VecAndEnergy point7 = {p7, epsilon(p7)}; points[6] = point7;
-    VecAndEnergy point8 = {p8, epsilon(p8)}; points[7] = point8;
+    VecAndEnergy point1 = {p1, func(p1, q)}; points[0] = point1;
+    VecAndEnergy point2 = {p2, func(p2, q)}; points[1] = point2;
+    VecAndEnergy point3 = {p3, func(p3, q)}; points[2] = point3;
+    VecAndEnergy point4 = {p4, func(p4, q)}; points[3] = point4;
+    VecAndEnergy point5 = {p5, func(p5, q)}; points[4] = point5;
+    VecAndEnergy point6 = {p6, func(p6, q)}; points[5] = point6;
+    VecAndEnergy point7 = {p7, func(p7, q)}; points[6] = point7;
+    VecAndEnergy point8 = {p8, func(p8, q)}; points[7] = point8;
 
     return points;
 }
 
-vector<Vec> points_in_tetrahedron(double mu, vector<VecAndEnergy> points) {
+vector<Vec> points_in_tetrahedron(double (*func)(Vec k, Vec q), Vec q, double s_val, vector<VecAndEnergy> points) {
     sort(points.begin(), points.end());
     Vec k1 = points[0].vec, k2 = points[1].vec, k3 = points[2].vec, k4 = points[3].vec;
-    double ep1 = epsilon(k1), ep2 = epsilon(k2), ep3 = epsilon(k3), ep4 = epsilon(k4);
+    double ep1 = func(k1, q), ep2 = func(k2, q), ep3 = func(k3, q), ep4 = func(k4, q);
 
     Vec empty;
 
-    Vec k12 = (k2-k1) * (mu - ep1) / (ep2 - ep1) + k1;
-    Vec k13 = (k3-k1) * (mu - ep1) / (ep3 - ep1) + k1;
-    Vec k14 = (k4-k1) * (mu - ep1) / (ep4 - ep1) + k1;
-    Vec k24 = (k4-k2) * (mu - ep2) / (ep4 - ep2) + k2;
-    Vec k34 = (k4-k3) * (mu - ep3) / (ep4 - ep3) + k3;
-    Vec k23 = (k3-k2) * (mu - ep2) / (ep3 - ep2) + k2;
+    Vec k12 = (k2-k1) * (s_val - ep1) / (ep2 - ep1) + k1;
+    Vec k13 = (k3-k1) * (s_val - ep1) / (ep3 - ep1) + k1;
+    Vec k14 = (k4-k1) * (s_val - ep1) / (ep4 - ep1) + k1;
+    Vec k24 = (k4-k2) * (s_val - ep2) / (ep4 - ep2) + k2;
+    Vec k34 = (k4-k3) * (s_val - ep3) / (ep4 - ep3) + k3;
+    Vec k23 = (k3-k2) * (s_val - ep2) / (ep3 - ep2) + k2;
     
     vector<Vec> return_points(4, empty);
 
 
-    if ( mu > ep1 and mu <= ep2) {
+    if ( s_val > ep1 and s_val <= ep2) {
         return_points[0] = k12;
         return_points[1] = k13;
         return_points[2] = k14;
     }
-    if ( mu > ep3 and mu <= ep4) {
+    if ( s_val > ep3 and s_val <= ep4) {
         return_points[0] = k14;
         return_points[1] = k24;
         return_points[2] = k34;
     }
-    if ( mu > ep2 and mu <= ep3) {
+    if ( s_val > ep2 and s_val <= ep3) {
         return_points[0] = k24;
         return_points[1] = k23;
         return_points[2] = k13;
@@ -106,7 +106,7 @@ vector<Vec> points_in_tetrahedron(double mu, vector<VecAndEnergy> points) {
     int times_not_equal = 0;
     Vec not_equal;
     for (int i = 0; i < 4; i++)
-        if (mu != epsilon(points[i].vec)) {
+        if (s_val != func(points[i].vec, q)) {
             times_not_equal++;
             not_equal = points[i].vec;
         }
@@ -123,46 +123,14 @@ vector<Vec> points_in_tetrahedron(double mu, vector<VecAndEnergy> points) {
     return return_points;
 }
 
-bool surface_inside_cube(double mu, vector<VecAndEnergy> p) {
+bool surface_inside_cube(double s_val, vector<VecAndEnergy> p) {
     sort(p.begin(), p.end());
-    return (p[7].energy-mu) / (p[0].energy - mu) < 0;
+    return (p[7].energy - s_val) / (p[0].energy - s_val) < 0;
 }
 
-bool surface_inside_tetrahedron(double mu, vector<VecAndEnergy> ep_points) {
+bool surface_inside_tetrahedron(double s_val, vector<VecAndEnergy> ep_points) {
     sort(ep_points.begin(), ep_points.end());
-    return ((ep_points[3].energy)-mu) / ((ep_points[0].energy) - mu) < 0;
-}
-
-double area_inside(vector<double> epsilons) {
-    sort(epsilons.begin(), epsilons.end());
-    if ( mu > epsilons[0] and mu <= epsilons[1] ) {
-        double ep01 = mu - epsilons[0];
-        double ep21 = epsilons[1] - epsilons[0];
-        double ep31 = epsilons[2] - epsilons[0];
-        double ep41 = epsilons[3] - epsilons[0];
-        return 0.5 * pow(ep01, 2) * pow( pow(ep21,2) + pow(ep31,2) + pow(ep41,2), 0.5) / (ep21*ep31*ep41);
-    }
-    if ( mu > epsilons[1] and mu <= epsilons[2] ) {
-        double ep20 = mu - epsilons[1];
-        double ep21 = epsilons[1] - epsilons[0];
-        double ep31 = epsilons[2] - epsilons[0];
-        double ep41 = epsilons[3] - epsilons[0];
-        double ep32 = epsilons[2] - epsilons[1];
-        double ep42 = epsilons[3] - epsilons[1];
-        return 0.5 * pow( pow(ep21,2) + pow(ep31,2) + pow(ep41,2), 0.5) / (ep31*ep41) * (ep21 - 2*ep20 - pow(ep20,2) * (ep31 + ep42) / (ep32 * ep42));
-    }
-    if ( mu > epsilons[2] and mu <= epsilons[3] ) {
-        double ep40 = epsilons[3] - mu;
-        double ep21 = epsilons[1] - epsilons[0];
-        double ep31 = epsilons[2] - epsilons[0];
-        double ep41 = epsilons[3] - epsilons[0];
-        double ep42 = epsilons[3] - epsilons[1];
-        double ep43 = epsilons[3] - epsilons[2];
-        return 0.5 * pow(ep40, 2) * pow( pow(ep21,2) + pow(ep31,2) + pow(ep41,2), 0.5) / (ep41*ep42*ep43);
-    }
-    cout << "Not inside of tetrahedron\n";
-    assert(0==1);
-    return 0;
+    return ((ep_points[3].energy)-s_val) / ((ep_points[0].energy) - s_val) < 0;
 }
 
 double area_in_corners(vector<Vec> cp) {
@@ -179,7 +147,7 @@ double area_in_corners(vector<Vec> cp) {
     return A1 + A2;
 }
 
-vector<Vec> tetrahedron_method(double mu) {
+vector<Vec> tetrahedron_method(double (*func)(Vec k, Vec q), Vec q, double s_val) {
     double surface_area = 0;
     vector<vector<double>> tetrahedrons {
         {1, 2, 3, 5}, 
@@ -194,8 +162,8 @@ vector<Vec> tetrahedron_method(double mu) {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
-                vector<VecAndEnergy> points = points_from_indices(i, j, k);
-                if (not surface_inside_cube(mu, points)) continue;
+                vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k);
+                if (not surface_inside_cube(s_val, points)) continue;
 
                 for (int c = 0; c < 6; c++) {
 
@@ -204,8 +172,8 @@ vector<Vec> tetrahedron_method(double mu) {
                         ep_points[p] = points[tetrahedrons[c][p]-1];
                     }
 
-                    if (not surface_inside_tetrahedron(mu, ep_points)) continue;
-                    vector<Vec> corner_points = points_in_tetrahedron(mu, ep_points);
+                    if (not surface_inside_tetrahedron(s_val, ep_points)) continue;
+                    vector<Vec> corner_points = points_in_tetrahedron(func, q, s_val, ep_points);
 
                     Vec average;
 
@@ -214,14 +182,14 @@ vector<Vec> tetrahedron_method(double mu) {
 
                     for (Vec q : corner_points) {
                         average = (q + average);
-
                     }
                     average = average / (4-b);
 
                     double A = area_in_corners(corner_points);
                     if (dim == 2) A *= n / (2*k_max);
                     Vec k_point = average; k_point.area = A;
-                    //if (A > 0.0001)
+                    k_point.freq = s_val;
+                    if (A > 1e-8)
                         FS.push_back(k_point);
                     surface_area += A;
                     assert(not isnan(surface_area));

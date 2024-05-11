@@ -1,3 +1,4 @@
+#include <math.h>
 #include <iostream>
 #include <iomanip>
 
@@ -20,4 +21,7 @@ void progress_percent(double progress) {
     std::cout.flush();
 }
 
+double round(double number, int decimal_places) {
+    return round(number * pow(10, decimal_places)) / pow(10, decimal_places);
+}
 

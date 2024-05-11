@@ -33,13 +33,14 @@ int main() {
 
     vector<vector<Vec>> freq_FS;
     freq_FS = freq_tetrahedron_method(mu);
-    vector<Vec> FS = tetrahedron_method(mu);
+    vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
 
 
     cout << "Number of points along Fermi Surface: " << freq_FS[(l+1)/2 - 1].size() << endl;
     save_FS(freq_FS[(l+1)/2 - 1]);
     double DOS = get_DOS(freq_FS[(l+1)/2 - 1]);
     cout << "Density of States: " << DOS << endl;
+    return 0;
 /* 
  * ========================================================================================
  * =========================== CRITICAL TEMPERATURE CALCULATION  ==========================

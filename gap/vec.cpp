@@ -5,9 +5,10 @@
 
 using namespace Eigen;
 
-Vec::Vec(double x, double y, double z, bool is_cartesian, double area) {
+Vec::Vec(double x, double y, double z, bool is_cartesian, double area, double freq) {
         cartesian = is_cartesian;
         area = area;
+        freq = freq;
         //if (dim == 2) z = 0;
         vals(0) = x; vals(1) = y; vals(2) = z;
 }
