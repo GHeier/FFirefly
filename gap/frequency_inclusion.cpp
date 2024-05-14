@@ -150,23 +150,6 @@ unordered_map <double, vector<vector<vector<double>>>> chi_cube_freq(double T, d
 //    return 1 / (w - dE);
 //}
 //
-//double nonzero_ratio(double w, double dE, Vec k, Vec q, double T) {
-//    double e_qk = epsilon(k + q) - mu;
-//    double e_k = epsilon(k) - mu;
-//    double f_k = f(e_k, T);
-//    double f_qk = f(e_qk, T);
-//
-//    if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
-//        //return 0;
-//        if (T == 0 or exp(e_k/T) > 1e6) {
-//            return e_k < 0;
-//        }
-//        double term1 = 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
-//        //cout << "Ratio: " << term1 << endl;
-//        return term1;
-//    }
-//    return (f_qk - f_k) / (w - dE);
-//}
 //
 //double bound_sign(Vec k, Vec q) {
 //    double e_qk = epsilon(k + q) - mu;
@@ -369,28 +352,28 @@ unordered_map <double, vector<vector<vector<double>>>> chi_cube_freq(double T, d
 //    return eqk - ek;
 //}
 //
-void get_bounds2(Vec q, double &upper, double &lower) {
-    upper = 0; lower = 1000;
-    int pts = 100;
-    for (double i = 0; i < pts; i++) {
-        double x = get_k(i, pts);
-        for (double j = 0; j < pts; j++) {
-            double y = get_k(j, pts);
-            for (double k = 0; k < pts * (dim%2) + 1 * ((dim+1)%2); k++) {
-                double z = get_k(k, pts);
-                Vec k_val(x, y, z);
-                //double f_qk = f(epsilon(k_val + q), 0);
-                //double f_k = f(epsilon(k_val), 0);
-                //if (f_qk != f_k) {
-                    //double diff = epsilon(k_val + q) - epsilon(k_val);
-                    double diff = sphere_func(k_val, q) - sphere_func(k_val, Vec(0,0,0));
-                    if (diff > upper) upper = diff;
-                    if (diff < lower) lower = diff;
-                //}
-            }
-        }
-    }
-}
+//void get_bounds2(Vec q, double &upper, double &lower) {
+//    upper = 0; lower = 1000;
+//    int pts = 100;
+//    for (double i = 0; i < pts; i++) {
+//        double x = get_k(i, pts);
+//        for (double j = 0; j < pts; j++) {
+//            double y = get_k(j, pts);
+//            for (double k = 0; k < pts * (dim%2) + 1 * ((dim+1)%2); k++) {
+//                double z = get_k(k, pts);
+//                Vec k_val(x, y, z);
+//                //double f_qk = f(epsilon(k_val + q), 0);
+//                //double f_k = f(epsilon(k_val), 0);
+//                //if (f_qk != f_k) {
+//                    //double diff = epsilon(k_val + q) - epsilon(k_val);
+//                    double diff = sphere_func(k_val, q) - sphere_func(k_val, Vec(0,0,0));
+//                    if (diff > upper) upper = diff;
+//                    if (diff < lower) lower = diff;
+//                //}
+//            }
+//        }
+//    }
+//}
 //
 //void get_bounds3(Vec q, double &upper, double &lower) {
 //    upper = 0; lower = 1000;
@@ -428,15 +411,6 @@ void get_bounds2(Vec q, double &upper, double &lower) {
 //    }
 //    return sum;
 //}
-
-double sphere_func(Vec k, Vec q) {
-    //if (k.vals.norm() > 1) return 0;
-    return k.vals.squaredNorm();
-}
-
-double sphere_func_diff(Vec k, Vec q) {
-    return pow(pow(2*k.vals[0],2) + pow(2*k.vals[1],2) + pow(2*k.vals[2],2),0.5);
-}
 
 //double bound_chi_sum2(Vec q, double w, double T, int pts, double b, double a) {
 //    double sum = 0;
@@ -478,33 +452,129 @@ double sphere_func_diff(Vec k, Vec q) {
 //    return sum;
 //}
 
-double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a) {
-    double sum = 0;
-    double prev_s = 0;
-    for (double i = 0; i <= pts; i++) {
-        double s = a + (b-a) * i/pts;
-        if (i == 0) continue;
-        vector<Vec> layer = tetrahedron_method(sphere_func, q, s);
-        for (auto k : layer) {
-            //double r = nonzero_ratio(w, k.freq, k, q, T);
-            sum += k.area / vp(k) * (s - prev_s);
+double nonzero_ratio(double w, double dE, Vec k, Vec q, double T) {
+    double e_qk = epsilon(k + q) - mu;
+    double e_k = epsilon(k) - mu;
+    double f_k = f(e_k, T);
+    double f_qk = f(e_qk, T);
+    if ( fabs(dE - (e_qk - e_k)) > 0.01) {
+        cout << "dE: " << dE << " " << e_qk - e_k << endl;
+    }
+
+    if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
+        //return 0;
+        if (T == 0 or exp(e_k/T) > 1e6) {
+            return e_k < 0;
         }
-        prev_s = s;
+        double term1 = 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
+        //cout << "Ratio: " << term1 << endl;
+        return term1;
+    }
+    return (f_qk - f_k) / (w - dE);
+}
+
+void get_bounds3(Vec q, double &upper, double &lower, double (*func)(Vec k, Vec q)) {
+    upper = 0; lower = 1000;
+    int pts = 100;
+    for (double i = 0; i < pts; i++) {
+        double x = get_k(i, pts);
+        for (double j = 0; j < pts; j++) {
+            double y = get_k(j, pts);
+            for (double k = 0; k < pts * (dim%2) + 1 * ((dim+1)%2); k++) {
+                double z = get_k(k, pts);
+                Vec k_val(x, y, z);
+                double val = func(k_val, q);
+                if (val > upper) upper = val;
+                if (val < lower) lower = val;
+            }
+        }
+    }
+}
+
+double sphere_func(Vec k, Vec q) {
+    double x = k.vals[0] + q.vals[0], y = k.vals[1] + q.vals[1], z = k.vals[2] + q.vals[2];
+    return pow(x,2) + pow(y,2) + pow(z,2);
+    //if (k.vals.norm() > 1) return 0;
+    return k.vals.squaredNorm();
+}
+
+double sphere_func_diff(Vec k, Vec q) {
+    double x = k.vals[0] + q.vals[0], y = k.vals[1] + q.vals[1], z = k.vals[2] + q.vals[2];
+    return pow(pow(2*x,2) + pow(2*y,2) + pow(2*z,2), 0.5);
+    return pow(pow(2*k.vals[0],2) + pow(2*k.vals[1],2) + pow(2*k.vals[2],2),0.5);
+}
+
+double denominator(Vec k, Vec q) {
+    return k.vals.squaredNorm();
+}
+
+double denominator_diff(Vec k, Vec q) {
+    return 2*k.vals.norm();
+}
+
+double integrand_surface(Vec k, Vec q) {
+    double x = k.vals[0], y = k.vals[1], z = k.vals[2];
+    double r = pow(pow(x,2) + pow(y,2) + pow(z,2), 0.5);
+    return r;
+    //return (r - 1);
+}
+
+double integrand_surface_diff(Vec k, Vec q) {
+    double x = k.vals[0], y = k.vals[1], z = k.vals[2];
+    double r = pow(pow(x,2) + pow(y,2) + pow(z,2), 0.5);
+    return pow(pow(x/r,2) + pow(y/r,2) + pow(z/r,2), 0.5);
+}
+
+double integrand(Vec k, Vec q, double w, double T, double (*func)(Vec k, Vec q)) {
+    return 1;
+    return 1 / func(k,q);
+}
+
+double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, Vec q)) {
+    double sum = 0;
+
+    double D = (a + b - w) / (a - w);
+    double B = 1/D * (1 - pow(1-D,0.5)), C = w;
+    double A = b / pow(1-B,2);
+    //printf("A: %f, B: %f, C: %f, D: %f\n", A, B, C, D);
+    if (fabs(a-w) < 0.01) {
+        A = b - w;
+        B = 0;
+        C = w;
+        D = 0;
+    }
+    auto spacing = [A,B,C] (double i, double pts) { return A * pow(i/pts - B, 2) + C; };
+
+    //double lower_bound = -1000, upper_bound = 1000;
+    #pragma omp parallel for reduction(+:sum)
+    for (int i = 1; i <= pts; i++) {
+        double t = i;
+        double s = spacing(t, pts);
+        double prev_s = spacing(t-1, pts);
+
+        //if ( s > upper_bound or s < lower_bound) continue;
+
+        vector<Vec> layer = tetrahedron_method(func, q, s);
+        //if (layer.size() == 0 and s - prev_s > 0 and s > 0.5*lower_bound) upper_bound = s;
+        //if (layer.size() == 0 and s - prev_s < 0 and s < 0.5*upper_bound) lower_bound = s;
+
+        for (auto k : layer) {
+            double r = integrand(k, q, w, T, func);
+            sum += r * k.area / func_diff(k,q) * fabs(s - prev_s);
+        }
+        //cout << "Layer s=" << s << " (size: " << layer.size() << "): " << sum << endl;
     }
     return sum;
 }
 
 
 double chi_ep_integrate(Vec q, double w, double T) {
-    double a = 0, b = 1;
-    //get_bounds2(q, b, a);
+    double a, b;
+    get_bounds3(q, b, a, denominator);
+    b = 4;
     cout << "Bounds: " << a << " " << b << endl;
 
     double sum = 0;
-    //sum += gauss_chi_sum2(q, w, T, 0.5);
-    //printf("Gauss Sum: %f\n", sum);
-    //sum += bound_chi_sum(q, w, T, de, 0.1, b, a);
-    sum += bound_chi_sum4(q, w, T, 50, b, a);
-    //printf("Bound Sum: %f\n", sum);
-    return sum;// / pow(2*k_max, dim);
+    sum += bound_chi_sum4(q, w, T, 100, b, a, denominator, denominator_diff);
+    return sum; // / pow(2*k_max, dim);
 }

@@ -14,6 +14,7 @@ extern double k_max;
 
 extern double t;
 extern double tn;
+extern double tnn;
 extern double U;
 extern double w_D;
 

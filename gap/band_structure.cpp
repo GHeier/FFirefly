@@ -25,6 +25,7 @@ double epsilon_SC(const Vec k, double t, double tn) {
     double val = 0.0;
     for (int i = 0; i < dim; i++) {
         val += -2*t*cos(q.vals(i));
+        val += -2*tnn*cos(q.vals(i));
     }
     val += -4*tn*cos(q.vals(0))*cos(q.vals(1));
     return val;
