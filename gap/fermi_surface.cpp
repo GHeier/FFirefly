@@ -68,6 +68,29 @@ vector<VecAndEnergy> points_from_indices(double (*func)(Vec k, Vec q), Vec q, in
     return points;
 }
 
+vector<VecAndEnergy> points_from_points(double (*func)(Vec k, Vec q), Vec q, double x1, double x2, double y1, double y2, double z1, double z2) {
+    Vec p1(x1, y1, z1);
+    Vec p2(x2, y1, z1);
+    Vec p3(x2, y2, z1);
+    Vec p4(x1, y2, z1);
+    Vec p5(x1, y1, z2);
+    Vec p6(x2, y1, z2);
+    Vec p7(x2, y2, z2);
+    Vec p8(x1, y2, z2);
+
+    vector<VecAndEnergy> points(8); 
+    VecAndEnergy point1 = {p1, func(p1, q)}; points[0] = point1;
+    VecAndEnergy point2 = {p2, func(p2, q)}; points[1] = point2;
+    VecAndEnergy point3 = {p3, func(p3, q)}; points[2] = point3;
+    VecAndEnergy point4 = {p4, func(p4, q)}; points[3] = point4;
+    VecAndEnergy point5 = {p5, func(p5, q)}; points[4] = point5;
+    VecAndEnergy point6 = {p6, func(p6, q)}; points[5] = point6;
+    VecAndEnergy point7 = {p7, func(p7, q)}; points[6] = point7;
+    VecAndEnergy point8 = {p8, func(p8, q)}; points[7] = point8;
+
+    return points;
+}
+
 vector<Vec> points_in_tetrahedron(double (*func)(Vec k, Vec q), Vec q, double s_val, vector<VecAndEnergy> points) {
     sort(points.begin(), points.end());
     Vec k1 = points[0].vec, k2 = points[1].vec, k3 = points[2].vec, k4 = points[3].vec;
@@ -149,6 +172,7 @@ double area_in_corners(vector<Vec> cp) {
 
 vector<Vec> tetrahedron_method(double (*func)(Vec k, Vec q), Vec q, double s_val) {
     double surface_area = 0;
+    int iters = 0;
     vector<vector<double>> tetrahedrons {
         {1, 2, 3, 5}, 
         {1, 3, 4, 5},
@@ -162,9 +186,11 @@ vector<Vec> tetrahedron_method(double (*func)(Vec k, Vec q), Vec q, double s_val
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
+                iters++;
                 vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k);
                 if (not surface_inside_cube(s_val, points)) continue;
 
+                bool all_big = true;
                 for (int c = 0; c < 6; c++) {
 
                     vector<VecAndEnergy> ep_points(4);
@@ -189,14 +215,107 @@ vector<Vec> tetrahedron_method(double (*func)(Vec k, Vec q), Vec q, double s_val
                     if (dim == 2) A *= n / (2*k_max);
                     Vec k_point = average; k_point.area = A;
                     k_point.freq = s_val;
-                    if (A > 1e-8)
-                        FS.push_back(k_point);
+                    FS.push_back(k_point);
                     surface_area += A;
                     assert(not isnan(surface_area));
                 }
             }
         }
     }
+    //printf("Iters: %d\n", iters);
+    return FS;
+}
+
+vector<Vec> tetrahedron_method2(double (*func)(Vec k, Vec q), Vec q, double s_val) {
+    int iters = 0; double num_hits = 0;
+    vector<vector<double>> tetrahedrons {
+        {1, 2, 3, 5}, 
+        {1, 3, 4, 5},
+        {2, 5, 6, 3},
+        {4, 5, 8, 3},
+        {5, 8, 7, 3},
+        {5, 6, 7, 3}
+    };
+
+    vector<Vec> FS;
+
+    double DX = 2*k_max / m;
+    double dx = DX;
+    double ratio = 100;
+    int increased_density_counter = 0;
+
+    double x = -k_max;
+    for (int i = 0; x < k_max; i++) {
+        double y = -k_max;
+        for (int j = 0; y < k_max; j++) {
+            double z = -k_max;
+            for (double k = 0; z < k_max; k++) {
+                iters++;
+                if (dx == DX/ratio) increased_density_counter++;
+
+                if (increased_density_counter > pow(ratio,dim)) {
+                    //printf("Increased density counter: %d\n", increased_density_counter);
+                    dx = DX;
+                    increased_density_counter = 0;
+                }
+                vector<VecAndEnergy> points = points_from_points(func, q, x, x+dx, y, y+dx, z, z+dx);
+                if (not surface_inside_cube(s_val, points)) {
+                    z += dx;
+                    continue;
+                }
+                num_hits++;
+
+                vector<Vec> new_points(6);
+                double max_area = 0;
+                for (int c = 0; c < 6; c++) {
+
+                    vector<VecAndEnergy> ep_points(4);
+                    for (int p = 0; p < 4; p++) {
+                        ep_points[p] = points[tetrahedrons[c][p]-1];
+                    }
+
+                    if (not surface_inside_tetrahedron(s_val, ep_points)) continue;
+                    vector<Vec> corner_points = points_in_tetrahedron(func, q, s_val, ep_points);
+
+                    Vec average;
+
+                    double b = 0;
+                    if (corner_points[3] == average) b = 1.0;
+
+                    for (Vec q : corner_points) {
+                        average = (q + average);
+                    }
+                    average = average / (4-b);
+
+                    double A = area_in_corners(corner_points);
+                    if (dim == 2) A *= n / (2*k_max);
+
+                    Vec k_point = average; k_point.area = A;
+                    k_point.freq = s_val;
+
+                    new_points.push_back(k_point);
+                    max_area = max(max_area, A);
+                }
+
+
+                if (max_area > 1e-5 or dx == DX/ratio) {
+                    for (Vec k : new_points) {
+                        FS.push_back(k);
+                    }
+                }
+                else {
+                    dx = DX/ratio;
+                    continue;
+                }
+                if (dim == 2) break;
+                z += dx;
+            }
+            y += dx;
+        }
+        x += dx;
+    }
+    //printf("Iters: %d\n", iters);
+    //printf("Num hits: %f\n", num_hits);
     return FS;
 }
 

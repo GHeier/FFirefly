@@ -380,15 +380,22 @@ int main() {
     //}
     //return 0;
 
-    vector<Vec> layer = tetrahedron_method(sphere_func, Vec(0,0,0), 1);
-    vector<Vec> layer2 = tetrahedron_method(denominator, Vec(0,0,0), 1);
+    vector<Vec> layer = tetrahedron_method(denominator, Vec(0,0,0), 0.0001);
     double sum = 0;
-    for (auto x : layer) sum += x.area;
+    for (auto x : layer) {
+        sum += x.area;
+    }
     printf("Layer size: %i, area: %f\n", layer.size(), sum);
-    sum = 0;
-    for (auto x : layer2) sum += x.area;
-    printf("Layer size: %i, area: %f\n", layer2.size(), sum);
-    cout << chi_ep_integrate(Vec(1.0,1.0,1.0), 0.0, 0.25) << endl;
+
+    cout << chi_ep_integrate(Vec(1.0,1.0,1.0), 1.0, 0.25) << endl;
+    return 0;
+
+    ofstream test_integral("test_integral.dat");
+    for (int i = 0; i < 50; i++) {
+        double mag = i*0.02*M_PI;
+        Vec q(mag, mag, mag);
+        test_integral << mag << " " << chi_ep_integrate(Vec(1.0,1.0,1.0), 1.0, 0.25) << endl;
+    }
     return 0;
 
     //vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);

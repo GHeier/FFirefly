@@ -506,10 +506,13 @@ double sphere_func_diff(Vec k, Vec q) {
 
 double denominator(Vec k, Vec q) {
     return k.vals.squaredNorm();
+    return (k+q).vals.squaredNorm() - k.vals.squaredNorm();
 }
 
 double denominator_diff(Vec k, Vec q) {
     return 2*k.vals.norm();
+    Vec temp = 2*(k+q) - 2*k;
+    return temp.vals.norm();
 }
 
 double integrand_surface(Vec k, Vec q) {
@@ -526,8 +529,26 @@ double integrand_surface_diff(Vec k, Vec q) {
 }
 
 double integrand(Vec k, Vec q, double w, double T, double (*func)(Vec k, Vec q)) {
-    return 1;
-    return 1 / func(k,q);
+    //return 1;
+    if (fabs(k.freq - w) < 0.001) return 0;
+    return 1 / (k.freq - w);
+
+    //double e_qk = func(k, q) - mu;
+    //double e_k = func(k, Vec(0,0,0)) - mu;
+    //double f_k = f(e_k, T);
+    //double f_qk = f(e_qk, T);
+
+    //double dE = k.freq;
+    //if ( fabs(dE - (e_qk - e_k)) > 0.01) {
+    //    cout << "dE: " << dE << " " << e_qk - e_k << endl;
+    //}
+
+    //if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
+    //    if (T == 0 or exp(e_k/T) > 1e6)
+    //        return e_k < 0;
+    //    return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
+    //}
+    //return (f_qk - f_k) / (w - dE);
 }
 
 double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, Vec q)) {
@@ -536,33 +557,27 @@ double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, do
     double D = (a + b - w) / (a - w);
     double B = 1/D * (1 - pow(1-D,0.5)), C = w;
     double A = b / pow(1-B,2);
-    //printf("A: %f, B: %f, C: %f, D: %f\n", A, B, C, D);
     if (fabs(a-w) < 0.01) {
         A = b - w;
         B = 0;
         C = w;
-        D = 0;
     }
     auto spacing = [A,B,C] (double i, double pts) { return A * pow(i/pts - B, 2) + C; };
 
-    //double lower_bound = -1000, upper_bound = 1000;
-    #pragma omp parallel for reduction(+:sum)
+    //#pragma omp parallel for reduction(+:sum)
     for (int i = 1; i <= pts; i++) {
         double t = i;
         double s = spacing(t, pts);
         double prev_s = spacing(t-1, pts);
 
-        //if ( s > upper_bound or s < lower_bound) continue;
-
         vector<Vec> layer = tetrahedron_method(func, q, s);
-        //if (layer.size() == 0 and s - prev_s > 0 and s > 0.5*lower_bound) upper_bound = s;
-        //if (layer.size() == 0 and s - prev_s < 0 and s < 0.5*upper_bound) lower_bound = s;
-
+        double area = 0;
         for (auto k : layer) {
             double r = integrand(k, q, w, T, func);
             sum += r * k.area / func_diff(k,q) * fabs(s - prev_s);
+            area += k.area;
         }
-        //cout << "Layer s=" << s << " (size: " << layer.size() << "): " << sum << endl;
+        cout << "Layer s=" << s << " (size: " << layer.size() << ", area: " << area << "): " << sum << endl;
     }
     return sum;
 }
