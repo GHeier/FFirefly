@@ -387,6 +387,36 @@ int main() {
     }
     printf("Layer size: %i, area: %f\n", layer.size(), sum);
 
+
+    // Integral Testing Portion
+    double w = 1.0; double a, b;
+    Vec q(1,1,1);
+    get_bounds3(q, b, a, denominator);
+    b = 4;
+    cout << "Bounds: " << a << " " << b << endl;
+
+    double A = w - a;
+    double upr_pnt = pow((b - w) / (w - a), 1.0/3.0);
+    double lwr_pnt = -1;
+    if (w - a > b - w) {
+        A = b - w;
+        lwr_pnt = pow((w - a) / (b - w), 1.0/3.0);
+        upr_pnt = 1;
+    }
+    auto spacing = [A, w, lwr_pnt, upr_pnt] (double i, double pts) { 
+        double x = lwr_pnt + (upr_pnt - lwr_pnt) * i / pts;
+        return A * pow(x,3) + w; 
+    };
+    ofstream surface_file("surface.dat");
+    double pts = 50;
+    for (int i = 1; i <= pts; i++) {
+        double t = i;
+        double s = spacing(t, pts);
+        double prev_s = spacing(t-1, pts);
+        surface_file << t/pts << " " << s << endl;
+    }
+    return 0;
+
     cout << chi_ep_integrate(Vec(1.0,1.0,1.0), 1.0, 0.25) << endl;
     return 0;
 

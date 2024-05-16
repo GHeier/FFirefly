@@ -572,12 +572,15 @@ double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, do
 
         vector<Vec> layer = tetrahedron_method(func, q, s);
         double area = 0;
+        double temp = 0;
         for (auto k : layer) {
             double r = integrand(k, q, w, T, func);
             sum += r * k.area / func_diff(k,q) * fabs(s - prev_s);
             area += k.area;
+            temp += r * k.area;
         }
         cout << "Layer s=" << s << " (size: " << layer.size() << ", area: " << area << "): " << sum << endl;
+        cout << "Temp: " << temp << endl;
     }
     return sum;
 }
@@ -587,7 +590,6 @@ double chi_ep_integrate(Vec q, double w, double T) {
     double a, b;
     get_bounds3(q, b, a, denominator);
     b = 4;
-    cout << "Bounds: " << a << " " << b << endl;
 
     double sum = 0;
     sum += bound_chi_sum4(q, w, T, 100, b, a, denominator, denominator_diff);
