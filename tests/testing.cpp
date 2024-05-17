@@ -389,35 +389,23 @@ int main() {
 
 
     // Integral Testing Portion
-    double w = 1.0; double a, b;
+
+    double w = -1.0; double a, b;
     Vec q(1,1,1);
+
+    auto indefinite_integral = [w] (double x) {
+        //return (b - a) + 0.5 * log(1 - b) - 0.5 * log(1 - a) - 0.5 * log(b + 1) + 0.5 * log(a + 1);
+        return x - pow(w,0.5) * atan( x / pow(w, 0.5));
+    };
+
     get_bounds3(q, b, a, denominator);
     b = 4;
     cout << "Bounds: " << a << " " << b << endl;
 
-    double A = w - a;
-    double upr_pnt = pow((b - w) / (w - a), 1.0/3.0);
-    double lwr_pnt = -1;
-    if (w - a > b - w) {
-        A = b - w;
-        lwr_pnt = pow((w - a) / (b - w), 1.0/3.0);
-        upr_pnt = 1;
-    }
-    auto spacing = [A, w, lwr_pnt, upr_pnt] (double i, double pts) { 
-        double x = lwr_pnt + (upr_pnt - lwr_pnt) * i / pts;
-        return A * pow(x,3) + w; 
-    };
-    ofstream surface_file("surface.dat");
-    double pts = 50;
-    for (int i = 1; i <= pts; i++) {
-        double t = i;
-        double s = spacing(t, pts);
-        double prev_s = spacing(t-1, pts);
-        surface_file << t/pts << " " << s << endl;
-    }
-    return 0;
-
-    cout << chi_ep_integrate(Vec(1.0,1.0,1.0), 1.0, 0.25) << endl;
+    cout << comparison_integral(q, w, b, a, 100, denominator) << endl;
+    double calc = chi_ep_integrate(Vec(1.0,1.0,1.0), w, 0.25);
+    double exact = 4 * M_PI * (indefinite_integral(pow(b,0.5)) - indefinite_integral(pow(a,0.5)));
+    printf("Calculated: %.3f, Exact: %.3f\n", calc, exact);
     return 0;
 
     ofstream test_integral("test_integral.dat");

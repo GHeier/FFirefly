@@ -551,36 +551,62 @@ double integrand(Vec k, Vec q, double w, double T, double (*func)(Vec k, Vec q))
     //return (f_qk - f_k) / (w - dE);
 }
 
+void get_spacing_curve_consts(double w, double a, double b, double &A, double &upr, double &lwr) {
+    A = w - a;
+    upr = pow((b - w) / (w - a), 1.0/3.0);
+    if (isnan(upr)) upr = - pow(fabs(b-w)/fabs(w-a), 1.0/3.0);
+    lwr = -1;
+
+    if (w - a > b - w) {
+        A = b - w;
+        lwr = pow((w - a) / (b - w), 1.0/3.0);
+        if (isnan(lwr)) lwr = - pow(fabs(b-w)/fabs(w-a), 1.0/3.0);
+        upr = 1;
+    }
+}
+
+double comparison_integral(Vec q, double w, double b, double a, int pts, double (*func)(Vec k, Vec q)) {
+    printf("Starting Comparison Integral\n");
+    double sum = 0;
+    double A, upr, lwr;
+    get_spacing_curve_consts(w, a, b, A, upr, lwr);
+    cout << "A: " << A << " Upr: " << upr << " Lwr: " << lwr << endl;
+    auto spacing = [A, lwr, upr, w] (double i, double pts) { 
+        double x = lwr + (upr- lwr) * i / pts;
+        return A * pow(x,3) + w; 
+    };
+
+    for (int i = 1; i <= pts; i++) {
+        double t = i;
+        double r = pow(spacing(t, pts), 0.5);
+        double prev_r = pow(spacing(t-1, pts),0.5);
+        if (fabs(r*r - w) < 0.001) continue;
+        sum += 4 * M_PI * r*r / (r*r - w) * (r - prev_r);
+    }
+    return sum;
+}
+
 double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, Vec q)) {
     double sum = 0;
 
-    double D = (a + b - w) / (a - w);
-    double B = 1/D * (1 - pow(1-D,0.5)), C = w;
-    double A = b / pow(1-B,2);
-    if (fabs(a-w) < 0.01) {
-        A = b - w;
-        B = 0;
-        C = w;
-    }
-    auto spacing = [A,B,C] (double i, double pts) { return A * pow(i/pts - B, 2) + C; };
+    double A, upr, lwr;
+    get_spacing_curve_consts(w, a, b, A, upr, lwr);
+    auto spacing = [A, w, lwr, upr] (double i, double pts) { 
+        double x = lwr + (upr- lwr) * i / pts;
+        return A * pow(x,3) + w; 
+    };
 
-    //#pragma omp parallel for reduction(+:sum)
+    #pragma omp parallel for reduction(+:sum)
     for (int i = 1; i <= pts; i++) {
         double t = i;
         double s = spacing(t, pts);
         double prev_s = spacing(t-1, pts);
 
         vector<Vec> layer = tetrahedron_method(func, q, s);
-        double area = 0;
-        double temp = 0;
         for (auto k : layer) {
             double r = integrand(k, q, w, T, func);
             sum += r * k.area / func_diff(k,q) * fabs(s - prev_s);
-            area += k.area;
-            temp += r * k.area;
         }
-        cout << "Layer s=" << s << " (size: " << layer.size() << ", area: " << area << "): " << sum << endl;
-        cout << "Temp: " << temp << endl;
     }
     return sum;
 }

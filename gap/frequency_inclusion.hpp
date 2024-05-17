@@ -33,5 +33,7 @@ double singularity_func(Vec k, Vec q);
 double denominator(Vec k, Vec q);
 double denominator_diff(Vec k, Vec q);
 double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, Vec q));
+void get_spacing_curve_consts(double w, double a, double b, double &A, double &upr, double &lwr);
+double comparison_integral(Vec q, double w, double b, double a, int pts, double (*func)(Vec k, Vec q));
 
 #endif
