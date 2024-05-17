@@ -345,7 +345,7 @@ void split_surface_vals(Vec q) {
 }
 
 void mu_to_n() {
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 5000; i++) {
         double newmu = -0.4 + 0.2/1000.0 * i;
         cout << "Mu: " << newmu << 
             " n: " << 2 * integrate_susceptibility(Vec(0,0,0), 0, newmu, 0, 1000) << endl;
@@ -353,7 +353,7 @@ void mu_to_n() {
 }
 
 int main() {
-    //mu_to_n(); return 0;
+    mu_to_n(); return 0;
 
     //double w = 1, a = 1, b = 50; 
     //double D = (a + b - w) / (a - w);
@@ -380,7 +380,7 @@ int main() {
     //}
     //return 0;
 
-    vector<Vec> layer = tetrahedron_method(denominator, Vec(0,0,0), 0.0001);
+    vector<Vec> layer = tetrahedron_method(denominator, Vec(0.1,0.1,0.1), 0.0001);
     double sum = 0;
     for (auto x : layer) {
         sum += x.area;
@@ -391,30 +391,30 @@ int main() {
     // Integral Testing Portion
 
     double w = -1.0; double a, b;
-    Vec q(1,1,1);
+    //Vec q(1,1,1);
 
-    auto indefinite_integral = [w] (double x) {
-        //return (b - a) + 0.5 * log(1 - b) - 0.5 * log(1 - a) - 0.5 * log(b + 1) + 0.5 * log(a + 1);
-        return x - pow(w,0.5) * atan( x / pow(w, 0.5));
-    };
+    //auto indefinite_integral = [w] (double x) {
+    //    //return (b - a) + 0.5 * log(1 - b) - 0.5 * log(1 - a) - 0.5 * log(b + 1) + 0.5 * log(a + 1);
+    //    return x - pow(w,0.5) * atan( x / pow(w, 0.5));
+    //};
 
-    get_bounds3(q, b, a, denominator);
-    b = 4;
-    cout << "Bounds: " << a << " " << b << endl;
+    //get_bounds3(q, b, a, denominator);
+    //b = 4;
+    //cout << "Bounds: " << a << " " << b << endl;
 
-    cout << comparison_integral(q, w, b, a, 100, denominator) << endl;
-    double calc = chi_ep_integrate(Vec(1.0,1.0,1.0), w, 0.25);
-    double exact = 4 * M_PI * (indefinite_integral(pow(b,0.5)) - indefinite_integral(pow(a,0.5)));
-    printf("Calculated: %.3f, Exact: %.3f\n", calc, exact);
-    return 0;
+    //cout << comparison_integral(q, w, b, a, 100, denominator) << endl;
+    //double calc = chi_ep_integrate(Vec(1.0,1.0,1.0), w, 0.25);
+    //double exact = 4 * M_PI * (indefinite_integral(pow(b,0.5)) - indefinite_integral(pow(a,0.5)));
+    //printf("Calculated: %.3f, Exact: %.3f\n", calc, exact);
+    //return 0;
 
-    ofstream test_integral("test_integral.dat");
-    for (int i = 0; i < 50; i++) {
-        double mag = i*0.02*M_PI;
-        Vec q(mag, mag, mag);
-        test_integral << mag << " " << chi_ep_integrate(Vec(1.0,1.0,1.0), 1.0, 0.25) << endl;
-    }
-    return 0;
+    //ofstream test_integral("test_integral.dat");
+    //for (int i = 0; i < 50; i++) {
+    //    double mag = i*0.02*M_PI;
+    //    Vec q(mag, mag, mag);
+    //    test_integral << mag << " " << chi_ep_integrate(Vec(1.0,1.0,1.0), 1.0, 0.25) << endl;
+    //}
+    //return 0;
 
     //vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
     //Vec q(0.1, 0.1, 0.1);
@@ -478,5 +478,6 @@ int main() {
     //return 0;
 
     plot_chi(0.25, 0.0);
-    plot_chi5(0.25, 0.0); return 0;
+    //plot_chi5(0.25, 0.0); 
+    return 0;
 }

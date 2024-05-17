@@ -505,14 +505,11 @@ double sphere_func_diff(Vec k, Vec q) {
 }
 
 double denominator(Vec k, Vec q) {
-    return k.vals.squaredNorm();
-    return (k+q).vals.squaredNorm() - k.vals.squaredNorm();
+    return e_diff(k, q);
 }
 
 double denominator_diff(Vec k, Vec q) {
-    return 2*k.vals.norm();
-    Vec temp = 2*(k+q) - 2*k;
-    return temp.vals.norm();
+    return vp_diff(k, q);
 }
 
 double integrand_surface(Vec k, Vec q) {
@@ -530,25 +527,25 @@ double integrand_surface_diff(Vec k, Vec q) {
 
 double integrand(Vec k, Vec q, double w, double T, double (*func)(Vec k, Vec q)) {
     //return 1;
-    if (fabs(k.freq - w) < 0.001) return 0;
-    return 1 / (k.freq - w);
+    //if (fabs(k.freq - w) < 0.001) return 0;
+    //return 1 / (k.freq - w);
 
-    //double e_qk = func(k, q) - mu;
-    //double e_k = func(k, Vec(0,0,0)) - mu;
-    //double f_k = f(e_k, T);
-    //double f_qk = f(e_qk, T);
+    double e_qk = epsilon(k+q) - mu;
+    double e_k = epsilon(k) - mu;
+    double f_k = f(e_k, T);
+    double f_qk = f(e_qk, T);
 
-    //double dE = k.freq;
-    //if ( fabs(dE - (e_qk - e_k)) > 0.01) {
-    //    cout << "dE: " << dE << " " << e_qk - e_k << endl;
-    //}
+    double dE = k.freq;
+    if ( fabs(dE - (e_qk - e_k)) > 0.1) {
+        cout << "dE: " << dE << " " << e_qk - e_k << endl;
+    }
 
-    //if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
-    //    if (T == 0 or exp(e_k/T) > 1e6)
-    //        return e_k < 0;
-    //    return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
-    //}
-    //return (f_qk - f_k) / (w - dE);
+    if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
+        if (T == 0 or exp(e_k/T) > 1e6)
+            return e_k < 0;
+        return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
+    }
+    return (f_qk - f_k) / (w - dE);
 }
 
 void get_spacing_curve_consts(double w, double a, double b, double &A, double &upr, double &lwr) {
@@ -615,9 +612,8 @@ double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, do
 double chi_ep_integrate(Vec q, double w, double T) {
     double a, b;
     get_bounds3(q, b, a, denominator);
-    b = 4;
 
     double sum = 0;
-    sum += bound_chi_sum4(q, w, T, 100, b, a, denominator, denominator_diff);
-    return sum; // / pow(2*k_max, dim);
+    sum += bound_chi_sum4(q, w, T, 50, b, a, denominator, denominator_diff);
+    return sum / pow(2*k_max, dim);
 }

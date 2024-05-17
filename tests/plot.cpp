@@ -39,8 +39,8 @@ using std::unordered_map;
 void plot_chi(double T, double w) {
     ofstream file("chi_plot.dat");
     file << "q chi " << endl;
-    double n = 300.0;
-    for (double new_mu = mu; new_mu > -4.0; new_mu--) {
+    double n = 50.0;
+    for (double new_mu = 0; new_mu > -4.0; new_mu--) {
         for (double i = 0; i < n; i++) {
             double q_mag = i/(n-1) * M_PI;
             Vec q(q_mag, q_mag, q_mag);
