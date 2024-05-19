@@ -8,7 +8,7 @@
 using namespace std;
 
 // Global Variables
-int n = 150; // Number of k points
+int n = 140; // Number of k points
 int m = 80; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 2; // Number of dimensions)
