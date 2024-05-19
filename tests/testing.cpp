@@ -353,7 +353,7 @@ void mu_to_n() {
 }
 
 int main() {
-    mu_to_n(); return 0;
+    //mu_to_n(); return 0;
 
     //double w = 1, a = 1, b = 50; 
     //double D = (a + b - w) / (a - w);
@@ -380,17 +380,17 @@ int main() {
     //}
     //return 0;
 
-    vector<Vec> layer = tetrahedron_method(denominator, Vec(0.1,0.1,0.1), 0.0001);
-    double sum = 0;
-    for (auto x : layer) {
-        sum += x.area;
-    }
-    printf("Layer size: %i, area: %f\n", layer.size(), sum);
+    //vector<Vec> layer = tetrahedron_method(denominator, Vec(0.1,0.1,0.1), 0.0001);
+    //double sum = 0;
+    //for (auto x : layer) {
+    //    sum += x.area;
+    //}
+    //printf("Layer size: %i, area: %f\n", layer.size(), sum);
 
 
     // Integral Testing Portion
 
-    double w = -1.0; double a, b;
+    double w = 0.0; double a, b;
     //Vec q(1,1,1);
 
     //auto indefinite_integral = [w] (double x) {
@@ -477,7 +477,14 @@ int main() {
 
     //return 0;
 
+    double T = 0.25;
+    //Vec q1(0.1, 0.1, 0.1); Vec q2(0,0,0); Vec q3(0.05, 0.05, 0.05);
+    //cout << close_to_zero(q1, w, T, 100) << endl;
+    //cout << close_to_zero(q2, w, T, 100) << endl;
+    //cout << close_to_zero(q3, w, T, 100) << endl;
+    //return 0;
+
     plot_chi(0.25, 0.0);
-    //plot_chi5(0.25, 0.0); 
+    plot_chi5(0.25, 0.0); 
     return 0;
 }

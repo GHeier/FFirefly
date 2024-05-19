@@ -9,7 +9,7 @@ using namespace std;
 
 // Global Variables
 int n = 50; // Number of k points
-int m = 30; // Number of chi points
+int m = 50; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 3; // Number of dimensions)
 string potential_name = "const";

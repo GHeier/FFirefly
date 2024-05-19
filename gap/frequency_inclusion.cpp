@@ -18,6 +18,7 @@
 #include <boost/math/quadrature/gauss.hpp>
 
 #include "calculations.h"
+#include "band_structure.h"
 #include "cfg.h"
 #include "fermi_surface.h"
 #include "potential.h"
@@ -556,7 +557,7 @@ void get_spacing_curve_consts(double w, double a, double b, double &A, double &u
 
     if (w - a > b - w) {
         A = b - w;
-        lwr = pow((w - a) / (b - w), 1.0/3.0);
+        lwr = - pow((w - a) / (b - w), 1.0/3.0);
         if (isnan(lwr)) lwr = - pow(fabs(b-w)/fabs(w-a), 1.0/3.0);
         upr = 1;
     }
@@ -608,12 +609,30 @@ double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, do
     return sum;
 }
 
+double close_to_zero(Vec q, double w, double T, int pts) {
+    double sum = 0;
+    vector<Vec> layer = tetrahedron_method(e_base_avg, q, mu);
+
+    auto scale = [] (Vec k, Vec q, double w, double T) {
+        if (w == 0 and q.vals.norm() == 0) return 1.0;
+        double num = fermi_velocity_SC(k) * q;
+        double denom = w - (epsilon(k+q) - epsilon(k));
+        return - num / denom;
+    };
+
+    for (auto k : layer) {
+        double r = scale(k, q, w, T);
+        sum += r * k.area / vp(k);
+    }
+    return sum;
+}
 
 double chi_ep_integrate(Vec q, double w, double T) {
     double a, b;
     get_bounds3(q, b, a, denominator);
 
-    double sum = 0;
-    sum += bound_chi_sum4(q, w, T, 50, b, a, denominator, denominator_diff);
+    double sum = 0; int pts = 100;
+    sum = bound_chi_sum4(q, w, T, pts, b, a, denominator, denominator_diff);
+    if (q.vals.norm() < 0.2) sum = close_to_zero(q, w, T, pts);
     return sum / pow(2*k_max, dim);
 }
