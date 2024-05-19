@@ -478,6 +478,18 @@ int main() {
     //return 0;
 
     double T = 0.25;
+    cout << "Num States: " << num_states(w, T, 1000) << endl;
+    vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), -1);
+    vector<Vec> FS2 = tetrahedron_method(e_base_avg, Vec(0,0,0), -2);
+    double DOS = get_DOS(FS);
+    double DOS2 = get_DOS(FS2);
+    double sum = 0;
+    for (auto x : FS) sum += x.area / vp(x);
+    printf("FS1 Sum: %.3f, DOS=%.3f\n", sum, DOS);
+    sum = 0;
+    for (auto x : FS2) sum += x.area / vp(x);
+    printf("FS2 Sum: %.3f, DOS=%.3f\n", sum, DOS2);
+    //return 0;
     //Vec q1(0.1, 0.1, 0.1); Vec q2(0,0,0); Vec q3(0.05, 0.05, 0.05);
     //cout << close_to_zero(q1, w, T, 100) << endl;
     //cout << close_to_zero(q2, w, T, 100) << endl;
@@ -485,6 +497,7 @@ int main() {
     //return 0;
 
     plot_chi(0.25, 0.0);
+    plot_chi2(0.25);
     plot_chi5(0.25, 0.0); 
     return 0;
 }

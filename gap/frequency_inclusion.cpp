@@ -627,12 +627,31 @@ double close_to_zero(Vec q, double w, double T, int pts) {
     return sum;
 }
 
+double num_states(double w, double T, int pts) {
+    double sum = 0;
+    for (int i = 0; i < pts; i++) {
+        double x = get_k(i, pts);
+        for (int j = 0; j < pts; j++) {
+            double y = get_k(j, pts);
+            for (int k = 0; k < pts * (dim%2) + 1 * ((dim+1)%2); k++) {
+                double z = get_k(k, pts);
+                Vec k_val(x, y, z);
+                double f_k = f(epsilon(k_val) - mu, T);
+                sum += f_k;
+            }
+        }
+    }
+    return sum / (pow(pts-1, dim));
+}
+
 double chi_ep_integrate(Vec q, double w, double T) {
     double a, b;
     get_bounds3(q, b, a, denominator);
 
     double sum = 0; int pts = 100;
     sum = bound_chi_sum4(q, w, T, pts, b, a, denominator, denominator_diff);
-    if (q.vals.norm() < 0.2) sum = close_to_zero(q, w, T, pts);
+    if (q.vals.norm() == 0) {
+        return integrate_susceptibility(q, T, mu, w, pts);
+    }
     return sum / pow(2*k_max, dim);
 }

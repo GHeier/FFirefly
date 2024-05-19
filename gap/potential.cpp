@@ -220,9 +220,9 @@ double chi_trapezoidal(Vec q, double T, double mu, double w, int num_points) {
 double integrate_susceptibility(Vec q, double T, double mu, double w, int num_points) {
     //return imaginary_integration(q, T, mu, w, num_points, 0.000);
     auto func = [q, T, mu, w] (double kx, double ky, double kz) {
-        if (epsilon(Vec(kx,ky,kz)) < mu) return 1;
-        return 0;
-        //return ratio(q, Vec(kx, ky, kz), T, mu, w);
+        //if (epsilon(Vec(kx,ky,kz)) < mu) return 1;
+        //return 0;
+        return ratio(q, Vec(kx, ky, kz), T, mu, w);
         //return modified_ratio(q, Vec(kx, ky, kz), T, mu, w, 0.0001);
     };
 
@@ -427,6 +427,8 @@ vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS, double 
     cout << "Calculating Chi Cube...\n";
     double empty_val = -98214214;
     map[vec_to_string(Vec(0,0,0))] = DOS;
+    cout << "DOS: " << DOS << endl;
+    cout << "map_val: " << map[vec_to_string(Vec(0,0,0))] << endl;
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < m; j++) {
             for (int k = 0; k < m_z; k++) {
@@ -457,6 +459,7 @@ vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS, double 
         }
     }
 
+    cout << "map_val: " << map[vec_to_string(Vec(0,0,0))] << endl;
     cout << "\nChi Cube Created.\n";
     return cube;
 }

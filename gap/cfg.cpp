@@ -8,10 +8,10 @@
 using namespace std;
 
 // Global Variables
-int n = 50; // Number of k points
-int m = 50; // Number of chi points
+int n = 80; // Number of k points
+int m = 80; // Number of chi points
 int l = 5; // Number of frequency points
-int dim = 3; // Number of dimensions)
+int dim = 2; // Number of dimensions)
 string potential_name = "const";
 string band_name = "simple_cubic";
                
