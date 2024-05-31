@@ -22,7 +22,7 @@ bool surface_inside_cube(double s_val, vector<VecAndEnergy> p);
 bool surface_inside_tetrahedron(double s_val, vector<VecAndEnergy> ep_points);
 double area_in_corners(vector<Vec> cp);
 vector<Vec> tetrahedron_method(double (*func)(Vec k, Vec q), Vec q, double s_val);
-vector<Vec> tetrahedron_method2(double (*func)(Vec k, Vec q), Vec q, double s_val);
+double tetrahedron_sum(double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, Vec q), Vec q, double s_val, double w, double T);
 vector<Vec> sort_by_adjacent(vector<Vec> &FS);
 vector<VecAndEnergy> FS_to_q_shifted(vector<Vec> &FS, Vec q);
 void filter_FS(vector<Vec> &FS);

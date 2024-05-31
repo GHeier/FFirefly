@@ -526,7 +526,7 @@ double integrand_surface_diff(Vec k, Vec q) {
     return pow(pow(x/r,2) + pow(y/r,2) + pow(z/r,2), 0.5);
 }
 
-double integrand(Vec k, Vec q, double w, double T, double (*func)(Vec k, Vec q)) {
+double integrand(Vec k, Vec q, double w, double T) {
     //return 1;
     //if (fabs(k.freq - w) < 0.001) return 0;
     //return 1 / (k.freq - w);
@@ -600,11 +600,12 @@ double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, do
         double s = spacing(t, pts);
         double prev_s = spacing(t-1, pts);
 
-        vector<Vec> layer = tetrahedron_method(func, q, s);
-        for (auto k : layer) {
-            double r = integrand(k, q, w, T, func);
-            sum += r * k.area / func_diff(k,q) * fabs(s - prev_s);
-        }
+        //vector<Vec> layer = tetrahedron_method(func, q, s);
+        //for (auto k : layer) {
+        //    double r = integrand(k, q, w, T);
+        //    sum += r * k.area / func_diff(k,q) * fabs(s - prev_s);
+        //}
+        sum += tetrahedron_sum(func, func_diff, q, s, w, T) * fabs(s - prev_s);
     }
     return sum;
 }

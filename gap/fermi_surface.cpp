@@ -7,6 +7,7 @@
 #include <algorithm>
 #include "cfg.h"
 #include "vec.h"
+#include "frequency_inclusion.hpp"
 #include "fermi_surface.h"
 
 using namespace std;
@@ -226,8 +227,7 @@ vector<Vec> tetrahedron_method(double (*func)(Vec k, Vec q), Vec q, double s_val
     return FS;
 }
 
-vector<Vec> tetrahedron_method2(double (*func)(Vec k, Vec q), Vec q, double s_val) {
-    int iters = 0; double num_hits = 0;
+double tetrahedron_sum(double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, Vec q), Vec q, double s_val, double w, double T) {
     vector<vector<double>> tetrahedrons {
         {1, 2, 3, 5}, 
         {1, 3, 4, 5},
@@ -237,36 +237,13 @@ vector<Vec> tetrahedron_method2(double (*func)(Vec k, Vec q), Vec q, double s_va
         {5, 6, 7, 3}
     };
 
-    vector<Vec> FS;
+    double sum = 0;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
+                vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k);
+                if (not surface_inside_cube(s_val, points)) continue;
 
-    double DX = 2*k_max / m;
-    double dx = DX;
-    double ratio = 100;
-    int increased_density_counter = 0;
-
-    double x = -k_max;
-    for (int i = 0; x < k_max; i++) {
-        double y = -k_max;
-        for (int j = 0; y < k_max; j++) {
-            double z = -k_max;
-            for (double k = 0; z < k_max; k++) {
-                iters++;
-                if (dx == DX/ratio) increased_density_counter++;
-
-                if (increased_density_counter > pow(ratio,dim)) {
-                    //printf("Increased density counter: %d\n", increased_density_counter);
-                    dx = DX;
-                    increased_density_counter = 0;
-                }
-                vector<VecAndEnergy> points = points_from_points(func, q, x, x+dx, y, y+dx, z, z+dx);
-                if (not surface_inside_cube(s_val, points)) {
-                    z += dx;
-                    continue;
-                }
-                num_hits++;
-
-                vector<Vec> new_points(6);
-                double max_area = 0;
                 for (int c = 0; c < 6; c++) {
 
                     vector<VecAndEnergy> ep_points(4);
@@ -289,34 +266,14 @@ vector<Vec> tetrahedron_method2(double (*func)(Vec k, Vec q), Vec q, double s_va
 
                     double A = area_in_corners(corner_points);
                     if (dim == 2) A *= n / (2*k_max);
-
                     Vec k_point = average; k_point.area = A;
                     k_point.freq = s_val;
-
-                    new_points.push_back(k_point);
-                    max_area = max(max_area, A);
+                    sum += integrand(average, q, w, T) * A / func_diff(average, q);
                 }
-
-
-                if (max_area > 1e-5 or dx == DX/ratio) {
-                    for (Vec k : new_points) {
-                        FS.push_back(k);
-                    }
-                }
-                else {
-                    dx = DX/ratio;
-                    continue;
-                }
-                if (dim == 2) break;
-                z += dx;
             }
-            y += dx;
         }
-        x += dx;
     }
-    //printf("Iters: %d\n", iters);
-    //printf("Num hits: %f\n", num_hits);
-    return FS;
+    return sum;
 }
 
 // Note: Should only be used for 2D, fails in 3D

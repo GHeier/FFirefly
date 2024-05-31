@@ -353,151 +353,26 @@ void mu_to_n() {
 }
 
 int main() {
-    //mu_to_n(); return 0;
-
-    //double w = 1, a = 1, b = 50; 
-    //double D = (a + b - w) / (a - w);
-    //double C = w;
-    //double B = 1/D * (1 - pow(1-D,0.5));
-    //double A = b / pow(1-B,2);
-    ////double A = -4*w + 2*(b+a), B = 4*w - b - 3*a, C = a;
-    //double pts = 50;
-
-    //if (a == w) {
-    //    A = b - w;
-    //    B = 0;
-    //    C = w;
-    //    D = 0;
-    //}
-
-    //printf("A: %f, B: %f, C: %f, D: %f\n", A, B, C, D);
-    //printf("a: %f, b: %f, w: %f\n", a, b, w);
-
-    //ofstream file("test.dat");
-    //for (double t = 1; t <= pts; t++) {
-    //    double s = A * pow(t/pts - B, 2) + C;
-    //    file << t/pts << " " << s << endl;
-    //}
-    //return 0;
-
-    //vector<Vec> layer = tetrahedron_method(denominator, Vec(0.1,0.1,0.1), 0.0001);
-    //double sum = 0;
-    //for (auto x : layer) {
-    //    sum += x.area;
-    //}
-    //printf("Layer size: %i, area: %f\n", layer.size(), sum);
-
-
-    // Integral Testing Portion
-
-    double w = 0.0; double a, b;
-    //Vec q(1,1,1);
-
-    //auto indefinite_integral = [w] (double x) {
-    //    //return (b - a) + 0.5 * log(1 - b) - 0.5 * log(1 - a) - 0.5 * log(b + 1) + 0.5 * log(a + 1);
-    //    return x - pow(w,0.5) * atan( x / pow(w, 0.5));
-    //};
-
-    //get_bounds3(q, b, a, denominator);
-    //b = 4;
-    //cout << "Bounds: " << a << " " << b << endl;
-
-    //cout << comparison_integral(q, w, b, a, 100, denominator) << endl;
-    //double calc = chi_ep_integrate(Vec(1.0,1.0,1.0), w, 0.25);
-    //double exact = 4 * M_PI * (indefinite_integral(pow(b,0.5)) - indefinite_integral(pow(a,0.5)));
-    //printf("Calculated: %.3f, Exact: %.3f\n", calc, exact);
-    //return 0;
-
-    //ofstream test_integral("test_integral.dat");
-    //for (int i = 0; i < 50; i++) {
-    //    double mag = i*0.02*M_PI;
-    //    Vec q(mag, mag, mag);
-    //    test_integral << mag << " " << chi_ep_integrate(Vec(1.0,1.0,1.0), 1.0, 0.25) << endl;
-    //}
-    //return 0;
-
-    //vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
-    //Vec q(0.1, 0.1, 0.1);
-    //vector<Vec> above = FS, below = FS;
-    //double max_ep, min_ep;
-    //shift_layers(above, q, max_ep, min_ep);
-    //shift_layers(below, -1*q, max_ep, min_ep);
-    //vector<Vec> test = tetrahedron_method(modified_e_diff, q, 0);
-    //vector<Vec> test1 = tetrahedron_method(modified_e_diff, q, -0.1);
-    //vector<Vec> test2 = tetrahedron_method(modified_e_diff, q, -1.9);
-    //vector<Vec> test3 = tetrahedron_method(modified_e_diff, q, -4.15);
-    //printf("Contour surface sizes: %i %i %i %i\n", test.size(), test1.size(), test2.size(), test3.size());
-
-    //double upper, lower;
-    //get_bounds2(q, upper, lower);
-    //cout << "Upper: " << upper << " Lower: " << lower << endl;
-
-
-    //int pts = 50;
-    //double z = get_k(0, pts);
-    //ofstream volume_file("volume.dat");
-    //for (double i = 0; i < pts; i++) {
-    //    double x = get_k(i, pts);
-    //    for (double j = 0; j < pts; j++) {
-    //        double y = get_k(j, pts);
-    //        Vec k_val(x, y, z);
-    //        double f_qk = f(epsilon(k_val + q), 0);
-    //        double f_k = f(epsilon(k_val), 0);
-    //        if (f_qk != f_k) volume_file << k_val << endl;
-    //    }
-    //}
-    //
-    //ofstream test_file("test_surface.dat");
-    //for (auto x : test) test_file << x << endl;
-    //ofstream test_file1("test_surface1.dat");
-    //for (auto x : test1) test_file1 << x << endl;
-    //ofstream test_file2("test_surface2.dat");
-    //for (auto x : test2) test_file2 << x << endl;
-    //ofstream test_file3("test_surface3.dat");
-    //for (auto x : test3) test_file3 << x << endl;
-
-    //ofstream FS_file("FS.dat");
-    //ofstream above_file("above.dat");
-    //ofstream below_file("below.dat");
-    //for (int i = 0; i < FS.size(); i++) {
-    //    FS_file << FS[i] << endl;
-    //    above_file << above[i] << endl;
-    //    below_file << below[i] << endl;
-    //}
-
-    ////return 0;
-
-    //double T = 0.25, w = 0.0;
-    //printf("Chi at (0.1,0.1,0.1): %.3f, %.3f\n", 
-    //        chi_trapezoidal(Vec(0.1,0.1,0.1), T, mu, w, 100), 
-    //        chi_ep_integrate(Vec(0.1,0.1,0.1), w, T));
-    //printf("Chi at (M_PI,M_PI,M_PI): %.3f, %.3f\n", 
-    //        chi_trapezoidal(Vec(M_PI,M_PI,M_PI), T, mu, w, 100), 
-    //        chi_ep_integrate(Vec(M_PI,M_PI,M_PI), w, T));
-
-    //return 0;
-
+    Vec q(0.1, 0.1, 0.1);
     double T = 0.25;
-    cout << "Num States: " << num_states(w, T, 1000) << endl;
-    vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), -1);
-    vector<Vec> FS2 = tetrahedron_method(e_base_avg, Vec(0,0,0), -2);
-    double DOS = get_DOS(FS);
-    double DOS2 = get_DOS(FS2);
-    double sum = 0;
-    for (auto x : FS) sum += x.area / vp(x);
-    printf("FS1 Sum: %.3f, DOS=%.3f\n", sum, DOS);
-    sum = 0;
-    for (auto x : FS2) sum += x.area / vp(x);
-    printf("FS2 Sum: %.3f, DOS=%.3f\n", sum, DOS2);
-    //return 0;
-    //Vec q1(0.1, 0.1, 0.1); Vec q2(0,0,0); Vec q3(0.05, 0.05, 0.05);
-    //cout << close_to_zero(q1, w, T, 100) << endl;
-    //cout << close_to_zero(q2, w, T, 100) << endl;
-    //cout << close_to_zero(q3, w, T, 100) << endl;
-    //return 0;
+    double w = 0.0;
 
-    plot_chi(0.25, 0.0);
-    plot_chi2(0.25);
-    plot_chi5(0.25, 0.0); 
+    Vec k(-M_PI/2, -M_PI/2);
+    Vec k2(-2.6, M_PI/2);
+    Vec k3(-2.7, M_PI/2);
+    printf("Diff=%.3f\n", denominator(k, q));
+    printf("Diff=%.3f\n", denominator(k2, q));
+    printf("Diff=%.3f\n", denominator(k3, q));
+
+    double s = 0.39;
+    //ofstream file("below.dat");
+    //vector<Vec> surface = tetrahedron_method(denominator, q, s);
+    //for (auto x: surface) {
+    //    file << x << endl;
+    //}
+
+    cout << chi_ep_integrate(q, w, T) << endl;
+
+    plot_surfaces(q, T, w);
     return 0;
 }
