@@ -13,7 +13,7 @@ int m = 80; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 2; // Number of dimensions)
 string potential_name = "const";
-string band_name = "simple_cubic";
+string band_name = "sphere";
                
 // Constants
 double t = 1.0;

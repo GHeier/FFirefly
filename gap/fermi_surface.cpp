@@ -172,8 +172,6 @@ double area_in_corners(vector<Vec> cp) {
 }
 
 vector<Vec> tetrahedron_method(double (*func)(Vec k, Vec q), Vec q, double s_val) {
-    double surface_area = 0;
-    int iters = 0;
     vector<vector<double>> tetrahedrons {
         {1, 2, 3, 5}, 
         {1, 3, 4, 5},
@@ -187,7 +185,6 @@ vector<Vec> tetrahedron_method(double (*func)(Vec k, Vec q), Vec q, double s_val
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
-                iters++;
                 vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k);
                 if (not surface_inside_cube(s_val, points)) continue;
 
@@ -217,8 +214,6 @@ vector<Vec> tetrahedron_method(double (*func)(Vec k, Vec q), Vec q, double s_val
                     Vec k_point = average; k_point.area = A;
                     k_point.freq = s_val;
                     FS.push_back(k_point);
-                    surface_area += A;
-                    assert(not isnan(surface_area));
                 }
             }
         }
@@ -268,7 +263,7 @@ double tetrahedron_sum(double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, 
                     if (dim == 2) A *= n / (2*k_max);
                     Vec k_point = average; k_point.area = A;
                     k_point.freq = s_val;
-                    sum += integrand(average, q, w, T) * A / func_diff(average, q);
+                    sum += integrand(k_point, q, w, T) * k_point.area / func_diff(k_point, q);
                 }
             }
         }

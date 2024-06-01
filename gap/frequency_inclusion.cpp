@@ -537,9 +537,10 @@ double integrand(Vec k, Vec q, double w, double T) {
     double f_qk = f(e_qk, T);
 
     double dE = k.freq;
-    if ( fabs(dE - (e_qk - e_k)) > 0.1) {
-        cout << "dE: " << dE << " " << e_qk - e_k << endl;
-    }
+    //if (dE != 0) cout << dE << endl;
+    //if (fabs(e_qk - e_k) > 0.1) {
+    //    cout << "dE: " << dE << " " << e_qk - e_k << endl;
+    //}
 
     if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
         if (T == 0 or exp(e_k/T) > 1e6)
@@ -550,17 +551,25 @@ double integrand(Vec k, Vec q, double w, double T) {
 }
 
 void get_spacing_curve_consts(double w, double a, double b, double &A, double &upr, double &lwr) {
-    A = w - a;
-    upr = pow((b - w) / (w - a), 1.0/3.0);
-    if (isnan(upr)) upr = - pow(fabs(b-w)/fabs(w-a), 1.0/3.0);
-    lwr = -1;
-
-    if (w - a > b - w) {
-        A = b - w;
-        lwr = - pow((w - a) / (b - w), 1.0/3.0);
-        if (isnan(lwr)) lwr = - pow(fabs(b-w)/fabs(w-a), 1.0/3.0);
-        upr = 1;
+    A = b - w;
+    lwr = (a - w) / A;
+    upr = 1;
+    if ( w - a > b - w) {
+        A = w - a;
+        lwr = -1;
+        upr = (b - w) / A;
     }
+    //A = (w - a);
+    //upr = pow((b - w) / (w - a), 1.0/3.0);
+    //if (isnan(upr)) upr = - pow(fabs(b-w)/fabs(w-a), 1.0/3.0);
+    //lwr = -1;
+
+    //if (w - a > b - w) {
+    //    A = (b - w);
+    //    lwr = - pow((w - a) / (b - w), 1.0/3.0);
+    //    if (isnan(lwr)) lwr = - pow(fabs(b-w)/fabs(w-a), 1.0/3.0);
+    //    upr = 1;
+    //}
 }
 
 double comparison_integral(Vec q, double w, double b, double a, int pts, double (*func)(Vec k, Vec q)) {
@@ -589,22 +598,30 @@ double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, do
 
     double A, upr, lwr;
     get_spacing_curve_consts(w, a, b, A, upr, lwr);
-    auto spacing = [A, w, lwr, upr] (double i, double pts) { 
-        double x = lwr + (upr- lwr) * i / pts;
+    double width = upr;
+    if (b - w > w - a) width = lwr;
+    double extra = lwr + upr;
+    int extra_pts = pts * 2 * width / (upr - lwr) + 1;
+
+    auto spacing = [A, w, width] (double i, double pts) { 
+        double x = width + -2.0 * width * i / pts;
         return A * pow(x,3) + w; 
+    };
+    auto spacing_extra = [A, w, width, extra] (double i, double pts) {
+        double x = -width + extra * i / pts;
+        return A * pow(x,3) + w;
     };
 
     #pragma omp parallel for reduction(+:sum)
     for (int i = 1; i <= pts; i++) {
-        double t = i;
-        double s = spacing(t, pts);
+        double s = spacing(i, pts);
         double prev_s = spacing(t-1, pts);
-
-        //vector<Vec> layer = tetrahedron_method(func, q, s);
-        //for (auto k : layer) {
-        //    double r = integrand(k, q, w, T);
-        //    sum += r * k.area / func_diff(k,q) * fabs(s - prev_s);
-        //}
+        sum += tetrahedron_sum(func, func_diff, q, s, w, T) * fabs(s - prev_s);
+    }
+    #pragma omp parallel for reduction(+:sum)
+    for (int i = 1; i <= extra_pts; i++) {
+        double s = spacing_extra(i, pts);
+        double prev_s = spacing_extra(t-1, pts);
         sum += tetrahedron_sum(func, func_diff, q, s, w, T) * fabs(s - prev_s);
     }
     return sum;
@@ -648,8 +665,9 @@ double num_states(double w, double T, int pts) {
 double chi_ep_integrate(Vec q, double w, double T) {
     double a, b;
     get_bounds3(q, b, a, denominator);
+    a *= 0.99; b *= 0.99;
 
-    double sum = 0; int pts = 100;
+    double sum = 0; int pts = 200;
     sum = bound_chi_sum4(q, w, T, pts, b, a, denominator, denominator_diff);
     if (q.vals.norm() == 0) {
         return integrate_susceptibility(q, T, mu, w, pts);

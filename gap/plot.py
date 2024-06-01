@@ -46,10 +46,10 @@ def plotGap(eigNum, file):
         plt.plot(df.loc[:,'theta'], df.loc['phi'], df.iloc[:,3+eigNum])
     else:
         plt.plot(df.loc[:,'theta'], df.iloc[:,2+eigNum])
-        plt.title('$\Delta(\\theta, \phi)$')
-        plt.xlabel('$\\theta$')
+        plt.title(r'$\Delta(\theta, \phi)$')
+        plt.xlabel(r'$\theta$')
 
-    plt.ylabel('$\Delta$')
+    plt.ylabel(r'$\Delta$')
     plt.show()
 
 def plot_potential_q(file):
@@ -147,10 +147,10 @@ def plot_phi_gap(eigNum, file):
         #plt.plot(thetas, values, marker='o', ms=1, linestyle='None')
         plt.plot(phis, values)
 
-        plt.title('$\Delta(\\phi), \\theta=$'+str(x))
-        plt.xlabel('$\\phi$')
+        plt.title(r'$\Delta(\phi), \theta=$'+str(x))
+        plt.xlabel(r'$\phi$')
 
-        plt.ylabel('$\Delta$')
+        plt.ylabel(r'$\Delta$')
         plt.show()
 
 def plot_theta_gap(eigNum, file):
@@ -169,10 +169,10 @@ def plot_theta_gap(eigNum, file):
         #plt.plot(thetas, values, marker='o', ms=1, linestyle='None')
         plt.plot(thetas, values)
 
-        plt.title('$\Delta(\\theta), \\phi=$'+str(x))
-        plt.xlabel('$\\theta$')
+        plt.title(r'$\Delta(\theta), \phi=$'+str(x))
+        plt.xlabel(r'$\theta$')
 
-        plt.ylabel('$\Delta$')
+        plt.ylabel(r'$\Delta$')
         plt.show()
 
 def plotFS(file):
@@ -218,8 +218,8 @@ def plot_DOS():
     file = open("DOS.txt")
     df = pd.read_csv(file, delim_whitespace = True, header=None)
     plt.scatter(df.iloc[:,0], df.iloc[:,1], s=3, c='green')
-    plt.xlabel("$\mu$")
-    plt.ylabel("$N(\epsilon)$")
+    plt.xlabel(r"$\mu$")
+    plt.ylabel(r"$N(\epsilon)$")
     plt.tight_layout() # to fit everything in the prescribed area
     plt.show()
 
@@ -236,10 +236,10 @@ def plot_eigenvalue_divergence():
             x2.append(df.iloc[i,1])
 
     plt.figure(0)
-    plt.xlabel("$\omega_C$")
-    plt.ylabel("$\lambda$")
-    plt.plot(wc, x1, label="$\omega$ independent")
-    plt.plot(wc, x2, label="$\omega$ dependent")
+    plt.xlabel(r"$\omega_C$")
+    plt.ylabel(r"$\lambda$")
+    plt.plot(wc, x1, label=r"$\omega$ independent")
+    plt.plot(wc, x2, label=r"$\omega$ dependent")
     plt.show()
 
 
@@ -271,7 +271,7 @@ def plot_chi_test(file):
     size = int(len(df)/4)
     q_vals = df.iloc[0:size,0]
     plt.figure(1)
-    plt.title("$\chi$(q) @ T=300K along (1,1,1)")
+    plt.title(r"$\chi$(q) @ T=300K along (1,1,1)")
     for i in range(4):
         col = df.iloc[i*size:(i+1)*size,1]
         plt.plot(q_vals, col)
@@ -334,7 +334,7 @@ def plotGap_cart(potential, n, mu, dim, U, eigNum):
     #z = df.loc[:,'z'] 
     c = df.iloc[:,2+eigNum]
     img = ax.scatter(x, y, c)
-    plt.title('$\Delta$ @ $\mu=$'+str(mu))
+    plt.title(r'$\Delta$ @ $\mu=$'+str(mu))
     plt.xlabel('kx')
     plt.ylabel('ky')
     plt.show()
@@ -390,8 +390,8 @@ def plot_coupling(file):
     #plt.plot(mu, dy )
     #plt.plot(mu, dz )
     plt.title("Coupling Constants")
-    plt.xlabel('$\mu$')
-    plt.ylabel('$\lambda$')
+    plt.xlabel(r'$\mu$')
+    plt.ylabel(r'$\lambda$')
     plt.xlim(-4.8,-0.4)
     plt.ylim(-0.05,0.10)
     plt.legend()
@@ -834,15 +834,15 @@ if __name__ == "__main__":
     #plot_DOS()
     #plot_coupling("../tests/coupling.dat")
     plot_chi_test("../tests/chi_plot.dat")
-    plot_chi_test("../tests/chi_plot2.dat")
+    #plot_chi_test("../tests/chi_plot2.dat")
     plot_chi_test("../tests/chi_plot5.dat")
     #plot_chi_test("../tests/chi_plot3.dat")
     #plot_chi_test("../tests/chi_plot4.dat")
     #plot_chi_sphere_3D()
     #plot_chi_test("../tests/chi_plot2.dat")
     plt.show()
-    plot_chi_test("../tests/store_data.dat")
-    plt.show()
+    #plot_chi_test("../tests/store_data.dat")
+    #plt.show()
     #plot_FS()
     #file_addon = "U=1/HII-u=1"
     #title = "Nickelate"

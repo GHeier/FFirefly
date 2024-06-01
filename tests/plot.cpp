@@ -155,23 +155,28 @@ void plot_chi5(double T, double w) {
 void plot_surfaces(Vec q, double T, double w) {
     double a, b;
     get_bounds3(q, b, a, denominator);
-    printf("Bounds: %.2f, %.2f\n", a, b);
+    a *= 0.99; b*= 0.99;
+    b = (b - a) * 0.5;
+    a = -b;
+    printf("Bounds: %.3f, %.3f\n", a, b);
     double A, upr, lwr;
     get_spacing_curve_consts(w, a, b, A, upr, lwr);
     auto spacing = [A, w, lwr, upr] (double i, double pts) { 
         double x = lwr + (upr- lwr) * i / pts;
+        printf("X: %.3f\n", x);
+        return A * x + w;
         return A * pow(x,3) + w; 
     };
 
-    int pts = 20;
+    int pts = 40;
     for (int i = 0; i <= pts; i++) {
         double s = spacing(i, pts);
-        printf("S: %.2f\n", s);
-        //ofstream file("test_surface" + to_string(i) + ".dat");
-        //vector<Vec> surface = tetrahedron_method(denominator, q, s);
-        //for (auto x: surface) {
-        //    file << x << endl;
-        //}
+        ofstream file("test_surface" + to_string(i) + ".dat");
+        vector<Vec> surface = tetrahedron_method(denominator, q, s);
+        printf("S: %.3f, size: %d\n", s, surface.size());
+        for (auto x: surface) {
+            file << x << endl;
+        }
     }
 
 }

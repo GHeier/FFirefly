@@ -372,7 +372,10 @@ int main() {
     //}
 
     cout << chi_ep_integrate(q, w, T) << endl;
+    cout << chi_trapezoidal(q, T, mu, w, 200) << endl;
 
     plot_surfaces(q, T, w);
+    plot_chi(T, w);
+    plot_chi5(T, w);
     return 0;
 }
