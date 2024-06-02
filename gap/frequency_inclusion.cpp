@@ -548,6 +548,7 @@ double integrand(Vec k, Vec q, double w, double T) {
             return e_k < 0;
         return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
     }
+    if (fabs(w - dE) < 0.001) return 0;
     return (f_qk - f_k) / (w - dE);
 }
 
@@ -597,20 +598,11 @@ double comparison_integral(Vec q, double w, double b, double a, int pts, double 
 void get_spacing_vec(vector<double> &spacing, double w, double a, double b, int pts) {
     double A, upr, lwr;
     get_spacing_curve_consts(w, a, b, A, upr, lwr);
-    double width = upr;
-    if (b - w > w - a) width = lwr;
 
-    double extra = lwr + upr;
-    int extra_pts = pts * 2 * width / (upr - lwr) + 1;
-
-    auto spacing_curve = [A, w, width] (double i, double pts) { 
-        double x = width + -2.0 * width * i / pts;
+    auto spacing_curve = [A, w] (double i, double pts) { 
+        double x = -1 + 2 * i / pts;
         return A * x + w;
         return A * pow(x,3) + w; 
-    };
-    auto spacing_extra = [A, w, width, extra] (double i, double pts) {
-        double x = -width + extra * i / pts;
-        return A * pow(x,3) + w;
     };
 
     double r = spacing_curve(0, pts);

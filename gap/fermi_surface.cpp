@@ -264,6 +264,12 @@ double tetrahedron_sum(double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, 
                     Vec k_point = average; k_point.area = A;
                     k_point.freq = s_val;
                     sum += integrand(k_point, q, w, T) * k_point.area / func_diff(k_point, q);
+                    if (isnan(sum)) {
+                        cout << "NAN: " << k_point << endl;
+                        printf("vk: %f\n", func_diff(k_point, q));
+                        printf("Integrand and area: %f %f\n", integrand(k_point, q, w, T), k_point.area);
+                        assert(1 == 0);
+                    }
                 }
             }
         }

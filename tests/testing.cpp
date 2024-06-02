@@ -352,6 +352,29 @@ void mu_to_n() {
     }
 }
 
+void chi_eig_with_freq() {
+    double T = 0.01;
+    double cutoff = 0.03;
+    
+    vector<vector<Vec>> freq_FS = freq_tetrahedron_method(mu);
+    vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
+
+    unordered_map <double, vector<vector<vector<double>>>> cube_freq_map = chi_cube_freq(T, mu, 0.0);
+
+    MatrixXd P = create_P_freq(freq_FS, 0.25, cube_freq_map); 
+    MatrixXd P2 = create_P(FS, 0.25, cube_freq_map);
+    
+    double f = f_singlet_integral(T);
+
+    vector<EigAndVec> answers = power_iteration(P, 0.001);
+    vector<EigAndVec> answers2 = power_iteration(P2, 0.001);
+
+    double eig = answers[answers.size() - 1].eig;
+    double eig2 = answers2[answers2.size() - 1].eig;
+
+    cout << "w=0, w>0 Eigs: " << f*eig2 << " " << eig << endl;
+}
+
 int main() {
     
     int num_procs = omp_get_num_procs();
@@ -359,8 +382,8 @@ int main() {
 
     //Vec q(0.1, 0.1, 0.1);
     Vec q(0.1 * M_PI, 0.1 * M_PI, 0.1 * M_PI);
-    double T = 0.25;
-    double w = 0.0;
+    double T = 0.01;
+    double w = 0.2;
 
     double a, b; get_bounds3(q, b, a, denominator);
     printf("Bounds: %.5f %.5f\n", a, b);
@@ -368,10 +391,13 @@ int main() {
     double pts = 20;
     vector<double> spacing_vec;
     get_spacing_vec(spacing_vec, w, a, b, pts);
+    cout << "Spacing vector size: " << spacing_vec.size() << endl;
     for (auto x : spacing_vec) printf("Spacing: %.5f\n", x);
 
+    cout << "Checkpoint #1\n";
     cout << chi_ep_integrate(q, w, T) << endl;
     cout << chi_trapezoidal(q, T, mu, w, 200) << endl;
+    cout << "Checkpoint #2\n";
 
     plot_surfaces2(q, T, w);
     plot_single_chi(T, w);
