@@ -353,29 +353,28 @@ void mu_to_n() {
 }
 
 int main() {
-    Vec q(0.1, 0.1, 0.1);
+    
+    int num_procs = omp_get_num_procs();
+    omp_set_num_threads(num_procs - 1);
+
+    //Vec q(0.1, 0.1, 0.1);
+    Vec q(0.1 * M_PI, 0.1 * M_PI, 0.1 * M_PI);
     double T = 0.25;
     double w = 0.0;
 
-    Vec k(-M_PI/2, -M_PI/2);
-    Vec k2(-2.6, M_PI/2);
-    Vec k3(-2.7, M_PI/2);
-    printf("Diff=%.3f\n", denominator(k, q));
-    printf("Diff=%.3f\n", denominator(k2, q));
-    printf("Diff=%.3f\n", denominator(k3, q));
+    double a, b; get_bounds3(q, b, a, denominator);
+    printf("Bounds: %.5f %.5f\n", a, b);
 
-    double s = 0.39;
-    //ofstream file("below.dat");
-    //vector<Vec> surface = tetrahedron_method(denominator, q, s);
-    //for (auto x: surface) {
-    //    file << x << endl;
-    //}
+    double pts = 20;
+    vector<double> spacing_vec;
+    get_spacing_vec(spacing_vec, w, a, b, pts);
+    for (auto x : spacing_vec) printf("Spacing: %.5f\n", x);
 
     cout << chi_ep_integrate(q, w, T) << endl;
     cout << chi_trapezoidal(q, T, mu, w, 200) << endl;
 
-    plot_surfaces(q, T, w);
-    plot_chi(T, w);
-    plot_chi5(T, w);
+    plot_surfaces2(q, T, w);
+    plot_single_chi(T, w);
+    plot_single_chi2(T, w);
     return 0;
 }

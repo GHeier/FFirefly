@@ -490,6 +490,7 @@ void get_bounds3(Vec q, double &upper, double &lower, double (*func)(Vec k, Vec 
             }
         }
     }
+    lower *= 0.99; upper *= 0.99;
 }
 
 double sphere_func(Vec k, Vec q) {
@@ -593,18 +594,18 @@ double comparison_integral(Vec q, double w, double b, double a, int pts, double 
     return sum;
 }
 
-double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, Vec q)) {
-    double sum = 0;
-
+void get_spacing_vec(vector<double> &spacing, double w, double a, double b, int pts) {
     double A, upr, lwr;
     get_spacing_curve_consts(w, a, b, A, upr, lwr);
     double width = upr;
     if (b - w > w - a) width = lwr;
+
     double extra = lwr + upr;
     int extra_pts = pts * 2 * width / (upr - lwr) + 1;
 
-    auto spacing = [A, w, width] (double i, double pts) { 
+    auto spacing_curve = [A, w, width] (double i, double pts) { 
         double x = width + -2.0 * width * i / pts;
+        return A * x + w;
         return A * pow(x,3) + w; 
     };
     auto spacing_extra = [A, w, width, extra] (double i, double pts) {
@@ -612,17 +613,26 @@ double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, do
         return A * pow(x,3) + w;
     };
 
-    #pragma omp parallel for reduction(+:sum)
-    for (int i = 1; i <= pts; i++) {
-        double s = spacing(i, pts);
-        double prev_s = spacing(t-1, pts);
-        sum += tetrahedron_sum(func, func_diff, q, s, w, T) * fabs(s - prev_s);
+    double r = spacing_curve(0, pts);
+    for (int i = 0; r < b; i++) {
+        double t = i;
+        r = spacing_curve(i, pts);
+        spacing.push_back(r);
     }
+}
+
+double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, Vec q)) {
+    double sum = 0;
+
+    vector<double> spacing; get_spacing_vec(spacing, w, a, b, pts);
+
     #pragma omp parallel for reduction(+:sum)
-    for (int i = 1; i <= extra_pts; i++) {
-        double s = spacing_extra(i, pts);
-        double prev_s = spacing_extra(t-1, pts);
-        sum += tetrahedron_sum(func, func_diff, q, s, w, T) * fabs(s - prev_s);
+    for (int i = 0; i < spacing.size() - 1; i++) {
+        double s = spacing[i];
+        double next_s = spacing[i+1];
+        double g = tetrahedron_sum(func, func_diff, q, s, w, T);
+        double next_g = tetrahedron_sum(func, func_diff, q, next_s, w, T);
+        sum += (g + next_g) * (next_s - s) / 2;
     }
     return sum;
 }
@@ -665,10 +675,10 @@ double num_states(double w, double T, int pts) {
 double chi_ep_integrate(Vec q, double w, double T) {
     double a, b;
     get_bounds3(q, b, a, denominator);
-    a *= 0.99; b *= 0.99;
 
-    double sum = 0; int pts = 200;
+    double sum = 0; int pts = 100;
     sum = bound_chi_sum4(q, w, T, pts, b, a, denominator, denominator_diff);
+
     if (q.vals.norm() == 0) {
         return integrate_susceptibility(q, T, mu, w, pts);
     }

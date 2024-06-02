@@ -152,6 +152,41 @@ void plot_chi5(double T, double w) {
     }
 }
 
+void plot_single_chi(double T, double w) {
+    ofstream file("single_chi_plot.dat");
+    file << "q chi " << endl;
+    double n = 50.0;
+    double new_mu = 1.0;
+    init_config(mu, U, t, tn, w_D, new_mu, U, t, tn, w_D);
+    for (double i = 0; i < n; i++) {
+        printf("\r Mu %.1f: %.3f" , new_mu, 100.0*i/(n-1));
+        fflush(stdout);
+        double q_mag = i/(n-1) * M_PI;
+        Vec q(q_mag, q_mag, q_mag);
+        double c = chi_trapezoidal(q, T, new_mu, w, 100);
+        //double c2 = varied_chi_trapezoidal(q, T, mu, 40);
+        file << q_mag << " " << c << endl;
+    }
+
+}
+
+void plot_single_chi2(double T, double w) {
+    ofstream file("single_chi_plot2.dat");
+    file << "q chi " << endl;
+    double n = 50.0;
+    double new_mu = 1.0;
+    init_config(mu, U, t, tn, w_D, new_mu, U, t, tn, w_D);
+    for (double i = 0; i < n; i++) {
+        printf("\r Mu %.1f: %.3f" , new_mu, 100.0*i/(n-1));
+        fflush(stdout);
+        double q_mag = i/(n-1) * M_PI;
+        Vec q(q_mag, q_mag, q_mag);
+        double c = chi_ep_integrate(q, w, T);
+        file << q_mag << " " << c << endl;
+    }
+
+}
+
 void plot_surfaces(Vec q, double T, double w) {
     double a, b;
     get_bounds3(q, b, a, denominator);
@@ -179,6 +214,23 @@ void plot_surfaces(Vec q, double T, double w) {
         }
     }
 
+}
+
+void plot_surfaces2(Vec q, double T, double w) {
+    double a, b;
+    get_bounds3(q, b, a, denominator);
+
+    vector<double> spacing;
+    get_spacing_vec(spacing, w, a, b, 20);
+
+    for (int i = 0; i < spacing.size(); i++) {
+        ofstream file("test_surface" + to_string(i) + ".dat");
+        vector<Vec> surface = tetrahedron_method(denominator, q, spacing[i]);
+        //printf("S: %.3f, size: %d\n", spacing[i], surface.size());
+        for (auto x: surface) {
+            file << x << endl;
+        }
+    }
 }
 
 void plot_potential_q() {

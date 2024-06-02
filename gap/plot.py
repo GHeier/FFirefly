@@ -281,11 +281,10 @@ def plot_chi_test(file):
 
 def plot_chi_single_test(file):
     df = pd.read_csv(file, delim_whitespace=True)
-    q_vals = df.iloc[:,0] / np.pi
+    q_vals = df.iloc[:,0]
     plt.figure(1)
-    col = df.iloc[:,3] / df.iloc[0,3]
+    col = df.iloc[:,1]
     plt.plot(q_vals, col)
-    plt.show()
 
 
 def plot_chi_values(file):
@@ -828,19 +827,20 @@ def plot_chi_sphere_3D():
     plt.plot(q, f * 0.001)
 
 if __name__ == "__main__":
-    #plot_chi_single_test("../tests/chi_freq_v_q.txt")
-    #plot_chi_single_test("../tests/chi_test_analytic.txt")
+    plot_chi_single_test("../tests/single_chi_plot.dat")
+    plot_chi_single_test("../tests/single_chi_plot2.dat")
+    plt.show()
     #plot_eigenvalue_divergence()
     #plot_DOS()
     #plot_coupling("../tests/coupling.dat")
-    plot_chi_test("../tests/chi_plot.dat")
+    #plot_chi_test("../tests/chi_plot.dat")
     #plot_chi_test("../tests/chi_plot2.dat")
-    plot_chi_test("../tests/chi_plot5.dat")
+    #plot_chi_test("../tests/chi_plot5.dat")
     #plot_chi_test("../tests/chi_plot3.dat")
     #plot_chi_test("../tests/chi_plot4.dat")
     #plot_chi_sphere_3D()
     #plot_chi_test("../tests/chi_plot2.dat")
-    plt.show()
+    #plt.show()
     #plot_chi_test("../tests/store_data.dat")
     #plt.show()
     #plot_FS()
