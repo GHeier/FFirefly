@@ -618,13 +618,13 @@ double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, do
 
     vector<double> spacing; get_spacing_vec(spacing, w, a, b, pts);
 
-    #pragma omp parallel for reduction(+:sum)
+    //#pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < spacing.size() - 1; i++) {
         double s = spacing[i];
         double next_s = spacing[i+1];
         double g = tetrahedron_sum(func, func_diff, q, s, w, T);
         double next_g = tetrahedron_sum(func, func_diff, q, next_s, w, T);
-        sum += (g + next_g) * (next_s - s) / 2;
+        sum += (g + next_g);// * (next_s - s) / 2;
     }
     return sum;
 }
@@ -665,14 +665,14 @@ double num_states(double w, double T, int pts) {
 }
 
 double chi_ep_integrate(Vec q, double w, double T) {
+    if (q.vals.norm() == 0) {
+        q = Vec(0.1, 0.1, 0.1);
+    }
     double a, b;
     get_bounds3(q, b, a, denominator);
 
     double sum = 0; int pts = 100;
     sum = bound_chi_sum4(q, w, T, pts, b, a, denominator, denominator_diff);
 
-    if (q.vals.norm() == 0) {
-        return integrate_susceptibility(q, T, mu, w, pts);
-    }
     return sum / pow(2*k_max, dim);
 }

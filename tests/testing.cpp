@@ -352,9 +352,9 @@ void mu_to_n() {
     }
 }
 
-void chi_eig_with_freq() {
+void chi_eig_with_freq(double cutoff) {
     double T = 0.01;
-    double cutoff = 0.03;
+    init_config(mu, U, t, tn, w_D, mu, U, t, tn, cutoff);
     
     vector<vector<Vec>> freq_FS = freq_tetrahedron_method(mu);
     vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
@@ -377,29 +377,28 @@ void chi_eig_with_freq() {
 
 int main() {
     
-    int num_procs = omp_get_num_procs();
-    omp_set_num_threads(num_procs - 1);
+//    int num_procs = omp_get_num_procs();
+//    omp_set_num_threads(num_procs - 1);
+//
+//    for (int i = 0; i < 30; i++) {
+//        double cutoff = 0.03 * i;
+//        //chi_eig_with_freq(cutoff);
+//    }
 
-    //Vec q(0.1, 0.1, 0.1);
     Vec q(0.1 * M_PI, 0.1 * M_PI, 0.1 * M_PI);
-    double T = 0.01;
-    double w = 0.2;
+    double T = 0.25, w = 0.0;
+
+    cout << "Starting\n";
+    cout << chi_ep_integrate(q, w, T) << endl;
+    cout << "Finished first integral\n";
 
     double a, b; get_bounds3(q, b, a, denominator);
-    printf("Bounds: %.5f %.5f\n", a, b);
+    vector<double> spacing; get_spacing_vec(spacing, w, a, b, 100);
 
-    double pts = 20;
-    vector<double> spacing_vec;
-    get_spacing_vec(spacing_vec, w, a, b, pts);
-    cout << "Spacing vector size: " << spacing_vec.size() << endl;
-    for (auto x : spacing_vec) printf("Spacing: %.5f\n", x);
+    cout << tetrahedron_sum_continuous(denominator, denominator_diff, q, spacing, w, T) / pow(2*k_max, dim) << endl;
+    cout << "Finished second integral\n";
 
-    cout << "Checkpoint #1\n";
-    cout << chi_ep_integrate(q, w, T) << endl;
-    cout << chi_trapezoidal(q, T, mu, w, 200) << endl;
-    cout << "Checkpoint #2\n";
-
-    plot_surfaces2(q, T, w);
+    plot_single_chi3(T, w);
     plot_single_chi(T, w);
     plot_single_chi2(T, w);
     return 0;

@@ -264,11 +264,142 @@ double tetrahedron_sum(double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, 
                     Vec k_point = average; k_point.area = A;
                     k_point.freq = s_val;
                     sum += integrand(k_point, q, w, T) * k_point.area / func_diff(k_point, q);
+                }
+            }
+        }
+    }
+    return sum;
+}
+
+pair<int, int> get_index_and_length(double L, double U, vector<double> &sortedList) {
+    int index = -1, length = -1;
+    int lower_index = std::lower_bound(sortedList.begin(), sortedList.end(), L) - sortedList.begin();
+    //int upper_index = std::upper_bound(sortedList.begin(), sortedList.end(), U) - sortedList.begin();
+    //return {lower_index, upper_index - lower_index};
+    for (int i = lower_index; sortedList[i] <= U; i++) {
+        length = i - lower_index;
+    }
+    return {lower_index, length};
+}
+
+double tetrahedron_sum_continuous(double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, Vec q), Vec q, vector<double> &svals, double w, double T) {
+    vector<vector<double>> tetrahedrons {
+        {1, 2, 3, 5}, 
+        {1, 3, 4, 5},
+        {2, 5, 6, 3},
+        {4, 5, 8, 3},
+        {5, 8, 7, 3},
+        {5, 6, 7, 3}
+    };
+
+    double sum = 0;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
+                vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k);
+                double min = 1000, max = -1000;
+                for (VecAndEnergy p : points) {
+                    if (func(p.vec, q) < min) min = func(p.vec, q);
+                    if (func(p.vec, q) > max) max = func(p.vec, q);
+                }
+                pair<int, int> index_and_length = get_index_and_length(min, max, svals);
+
+                for (int c = 0; c < 6; c++) {
+
+                    vector<VecAndEnergy> ep_points(4);
+                    for (int p = 0; p < 4; p++) {
+                        ep_points[p] = points[tetrahedrons[c][p]-1];
+                    }
+                    for (int x = 0; x < index_and_length.second; x++) {
+                        double s_val = svals[x + index_and_length.first];
+
+                        if (not surface_inside_tetrahedron(s_val, ep_points)) continue;
+                        vector<Vec> corner_points = points_in_tetrahedron(func, q, s_val, ep_points);
+
+                        Vec average;
+
+                        double b = 0;
+                        if (corner_points[3] == average) b = 1.0;
+
+                        for (Vec q : corner_points) {
+                            average = (q + average);
+                        }
+                        average = average / (4-b);
+
+                        double A = area_in_corners(corner_points);
+                        if (dim == 2) A *= n / (2*k_max);
+                        Vec k_point = average; k_point.area = A;
+                        k_point.freq = s_val;
+
+                        double dS = (svals[x+1] - svals[x-1]) / 2;
+                        if (x == 0) dS = (svals[x+1] - svals[x]) / 2;
+                        else if (x == svals.size()-1) dS = (svals[x] - svals[x-1]) / 2;
+                        dS = 1;
+
+                        sum += integrand(k_point, q, w, T) 
+                            * k_point.area / func_diff(k_point, q)
+                            * dS;
+                    }
+                }
+            }
+        }
+    }
+    return sum;
+}
+
+double get_I(double D1, double D2, double D3, double V1, double V2, double V3, double V4) {
+    if (V1 == V2 and V2 == V3 and V3 == V4 and V4 != 0) return 1/V1;
+    if (V1 == V2 and V2 == V3 and V3 != V4 and V1 != 0) 
+        return 3 * (V4*V4/pow(V1-V4,3)*log(V1/V4) + (1.5*V4*V4 + 0.5*V1*V1-2*V1*V4)/pow(V1-V4,3));
+    if (V1 == V2 and V3 == V4 and V1 != V4) 
+        return 3 * (2*V1*V4/pow(V1-V4,3)*log(V1/V4) + (V1+V4)/pow(V1-V4,2));
+    if (V1 == V2 and V2 != V3 and V2 != V4 and V3 != V4)
+        return 3 * (V3*V3/(pow(V3-V1,2)*(V3-V4)*log(V3/V1)) + V4*V4/(pow(V4-V1,2)*(V4-V3)) * log(V4/V1)
+                + V1/((V3-V1)*(V4-V1)));
+    return 3*(V1*V1/D1*log(V1/V4) + V2*V2/D2*log(V2/V4) + V3*V3/D3*log(V3/V4));
+}
+
+double analytic_tetrahedron_sum(Vec q, double w) {
+    vector<vector<double>> tetrahedrons {
+        {1, 2, 3, 5}, 
+        {1, 3, 4, 5},
+        {2, 5, 6, 3},
+        {4, 5, 8, 3},
+        {5, 8, 7, 3},
+        {5, 6, 7, 3}
+    };
+
+    double sum = 0;
+    double Omega = pow(2*k_max,3) / (6*n*n*n);
+    if (dim == 2) Omega = pow(2*k_max,2) / (2*n*n);
+    #pragma omp parallel for reduction(+:sum)
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
+                vector<VecAndEnergy> points = points_from_indices(e_base_avg, q, i, j, k);
+
+                for (int c = 0; c < 6; c++) {
+
+                    vector<VecAndEnergy> ep_points(4);
+                    for (int p = 0; p < 4; p++) {
+                        ep_points[p] = points[tetrahedrons[c][p]-1];
+                    }
+                    sort(ep_points.begin(), ep_points.end());
+
+                    double V1 = e_diff(ep_points[3].vec,q) - w;
+                    double V2 = e_diff(ep_points[2].vec,q) - w;
+                    double V3 = e_diff(ep_points[1].vec,q) - w;
+                    double V4 = e_diff(ep_points[0].vec,q) - w;
+
+                    double D1 = (V1 - V4) * (V1 - V3) * (V1 - V2);
+                    double D2 = (V2 - V4) * (V2 - V3) * (V2 - V1);
+                    double D3 = (V3 - V4) * (V3 - V2) * (V3 - V1);
+
+                    double I = get_I(D1, D2, D3, V1, V2, V3, V4);
+                    sum += Omega * I;
                     if (isnan(sum)) {
-                        cout << "NAN: " << k_point << endl;
-                        printf("vk: %f\n", func_diff(k_point, q));
-                        printf("Integrand and area: %f %f\n", integrand(k_point, q, w, T), k_point.area);
-                        assert(1 == 0);
+                        cout << "NAN: " << V1 << " " << V2 << " " << V3 << " " << V4 << endl;
+                        assert(false);
                     }
                 }
             }

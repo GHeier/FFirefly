@@ -16,6 +16,7 @@
 #include "fermi_surface.h"
 #include "band_structure.h"
 #include "cfg.h"
+#include "frequency_inclusion.hpp"
 
 using namespace std;
 using Eigen::Vector4d;
@@ -427,8 +428,6 @@ vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS, double 
     cout << "Calculating Chi Cube...\n";
     double empty_val = -98214214;
     map[vec_to_string(Vec(0,0,0))] = DOS;
-    cout << "DOS: " << DOS << endl;
-    cout << "map_val: " << map[vec_to_string(Vec(0,0,0))] << endl;
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < m; j++) {
             for (int k = 0; k < m_z; k++) {
@@ -446,7 +445,8 @@ vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS, double 
         auto datIt = map.begin();
         advance(datIt, i);
         string key = datIt->first;
-        map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w, 100);
+        map[key] = chi_ep_integrate(string_to_vec(key), w, T);
+        //map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w, 100);
     }
 
     for (int i = 0; i < m; i++) {
@@ -459,7 +459,6 @@ vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS, double 
         }
     }
 
-    cout << "map_val: " << map[vec_to_string(Vec(0,0,0))] << endl;
     cout << "\nChi Cube Created.\n";
     return cube;
 }
