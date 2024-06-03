@@ -272,11 +272,11 @@ double tetrahedron_sum(double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, 
 }
 
 pair<int, int> get_index_and_length(double L, double U, vector<double> &sortedList) {
-    int index = -1, length = -1;
+    int index = -1, length = 0;
     int lower_index = std::lower_bound(sortedList.begin(), sortedList.end(), L) - sortedList.begin();
     //int upper_index = std::upper_bound(sortedList.begin(), sortedList.end(), U) - sortedList.begin();
     //return {lower_index, upper_index - lower_index};
-    for (int i = lower_index; sortedList[i] <= U; i++) {
+    for (int i = lower_index; i < sortedList.size() and sortedList[i] <= U; i++) {
         length = i - lower_index;
     }
     return {lower_index, length};
@@ -293,6 +293,7 @@ double tetrahedron_sum_continuous(double (*func)(Vec k, Vec q), double (*func_di
     };
 
     double sum = 0;
+    #pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
@@ -303,6 +304,7 @@ double tetrahedron_sum_continuous(double (*func)(Vec k, Vec q), double (*func_di
                     if (func(p.vec, q) > max) max = func(p.vec, q);
                 }
                 pair<int, int> index_and_length = get_index_and_length(min, max, svals);
+                if (index_and_length.second == 0) continue;
 
                 for (int c = 0; c < 6; c++) {
 

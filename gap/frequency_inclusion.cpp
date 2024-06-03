@@ -618,7 +618,7 @@ double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, do
 
     vector<double> spacing; get_spacing_vec(spacing, w, a, b, pts);
 
-    //#pragma omp parallel for reduction(+:sum)
+    #pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < spacing.size() - 1; i++) {
         double s = spacing[i];
         double next_s = spacing[i+1];
