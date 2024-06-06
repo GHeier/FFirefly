@@ -274,10 +274,11 @@ double tetrahedron_sum(double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, 
 pair<int, int> get_index_and_length(double L, double U, vector<double> &sortedList) {
     int index = -1, length = 0;
     int lower_index = std::lower_bound(sortedList.begin(), sortedList.end(), L) - sortedList.begin();
-    //int upper_index = std::upper_bound(sortedList.begin(), sortedList.end(), U) - sortedList.begin();
-    //return {lower_index, upper_index - lower_index};
+
+    if (sortedList[lower_index] < L) return {-1, 0};
+
     for (int i = lower_index; i < sortedList.size() and sortedList[i] <= U; i++) {
-        length = i - lower_index;
+        length = i - lower_index + 1;
     }
     return {lower_index, length};
 }
@@ -304,7 +305,7 @@ double tetrahedron_sum_continuous(double (*func)(Vec k, Vec q), double (*func_di
                     if (func(p.vec, q) > max) max = func(p.vec, q);
                 }
                 pair<int, int> index_and_length = get_index_and_length(min, max, svals);
-                if (index_and_length.second == 0) continue;
+                if (index_and_length.first == -1) continue;
 
                 for (int c = 0; c < 6; c++) {
 
@@ -313,7 +314,7 @@ double tetrahedron_sum_continuous(double (*func)(Vec k, Vec q), double (*func_di
                         ep_points[p] = points[tetrahedrons[c][p]-1];
                     }
                     for (int x = 0; x < index_and_length.second; x++) {
-                        double s_val = svals[x + index_and_length.first];
+                        double s_val = svals[x];
 
                         if (not surface_inside_tetrahedron(s_val, ep_points)) continue;
                         vector<Vec> corner_points = points_in_tetrahedron(func, q, s_val, ep_points);
@@ -333,6 +334,7 @@ double tetrahedron_sum_continuous(double (*func)(Vec k, Vec q), double (*func_di
                         Vec k_point = average; k_point.area = A;
                         k_point.freq = s_val;
 
+                        //double dS = 1;
                         double dS = (svals[x+1] - svals[x-1]) / 2;
                         if (x == 0) dS = (svals[x+1] - svals[x]) / 2;
                         else if (x == svals.size()-1) dS = (svals[x] - svals[x-1]) / 2;

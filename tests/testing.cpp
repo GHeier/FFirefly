@@ -387,16 +387,48 @@ int main() {
 
     Vec q(0.1 * M_PI, 0.1 * M_PI, 0.1 * M_PI);
     double T = 0.25, w = 0.0;
+    double a, b;
 
-    cout << "Starting\n";
-    cout << chi_ep_integrate(q, w, T) << endl;
+    double s_val = 0.5;
+    vector<double> svals = {s_val};
+    get_bounds3(q, b, a, denominator);
+    get_spacing_vec(svals, w, a, b, 5);
+    for (auto x : svals) {
+        vector<double> temp; temp.push_back(x);
+        cout << tetrahedron_sum(denominator, denominator_diff, q, temp[0], w, T) << endl;
+        cout << tetrahedron_sum_continuous(denominator, denominator_diff, q, temp, w, T) << endl;
+    }
+
+
+    //return 0;
+
+    cout << "Starting Integrals for q=" << q << endl;
+    cout << chi_trapezoidal(q, T, mu, w, 150) << endl;
     cout << "Finished first integral\n";
+    cout << chi_ep_integrate(q, w, T) << endl;
+    cout << "Finished second integral\n";
 
-    double a, b; get_bounds3(q, b, a, denominator);
+    get_bounds3(q, b, a, denominator);
     vector<double> spacing; get_spacing_vec(spacing, w, a, b, 100);
 
     cout << tetrahedron_sum_continuous(denominator, denominator_diff, q, spacing, w, T) / pow(2*k_max, dim) << endl;
+    cout << "Finished third integral\n";
+
+    Vec temp(0.9 * M_PI, 0.9 * M_PI, 0.9 * M_PI);
+    q = temp;
+    cout << "Starting Integrals for q=" << q << endl;
+    cout << chi_trapezoidal(q, T, mu, w, 150) << endl;
+    cout << "Finished first integral\n";
+    cout << chi_ep_integrate(q, w, T) << endl;
     cout << "Finished second integral\n";
+
+    get_bounds3(q, b, a, denominator);
+    get_spacing_vec(spacing, w, a, b, 100);
+
+    cout << tetrahedron_sum_continuous(denominator, denominator_diff, q, spacing, w, T) / pow(2*k_max, dim) << endl;
+    cout << "Finished third integral\n";
+
+    //return 0;
 
     plot_single_chi3(T, w);
     plot_single_chi(T, w);

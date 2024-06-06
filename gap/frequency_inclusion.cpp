@@ -624,7 +624,7 @@ double bound_chi_sum4(Vec q, double w, double T, int pts, double b, double a, do
         double next_s = spacing[i+1];
         double g = tetrahedron_sum(func, func_diff, q, s, w, T);
         double next_g = tetrahedron_sum(func, func_diff, q, next_s, w, T);
-        sum += (g + next_g);// * (next_s - s) / 2;
+        sum += (g + next_g) * (next_s - s) / 2;
     }
     return sum;
 }
