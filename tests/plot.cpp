@@ -199,8 +199,9 @@ void plot_single_chi3(double T, double w) {
         double q_mag = i/(n-1) * M_PI;
         Vec q(q_mag, q_mag, q_mag);
         double a, b; get_bounds3(q, b, a, denominator);
-        vector<double> spacing; get_spacing_vec(spacing, w, a, b, 100);
+        vector<double> spacing; get_spacing_vec(spacing, w, a, b, 500);
         double c = tetrahedron_sum_continuous(denominator, denominator_diff, q, spacing, w, T);
+        c /= pow(2*k_max,dim);
         if (isnan(c)) {
             cout << "NAN: " << q << endl;
             assert(false);

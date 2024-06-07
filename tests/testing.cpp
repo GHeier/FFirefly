@@ -377,61 +377,17 @@ void chi_eig_with_freq(double cutoff) {
 
 int main() {
     
-//    int num_procs = omp_get_num_procs();
-//    omp_set_num_threads(num_procs - 1);
-//
-//    for (int i = 0; i < 30; i++) {
-//        double cutoff = 0.03 * i;
-//        //chi_eig_with_freq(cutoff);
-//    }
+    int num_procs = omp_get_num_procs();
+    omp_set_num_threads(num_procs - 1);
+
 
     Vec q(0.1 * M_PI, 0.1 * M_PI, 0.1 * M_PI);
-    double T = 0.25, w = 0.0;
+    double T = 0.25, w = 0.5;
     double a, b;
 
-    double s_val = 0.5;
-    vector<double> svals = {s_val};
-    get_bounds3(q, b, a, denominator);
-    get_spacing_vec(svals, w, a, b, 5);
-    for (auto x : svals) {
-        vector<double> temp; temp.push_back(x);
-        cout << tetrahedron_sum(denominator, denominator_diff, q, temp[0], w, T) << endl;
-        cout << tetrahedron_sum_continuous(denominator, denominator_diff, q, temp, w, T) << endl;
-    }
-
-
-    //return 0;
-
-    cout << "Starting Integrals for q=" << q << endl;
-    cout << chi_trapezoidal(q, T, mu, w, 150) << endl;
-    cout << "Finished first integral\n";
-    cout << chi_ep_integrate(q, w, T) << endl;
-    cout << "Finished second integral\n";
-
-    get_bounds3(q, b, a, denominator);
-    vector<double> spacing; get_spacing_vec(spacing, w, a, b, 100);
-
-    cout << tetrahedron_sum_continuous(denominator, denominator_diff, q, spacing, w, T) / pow(2*k_max, dim) << endl;
-    cout << "Finished third integral\n";
-
-    Vec temp(0.9 * M_PI, 0.9 * M_PI, 0.9 * M_PI);
-    q = temp;
-    cout << "Starting Integrals for q=" << q << endl;
-    cout << chi_trapezoidal(q, T, mu, w, 150) << endl;
-    cout << "Finished first integral\n";
-    cout << chi_ep_integrate(q, w, T) << endl;
-    cout << "Finished second integral\n";
-
-    get_bounds3(q, b, a, denominator);
-    get_spacing_vec(spacing, w, a, b, 100);
-
-    cout << tetrahedron_sum_continuous(denominator, denominator_diff, q, spacing, w, T) / pow(2*k_max, dim) << endl;
-    cout << "Finished third integral\n";
-
-    //return 0;
 
     plot_single_chi3(T, w);
     plot_single_chi(T, w);
-    plot_single_chi2(T, w);
+    //plot_single_chi2(T, w);
     return 0;
 }

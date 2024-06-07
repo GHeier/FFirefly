@@ -314,7 +314,8 @@ double tetrahedron_sum_continuous(double (*func)(Vec k, Vec q), double (*func_di
                         ep_points[p] = points[tetrahedrons[c][p]-1];
                     }
                     for (int x = 0; x < index_and_length.second; x++) {
-                        double s_val = svals[x];
+                        int ind = x + index_and_length.first;
+                        double s_val = svals[ind];
 
                         if (not surface_inside_tetrahedron(s_val, ep_points)) continue;
                         vector<Vec> corner_points = points_in_tetrahedron(func, q, s_val, ep_points);
@@ -335,10 +336,12 @@ double tetrahedron_sum_continuous(double (*func)(Vec k, Vec q), double (*func_di
                         k_point.freq = s_val;
 
                         //double dS = 1;
-                        double dS = (svals[x+1] - svals[x-1]) / 2;
-                        if (x == 0) dS = (svals[x+1] - svals[x]) / 2;
-                        else if (x == svals.size()-1) dS = (svals[x] - svals[x-1]) / 2;
-                        dS = 1;
+                        double dS;
+                        if (ind == 0) dS = (svals[ind+1] - svals[ind]) / 2;
+                        else if (ind == svals.size()-1) dS = (svals[ind] - svals[ind-1]) / 2;
+                        else dS = (svals[ind+1] - svals[ind-1]) / 2;
+                        //dS = 0.1 / 2;
+                        //printf("dS: %f\n", dS);
 
                         sum += integrand(k_point, q, w, T) 
                             * k_point.area / func_diff(k_point, q)
