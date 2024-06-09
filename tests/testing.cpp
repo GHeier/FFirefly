@@ -353,16 +353,23 @@ void mu_to_n() {
 }
 
 void chi_eig_with_freq(double cutoff) {
+    ofstream file("eig_freq.dat", std::ios_base::app);
     double T = 0.01;
     init_config(mu, U, t, tn, w_D, mu, U, t, tn, cutoff);
     
     vector<vector<Vec>> freq_FS = freq_tetrahedron_method(mu);
     vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
+    printf("FS created\n");
 
-    unordered_map <double, vector<vector<vector<double>>>> cube_freq_map = chi_cube_freq(T, mu, 0.0);
+    unordered_map <double, vector<vector<vector<double>>>> cube_freq_map;
+    if (potential_name.find("scalapino") != string::npos)
+        cube_freq_map = chi_cube_freq(T, mu, 0.0);
+    printf("Cube Created\n");
 
-    MatrixXd P = create_P_freq(freq_FS, 0.25, cube_freq_map); 
-    MatrixXd P2 = create_P(FS, 0.25, cube_freq_map);
+    MatrixXd P = create_P_freq(freq_FS, T, cube_freq_map); 
+    printf("Matrix Created\n");
+    MatrixXd P2 = create_P(FS, T, cube_freq_map);
+    printf("Matrix Created\n");
     
     double f = f_singlet_integral(T);
 
@@ -373,6 +380,7 @@ void chi_eig_with_freq(double cutoff) {
     double eig2 = answers2[answers2.size() - 1].eig;
 
     cout << "w=0, w>0 Eigs: " << f*eig2 << " " << eig << endl;
+    file << cutoff << " " << f*eig2 << " " << eig << endl;
 }
 
 int main() {
@@ -380,19 +388,11 @@ int main() {
     int num_procs = omp_get_num_procs();
     omp_set_num_threads(num_procs - 1);
 
-
-    Vec q(0.1 * M_PI, 0.1 * M_PI, 0.1 * M_PI);
-    double T = 0.001, w = 0.0;
-    double a, b;
-
-    Vec temp(0,0,0);
-    cout << integrate_susceptibility(temp, T, mu, 0, 500) << endl;
-    cout << chi_trapezoidal(temp, T, mu, 0, 500) << endl;
-    //return 0;
-
-    plot_single_chi3(T, w);
-    plot_single_chi2(T, w);
-    plot_single_chi(T, w);
-    //plot_single_chi2(T, w);
+    for (int i = 0; i < 30; i++) {
+        double cutoff = 0.03 * i;
+        cout << "Cutoff: " << cutoff << endl;
+        init_config(mu, U, t, tn, w_D, mu, U, t, tn, cutoff);
+        chi_eig_with_freq(cutoff);
+    }
     return 0;
 }
