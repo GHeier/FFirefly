@@ -382,9 +382,13 @@ int main() {
 
 
     Vec q(0.1 * M_PI, 0.1 * M_PI, 0.1 * M_PI);
-    double T = 0.25, w = 0.5;
+    double T = 0.001, w = 0.0;
     double a, b;
 
+    Vec temp(0,0,0);
+    cout << integrate_susceptibility(temp, T, mu, 0, 500) << endl;
+    cout << chi_trapezoidal(temp, T, mu, 0, 500) << endl;
+    //return 0;
 
     plot_single_chi3(T, w);
     plot_single_chi2(T, w);

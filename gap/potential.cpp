@@ -220,7 +220,17 @@ double chi_trapezoidal(Vec q, double T, double mu, double w, int num_points) {
 
 double integrate_susceptibility(Vec q, double T, double mu, double w, int num_points) {
     //return imaginary_integration(q, T, mu, w, num_points, 0.000);
-    if (q.vals.norm() < 0.0001) q = Vec(0.001,0.001,0.001);
+    if (q.vals.norm() < 0.0001) {
+        vector<Vec> FS = tetrahedron_method(e_base_avg, q, mu);
+        double sum = 0; for (auto v : FS) sum += v.area / vp(v);
+        return sum / pow(2*k_max,dim);
+        return tetrahedron_sum(e_surface, vp_surface, q, 0, w, T);
+        double c, d; get_bounds3(q, d, c, e_surface);
+        vector<double> spacing; get_spacing_vec(spacing, w, c, d, num_points);
+        double c0 = tetrahedron_sum_continuous(e_surface, vp_surface, q, spacing, w, T);
+        return c0 / pow(2*k_max,dim);
+    }
+    if (q.vals.norm() < 0.0001) q = Vec(0.01,0.01,0.01);
 
     double a, b; get_bounds3(q, b, a, denominator);
     vector<double> spacing; get_spacing_vec(spacing, w, a, b, num_points);

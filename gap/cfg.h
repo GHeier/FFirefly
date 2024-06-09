@@ -24,6 +24,8 @@ double e_diff(const Vec k, const Vec q);
 double vp_diff(const Vec k, const Vec q);
 double vp(const Vec k);
 double e_base_avg(const Vec k, const Vec q);
+double e_surface(const Vec k, const Vec q);
+double vp_surface(const Vec k, const Vec q);
 double e_base(const Vec k, const Vec q);
 double e_split(const Vec k, const Vec q);
 double vp_split(const Vec k, const Vec q);

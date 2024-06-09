@@ -9,14 +9,15 @@ using namespace std;
 double epsilon_sphere(const Vec k) {
     Vec q = k;
     if (q.cartesian == false) q.to_cartesian();
-    if (dim == 2 and q.vals(2) != 0) q.vals(2) = 0;
+    if (dim == 2) q.vals(2) = 0;
     return q.vals.squaredNorm();
 }
 
 Vec fermi_velocity_sphere(const Vec k) {
     Vec q = k;
     if (q.cartesian == false) q.to_cartesian();
-    return 2*k;
+    if (dim == 2) q.vals(2) = 0;
+    return 2*q;
 }
 
 double epsilon_SC(const Vec k, double t, double tn) {

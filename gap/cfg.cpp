@@ -9,7 +9,7 @@ using namespace std;
 
 // Global Variables
 int n = 100; // Number of k points
-int m = 60; // Number of chi points
+int m = 40; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 2; // Number of dimensions)
 string potential_name = "const";
@@ -53,7 +53,6 @@ double e_diff(const Vec k, const Vec q) {
 
 double e_base_avg(const Vec k, const Vec q) {
     return epsilon(k);
-    return (epsilon(k+q) + epsilon(k-q))/2;
 }
 
 double e_base(const Vec k, const Vec q) {
@@ -63,6 +62,10 @@ double e_base(const Vec k, const Vec q) {
 double e_split(const Vec k, const Vec q) {
     return epsilon(k+q) - epsilon(k-q);
 }
+
+double e_surface(const Vec k, const Vec q) {
+    return epsilon(k) - mu;
+} 
 
 double vp_diff(const Vec k, const Vec q) {
     Vec v;
@@ -94,6 +97,20 @@ double vp_split(const Vec k, const Vec q) {
         return 0;
     }
     return v.vals.norm();
+}
+
+double vp_surface(const Vec k, const Vec q) {
+    if (band_name == "simple_cubic_layered")
+        return fermi_velocity_SC_layered(k).vals.norm();
+    else if (band_name == "simple_cubic")
+        return fermi_velocity_SC(k).vals.norm();
+    else if (band_name == "sphere")
+        return fermi_velocity_sphere(k).vals.norm();
+    else {
+        cout << "No band structure specified\n";
+        assert(1==2);
+        return 0;
+    }
 }
 
 // Fermi Velocity corresponds to energy band functions above
