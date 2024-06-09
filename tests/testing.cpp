@@ -387,6 +387,7 @@ int main() {
 
 
     plot_single_chi3(T, w);
+    plot_single_chi2(T, w);
     plot_single_chi(T, w);
     //plot_single_chi2(T, w);
     return 0;

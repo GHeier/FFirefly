@@ -112,7 +112,9 @@ unordered_map <double, vector<vector<vector<double>>>> chi_cube_freq(double T, d
         }
     }
     unordered_map <double, vector<vector<vector<double>>>> cube_freq_map;
-    for (double w : des) {
+    for (int i = 0; i < des.size(); i++) {
+        printf("Chi Cube %d / %d\n", i+1, des.size());
+        double w = des[i];
         auto cube = chi_cube(T, mu, DOS, w);
         cube_freq_map.insert(pair<double, vector<vector<vector<double>>>>(w, cube));
     }

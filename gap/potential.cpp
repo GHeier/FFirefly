@@ -220,6 +220,13 @@ double chi_trapezoidal(Vec q, double T, double mu, double w, int num_points) {
 
 double integrate_susceptibility(Vec q, double T, double mu, double w, int num_points) {
     //return imaginary_integration(q, T, mu, w, num_points, 0.000);
+    if (q.vals.norm() < 0.0001) q = Vec(0.001,0.001,0.001);
+
+    double a, b; get_bounds3(q, b, a, denominator);
+    vector<double> spacing; get_spacing_vec(spacing, w, a, b, num_points);
+    double c = tetrahedron_sum_continuous(denominator, denominator_diff, q, spacing, w, T);
+    return c / pow(2*k_max,dim);
+
     auto func = [q, T, mu, w] (double kx, double ky, double kz) {
         //if (epsilon(Vec(kx,ky,kz)) < mu) return 1;
         //return 0;
@@ -440,13 +447,13 @@ vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS, double 
     }
     
     cout << "Taking " << map.size() << " integrals in " << dim << " dimensions.\n";
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for(unsigned int i = 0; i < map.size(); i++) {
         auto datIt = map.begin();
         advance(datIt, i);
         string key = datIt->first;
-        map[key] = chi_ep_integrate(string_to_vec(key), w, T);
-        //map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w, 100);
+        map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w, 500);
+        progress_bar(1.0 * i / map.size());
     }
 
     for (int i = 0; i < m; i++) {

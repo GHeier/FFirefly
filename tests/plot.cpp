@@ -176,12 +176,13 @@ void plot_single_chi2(double T, double w) {
     double n = 50.0;
     double new_mu = 1.0;
     init_config(mu, U, t, tn, w_D, new_mu, U, t, tn, w_D);
+    vector<vector<vector<double>>> cube = chi_cube(T, mu, 0, w);
     for (double i = 0; i < n; i++) {
         printf("\r Mu %.1f: %.3f" , new_mu, 100.0*i/(n-1));
         fflush(stdout);
         double q_mag = i/(n-1) * M_PI;
         Vec q(q_mag, q_mag, q_mag);
-        double c = chi_ep_integrate(q, w, T);
+        double c = calculate_chi_from_cube(cube, q);
         file << q_mag << " " << c << endl;
     }
     cout << endl;
@@ -200,8 +201,9 @@ void plot_single_chi3(double T, double w) {
         Vec q(q_mag, q_mag, q_mag);
         double a, b; get_bounds3(q, b, a, denominator);
         vector<double> spacing; get_spacing_vec(spacing, w, a, b, 500);
-        double c = tetrahedron_sum_continuous(denominator, denominator_diff, q, spacing, w, T);
-        c /= pow(2*k_max,dim);
+        //double c = tetrahedron_sum_continuous(denominator, denominator_diff, q, spacing, w, T);
+        //c /= pow(2*k_max,dim);
+        double c = integrate_susceptibility(q, T, mu, w, 500);
         if (isnan(c)) {
             cout << "NAN: " << q << endl;
             assert(false);
