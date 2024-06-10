@@ -17,9 +17,10 @@
 #include "potential.h"
 #include "save_data.h"
 #include "vec.h"
+#include "matrix.hpp"
+#include "eigenvec.hpp"
 #include "utilities.h"
 
-using namespace Eigen;
 using std::string;
 
 int main() {
@@ -62,49 +63,40 @@ int main() {
 //    vector<vector<vector<double>>> cube;
 //    if (potential_name != "test") cube = chi_cube(T, mu, DOS, 0);
     if (potential_name != "test" or potential_name != "const") cube_freq_map = chi_cube_freq(T, mu, DOS);
+    return 0;
 
-//    MatrixXd Pf1 = create_P_freq(freq_FS, T, cube);
-    MatrixXd Pf2 = create_P_freq(freq_FS, T, cube_freq_map);
-//    for (int i = 0; i < Pf1.size(); i++) {
-//        for (int j = 0; j < Pf2.size(); j++) {
-//            if (Pf1(i,j) != Pf2(i,j) and Pf2(i,j) != 0)
-//                cout << Pf1(i,j) << " " << Pf2(i,j) << endl;
-//        }
-//    }
-    MatrixXd P = create_P(FS, T, cube_freq_map);
+    int size = 0;
+    for (int i = 0; i < freq_FS.size(); i++) {
+        size += freq_FS[i].size();
+    }
+    Matrix Pf2(size); 
+    create_P_freq(Pf2, freq_FS, T, cube_freq_map);
+    Matrix P(FS.size());
+    create_P(P, FS, T, cube_freq_map);
     double f = f_singlet_integral(T);
     cout << "F-integral value: " << f << endl;
 
     cout << "Finding Eigenspace..." << endl;
-    vector<EigAndVec> answers = power_iteration(P, 0.001);
+    vector<Eigenvector> answers = power_iteration(P, 0.001);
 //    vector<EigAndVec> answersf1 = power_iteration(Pf1, 0.001);
-    vector<EigAndVec> answersf2 = power_iteration(Pf2, 0.001);
-    double eig = answers[answers.size() - 1].eig;
+    vector<Eigenvector> answersf2 = power_iteration(Pf2, 0.001);
+    double eig = answers[answers.size() - 1].eigenvalue;
 //    double eigf1 = answersf1[answersf1.size() - 1].eig;
-    double eigf2 = answersf2[answersf2.size() - 1].eig;
+    double eigf2 = answersf2[answersf2.size() - 1].eigenvalue;
     cout << "Eig: " << f*eig << endl;
 //    cout << "Eig: " << eigf1 << endl;
     cout << "Eig: " << eigf2 << endl;
     cout << "Test integral: " << f_singlet_integral_test(T) << endl;
     return 0;
-    // Solving every vector using Eigen method
-    EigenSolver<MatrixXd> s(P);
-    
-    VectorXcd vals = s.eigenvalues();// * f / FS.size();
-    //VectorXcd vals = s.eigenvalues() * f / FS.size();
-    EigenSolver<MatrixXd>::EigenvectorsType vecs;
-    vecs = s.eigenvectors(); 
-    
-    cout << "Eigenspace Found\n";
 
     // Testing to confirm Eigen didn't mess up the first vector at least
-    VectorXd first_vec = vecs.col(0).real();
-    if ( ( P*first_vec 
-                - vals(0).real() * first_vec ).norm() > 0.00001 ) {
-        cout << "Matrix Decomposition Failed\n";
-    }
-    double mag = first_vec.transpose() * first_vec;
-    if ( fabs(mag - 1.0) > 0.01 ) cout << "Eigenvector not normalized\n";
+    //Eigenvector first_vec = vecs.col(0).real();
+    //if ( ( P*first_vec 
+    //            - vals(0).real() * first_vec ).norm() > 0.00001 ) {
+    //    cout << "Matrix Decomposition Failed\n";
+    //}
+    //double mag = first_vec.transpose() * first_vec;
+    //if ( fabs(mag - 1.0) > 0.01 ) cout << "Eigenvector not normalized\n";
     //vals = vals * f;
 
     cout << "Saving Potential and Susceptibility Functions\n";
@@ -117,8 +109,8 @@ int main() {
    ========================================================================================
  */
     // Sort solutions with highest eigenvalue/eigenvector pair first
-    std::vector<EigAndVec> solutions;
-    solutions = combine_eigs_and_vecs(vals.real(), vecs.real());
+    std::vector<Eigenvector> solutions;
+    //solutions = combine_eigs_and_vecs(vals.real(), vecs.real());
     sort(solutions.rbegin(), solutions.rend());
     vector_to_wave(freq_FS[0], solutions);
     //for (int i = 0; i < 6; i++) cout << solutions[0].vec(i) << " "; cout << endl;

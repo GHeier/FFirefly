@@ -1,4 +1,6 @@
 #include <string>
+#include <unordered_map>
+#include <vector>
 #include "vec.h"
 
 using namespace std;
@@ -18,6 +20,9 @@ extern double tnn;
 extern double U;
 extern double w_D;
 
+extern float sin_arr[31416]; 
+extern float cos_arr[31416]; 
+
 void init_config(double &mu, double &U, double &t, double &tn, double &w_D, double new_mu, double new_U, double new_t, double new_tn, double new_w_D);
 double epsilon(const Vec k);
 double e_diff(const Vec k, const Vec q);
@@ -34,3 +39,6 @@ int get_num_points_from_delta(double &delta);
 
 extern double *weights[5];
 extern double *points[5];
+
+double get_sin(double x);
+double get_cos(double x);

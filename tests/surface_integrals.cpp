@@ -42,11 +42,11 @@ double trapezoid_area_from_points(Vec k1, Vec k2, Vec k3, Vec k4) {
     Vec k34 = k3 - k4; if (k34.cartesian) k34.to_spherical();
     Vec k14 = k1 - k4; if (k14.cartesian) k14.to_spherical();
     Vec k13 = k1 - k3; if (k13.cartesian) k13.to_spherical();
-    double d12 = k12.vals(0);
-    double d23 = k23.vals(0);
-    double d34 = k34.vals(0);
-    double d14 = k14.vals(0);
-    double d13 = k13.vals(0);
+    double d12 = k12.vals[0];
+    double d23 = k23.vals[0];
+    double d34 = k34.vals[0];
+    double d14 = k14.vals[0];
+    double d13 = k13.vals[0];
 
     double s = (d12 + d23 + d34 + d14)/2; 
     double theta1 = acos( (pow(d12,2) + pow(d23,2) - pow(d13,2)) / (2*d12*d23));
@@ -105,7 +105,7 @@ double test_4d_surface_integral_discrete(vector<Vec> &FS_vecs, const vector<vect
 
 }
 
-double test_surface_integral4(vector<Vec> &FS_vecs, Vec p, double T, double mu, const vector<vector<vector<double>>> &chi_cube, auto &func) {
+double test_surface_integral4(vector<Vec> &FS_vecs, Vec p, double T, double mu, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube, auto &func) {
     double sum = 0;
     for (int i = 0; i < FS_vecs.size(); i++) {
         Vec k1 = FS_vecs[i];
@@ -115,12 +115,12 @@ double test_surface_integral4(vector<Vec> &FS_vecs, Vec p, double T, double mu, 
     return sum ;//* (2 / pow(2*M_PI,3));
 }
 
-double test_4d_surface_integral4(vector<Vec> &FS_vecs, const vector<vector<vector<double>>> &chi_cube, double T, double mu, auto &wave, auto &V) {
+double test_4d_surface_integral4(vector<Vec> &FS_vecs, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube, double T, double mu, auto &wave, auto &V) {
 
-    auto norm_func = [&wave](Vec k, Vec extra, double T, double mu, const vector<vector<vector<double>>> &chi_cube) {
+    auto norm_func = [&wave](Vec k, Vec extra, double T, double mu, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube) {
         return pow(wave(k, mu),2) / vp(k);
     };
-    auto func = [&wave, &V](Vec p1, Vec p2, double T, double mu, const vector<vector<vector<double>>> &chi_cube) { 
+    auto func = [&wave, &V](Vec p1, Vec p2, double T, double mu, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube) { 
         //return V(p1, p2, T, chi_cube);
         return wave(p1, mu) * V(p1,p2,T,chi_cube) * wave(p2, mu) / (vp(p1) * vp(p2)); 
     };
@@ -145,18 +145,20 @@ void test_integral_pairing_interaction_parity(vector<Vec> &FS, double T, double 
     auto wave = [](Vec k, double mu) { 
         Vec q = k; 
         if (q.cartesian == false) q.to_cartesian();
-        return cos(q.vals(1))-cos(q.vals(0)); 
+        return cos(q.vals[1])-cos(q.vals[0]); 
     };
     auto Vs = [](Vec p1, Vec p2, double T, const auto &chi_cube) { 
         return V(p1, p2, 0, T, chi_cube);
     };
-    auto func = [&wave, &Vs](Vec p1, Vec p2, double T, double mu, const vector<vector<vector<double>>> &chi_cube) { 
+    auto func = [&wave, &Vs](Vec p1, Vec p2, double T, double mu, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube) { 
         return wave(p1, mu) * Vs(p1,p2,T,chi_cube) * wave(p2, mu);// / (vp(p1) * vp(p2)); 
     };
 
     double DOS = 0; for (auto x : FS) DOS += x.area / vp(x);
     DOS /= pow(2*M_PI,3);
     auto cube = chi_cube(T, mu, DOS, 0);
+    unordered_map<double, vector<vector<vector<double>>> > cube_freq_map;
+    cube_freq_map[0] = cube;
     double num = 10;
     for (double i = 0; i < num; i++) {
         for (double j = 0; j < num; j++) {
@@ -167,8 +169,8 @@ void test_integral_pairing_interaction_parity(vector<Vec> &FS, double T, double 
 
                 Vec p(x, y, z);
 
-                double val1 = test_surface_integral4(FS, p, T, mu, cube, func);
-                double val2 = test_surface_integral4(FS, -1*p, T, mu, cube, func);
+                double val1 = test_surface_integral4(FS, p, T, mu, cube_freq_map, func);
+                double val2 = test_surface_integral4(FS, -1*p, T, mu, cube_freq_map, func);
                 if ( fabs(val1 - val2) > 0.0000001) {
                     cout << setprecision(10);
                     cout << "P: " << p << endl;
@@ -182,7 +184,7 @@ void test_integral_pairing_interaction_parity(vector<Vec> &FS, double T, double 
 }
 
 double heavy_step(Vec k) {
-    return k.vals.norm() < 1;
+    return k.norm() < 1;
 }
 
 double ratio_1D(Vec q, Vec k) {
@@ -196,24 +198,24 @@ double ratio_1D(Vec q, Vec k) {
 }
 
 double explicit_formula_1d(Vec q, Vec k) {
-    return 1 / (q.vals.squaredNorm() - 4*k.vals.squaredNorm());
+    return 1 / (pow(q.norm(),2) - 4*pow(k.norm(),2));
 }
 
 double example_formula_1D(Vec q, Vec k) {
     //return (k - q).vals.norm();
-    return 1/(k.vals(0) - q.vals(0));
+    return 1/(k.vals[0] - q.vals[0]);
 }
 
 bool k_in_dense_box(Vec k, vector<Vec> singularities, vector<Vec> singularity_widths) {
     for (int i = 0; i < singularities.size(); i++) {
         Vec singularity = singularities[i];
         Vec singularity_width = singularity_widths[i];
-        if (k.vals(0) >= singularity.vals(0) - singularity_width.vals(0) 
-            and k.vals(0) <= singularity.vals(0) + singularity_width.vals(0)
-            and k.vals(1) >= singularity.vals(1) - singularity_width.vals(1) 
-            and k.vals(1) <= singularity.vals(1) + singularity_width.vals(1) 
-            and k.vals(2) >= singularity.vals(2) - singularity_width.vals(2) 
-            and k.vals(2) <= singularity.vals(2) + singularity_width.vals(2)) {
+        if (k.vals[0] >= singularity.vals[0] - singularity_width.vals[0] 
+            and k.vals[0] <= singularity.vals[0] + singularity_width.vals[0]
+            and k.vals[1] >= singularity.vals[1] - singularity_width.vals[1] 
+            and k.vals[1] <= singularity.vals[1] + singularity_width.vals[1] 
+            and k.vals[2] >= singularity.vals[2] - singularity_width.vals[2] 
+            and k.vals[2] <= singularity.vals[2] + singularity_width.vals[2]) {
             return true;
         }
     }
@@ -225,58 +227,58 @@ void plot_coupling() {
     auto dx2_y2 = [](Vec k, double mu) { 
         Vec q = k; 
         if (q.cartesian == false) q.to_cartesian();
-        return cos(q.vals(1))-cos(q.vals(0)); 
+        return cos(q.vals[1])-cos(q.vals[0]); 
     };
     auto dz2_1 = [](Vec k, double mu) { 
         Vec q = k; 
         if (q.cartesian == false) q.to_cartesian();
-        return 2*cos(q.vals(2))-cos(q.vals(0))-cos(q.vals(1)); 
+        return 2*cos(q.vals[2])-cos(q.vals[0])-cos(q.vals[1]); 
     };
     auto dxy = [](Vec k, double mu) { 
         Vec q = k; if (not q.cartesian) q.to_cartesian();
-        return sin(q.vals(0))*sin(q.vals(1));
+        return sin(q.vals[0])*sin(q.vals[1]);
     };
     auto dxz = [](Vec k, double mu) { 
         Vec q = k; if (not q.cartesian) q.to_cartesian();
-        return sin(q.vals(0))*sin(q.vals(2));
+        return sin(q.vals[0])*sin(q.vals[2]);
     };
     auto dyz = [](Vec k, double mu) { 
         Vec q = k; if (not q.cartesian) q.to_cartesian();
-        return sin(q.vals(1))*sin(q.vals(2));
+        return sin(q.vals[1])*sin(q.vals[2]);
     };
     auto px = [](Vec k, double mu) { 
         Vec q = k; if (not q.cartesian) q.to_cartesian();
-        return sin(q.vals(0));
+        return sin(q.vals[0]);
     };
     auto py = [](Vec k, double mu) { 
         Vec q = k; if (not q.cartesian) q.to_cartesian();
-        return sin(q.vals(1));
+        return sin(q.vals[1]);
     };
     auto pz = [](Vec k, double mu) { 
         Vec q = k; if (not q.cartesian) q.to_cartesian();
-        return sin(q.vals(2));
+        return sin(q.vals[2]);
     };
     auto p_wave2 = [](Vec k, double mu) { 
         Vec q = k; if (not q.cartesian) q.to_cartesian();
-        return (sin(q.vals(0)) - sin(q.vals(1)));
+        return (sin(q.vals[0]) - sin(q.vals[1]));
     };
     auto extended_s_wave = [](Vec k, double mu) { 
-        return -mu/2 + cos(k.vals(0)) + cos(k.vals(1)) + cos(k.vals(2)); 
+        return -mu/2 + cos(k.vals[0]) + cos(k.vals[1]) + cos(k.vals[2]); 
     };
     auto wave_norm = [](Vec k, double mu) {
         return 1.0; 
     };
     auto Vs = [](Vec p1, Vec p2, double T, const auto &chi_cube) { 
-        return V(p1, p2, T, chi_cube);
+        return V(p1, p2, 0, T, chi_cube);
     };
     auto Vt = [](Vec p1, Vec p2, double T, const auto &chi_cube) { 
         Vec q = to_IBZ_2(p1 - p2);
-        double chi = calculate_chi_from_cube(chi_cube, q);
+        double chi = calculate_chi_from_cube(chi_cube.at(0), q);
         return -pow(U,2)*chi / (1 - pow(U*chi,2));
     };
     auto V_norm = [](Vec p1, Vec p2, double T, const auto &chi_cube) { 
         Vec q = to_IBZ_2(p1 - p2);
-        double chi = calculate_chi_from_cube(chi_cube, q);
+        double chi = calculate_chi_from_cube(chi_cube.at(0), q);
         double V = pow(U,3)*pow(chi,2) / (1-U*chi) + pow(U,2)*chi / (1-pow(U*chi,2));
         return -V;
     };
@@ -293,17 +295,20 @@ void plot_coupling() {
         double DOS = get_DOS(FS);
 
         vector<vector<vector<double>>> cube = chi_cube(T, mu, DOS, 0);
-        MatrixXd P = create_P(FS, T, cube);
-        vector<EigAndVec> solutions = power_iteration(P, 0.0001);
+        unordered_map<double, vector<vector<vector<double>>> > cube_freq_map;
+        cube_freq_map[0] = cube;
+        Matrix P(FS.size());
+        create_P(P, FS, T, cube_freq_map);
+        vector<Eigenvector> solutions = power_iteration(P, 0.0001);
         cout << "Power Iteration Done\n";
         //cout << P.eigenvalues().real().maxCoeff();
 
-        double eig = solutions[solutions.size()-1].eig;
+        double eig = solutions[solutions.size()-1].eigenvalue;
         //double eig = 0;
         cout << "Eig Found: " << eig << " \n";
 
         // Renormalization
-        double renormalization = test_4d_surface_integral4(FS, cube, T, mu, wave_norm, V_norm)+1.0;
+        double renormalization = test_4d_surface_integral4(FS, cube_freq_map, T, mu, wave_norm, V_norm)+1.0;
         //double renormalization = 1;
         //cout << "\nEigs: " << endl;
         //for (auto x : solutions) {
@@ -311,14 +316,14 @@ void plot_coupling() {
         //}
         //cout << endl;
         // D-waves
-        double dx2_y2_coupling = test_4d_surface_integral4(FS, cube, T, mu, dx2_y2, Vs);
+        double dx2_y2_coupling = test_4d_surface_integral4(FS, cube_freq_map, T, mu, dx2_y2, Vs);
         //double dz2_1_coupling, dxy_coupling, dxz_coupling, dyz_coupling, px_coupling, py_coupling, pz_coupling, s_coupling, extended_s_coupling, dx_coupling = 0;
         //double dz2_1_coupling = test_4d_surface_integral4(FS, cube, T, mu, dz2_1, Vs);
-        double dxy_coupling = test_4d_surface_integral4(FS, cube, T, mu, dxy, Vs);
+        double dxy_coupling = test_4d_surface_integral4(FS, cube_freq_map, T, mu, dxy, Vs);
         //double dxz_coupling = test_4d_surface_integral4(FS, cube, T, mu, dxz, Vs);
         //double dyz_coupling = test_4d_surface_integral4(FS, cube, T, mu, dyz, Vs);
         // P-waves
-        double px_coupling = test_4d_surface_integral4(FS, cube, T, mu, px, Vt);
+        double px_coupling = test_4d_surface_integral4(FS, cube_freq_map, T, mu, px, Vt);
         //double py_coupling = test_4d_surface_integral4(FS, cube, T, mu, py, Vt);
         //double pz_coupling = test_4d_surface_integral4(FS, cube, T, mu, pz, Vt);
 
@@ -328,7 +333,7 @@ void plot_coupling() {
         ////double dz_coupling = test_4d_surface_integral4(FS, cube, T, mu, pz, Vs);
         ////double p_coupling2 = test_4d_surface_integral4(FS, cube, T, mu, p_wave2, Vs);
         //double s_coupling = test_4d_surface_integral4(FS, cube, T, mu, wave_norm, Vs);
-        double extended_s_coupling = test_4d_surface_integral4(FS, cube, T, mu, extended_s_wave, Vs);
+        double extended_s_coupling = test_4d_surface_integral4(FS, cube_freq_map, T, mu, extended_s_wave, Vs);
         //double dumb_wave_coupling = test_4d_surface_integral_discrete(FS, cube, T, Vs);
         //double dz2_1_coupling = 0, dxz_coupling = 0, dyz_coupling = 0, px_coupling = 0, py_coupling = 0, pz_coupling = 0, s_coupling = 0; 
         file << setprecision(4);
@@ -374,7 +379,7 @@ void plot_DOS() {
         auto wave = [](Vec k, double mu) { 
             return 1.0;
         };
-        auto norm_func = [&wave](Vec k, Vec extra, double T, double mu, const vector<vector<vector<double>>> &chi_cube) {
+        auto norm_func = [&wave](Vec k, Vec extra, double T, double mu, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube) {
             //return 1.0;
             return pow(wave(k, mu),2) / vp(k);
         };
@@ -382,8 +387,8 @@ void plot_DOS() {
         vector<Vec> FS = tetrahedron_method(mu);
         filter_FS(FS);
         double T = 0.0065;
-        vector<vector<vector<double>>> cube;
-        double test = test_surface_integral4(FS, FS[0], T, mu, cube, norm_func);
+        unordered_map<double, vector<vector<vector<double>>>> cube_freq_map;
+        double test = test_surface_integral4(FS, FS[0], T, mu, cube_freq_map, norm_func);
         DOS[i] = test;
         cout << new_mu << " " << DOS[i] << endl;
         break;
