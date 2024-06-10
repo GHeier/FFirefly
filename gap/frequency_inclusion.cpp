@@ -23,6 +23,7 @@
 #include "vec.h"
 #include "utilities.h"
 #include "frequency_inclusion.hpp"
+#include "matrix.hpp"
 
 using std::cout;
 using std::endl;
@@ -30,7 +31,6 @@ using std::sort;
 using std::vector;
 using std::unordered_map;
 //using lambda_lanczos::LambdaLanczos;
-using namespace Eigen;
 
 vector<vector<Vec>> freq_tetrahedron_method(double mu) {
     assert( l % 2 != 0); // N must be odd that way frequencies are evenly spaced
@@ -52,22 +52,16 @@ vector<vector<Vec>> freq_tetrahedron_method(double mu) {
     return basis;
 }
 
-MatrixXd create_P_freq(vector<vector<Vec>> &k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2) {
-    int size = 0;
-    for (int i = 0; i < k.size(); i++) {
-        size += k[i].size();
-    }
-
-    MatrixXd P(size, size);
+void create_P_freq(Matrix P, vector<vector<Vec>> &k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2) {
     cout << "Creating P Matrix with frequency\n";
-    for (int i = 0; i < k.size(); i++) {
+    for (int i = 0; i < P.size(); i++) {
 
         int ind1 = 0;
         for (int temp = 0; temp < i; temp++)
             ind1 += k[temp].size();
 
         #pragma omp parallel for
-        for (int j = 0; j < k[i].size(); j++) {
+        for (int j = 0; j < P[i].size(); j++) {
             Vec k1 = k[i][j];
             for (int x = 0; x < k.size(); x++) {
 
@@ -496,8 +490,8 @@ void get_bounds3(Vec q, double &upper, double &lower, double (*func)(Vec k, Vec 
 double sphere_func(Vec k, Vec q) {
     double x = k.vals[0] + q.vals[0], y = k.vals[1] + q.vals[1], z = k.vals[2] + q.vals[2];
     return pow(x,2) + pow(y,2) + pow(z,2);
-    //if (k.vals.norm() > 1) return 0;
-    return k.vals.squaredNorm();
+    //if (k.norm() > 1) return 0;
+    return pow(k.norm(), 2);
 }
 
 double sphere_func_diff(Vec k, Vec q) {
@@ -609,7 +603,7 @@ double close_to_zero(Vec q, double w, double T, int pts) {
     vector<Vec> layer = tetrahedron_method(e_base_avg, q, mu);
 
     auto scale = [] (Vec k, Vec q, double w, double T) {
-        if (w == 0 and q.vals.norm() == 0) return 1.0;
+        if (w == 0 and q.norm() == 0) return 1.0;
         double num = fermi_velocity_SC(k) * q;
         double denom = w - (epsilon(k+q) - epsilon(k));
         return - num / denom;
@@ -640,7 +634,7 @@ double num_states(double w, double T, int pts) {
 }
 
 double chi_ep_integrate(Vec q, double w, double T) {
-    if (q.vals.norm() == 0) {
+    if (q.norm() == 0) {
         q = Vec(0.1, 0.1, 0.1);
     }
     double a, b;

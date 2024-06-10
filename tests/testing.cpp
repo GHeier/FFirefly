@@ -21,6 +21,8 @@
 #include "cfg.h"
 #include "fermi_surface.h"
 #include "vec.h"
+#include "matrix.hpp"
+#include "eigenvec.hpp"
 //#include "analysis.h"
 #include "band_structure.h"
 //#include "py_port.h"
@@ -31,7 +33,7 @@
 
 #include "plot.cpp"
 //#include "surface_integrals.cpp"
-#include "freq_test.cpp"
+//#include "freq_test.cpp"
 
 
 using std::cout;
@@ -59,27 +61,27 @@ bool test_coordinate_transforms() {
     b.to_cartesian();
     c.to_cartesian();
 
-    if (fabs(x.vals(0) - 1.0) > 0.00001 or 
-            fabs(x.vals(1) - 0.0) > 0.00001)
+    if (fabs(x.vals[0] - 1.0) > 0.00001 or 
+            fabs(x.vals[1] - 0.0) > 0.00001)
         cout << "Transform 1 Failed\n";
-    if (fabs(y.vals(0) - 0.810453) > 0.00001 or 
-            fabs(y.vals(1) - 1.26221) > 0.00001) 
+    if (fabs(y.vals[0] - 0.810453) > 0.00001 or 
+            fabs(y.vals[1] - 1.26221) > 0.00001) 
         cout << "Transform 2 Failed\n";
-    if (fabs(z.vals(0) - 2) > 0.00001 or 
-            fabs(z.vals(1) - 0.0) > 0.00001 or 
-            fabs(z.vals(2) - 0.0) > 0.00001) 
+    if (fabs(z.vals[0] - 2) > 0.00001 or 
+            fabs(z.vals[1] - 0.0) > 0.00001 or 
+            fabs(z.vals[2] - 0.0) > 0.00001) 
         cout << "Transform 3 Failed\n";
-    if (fabs(a.vals(0) - 0) > 0.00001 or 
-            fabs(a.vals(1) - 0.0) > 0.00001 or 
-            fabs(a.vals(2) - 1.0) > 0.00001) 
+    if (fabs(a.vals[0] - 0) > 0.00001 or 
+            fabs(a.vals[1] - 0.0) > 0.00001 or 
+            fabs(a.vals[2] - 1.0) > 0.00001) 
         cout << "Transform 4 Failed\n";
-    if (fabs(b.vals(0) - 0.149160) > 0.00001 or 
-            fabs(b.vals(1) - 0.864813) > 0.00001 or 
-            fabs(b.vals(2) - (-0.479426)) > 0.00001) 
+    if (fabs(b.vals[0] - 0.149160) > 0.00001 or 
+            fabs(b.vals[1] - 0.864813) > 0.00001 or 
+            fabs(b.vals[2] - (-0.479426)) > 0.00001) 
         cout << "Transform 5 Failed\n";
-    if (fabs(c.vals(0) - 3.27657) > 0.0001 or 
-            fabs(c.vals(1) - 1.15904) > 0.0001 or 
-            fabs(c.vals(2) - (-4.9643)) > 0.0001) 
+    if (fabs(c.vals[0] - 3.27657) > 0.0001 or 
+            fabs(c.vals[1] - 1.15904) > 0.0001 or 
+            fabs(c.vals[2] - (-4.9643)) > 0.0001) 
         cout << "Transform 6 Failed\n";
 
     x.to_spherical();
@@ -89,17 +91,17 @@ bool test_coordinate_transforms() {
     b.to_spherical();
     c.to_spherical();
 
-    for (int i = 0; i < dim; i++) if (fabs(x.vals(i) - x1.vals(i)) > 0.00001) 
+    for (int i = 0; i < dim; i++) if (fabs(x.vals[i] - x1.vals[i]) > 0.00001) 
         cout << "Cartesian to spherical Transform #1 Failed";
-    for (int i = 0; i < dim; i++) if (fabs(y.vals(i) - y1.vals(i)) > 0.00001) 
+    for (int i = 0; i < dim; i++) if (fabs(y.vals[i] - y1.vals[i]) > 0.00001) 
         cout << "Cartesian to spherical Transform #2 Failed";
-    for (int i = 0; i < dim; i++) if (fabs(z.vals(i) - z1.vals(i)) > 0.00001) 
+    for (int i = 0; i < dim; i++) if (fabs(z.vals[i] - z1.vals[i]) > 0.00001) 
         cout << "Cartesian to spherical Transform #3 Failed";
-    for (int i = 0; i < dim; i++) if (fabs(a.vals(i) - a1.vals(i)) > 0.00001) 
+    for (int i = 0; i < dim; i++) if (fabs(a.vals[i] - a1.vals[i]) > 0.00001) 
         cout <<"Cartesian to spherical Transform #4 Failed";
-    for (int i = 0; i < dim; i++) if (fabs(b.vals(i) - b1.vals(i)) > 0.00001) 
+    for (int i = 0; i < dim; i++) if (fabs(b.vals[i] - b1.vals[i]) > 0.00001) 
         cout << "Cartesian to spherical Transform #5 Failed";
-    for (int i = 0; i < dim; i++) if (fabs(c.vals(i) - c1.vals(i)) > 0.00001) 
+    for (int i = 0; i < dim; i++) if (fabs(c.vals[i] - c1.vals[i]) > 0.00001) 
         cout << "Cartesian to spherical Transform #6 Failed";
     cout << "All Transforms Completed. If no error messages, the test is passed\n";
 
@@ -172,45 +174,6 @@ void test_IBZ() {
     cout << chi3 << " " << chi3_t << endl;
 }
 
-void test_diagonalization() {
-    int n = 20;
-    auto func = [](double x, double y, double a, double b) {
-        return cos(x)*cos(y) + 0.0;
-        return (cos(x)-cos(y))*(cos(a)-cos(b)) + 1.0;
-    };
-    MatrixXd V(n, n);
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            double theta1 = 6.28*i/n, phi1 = 3.14*j/n;
-            double x = cos(theta1)*sin(phi1), y = sin(theta1)*sin(phi1);
-            V(i,j) = func(theta1, 2*phi1, 0, 0);
-            //for (int k = 0; k < n; k++) {
-            //    for (int l = 0; l < n; l++) {
-            //        double theta1 = 6.28*i/n, phi1 = 3.14*j/n;
-            //        double theta2 = 6.28*k/n, phi2 = 3.14*l/n;
-            //        double x = cos(theta1)*sin(phi1), y = sin(theta1)*sin(phi1);
-            //        double a = cos(theta2)*sin(phi2), b = sin(theta2)*sin(phi2);
-            //        int ind1 = i*n + j, ind2 = k*n + l;
-            //        V(ind1,ind2) = func(x, y, a, b);
-            //        //V(ind1,ind2) = func(theta1, phi1, theta2, phi2);
-            //    }
-            //}
-        }
-    }
-    EigenSolver<MatrixXd> s(V);
-    VectorXcd vals = s.eigenvalues() / (n);
-    EigenSolver<MatrixXd>::EigenvectorsType vecs = s.eigenvectors();
-
-    vector<EigAndVec> solutions = combine_eigs_and_vecs(vals.real(), vecs.real());
-    sort(solutions.rbegin(), solutions.rend());
-
-    ofstream file("1val.dat");
-    ofstream file2("2val.dat");
-    cout << solutions[0].eig << endl << solutions[1].eig << endl;
-    file << solutions[0].vec;
-    file2 << solutions[1].vec;
-}
-
 //void test_pairing_interaction_parity(vector<Vec> &FS, double T, double mu) {
 //    double DOS = 0; for (auto x : FS) DOS += x.area / vp(x);
 //    DOS /= pow(2*M_PI, 3);
@@ -268,7 +231,7 @@ int f(unsigned ndim, const double *x, void *fdata, unsigned fdim, double *fval) 
 //    
 //    cout << vals << endl;
 //
-//    //if (vals(0) == 1.0 and vals(1) == 0.5) return true;
+//    //if (vals[0] == 1.0 and vals[1] == 0.5) return true;
 //    return false;
 //}
 
@@ -293,14 +256,14 @@ void eigenvalue_divergence() {
             cout << x.first << endl;
         }
 
-        MatrixXd Pf2 = create_P_freq(freq_FS, T, cube);
-        MatrixXd P = create_P(FS, T, cube);
+        Matrix Pf2; create_P_freq(Pf2, freq_FS, T, cube);
+        Matrix P; create_P(P, FS, T, cube);
         double f = f_singlet_integral(T);
 
-        vector<EigAndVec> answers = power_iteration(P, 0.001);
-        vector<EigAndVec> answersf2 = power_iteration(Pf2, 0.001);
-        double eig = answers[answers.size() - 1].eig;
-        double eigf2 = answersf2[answersf2.size() - 1].eig;
+        vector<Eigenvector> answers = power_iteration(P, 0.001);
+        vector<Eigenvector> answersf2 = power_iteration(Pf2, 0.001);
+        double eig = answers[answers.size() - 1].eigenvalue;
+        double eigf2 = answersf2[answersf2.size() - 1].eigenvalue;
         temporary_file << w_D << " " << f*eig << " " << eigf2 << endl;
     }
 }
@@ -366,18 +329,18 @@ void chi_eig_with_freq(double cutoff) {
         cube_freq_map = chi_cube_freq(T, mu, 0.0);
     printf("Cube Created\n");
 
-    MatrixXd P = create_P_freq(freq_FS, T, cube_freq_map); 
+    Matrix P; create_P_freq(P, freq_FS, T, cube_freq_map); 
     printf("Matrix Created\n");
-    MatrixXd P2 = create_P(FS, T, cube_freq_map);
+    Matrix P2; create_P(P2, FS, T, cube_freq_map);
     printf("Matrix Created\n");
     
     double f = f_singlet_integral(T);
 
-    vector<EigAndVec> answers = power_iteration(P, 0.001);
-    vector<EigAndVec> answers2 = power_iteration(P2, 0.001);
+    vector<Eigenvector> answers = power_iteration(P, 0.001);
+    vector<Eigenvector> answers2 = power_iteration(P2, 0.001);
 
-    double eig = answers[answers.size() - 1].eig;
-    double eig2 = answers2[answers2.size() - 1].eig;
+    double eig = answers[answers.size() - 1].eigenvalue;
+    double eig2 = answers2[answers2.size() - 1].eigenvalue;
 
     cout << "w=0, w>0 Eigs: " << f*eig2 << " " << eig << endl;
     file << cutoff << " " << f*eig2 << " " << eig << endl;

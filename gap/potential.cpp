@@ -4,6 +4,7 @@
 #include <math.h>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include <omp.h>
 #include <boost/functional/hash.hpp>

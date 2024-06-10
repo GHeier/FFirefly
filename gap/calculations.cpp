@@ -19,6 +19,8 @@
 #include "fermi_surface.h"
 #include "potential.h"
 #include "vec.h"
+#include "matrix.hpp"
+#include "eigenvec.hpp"
 #include "utilities.h"
 #include "frequency_inclusion.hpp"
 
@@ -28,7 +30,6 @@ using std::sort;
 using std::vector;
 using std::unordered_map;
 //using lambda_lanczos::LambdaLanczos;
-using namespace Eigen;
 
 
 namespace std {
@@ -44,24 +45,22 @@ using vec_map = std::unordered_map<Vec, double>;
  * This is on the off chance that all eigenvalues are positive and nonzero it will 
  * return 2 solutions instead of 1
 */ 
-vector<EigAndVec> power_iteration(MatrixXd A, double error) {
-    int size = A.cols();
-    VectorXd x = VectorXd::Random(size); 
+vector<Eigenvector> power_iteration(Matrix &A, double error) {
+    Eigenvector x(A.size);
     double diff_mag = 1;
-    VectorXd rayleigh = x.transpose()*A*x / x.squaredNorm();
+    double rayleigh = dot(x, A * x) / dot(x, x);
     double sum = 0;
-    vector<EigAndVec> vals;
+    vector<Eigenvector> vals;
     for (int eig_num = 0; eig_num < 5; eig_num++) {
         int iterations = 0;
         cout << "Eig Num: " << eig_num << endl;
         for (int i = 0; diff_mag > error; i++) {
-            VectorXd x_new = A*x;
-            double norm = x_new.norm();
-            x_new = x_new / norm;
+            Eigenvector x_new = A * x;
+            x_new.normalize();
 
             // Account for phase shift
-            VectorXd diff_vec = x - x_new;
-            VectorXd diff_neg_vec = x + x_new;
+            Eigenvector diff_vec = x - x_new;
+            Eigenvector diff_neg_vec = x + x_new;
             diff_mag = diff_vec.norm();
             if (diff_mag > diff_neg_vec.norm()) diff_mag = diff_neg_vec.norm();
 
@@ -69,19 +68,20 @@ vector<EigAndVec> power_iteration(MatrixXd A, double error) {
             //if ( i%100 == 0) cout << x.transpose()*A*x << endl;
             x = x_new;
             iterations = i;
-            if (i%100 == 0 and i > 50000 and x.transpose()*A*x < 0) break;
+            if (i%100 == 0 and i > 50000 and dot(x, A * x) < 0) break;
         }
         cout << "Iterations: " << iterations << endl;
-        rayleigh = x.transpose()*A*x;
-        double eig = rayleigh(0) + sum;
+        rayleigh = dot(x, A * x) / dot(x, x);
+        x.eigenvalue = rayleigh + sum;
 
-        EigAndVec result; result.eig = eig; result.vec = x;
-        vals.push_back(result);
-        if (eig > 0) return vals;
+        vals.push_back(x);
+        if (x.eigenvalue > 0) return vals;
 
-        sum += eig;
-        A = A - eig*MatrixXd::Identity(size, size);
-        x = VectorXd::Random(size); 
+        sum += x.eigenvalue;
+        Matrix identity(A.size);
+        A = A - identity*x.eigenvalue;
+        Eigenvector temp(A.size);
+        x = temp;
         diff_mag = 1; 
     }
     return vals;
@@ -108,22 +108,18 @@ double f_singlet_integral(double T) {
 
 // Create V matrix
 // Picks the potential based on the global variable "potential_name"
-MatrixXd create_P(vector<Vec> k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2) {
-    int size = k.size();
-    MatrixXd P(size, size);
-
+void create_P(Matrix &P, vector<Vec> &k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2) {
     cout << "Creating P Matrix\n";
     #pragma omp parallel for
-    for (int i = 0; i < size; i++) {
+    for (int i = 0; i < P.size; i++) {
         Vec k1 = k[i];
-        for (int j = 0; j < size; j++) {
+        for (int j = 0; j < P.size; j++) {
             Vec k2 = k[j];
             P(i,j) = -pow(k1.area/vp(k1),0.5) * V(k1, k2, 0, T, chi_cube2) * pow(k2.area/vp(k2),0.5);
         }
     }
     cout << "P Matrix Created\n";
-
-    return P * (2 / pow(2*M_PI, dim));
+    P = P * (2 / pow(2*M_PI, dim));
 }
 
 // Returns the highest eigenvalue-1 of a given matrix V at temperature T
@@ -135,11 +131,12 @@ double f(vector<Vec> k, double T) {
     DOS /= pow(2*M_PI, dim);
     auto cube_map = chi_cube_freq(T, mu, DOS);
     //auto cube = chi_cube(T, mu, DOS, 0);
-    MatrixXd P = create_P(k, T, cube_map);
+    Matrix P(k.size());
+    create_P(P, k, T, cube_map);
     double f_integrated = f_singlet_integral(T);
 
-    vector<EigAndVec> answers = power_iteration(P, 0.0001);
-    double eig = answers[answers.size() - 1].eig;
+    vector<Eigenvector> answers = power_iteration(P, 0.0001);
+    double eig = answers[answers.size() - 1].eigenvalue;
     eig *= f_integrated;
 
     cout << "Calculated Eigenvalue: " << eig << endl;
@@ -170,39 +167,15 @@ double get_Tc(vector<Vec> k) {
     return root;
 }
 
-/*
- * Sorting Eigenvalues and corresponding Eigenvectors based on the
- * highest eigenvalue
- *
- * Creates operator for std::sort algorithm
- *
- * Using two because it's possible I'll use them both
- * (Actually probably not gonna use EigAndVec one, but we'll see)
- */
-bool operator<(const EigAndVec& left, const EigAndVec& right) {
-    return left.eig < right.eig;
-}
-
-vector<EigAndVec> combine_eigs_and_vecs(VectorXd eigenvalues, EigenSolver<MatrixXd>::EigenvectorsType eigenvectors) {
-    int size = eigenvalues.size();
-    std::vector<EigAndVec> solutions;
-    for (int i = 0; i < size; i++) {
-        VectorXd vec = eigenvectors.col(i).real();
-        EigAndVec temp = {eigenvalues[i], vec};
-        solutions.push_back(temp);
-    }
-    return solutions;
-}
-
 // Un-shifting the area-shifted eigenvectors in order to find wavefunction
-void vector_to_wave(vector<Vec> &FS, vector<EigAndVec> &vectors) {
+void vector_to_wave(vector<Vec> &FS, vector<Eigenvector> &vectors) {
     for (unsigned int i = 0; i < vectors.size(); i++) {
-        VectorXd temp(FS.size());
+        Eigenvector temp(FS.size());
         for (unsigned int j = 0; j < FS.size(); j++) {
             Vec k = FS[j];
-            temp(j) = vectors[i].vec(j) / pow(k.area/vp(k),0.5);
+            temp[j] = vectors[i].eigenvector[j] / pow(k.area/vp(k),0.5);
         }
-        vectors[i].vec = temp;
+        vectors[i] = temp;
     }
 }
 
@@ -224,7 +197,7 @@ double coupling_calc(vector<Vec> &FS, double T) {
     double lambda = 0, normalization = 0;
     auto wave = [](Vec k) {
         Vec q = k; if (k.cartesian == false) q.to_cartesian();
-        return cos(q.vals(1)) - cos(q.vals(0));
+        return cos(q.vals[1]) - cos(q.vals[0]);
     };
     for (int i = 0; i < size; i++) {
         Vec k1 = FS[i];
