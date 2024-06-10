@@ -7,8 +7,9 @@
 #include <algorithm>
 #include "cfg.h"
 #include "vec.h"
-#include "frequency_inclusion.hpp"
+//#include "frequency_inclusion.hpp"
 #include "fermi_surface.h"
+#include "potential.h"
 
 using namespace std;
 
@@ -25,9 +26,9 @@ double triangle_area_from_points(Vec k1, Vec k2, Vec k3) {
     Vec k12 = k1 - k2; if (k12.cartesian) k12.to_spherical();
     Vec k23 = k2 - k3; if (k23.cartesian) k23.to_spherical();
     Vec k13 = k1 - k3; if (k13.cartesian) k13.to_spherical();
-    double d12 = k12.vals(0);
-    double d23 = k23.vals(0);
-    double d13 = k13.vals(0);
+    double d12 = k12.vals[0];
+    double d23 = k23.vals[0];
+    double d13 = k13.vals[0];
 
     // Calculate areas if the triangle is on the fermi surface
     double A = 0;
@@ -427,7 +428,7 @@ vector<Vec> sort_by_adjacent(vector<Vec> &FS) {
         Vec min_vec;
         for (Vec k : FS) {
             if (k == empty) continue;
-            double dist = (k - k0).vals.norm();
+            double dist = (k - k0).norm();
             if (dist < min_dist) {
                 min_dist = dist;
                 min_vec = k;

@@ -24,6 +24,7 @@ double potential_scalapino_triplet(Vec k1, Vec k2, double w, double T, const uno
 double get_k(double i, double n);
 double f(double E, double T);
 double ratio(Vec q, Vec k, double T, double mu, double w);
+double integrand(Vec k, Vec q, double w, double T);
 double modified_ratio(Vec q, Vec k, double T, double mu, double w, double delta);
 double imaginary_ratio(Vec q, Vec k, double T, double mu, double w, double eta);
 double imaginary_integration(Vec q, double T, double mu, double w, int num_points, double eta);

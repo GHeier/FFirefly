@@ -28,7 +28,6 @@ void get_bounds2(Vec q, double &upper, double &lower);
 double bound_chi_sum2(Vec q, double w, double T, int pts, double b, double a);
 double sphere_func(Vec k, Vec q);
 void get_bounds3(Vec q, double &upper, double &lower, double (*func)(Vec k, Vec q));
-double integrand(Vec k, Vec q, double w, double T);
 double singularity_func(Vec k, Vec q);
 double denominator(Vec k, Vec q);
 double denominator_diff(Vec k, Vec q);

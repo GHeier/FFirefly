@@ -19,8 +19,6 @@
 #include "frequency_inclusion.hpp"
 
 using namespace std;
-using Eigen::Vector4d;
-using Eigen::Matrix4d;
 
 
 double potential_const(Vec k1, Vec k2) {
@@ -34,25 +32,25 @@ double potential_test(Vec k1, Vec k2) {
     Vec q2 = k2;
     if (q1.cartesian == false) q1.to_cartesian();
     if (q2.cartesian == false) q2.to_cartesian();
-    //return -1 * pow(sin(q1.vals(0))*sin(q2.vals(0)),2);
-    //return -1 * (sin(q1.vals(0)) - sin(q1.vals(1)))*(sin(q2.vals(0)) - sin(q2.vals(1)));
-    //return -1*(sin(q1.vals(0))*sin(q1.vals(1)) * sin(q2.vals(0))*sin(q2.vals(1)));
-    //return ( cos( q1.vals(0) + q1.vals(1) ) )*( cos( q2.vals(0) + q2.vals(1) ) );
-    //return ( cos( q1.vals(0) ) - cos( q1.vals(1) ) )*( cos( q2.vals(0) ) + cos( q2.vals(1) ) );
-    //return cos(q1.vals(0))*cos(q2.vals(0))/M_PI + 1 / (2*M_PI);
-    //return -1*( sin(q1.vals(0)) + sin(q1.vals(1)) )*( sin(q2.vals(0)) + sin(q2.vals(1)) );
-    return -1*( cos(q1.vals(0)) - cos(q1.vals(1)) )*( cos(q2.vals(0)) - cos(q2.vals(1)) ) + (-0.5)*sin(q1.vals(0))*sin(q1.vals(1))*sin(q2.vals(0))*sin(q2.vals(1));
-    //return 100*( 2*cos(q1.vals(2)) - cos( q1.vals(0) ) - cos( q1.vals(1) ) ) 
-    //    * ( 2*cos(q2.vals(2)) - cos( q2.vals(0) ) - cos( q2.vals(1) ) ) + 0;
+    //return -1 * pow(sin(q1.vals[0])*sin(q2.vals[0]),2);
+    //return -1 * (sin(q1.vals[0]) - sin(q1.vals[1]))*(sin(q2.vals[0]) - sin(q2.vals[1]));
+    //return -1*(sin(q1.vals[0])*sin(q1.vals[1]) * sin(q2.vals[0])*sin(q2.vals[1]));
+    //return ( cos( q1.vals[0] + q1.vals[1] ) )*( cos( q2.vals[0] + q2.vals[1] ) );
+    //return ( cos( q1.vals[0] ) - cos( q1.vals[1] ) )*( cos( q2.vals[0] ) + cos( q2.vals[1] ) );
+    //return cos(q1.vals[0])*cos(q2.vals[0])/M_PI + 1 / (2*M_PI);
+    //return -1*( sin(q1.vals[0]) + sin(q1.vals[1]) )*( sin(q2.vals[0]) + sin(q2.vals[1]) );
+    return -1*( cos(q1.vals[0]) - cos(q1.vals[1]) )*( cos(q2.vals[0]) - cos(q2.vals[1]) ) + (-0.5)*sin(q1.vals[0])*sin(q1.vals[1])*sin(q2.vals[0])*sin(q2.vals[1]);
+    //return 100*( 2*cos(q1.vals[2]) - cos( q1.vals[0] ) - cos( q1.vals[1] ) ) 
+    //    * ( 2*cos(q2.vals[2]) - cos( q2.vals[0] ) - cos( q2.vals[1] ) ) + 0;
 }
 double phonon_coulomb(Vec q) {
     if (q.cartesian == false) q.to_cartesian();
-    double qx = q.vals(0);
+    double qx = q.vals[0];
     double Vp = 1/3;
-    if (q.vals.norm() != 0) {
-        Vp = 1/(1+2*qx*qx / q.vals.squaredNorm());
+    if (q.norm() != 0) {
+        Vp = 1/(1+2*qx*qx / pow(q.norm(), 2));
     }
-    double Vc = 1 / (1 + q.vals.norm());
+    double Vc = 1 / (1 + q.norm());
     return Vp + Vc;
 }
 
@@ -135,6 +133,31 @@ double ratio(Vec q, Vec k, double T, double mu, double w) {
     return (f_qk - f_k) / (e_k - e_qk + w);
 }
 
+double integrand(Vec k, Vec q, double w, double T) {
+    //return 1;
+    //if (fabs(k.freq - w) < 0.001) return 0;
+    //return 1 / (k.freq - w);
+
+    double e_qk = epsilon(k+q) - mu;
+    double e_k = epsilon(k) - mu;
+    double f_k = f(e_k, T);
+    double f_qk = f(e_qk, T);
+
+    double dE = k.freq;
+    //if (dE != 0) cout << dE << endl;
+    //if (fabs(e_qk - e_k) > 0.1) {
+    //    cout << "dE: " << dE << " " << e_qk - e_k << endl;
+    //}
+
+    if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
+        if (T == 0 or exp(e_k/T) > 1e6)
+            return e_k < 0;
+        return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
+    }
+    if (fabs(w - dE) < 0.001) return 0;
+    return (f_qk - f_k) / (w - dE);
+}
+
 double modified_ratio(Vec q, Vec k, double T, double mu, double w, double delta) {
     double e_plus = epsilon(k + q/2) - mu;
     double e_minus = epsilon(k - q/2) - mu;
@@ -162,7 +185,7 @@ double imaginary_ratio(Vec q, Vec k, double T, double mu, double w, double eta) 
     double f_plus = f(e_plus, T);
     double dE = e_plus - e_minus;
 
-    if (q.vals.norm() < 0.0001) {
+    if (q.norm() < 0.0001) {
         if (w == 0) return 0.5 * 1/T * 1/(cosh((epsilon(k)-mu)/T) + 1);
         return 0;
        // double ep_base = e_base(k,q);
@@ -183,9 +206,9 @@ double imaginary_integration(Vec q, double T, double mu, double w, int num_point
         return imaginary_ratio(q, Vec(kx, ky, kz), T, mu, w, eta);
     };
     
-    double x0 = -k_max + q.vals(0)/2, x1 = k_max + q.vals(0)/2;
-    double y0 = -k_max + q.vals(1)/2, y1 = k_max + q.vals(1)/2;
-    double z0 = -k_max + q.vals(2)/2, z1 = k_max + q.vals(2)/2;
+    double x0 = -k_max + q.vals[0]/2, x1 = k_max + q.vals[0]/2;
+    double y0 = -k_max + q.vals[1]/2, y1 = k_max + q.vals[1]/2;
+    double z0 = -k_max + q.vals[2]/2, z1 = k_max + q.vals[2]/2;
 
     return trapezoidal_integration(func, x0, x1, y0, y1, z0, z1, num_points) / pow(2*k_max,dim);
 }
@@ -220,16 +243,12 @@ double chi_trapezoidal(Vec q, double T, double mu, double w, int num_points) {
 
 double integrate_susceptibility(Vec q, double T, double mu, double w, int num_points) {
     //return imaginary_integration(q, T, mu, w, num_points, 0.000);
-    if (q.vals.norm() < 0.0001) {
+    if (q.norm() < 0.0001) {
         vector<Vec> FS = tetrahedron_method(e_base_avg, q, mu);
-        return get_DOS(FS);
-        return tetrahedron_sum(e_surface, vp_surface, q, 0, w, T);
-        double c, d; get_bounds3(q, d, c, e_surface);
-        vector<double> spacing; get_spacing_vec(spacing, w, c, d, num_points);
-        double c0 = tetrahedron_sum_continuous(e_surface, vp_surface, q, spacing, w, T);
-        return c0 / pow(2*k_max,dim);
+        double sum = 0; for (auto x : FS) sum += x.area / vp(x);
+        return sum / pow(2*k_max,dim);
     }
-    if (q.vals.norm() < 0.0001) q = Vec(0.01,0.01,0.01);
+    if (q.norm() < 0.0001) q = Vec(0.01,0.01,0.01);
 
     double a, b; get_bounds3(q, b, a, denominator);
     vector<double> spacing; get_spacing_vec(spacing, w, a, b, num_points);
@@ -246,9 +265,9 @@ double integrate_susceptibility(Vec q, double T, double mu, double w, int num_po
     int base_div = 20;
     int x_divs = base_div, y_divs = base_div, z_divs = base_div;
     if (dim == 2) z_divs = 1;
-    double x0 = -k_max + q.vals(0)/2, x1 = k_max + q.vals(0)/2;
-    double y0 = -k_max + q.vals(1)/2, y1 = k_max + q.vals(1)/2;
-    double z0 = -k_max + q.vals(2)/2, z1 = k_max + q.vals(2)/2;
+    double x0 = -k_max + q.vals[0]/2, x1 = k_max + q.vals[0]/2;
+    double y0 = -k_max + q.vals[1]/2, y1 = k_max + q.vals[1]/2;
+    double z0 = -k_max + q.vals[2]/2, z1 = k_max + q.vals[2]/2;
     //return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, x_divs, y_divs, z_divs, 0.01) / pow(2*k_max,dim);
     //return chi_trapezoidal(q, T, mu, 100);
     //return modified_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 100, 0, 0, 0);
@@ -292,9 +311,9 @@ double modified_integral_wrapper(Vec q, double T, double mu, double w, double de
         return w - e_split(k,q);
     };
 
-    double x0 = -k_max + q.vals(0)/2, x1 = k_max + q.vals(0)/2;
-    double y0 = -k_max + q.vals(1)/2, y1 = k_max + q.vals(1)/2;
-    double z0 = -k_max + q.vals(2)/2, z1 = k_max + q.vals(2)/2;
+    double x0 = -k_max + q.vals[0]/2, x1 = k_max + q.vals[0]/2;
+    double y0 = -k_max + q.vals[1]/2, y1 = k_max + q.vals[1]/2;
+    double z0 = -k_max + q.vals[2]/2, z1 = k_max + q.vals[2]/2;
 
     return trapezoidal_integration(func, x0, x1, y0, y1, z0, z1, num_points) / pow(2*k_max,dim);
     //return modified_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 100, s_func, delta, avg) / pow(2*k_max,dim);
@@ -484,7 +503,7 @@ double calculate_chi_from_cube(const vector<vector<vector<double>>> &chi_cube, V
     Vec v = to_IBZ_2(q);
     double d = 2*k_max/(m-1);
 
-    double x = v.vals(0), y = v.vals(1), z = v.vals(2);
+    double x = v.vals[0], y = v.vals[1], z = v.vals[2];
     if (dim == 2) z = 0;
 
     int i = floor(x / d);
@@ -502,7 +521,7 @@ double calculate_chi_from_cube(const vector<vector<vector<double>>> &chi_cube, V
     double dx = 0, dy = 0, dz = 0, wx = 0, wy = 0, wz = 0, w0 = 0;
 
     // Make sure there's no issue with indexing
-    //cout << q << q.vals(2) << endl;
+    //cout << q << q.vals[2] << endl;
     //int s = chi_cube.size()-1; 
     //assert( i < s and j < s and k < chi_cube[0][0].size()-1);
 
@@ -560,7 +579,7 @@ double calculate_chi_from_cube(const vector<vector<vector<double>>> &chi_cube, V
 Vec to_IBZ_2(const Vec k) {
     Vec q = k;
     if (q.cartesian == false) q.to_cartesian();
-    double x = q.vals(0), y = q.vals(1), z = q.vals(2);
+    double x = q.vals[0], y = q.vals[1], z = q.vals[2];
     x = abs(x); y = abs(y); z = abs(z);
     if (x > M_PI) x = - (x - 2*M_PI);
     if (y > M_PI) y = - (y - 2*M_PI);
@@ -586,9 +605,9 @@ Vec to_IBZ_2(const Vec k) {
 }
 
 Vec to_IBZ_spherical(const Vec k) {
-    double theta = k.vals(1);
+    double theta = k.vals[1];
     double phi = 0;
-    if (dim == 3) phi = k.vals(2);
+    if (dim == 3) phi = k.vals[2];
 
     if (theta < 0) theta += 2*M_PI; //{cout << theta << ", "; theta += 2*M_PI; cout << theta << ", ";}
     if (theta <= M_PI/2 and theta > M_PI/4) theta = M_PI/2 - theta;
@@ -604,7 +623,7 @@ Vec to_IBZ_spherical(const Vec k) {
     //if (phi <= M_PI/2 and phi > M_PI/4) {cout << "FIRST"; phi = M_PI/2 - phi;}
     //if (phi <= -M_PI/4 and phi > -M_PI/2) {cout << "THIRD" ; phi = M_PI/2 + phi;}
 
-    Vec q(k.vals(0), theta, phi, false);
+    Vec q(k.vals[0], theta, phi, false);
     return q;
 }
 
