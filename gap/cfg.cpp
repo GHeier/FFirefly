@@ -1,5 +1,6 @@
 #include <math.h>
 #include <string>
+#include <unordered_map>
 #include "vec.h"
 #include "cfg.h"
 #include "band_structure.h"

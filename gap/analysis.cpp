@@ -9,6 +9,8 @@
 #include "fermi_surface.h"
 #include "potential.h"
 #include "vec.h"
+#include "matrix.hpp"
+#include "eigenvec.hpp"
 #include "save_data.h"
 #include "utilities.h"
 

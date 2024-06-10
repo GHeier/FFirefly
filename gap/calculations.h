@@ -3,12 +3,10 @@
 #define CALCULATIONS_H_
 
 #include <vector>
-#include <Eigen/Dense>
 
 #include "cfg.h"
 #include "vec.h"
 
-using namespace Eigen;
 using std::vector;
 
 struct EigAndVec {

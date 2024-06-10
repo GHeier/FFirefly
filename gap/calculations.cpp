@@ -10,8 +10,6 @@
 #include <unordered_map>
 #include <boost/functional/hash.hpp>
 
-#include <Eigen/Dense>
-#include <Eigen/Eigenvalues> 
 //#include <lambda_lanczos/lambda_lanczos.hpp>
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/quadrature/gauss.hpp>
