@@ -54,14 +54,14 @@ vector<vector<Vec>> freq_tetrahedron_method(double mu) {
 
 void create_P_freq(Matrix P, vector<vector<Vec>> &k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2) {
     cout << "Creating P Matrix with frequency\n";
-    for (int i = 0; i < P.size(); i++) {
+    for (int i = 0; i < P.size; i++) {
 
         int ind1 = 0;
         for (int temp = 0; temp < i; temp++)
             ind1 += k[temp].size();
 
         #pragma omp parallel for
-        for (int j = 0; j < P[i].size(); j++) {
+        for (int j = 0; j < P[i].size; j++) {
             Vec k1 = k[i][j];
             for (int x = 0; x < k.size(); x++) {
 
