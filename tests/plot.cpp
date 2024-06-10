@@ -179,7 +179,7 @@ void plot_single_chi3(double T, double w) {
         fflush(stdout);
         double q_mag = i/(n-1) * M_PI;
         Vec q(q_mag, q_mag, q_mag);
-        double c = integrate_susceptibility(q, T, mu, w, s_pts);
+        double c = integrate_susceptibility(q, T, mu, w, 500);
         if (isnan(c)) {
             cout << "NAN: " << q << endl;
             assert(false);

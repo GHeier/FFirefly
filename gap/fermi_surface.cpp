@@ -235,7 +235,7 @@ double tetrahedron_sum(double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, 
                     average = average / (4-b);
 
                     double A = area_in_corners(corner_points);
-                    if (dim == 2) A *= s_divs / (2*k_max);
+                    if (dim == 2) A *= s_div / (2*k_max);
                     Vec k_point = average; k_point.area = A;
                     k_point.freq = s_val;
                     sum += integrand(k_point, q, w, T) * k_point.area / func_diff(k_point, q);

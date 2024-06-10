@@ -461,7 +461,7 @@ vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS, double 
         auto datIt = map.begin();
         advance(datIt, i);
         string key = datIt->first;
-        map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w, s_pts);
+        map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w, 500);
         progress_bar(1.0 * i / map.size());
     }
 
