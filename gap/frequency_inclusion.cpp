@@ -228,27 +228,26 @@ double denominator_diff(Vec k, Vec q) {
 }
 
 double integrand(Vec k, Vec q, double w, double T) {
-    //return 1;
-    //if (fabs(k.freq - w) < 0.001) return 0;
-    //return 1 / (k.freq - w);
-
-    double e_qk = epsilon(k+q) - mu;
+    double dE = k.freq;
     double e_k = epsilon(k) - mu;
+    //double e_qk = epsilon(k+q) - mu;
+    double e_qk = e_k + dE;
     double f_k = f(e_k, T);
     double f_qk = f(e_qk, T);
 
-    double dE = k.freq;
-    //if (dE != 0) cout << dE << endl;
-    //if (fabs(e_qk - e_k) > 0.1) {
-    //    cout << "dE: " << dE << " " << e_qk - e_k << endl;
-    //}
 
     if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
         if (T == 0 or exp(e_k/T) > 1e6)
             return e_k < 0;
-        return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
+        double temp = 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
+        if (temp > 10) {
+            cout << "Temp: " << temp << endl;
+            cout << "e_k: " << e_k << endl;
+            cout << "T: " << T << endl;
+        }
+        return temp;
     }
-    if (fabs(w - dE) < 0.001) return 0;
+    if (fabs(w - dE) == 0) return 0;
     return (f_qk - f_k) / (w - dE);
 }
 

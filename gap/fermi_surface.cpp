@@ -39,37 +39,14 @@ double triangle_area_from_points(Vec k1, Vec k2, Vec k3) {
     return A;
 }
 
-vector<VecAndEnergy> points_from_indices(double (*func)(Vec k, Vec q), Vec q, int i, int j, int k) {
-    double x1 = 2*k_max * i / n       - k_max; 
-    double x2 = 2*k_max * (i+1) / n   - k_max; 
-    double y1 = 2*k_max * j / n       - k_max; 
-    double y2 = 2*k_max * (j+1) / n   - k_max; 
-    double z1 = 2*k_max * k / n       - k_max; 
-    double z2 = 2*k_max * (k+1) / n   - k_max; 
+vector<VecAndEnergy> points_from_indices(double (*func)(Vec k, Vec q), Vec q, int i, int j, int k, int divs) {
+    double x1 = 2*k_max * i / divs       - k_max; 
+    double x2 = 2*k_max * (i+1) / divs   - k_max; 
+    double y1 = 2*k_max * j / divs       - k_max; 
+    double y2 = 2*k_max * (j+1) / divs   - k_max; 
+    double z1 = 2*k_max * k / divs       - k_max; 
+    double z2 = 2*k_max * (k+1) / divs   - k_max; 
 
-    Vec p1(x1, y1, z1);
-    Vec p2(x2, y1, z1);
-    Vec p3(x2, y2, z1);
-    Vec p4(x1, y2, z1);
-    Vec p5(x1, y1, z2);
-    Vec p6(x2, y1, z2);
-    Vec p7(x2, y2, z2);
-    Vec p8(x1, y2, z2);
-
-    vector<VecAndEnergy> points(8); 
-    VecAndEnergy point1 = {p1, func(p1, q)}; points[0] = point1;
-    VecAndEnergy point2 = {p2, func(p2, q)}; points[1] = point2;
-    VecAndEnergy point3 = {p3, func(p3, q)}; points[2] = point3;
-    VecAndEnergy point4 = {p4, func(p4, q)}; points[3] = point4;
-    VecAndEnergy point5 = {p5, func(p5, q)}; points[4] = point5;
-    VecAndEnergy point6 = {p6, func(p6, q)}; points[5] = point6;
-    VecAndEnergy point7 = {p7, func(p7, q)}; points[6] = point7;
-    VecAndEnergy point8 = {p8, func(p8, q)}; points[7] = point8;
-
-    return points;
-}
-
-vector<VecAndEnergy> points_from_points(double (*func)(Vec k, Vec q), Vec q, double x1, double x2, double y1, double y2, double z1, double z2) {
     Vec p1(x1, y1, z1);
     Vec p2(x2, y1, z1);
     Vec p3(x2, y2, z1);
@@ -185,10 +162,9 @@ vector<Vec> tetrahedron_method(double (*func)(Vec k, Vec q), Vec q, double s_val
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
-                vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k);
+                vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k, n);
                 if (not surface_inside_cube(s_val, points)) continue;
 
-                bool all_big = true;
                 for (int c = 0; c < 6; c++) {
 
                     vector<VecAndEnergy> ep_points(4);
@@ -218,7 +194,6 @@ vector<Vec> tetrahedron_method(double (*func)(Vec k, Vec q), Vec q, double s_val
             }
         }
     }
-    //printf("Iters: %d\n", iters);
     return FS;
 }
 
@@ -233,10 +208,10 @@ double tetrahedron_sum(double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, 
     };
 
     double sum = 0;
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
-                vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k);
+    for (int i = 0; i < s_divs; i++) {
+        for (int j = 0; j < s_divs; j++) {
+            for (int k = 0; k < s_divs * (dim%2) + 1 * ((dim+1)%2); k++) {
+                vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k, s_divs);
                 if (not surface_inside_cube(s_val, points)) continue;
 
                 for (int c = 0; c < 6; c++) {
@@ -260,7 +235,7 @@ double tetrahedron_sum(double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, 
                     average = average / (4-b);
 
                     double A = area_in_corners(corner_points);
-                    if (dim == 2) A *= n / (2*k_max);
+                    if (dim == 2) A *= s_divs / (2*k_max);
                     Vec k_point = average; k_point.area = A;
                     k_point.freq = s_val;
                     sum += integrand(k_point, q, w, T) * k_point.area / func_diff(k_point, q);
@@ -295,10 +270,10 @@ double tetrahedron_sum_continuous(double (*func)(Vec k, Vec q), double (*func_di
 
     double sum = 0;
     #pragma omp parallel for reduction(+:sum)
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
-                vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k);
+    for (int i = 0; i < s_divs; i++) {
+        for (int j = 0; j < s_divs; j++) {
+            for (int k = 0; k < s_divs * (dim%2) + 1 * ((dim+1)%2); k++) {
+                vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k, s_divs);
                 double min = 1000, max = -1000;
                 for (VecAndEnergy p : points) {
                     if (func(p.vec, q) < min) min = func(p.vec, q);
@@ -331,21 +306,18 @@ double tetrahedron_sum_continuous(double (*func)(Vec k, Vec q), double (*func_di
                         average = average / (4-b);
 
                         double A = area_in_corners(corner_points);
-                        if (dim == 2) A *= n / (2*k_max);
+                        if (dim == 2) A *= s_divs / (2*k_max);
                         Vec k_point = average; k_point.area = A;
                         k_point.freq = s_val;
 
-                        //double dS = 1;
                         double dS;
                         if (ind == 0) dS = (svals[ind+1] - svals[ind]) / 2;
                         else if (ind == svals.size()-1) dS = (svals[ind] - svals[ind-1]) / 2;
                         else dS = (svals[ind+1] - svals[ind-1]) / 2;
-                        //dS = 0.1 / 2;
-                        //printf("dS: %f\n", dS);
 
-                        sum += integrand(k_point, q, w, T) 
-                            * k_point.area / func_diff(k_point, q)
-                            * dS;
+                        double val = integrand(k_point, q, w, T) 
+                                    * k_point.area / func_diff(k_point, q);
+                        sum += val * dS;
                     }
                 }
             }
@@ -380,10 +352,10 @@ double analytic_tetrahedron_sum(Vec q, double w) {
     double Omega = pow(2*k_max,3) / (6*n*n*n);
     if (dim == 2) Omega = pow(2*k_max,2) / (2*n*n);
     #pragma omp parallel for reduction(+:sum)
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
-                vector<VecAndEnergy> points = points_from_indices(e_base_avg, q, i, j, k);
+    for (int i = 0; i < s_divs; i++) {
+        for (int j = 0; j < s_divs; j++) {
+            for (int k = 0; k < s_divs * (dim%2) + 1 * ((dim+1)%2); k++) {
+                vector<VecAndEnergy> points = points_from_indices(e_base_avg, q, i, j, k, s_divs);
 
                 for (int c = 0; c < 6; c++) {
 
@@ -413,57 +385,4 @@ double analytic_tetrahedron_sum(Vec q, double w) {
         }
     }
     return sum;
-}
-
-// Note: Should only be used for 2D, fails in 3D
-vector<Vec> sort_by_adjacent(vector<Vec> &FS) {
-    vector<Vec> sorted_FS;
-    Vec empty;
-    Vec k0 = FS[0];
-    sorted_FS.push_back(k0);
-    FS[0] = empty;
-    while (sorted_FS.size() < FS.size()) {
-        double min_dist = 100000;
-        Vec min_vec;
-        for (Vec k : FS) {
-            if (k == empty) continue;
-            double dist = (k - k0).norm();
-            if (dist < min_dist) {
-                min_dist = dist;
-                min_vec = k;
-            }
-        }
-        sorted_FS.push_back(min_vec);
-        cout << sorted_FS.size() << " ";
-        k0 = min_vec;
-        for (unsigned int i = 0; i < FS.size(); i++) {
-            if (FS[i] == min_vec) {
-                FS[i] = empty;
-                break;
-            }
-        }
-    }
-    return sorted_FS;
-}
-
-vector<VecAndEnergy> FS_to_q_shifted(vector<Vec> &FS, Vec q) {
-    vector<VecAndEnergy> q_shifted;
-    for (Vec k : FS) {
-        double energy = epsilon(k+q);
-        q_shifted.push_back({k, energy});
-    }
-    return q_shifted;
-}
-
-void filter_FS(vector<Vec> &FS) {
-    sort(FS.begin(), FS.end());
-
-    double sum = 0; for (Vec k : FS) sum += k.area;
-
-    double small_sum = 0; unsigned int i;
-    for (i = 0; i < FS.size(); i++) {
-        small_sum += FS[i].area;
-        if (small_sum > 0.005*sum) break;
-    }
-    FS.erase(FS.begin(), FS.begin()+i);
 }

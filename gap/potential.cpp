@@ -134,10 +134,11 @@ double ratio(Vec q, Vec k, double T, double mu, double w) {
             return e_k < 0;
         }
         double term1 = 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
-        //cout << "Ratio: " << term1 << endl;
         return term1;
     }
-    return (f_qk - f_k) / (e_k - e_qk + w);
+    double r = (f_qk - f_k) / (e_k - e_qk + w);
+    assert(not isnan(r));
+    return r;
 }
 
 double modified_ratio(Vec q, Vec k, double T, double mu, double w, double delta) {
@@ -197,9 +198,9 @@ double imaginary_integration(Vec q, double T, double mu, double w, int num_point
 
 double chi_trapezoidal(Vec q, double T, double mu, double w, int num_points) {
     double sum = 0;
-    //#pragma omp parallel for reduction(+:sum)
     //int num_skipped = 0;
     //ofstream file("chi_temp2.txt");
+    #pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < num_points; i++) {
         double temp = i;
         double x = get_k(temp, num_points); 
@@ -215,7 +216,7 @@ double chi_trapezoidal(Vec q, double T, double mu, double w, int num_points) {
                 Vec k_val(x, y, z);
 
                 double r = ratio(q, k_val, T, mu, w);
-                //cout << k_val << r << endl;
+                //r = integrand(k_val, q, w, T);
                 sum += weight*r;
             }
         }
@@ -228,13 +229,7 @@ double integrate_susceptibility(Vec q, double T, double mu, double w, int num_po
     if (q.norm() < 0.0001) {
         vector<Vec> FS = tetrahedron_method(e_base_avg, q, mu);
         return get_DOS(FS);
-        return tetrahedron_sum(e_surface, vp_surface, q, 0, w, T);
-        double c, d; get_bounds3(q, d, c, e_surface);
-        vector<double> spacing; get_spacing_vec(spacing, w, c, d, num_points);
-        double c0 = tetrahedron_sum_continuous(e_surface, vp_surface, q, spacing, w, T);
-        return c0 / pow(2*k_max,dim);
     }
-    if (q.norm() < 0.0001) q = Vec(0.01,0.01,0.01);
 
     double a, b; get_bounds3(q, b, a, denominator);
     vector<double> spacing; get_spacing_vec(spacing, w, a, b, num_points);
@@ -466,7 +461,7 @@ vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS, double 
         auto datIt = map.begin();
         advance(datIt, i);
         string key = datIt->first;
-        map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w, 500);
+        map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w, s_pts);
         progress_bar(1.0 * i / map.size());
     }
 

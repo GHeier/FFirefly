@@ -6,6 +6,8 @@
 using namespace std;
 
 extern int n;
+extern int s_divs;
+extern int s_pts;
 extern int m;
 extern int l;
 extern int dim;
@@ -39,6 +41,3 @@ int get_num_points_from_delta(double &delta);
 
 extern double *weights[5];
 extern double *points[5];
-
-double get_sin(double x);
-double get_cos(double x);

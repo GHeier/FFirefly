@@ -10,10 +10,12 @@
 using namespace std;
 
 // Global Variables
-int n = 10; // Number of k points
-int m = 40; // Number of chi points
+int n = 140; // Number of k points
+int s_divs = (dim == 3) ? 50 : 140; // Divisions when defining surface
+int s_pts = (dim == 3) ? 50 : 1000; // Number surfaces defined when integrating
+int m = 20; // Number of chi points
 int l = 5; // Number of frequency points
-int dim = 3; // Number of dimensions)
+int dim = 2; // Number of dimensions)
 string potential_name = "const";
 string band_name = "simple_cubic";
                
@@ -177,26 +179,3 @@ double points_4th[5] = {-0.90618, -0.538469, 0, 0.538469, 0.90618}; double *p4 =
 
 double *points[5] = {p0, p1, p2, p3, p4};
 
-float sin_arr[31416]; 
-float cos_arr[31416]; 
-struct sin_arr_init {
-    sin_arr_init() {
-        for (int i = 0; i < 31416; i++) {
-            sin_arr[i] = sin( (double)i / 10000.0 );
-        }
-    }
-} sin_arr_init;
-struct cos_arr_init {
-    cos_arr_init() {
-        for (int i = 0; i < 31416; i++) {
-            cos_arr[i] = cos( (double)i / 10000.0 );
-        }
-    }
-} cos_arr_init;
-
-double get_sin(double x) {
-    return sin_arr[ (int)(x*10000.0) % 31416 ];
-}
-double get_cos(double x) {
-    return cos_arr[ (int)(x*10000.0) % 31416 ];
-}
