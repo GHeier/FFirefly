@@ -1,4 +1,6 @@
 #include <math.h>
+#include <cassert>
+#define assertm(exp, msg) assert(((void)msg, exp))
 #include <string>
 #include "vec.h"
 #include "cfg.h"
@@ -81,7 +83,7 @@ double vp_diff(const Vec k, const Vec q) {
         assert(1==2);
         return 0;
     }
-    return v.vals.norm();
+    return v.norm();
 }
 
 double vp_split(const Vec k, const Vec q) {
@@ -97,16 +99,16 @@ double vp_split(const Vec k, const Vec q) {
         assert(1==2);
         return 0;
     }
-    return v.vals.norm();
+    return v.norm();
 }
 
 double vp_surface(const Vec k, const Vec q) {
     if (band_name == "simple_cubic_layered")
-        return fermi_velocity_SC_layered(k).vals.norm();
+        return fermi_velocity_SC_layered(k).norm();
     else if (band_name == "simple_cubic")
-        return fermi_velocity_SC(k).vals.norm();
+        return fermi_velocity_SC(k).norm();
     else if (band_name == "sphere")
-        return fermi_velocity_sphere(k).vals.norm();
+        return fermi_velocity_sphere(k).norm();
     else {
         cout << "No band structure specified\n";
         assert(1==2);

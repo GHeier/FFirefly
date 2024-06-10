@@ -167,7 +167,7 @@ double imaginary_ratio(Vec q, Vec k, double T, double mu, double w, double eta) 
     double f_plus = f(e_plus, T);
     double dE = e_plus - e_minus;
 
-    if (q.vals.norm() < 0.0001) {
+    if (q.norm() < 0.0001) {
         if (w == 0) return 0.5 * 1/T * 1/(cosh((epsilon(k)-mu)/T) + 1);
         return 0;
        // double ep_base = e_base(k,q);
@@ -188,9 +188,9 @@ double imaginary_integration(Vec q, double T, double mu, double w, int num_point
         return imaginary_ratio(q, Vec(kx, ky, kz), T, mu, w, eta);
     };
     
-    double x0 = -k_max + q.vals(0)/2, x1 = k_max + q.vals(0)/2;
-    double y0 = -k_max + q.vals(1)/2, y1 = k_max + q.vals(1)/2;
-    double z0 = -k_max + q.vals(2)/2, z1 = k_max + q.vals(2)/2;
+    double x0 = -k_max + q.vals[0]/2, x1 = k_max + q.vals[0]/2;
+    double y0 = -k_max + q.vals[1]/2, y1 = k_max + q.vals[1]/2;
+    double z0 = -k_max + q.vals[2]/2, z1 = k_max + q.vals[2]/2;
 
     return trapezoidal_integration(func, x0, x1, y0, y1, z0, z1, num_points) / pow(2*k_max,dim);
 }
@@ -225,7 +225,7 @@ double chi_trapezoidal(Vec q, double T, double mu, double w, int num_points) {
 
 double integrate_susceptibility(Vec q, double T, double mu, double w, int num_points) {
     //return imaginary_integration(q, T, mu, w, num_points, 0.000);
-    if (q.vals.norm() < 0.0001) {
+    if (q.norm() < 0.0001) {
         vector<Vec> FS = tetrahedron_method(e_base_avg, q, mu);
         return get_DOS(FS);
         return tetrahedron_sum(e_surface, vp_surface, q, 0, w, T);
@@ -234,7 +234,7 @@ double integrate_susceptibility(Vec q, double T, double mu, double w, int num_po
         double c0 = tetrahedron_sum_continuous(e_surface, vp_surface, q, spacing, w, T);
         return c0 / pow(2*k_max,dim);
     }
-    if (q.vals.norm() < 0.0001) q = Vec(0.01,0.01,0.01);
+    if (q.norm() < 0.0001) q = Vec(0.01,0.01,0.01);
 
     double a, b; get_bounds3(q, b, a, denominator);
     vector<double> spacing; get_spacing_vec(spacing, w, a, b, num_points);
@@ -251,9 +251,9 @@ double integrate_susceptibility(Vec q, double T, double mu, double w, int num_po
     int base_div = 80;
     int x_divs = base_div, y_divs = base_div, z_divs = base_div;
     if (dim == 2) z_divs = 1;
-    double x0 = -k_max + q.vals(0)/2, x1 = k_max + q.vals(0)/2;
-    double y0 = -k_max + q.vals(1)/2, y1 = k_max + q.vals(1)/2;
-    double z0 = -k_max + q.vals(2)/2, z1 = k_max + q.vals(2)/2;
+    double x0 = -k_max + q.vals[0]/2, x1 = k_max + q.vals[0]/2;
+    double y0 = -k_max + q.vals[1]/2, y1 = k_max + q.vals[1]/2;
+    double z0 = -k_max + q.vals[2]/2, z1 = k_max + q.vals[2]/2;
     //return adaptive_trapezoidal(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, x_divs, y_divs, z_divs, 0.01) / pow(2*k_max,dim);
     //return chi_trapezoidal(q, T, mu, 100);
     //return modified_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 100, 0, 0, 0);
@@ -297,9 +297,9 @@ double modified_integral_wrapper(Vec q, double T, double mu, double w, double de
         return w - e_split(k,q);
     };
 
-    double x0 = -k_max + q.vals(0)/2, x1 = k_max + q.vals(0)/2;
-    double y0 = -k_max + q.vals(1)/2, y1 = k_max + q.vals(1)/2;
-    double z0 = -k_max + q.vals(2)/2, z1 = k_max + q.vals(2)/2;
+    double x0 = -k_max + q.vals[0]/2, x1 = k_max + q.vals[0]/2;
+    double y0 = -k_max + q.vals[1]/2, y1 = k_max + q.vals[1]/2;
+    double z0 = -k_max + q.vals[2]/2, z1 = k_max + q.vals[2]/2;
 
     return trapezoidal_integration(func, x0, x1, y0, y1, z0, z1, num_points) / pow(2*k_max,dim);
     //return modified_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, 100, s_func, delta, avg) / pow(2*k_max,dim);
@@ -507,7 +507,7 @@ double calculate_chi_from_cube(const vector<vector<vector<double>>> &chi_cube, V
     double dx = 0, dy = 0, dz = 0, wx = 0, wy = 0, wz = 0, w0 = 0;
 
     // Make sure there's no issue with indexing
-    //cout << q << q.vals(2) << endl;
+    //cout << q << q.vals[2] << endl;
     //int s = chi_cube.size()-1; 
     //assert( i < s and j < s and k < chi_cube[0][0].size()-1);
 

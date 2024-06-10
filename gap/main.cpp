@@ -86,7 +86,7 @@ int main() {
     cout << "Eig: " << f*eig << endl;
 //    cout << "Eig: " << eigf1 << endl;
     cout << "Eig: " << eigf2 << endl;
-    cout << "Test integral: " << f_singlet_integral_test(T) << endl;
+    cout << "Test integral: " << f_singlet_integral(T) << endl;
     return 0;
 
     // Testing to confirm Eigen didn't mess up the first vector at least

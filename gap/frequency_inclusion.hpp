@@ -15,5 +15,6 @@ double denominator_diff(Vec k, Vec q);
 void get_spacing_vec(vector<double> &spacing, double w, double a, double b, int pts);
 void get_spacing_curve_consts(double w, double a, double b, double &A, double &upr, double &lwr);
 double calculate_chi_from_cube_map(const unordered_map<double, vector<vector<vector<double>>>> &chi_cube_map, Vec q, double w);
+void get_bounds3(Vec q, double &upper, double &lower, double (*func)(Vec k, Vec q));
 
 #endif

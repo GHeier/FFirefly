@@ -16,7 +16,7 @@ double epsilon_sphere(const Vec k) {
 Vec fermi_velocity_sphere(const Vec k) {
     Vec q = k;
     if (q.cartesian == false) q.to_cartesian();
-    if (dim == 2) q.vals(2) = 0;
+    if (dim == 2) q.vals[2] = 0;
     return 2*q;
 }
 

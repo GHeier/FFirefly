@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <boost/functional/hash.hpp>
 #include <gsl/gsl_integration.h>
+#include <omp.h>
 
 //#include <boost/math/tools/roots.hpp>
 //#include <Eigen/Dense>
@@ -32,7 +33,7 @@
 
 #include "plot.cpp"
 //#include "surface_integrals.cpp"
-#include "freq_test.cpp"
+//#include "freq_test.cpp"
 
 
 using std::cout;
@@ -189,44 +190,6 @@ int f(unsigned ndim, const double *x, void *fdata, unsigned fdim, double *fval) 
     return 0; // success*
 }
 
-void eigenvalue_divergence() {
-    ofstream temporary_file("eigenvalue_divergence.txt");
-    double T = 0.25;
-    for (int i = 1; i < 20; i++) {
-        printf("Plot Progress: %i out of 20\n", i);
-
-        double cutoff = 0.03 * i;
-        init_config(mu, U, t, tn, w_D, mu, U, t, tn, cutoff);
-
-        vector<vector<Vec>> freq_FS;
-        freq_FS = freq_tetrahedron_method(mu);
-        vector<Vec> FS = tetrahedron_method(mu);
-        //auto chi_cube2 = chi_cube_freq(T, mu, get_DOS(FS));
-        int size = 0;
-        for (auto x : freq_FS) size += x.size();
-        cout << "Matrix Size: " << size << endl;
-
-        double DOS = get_DOS(freq_FS[(l+1)/2 - 1]);
-        unordered_map<double, vector<vector<vector<double>>>> cube_freq_map;
-        if (potential_name != "test") cube_freq_map = chi_cube_freq(T, mu, DOS);
-        cout << "Map Size: " << cube_freq_map.size() << endl;
-            //cube = chi_cube(T, mu, DOS, w);
-
-//return;
-        Matrix Pf2(size);
-        create_P_freq(Pf2, freq_FS, T, cube_freq_map);
-        Matrix P(FS.size()); 
-        create_P(P, FS, T, cube_freq_map);
-        double f = f_singlet_integral(T);
-
-        vector<Eigenvector> answers = power_iteration(P, 0.001);
-        vector<Eigenvector> answersf2 = power_iteration(Pf2, 0.001);
-        double eig = answers[answers.size() - 1].eigenvalue;
-        double eigf2 = answersf2[answersf2.size() - 1].eigenvalue;
-        temporary_file << w_D << " " << f*eig << " " << eigf2 << endl;
-    }
-}
-
 void integral_convergence(double T) {
     int n = 50;
     double mag = 0.04*M_PI;
@@ -288,18 +251,18 @@ void chi_eig_with_freq(double cutoff) {
         cube_freq_map = chi_cube_freq(T, mu, 0.0);
     printf("Cube Created\n");
 
-    MatrixXd P = create_P_freq(freq_FS, T, cube_freq_map); 
+    Matrix P; create_P_freq(P, freq_FS, T, cube_freq_map); 
     printf("Matrix Created\n");
-    MatrixXd P2 = create_P(FS, T, cube_freq_map);
+    Matrix P2; create_P(P2, FS, T, cube_freq_map);
     printf("Matrix Created\n");
     
     double f = f_singlet_integral(T);
 
-    vector<EigAndVec> answers = power_iteration(P, 0.001);
-    vector<EigAndVec> answers2 = power_iteration(P2, 0.001);
+    vector<Eigenvector> answers = power_iteration(P, 0.001);
+    vector<Eigenvector> answers2 = power_iteration(P2, 0.001);
 
-    double eig = answers[answers.size() - 1].eig;
-    double eig2 = answers2[answers2.size() - 1].eig;
+    double eig = answers[answers.size() - 1].eigenvalue;
+    double eig2 = answers2[answers2.size() - 1].eigenvalue;
 
     cout << "w=0, w>0 Eigs: " << f*eig2 << " " << eig << endl;
     file << cutoff << " " << f*eig2 << " " << eig << endl;
@@ -310,71 +273,17 @@ int main() {
     int num_procs = omp_get_num_procs();
     omp_set_num_threads(num_procs - 1);
 
+    double T = 0.25, w = 0.0;
+    plot_single_chi(T, w);
+    plot_single_chi2(T, w);
+    plot_single_chi3(T, w);
+    return 0;
+
     for (int i = 0; i < 30; i++) {
         double cutoff = 0.03 * i;
         cout << "Cutoff: " << cutoff << endl;
         init_config(mu, U, t, tn, w_D, mu, U, t, tn, cutoff);
         chi_eig_with_freq(cutoff);
     }
-=======
-void compare_matrix_creation_speed() {
-
-    vector<vector<Vec>> freq_FS;
-    freq_FS = freq_tetrahedron_method(mu);
-    vector<Vec> FS = tetrahedron_method(mu);
-    int size = 0;
-    for (auto x : freq_FS) size += x.size();
-
-    double T = 0.25;
-    auto cube_freq_map = chi_cube_freq(T, mu, get_DOS(FS));
-    Matrix temp_vec(size);
-    cout << "Begin Sample Matrix Creation\n";
-    // Time to create the matrix
-    #pragma omp parallel for
-    for (int i = 0; i < freq_FS.size(); i++) {
-
-        int ind1 = 0;
-        for (int temp = 0; temp < i; temp++)
-            ind1 += freq_FS[temp].size();
-
-        for (int j = 0; j < freq_FS[i].size(); j++) {
-            Vec k1 = freq_FS[i][j];
-            for (int x = 0; x < freq_FS.size(); x++) {
-
-                int ind2 = 0;
-                for (int temp = 0; temp < x; temp++)
-                    ind2 += freq_FS[temp].size();
-
-                for (int y = 0; y < freq_FS[x].size(); y++) {
-                    Vec k2 = freq_FS[x][y];
-                    double nothing = vp(k1);
-                    double d1 = pow(k1.area,0.5); //pow(k1.area/vp(k1),0.5); 
-                    double d2 = pow(k2.area,0.5); //pow(k2.area/vp(k2),0.5); 
-                    double f1 = f_singlet(w_D * points[l-1][x], T);
-                    // f * d_epsilon
-                    double fde1 = f_singlet(w_D * points[l-1][i], T) * weights[l-1][i];
-                    double fde2 = f_singlet(w_D * points[l-1][x], T) * weights[l-1][x];
-                    double wf = w_D * (points[l-1][x] - points[l-1][i]);
-                    temp_vec(ind1 + j,ind2 + y) = - d1 * d2 * pow(fde1*fde2,0.5) * V(k1, k2, wf, T, cube_freq_map); 
-                    //temp_vec(ind1+j,ind2+y) = 4;
-                }
-            }
-        }
-    }
-    cout << "End Sample Matrix Creation\n";
-    Matrix P(size);
-    cout << "Begin Real Matrix Creation\n";
-    create_P_freq(P, freq_FS, T, cube_freq_map);
-    cout << "End Real Matrix Creation\n";
-    return;
-}
-
-
-int main() {
-    //compare_matrix_creation_speed();
-    eigenvalue_divergence();
-    //plot_chi(0.25);
-    //plot_chi2(0.25);
-    //plot_coupling();
     return 0;
 }

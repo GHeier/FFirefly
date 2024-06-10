@@ -3,12 +3,13 @@
 #include "vec.h"
 #include "cfg.h"
 
-Vec::Vec(double x, double y, double z, bool is_cartesian, double area) {
+Vec::Vec(double x, double y, double z, bool is_cartesian, double area, double freq) {
     cartesian = is_cartesian;
     area = area;
     vals[0] = x;
     vals[1] = y;
     vals[2] = z;
+    freq = freq;
 }
 
 void Vec::to_cartesian() {
