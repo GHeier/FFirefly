@@ -274,13 +274,7 @@ int main() {
     omp_set_num_threads(num_procs - 1);
 
     double T = 0.25, w = 0.0;
-    Vec q(0.1*M_PI, 0.1*M_PI, 0.1*M_PI);
-    cout << chi_trapezoidal(q, T, mu, w, 300) << endl;
-    cout << integrate_susceptibility(q, T, mu, w, s_pts) << endl;
-
-
     plot_single_chi(T, w);
-    //plot_single_chi2(T, w);
     plot_single_chi3(T, w);
     return 0;
 

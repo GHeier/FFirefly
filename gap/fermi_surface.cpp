@@ -208,10 +208,10 @@ double tetrahedron_sum(double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, 
     };
 
     double sum = 0;
-    for (int i = 0; i < s_divs; i++) {
-        for (int j = 0; j < s_divs; j++) {
-            for (int k = 0; k < s_divs * (dim%2) + 1 * ((dim+1)%2); k++) {
-                vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k, s_divs);
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
+                vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k, n);
                 if (not surface_inside_cube(s_val, points)) continue;
 
                 for (int c = 0; c < 6; c++) {
@@ -270,10 +270,10 @@ double tetrahedron_sum_continuous(double (*func)(Vec k, Vec q), double (*func_di
 
     double sum = 0;
     #pragma omp parallel for reduction(+:sum)
-    for (int i = 0; i < s_divs; i++) {
-        for (int j = 0; j < s_divs; j++) {
-            for (int k = 0; k < s_divs * (dim%2) + 1 * ((dim+1)%2); k++) {
-                vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k, s_divs);
+    for (int i = 0; i < s_div; i++) {
+        for (int j = 0; j < s_div; j++) {
+            for (int k = 0; k < s_div * (dim%2) + 1 * ((dim+1)%2); k++) {
+                vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k, s_div);
                 double min = 1000, max = -1000;
                 for (VecAndEnergy p : points) {
                     if (func(p.vec, q) < min) min = func(p.vec, q);
@@ -306,7 +306,7 @@ double tetrahedron_sum_continuous(double (*func)(Vec k, Vec q), double (*func_di
                         average = average / (4-b);
 
                         double A = area_in_corners(corner_points);
-                        if (dim == 2) A *= s_divs / (2*k_max);
+                        if (dim == 2) A *= s_div / (2*k_max);
                         Vec k_point = average; k_point.area = A;
                         k_point.freq = s_val;
 
@@ -352,10 +352,10 @@ double analytic_tetrahedron_sum(Vec q, double w) {
     double Omega = pow(2*k_max,3) / (6*n*n*n);
     if (dim == 2) Omega = pow(2*k_max,2) / (2*n*n);
     #pragma omp parallel for reduction(+:sum)
-    for (int i = 0; i < s_divs; i++) {
-        for (int j = 0; j < s_divs; j++) {
-            for (int k = 0; k < s_divs * (dim%2) + 1 * ((dim+1)%2); k++) {
-                vector<VecAndEnergy> points = points_from_indices(e_base_avg, q, i, j, k, s_divs);
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
+                vector<VecAndEnergy> points = points_from_indices(e_base_avg, q, i, j, k, n);
 
                 for (int c = 0; c < 6; c++) {
 

@@ -10,10 +10,9 @@
 using namespace std;
 
 // Global Variables
-int n = 140; // Number of k points
-int s_divs = (dim == 3) ? 50 : 140; // Divisions when defining surface
-int s_pts = (dim == 3) ? 50 : 1000; // Number surfaces defined when integrating
-int m = 20; // Number of chi points
+int n = 40; // Number of k points
+int s_div = 100; // Number of integral surface divisions
+int m = 40; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 2; // Number of dimensions)
 string potential_name = "const";
