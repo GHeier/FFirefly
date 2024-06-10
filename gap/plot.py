@@ -827,8 +827,8 @@ def plot_chi_sphere_3D():
     plt.plot(q, f * 0.001)
 
 if __name__ == "__main__":
-    #plot_chi_single_test("../tests/single_chi_plot.dat")
-    plot_chi_single_test("../tests/single_chi_plot2.dat")
+    plot_chi_single_test("../tests/single_chi_plot.dat")
+    #plot_chi_single_test("../tests/single_chi_plot2.dat")
     plot_chi_single_test("../tests/single_chi_plot3.dat")
     plt.show()
     #plot_eigenvalue_divergence()

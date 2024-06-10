@@ -15,7 +15,7 @@ struct VecAndEnergy {
 
 bool operator<(const VecAndEnergy& left, const VecAndEnergy& right);
 double triangle_area_from_points(Vec k1, Vec k2, Vec k3);
-vector<VecAndEnergy> points_from_indices(double (*func)(Vec k, Vec q), Vec q, int i, int j, int k);
+vector<VecAndEnergy> points_from_indices(double (*func)(Vec k, Vec q), Vec q, int i, int j, int k, int divs);
 vector<VecAndEnergy> points_from_points(double (*func)(Vec k, Vec q), Vec q, double x1, double x2, double y1, double y2, double z1, double z2);
 vector<Vec> points_in_tetrahedron(double (*func)(Vec k, Vec q), Vec q, double s_val, vector<VecAndEnergy> points);
 bool surface_inside_cube(double s_val, vector<VecAndEnergy> p);

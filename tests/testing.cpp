@@ -388,6 +388,11 @@ int main() {
     int num_procs = omp_get_num_procs();
     omp_set_num_threads(num_procs - 1);
 
+    double T = 0.25, w = 0.0;
+    plot_single_chi(T, w);
+    plot_single_chi3(T, w);
+    return 0;
+
     for (int i = 0; i < 30; i++) {
         double cutoff = 0.03 * i;
         cout << "Cutoff: " << cutoff << endl;
