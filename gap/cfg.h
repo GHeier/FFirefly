@@ -7,6 +7,7 @@ using namespace std;
 
 extern int n;
 extern int s_div;
+extern int s_pts;
 extern int m;
 extern int l;
 extern int dim;

@@ -11,7 +11,7 @@
 
 using std::vector;
 
-vector<Eigenvector> power_iteration(Matrix &A, double error);
+vector<Eigenvector> power_iteration(Matrix A, double error);
 double f_singlet(double x, double T);
 double f_singlet_integral(double T);
 void create_P(Matrix &P, vector<Vec> &k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2);

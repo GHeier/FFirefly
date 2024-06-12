@@ -13,7 +13,7 @@ class Eigenvector {
         vector<double> eigenvector;
 
         Eigenvector();
-        Eigenvector(int size);
+        Eigenvector(int size, bool random=false);
         Eigenvector(vector<double> eigenvector);
         Eigenvector(vector<double> eigenvector, double eigenvalue);
 

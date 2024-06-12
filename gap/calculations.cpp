@@ -45,8 +45,12 @@ using vec_map = std::unordered_map<Vec, double>;
  * This is on the off chance that all eigenvalues are positive and nonzero it will 
  * return 2 solutions instead of 1
 */ 
-vector<Eigenvector> power_iteration(Matrix &A, double error) {
-    Eigenvector x(A.size);
+vector<Eigenvector> power_iteration(Matrix A, double error) {
+    Eigenvector x(A.size, true);
+    printf("Random Eigenvector:\n");
+    for (int i = 0; i < x.size; i++) {
+        cout << x.eigenvector[i] << " ";
+    }
     double diff_mag = 1;
     double rayleigh = dot(x, A * x) / dot(x, x);
     double sum = 0;
@@ -57,6 +61,11 @@ vector<Eigenvector> power_iteration(Matrix &A, double error) {
         for (int i = 0; diff_mag > error; i++) {
             Eigenvector x_new = A * x;
             x_new.normalize();
+            printf("Multiplying Eigenvector:\n");
+            for (int i = 0; i < x.size; i++) {
+                cout << x_new.eigenvector[i] << " ";
+            }
+            cout << endl;
 
             // Account for phase shift
             Eigenvector diff_vec = x - x_new;
@@ -68,6 +77,7 @@ vector<Eigenvector> power_iteration(Matrix &A, double error) {
             //if ( i%100 == 0) cout << x.transpose()*A*x << endl;
             x = x_new;
             iterations = i;
+            cout << "Iteration: " << i << " " << dot(x, A * x) << endl;
             if (i%100 == 0 and i > 50000 and dot(x, A * x) < 0) break;
         }
         cout << "Iterations: " << iterations << endl;

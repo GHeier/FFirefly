@@ -11,8 +11,9 @@
 using namespace std;
 
 // Global Variables
-int n = 40; // Number of k points
-int s_div = 140; // Number of integral surface divisions
+int n = 5; // Number of k points
+int s_div = (dim == 3) ? 40 : 300; // Number of integral surface divisions
+int s_pts = (dim == 3) ? 50 : 1000; // Number of integral surfaces
 int m = 40; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 3; // Number of dimensions)

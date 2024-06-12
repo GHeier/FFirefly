@@ -10,6 +10,7 @@
 //#include "frequency_inclusion.hpp"
 #include "fermi_surface.h"
 #include "potential.h"
+#include "frequency_inclusion.hpp"
 
 using namespace std;
 

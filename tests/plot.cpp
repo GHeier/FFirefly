@@ -130,28 +130,6 @@ void plot_chi4(double T, double w, int pts) {
     }
 }
 
-void plot_chi5(double T, double w) {
-    ofstream file("chi_plot5.dat");
-    file << "q chi " << endl;
-    double n = 50.0;
-    for (double new_mu = 0.0; new_mu > -4.0; new_mu--) {
-        init_config(mu, U, t, tn, w_D, new_mu, U, t, tn, w_D);
-        vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
-        for (double i = 0; i < n; i++) {
-            printf("\r Mu %.1f: %.3f" , new_mu, 100.0*i/(n-1));
-            fflush(stdout);
-            double q_mag = i/(n-1) * M_PI;
-            Vec q(q_mag, q_mag, q_mag);
-            double c = chi_ep_integrate(q, w, T);
-            //cout << c << endl;
-            //cout << integrate_susceptibility(q_temp,T,mu,0,30) << endl;
-            file << q_mag << " " << c << endl;
-        }
-        printf("\n");
-        file << endl;
-    }
-}
-
 void plot_single_chi(double T, double w) {
     ofstream file("single_chi_plot.dat");
     file << "q chi " << endl;
@@ -199,7 +177,7 @@ void plot_single_chi3(double T, double w) {
         fflush(stdout);
         double q_mag = i/(n-1) * M_PI;
         Vec q(q_mag, q_mag, q_mag);
-        double c = integrate_susceptibility(q, T, mu, w, 500);
+        double c = integrate_susceptibility(q, T, mu, w, s_pts);
         if (isnan(c)) {
             cout << "NAN: " << q << endl;
             assert(false);

@@ -2,10 +2,11 @@
 #include <iostream>
 #include <fstream>
 //#include <chrono>
+//#include <bits/stdc++.h>
 
 #include <cstring>
 #include <string>
-#include <math.h>
+//#include <math.h>
 #include <vector>
 
 #include <unordered_set>
@@ -201,22 +202,6 @@ void test_IBZ() {
 //
 //}
 
-int f(unsigned ndim, const double *x, void *fdata, unsigned fdim, double *fval) {
-    //double sigma = *((double *) fdata); // we can pass σ via fdata argument
-    Vec q = *((Vec *) fdata);
-    //double sum = 0;
-    //unsigned i;
-    //for (i = 0; i < ndim; ++i) sum += x[i] * x[i];
-    //// compute the output value: note that fdim should == 1 from below
-    //fval[0] = exp(-sigma * sum);
-    Vec k_val(x[0], x[1], x[2]);
-    double T = 0.25;
-    fval[0] = ratio(q, k_val, T, mu, 0);
-    //cout << k_val << fval[0] << endl;
-    //fval[0] = x[0]*x[0] * x[1]*x[1] * x[2]*x[2];
-    return 0; // success*
-}
-
 //bool test_potential_test() { 
 //    vector<Vec> FS = tetrahedron_method(mu); cout << "FS created\n";
 //    double T = 0.25;
@@ -316,36 +301,42 @@ void mu_to_n() {
     }
 }
 
-//void chi_eig_with_freq(double cutoff) {
-//    ofstream file("eig_freq.dat", std::ios_base::app);
-//    double T = 0.01;
-//    init_config(mu, U, t, tn, w_D, mu, U, t, tn, cutoff);
-//    
-//    vector<vector<Vec>> freq_FS = freq_tetrahedron_method(mu);
-//    vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
-//    printf("FS created\n");
-//
-//    unordered_map <double, vector<vector<vector<double>>>> cube_freq_map;
-//    if (potential_name.find("scalapino") != string::npos)
-//        cube_freq_map = chi_cube_freq(T, mu, 0.0);
-//    printf("Cube Created\n");
-//
-//    Matrix P; create_P_freq(P, freq_FS, T, cube_freq_map); 
-//    printf("Matrix Created\n");
-//    Matrix P2; create_P(P2, FS, T, cube_freq_map);
-//    printf("Matrix Created\n");
-//    
-//    double f = f_singlet_integral(T);
-//
-//    vector<Eigenvector> answers = power_iteration(P, 0.001);
-//    vector<Eigenvector> answers2 = power_iteration(P2, 0.001);
-//
-//    double eig = answers[answers.size() - 1].eigenvalue;
-//    double eig2 = answers2[answers2.size() - 1].eigenvalue;
-//
-//    cout << "w=0, w>0 Eigs: " << f*eig2 << " " << eig << endl;
-//    file << cutoff << " " << f*eig2 << " " << eig << endl;
-//}
+void eig_with_freq(double cutoff) {
+    ofstream file("eig_freq.dat", std::ios_base::app);
+    double T = 0.01;
+    init_config(mu, U, t, tn, w_D, mu, U, t, tn, cutoff);
+    
+    vector<vector<Vec>> freq_FS = freq_tetrahedron_method(mu);
+    vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
+    printf("FS created\n");
+
+    unordered_map <double, vector<vector<vector<double>>>> cube_freq_map;
+    if (potential_name.find("scalapino") != string::npos)
+        cube_freq_map = chi_cube_freq(T, mu, 0.0);
+    printf("Cube Created\n");
+
+    int size = 0; for (auto x : freq_FS) size += x.size();
+    printf("Size: %i\n", size);
+
+    Matrix P(size); create_P_freq(P, freq_FS, T, cube_freq_map); 
+    printf("Matrix Created\n");
+    Matrix P2(FS.size()); create_P(P2, FS, T, cube_freq_map);
+    printf("Matrix Created\n");
+
+    printf("Sample P values: %f %f %f %f\n", P(0,0), P(0,1), P(1,0), P(1,1));
+    printf("Sample P2 values: %f %f %f %f\n", P2(0,0), P2(0,1), P2(1,0), P2(1,1));
+    
+    double f = f_singlet_integral(T);
+
+    vector<Eigenvector> answers = power_iteration(P, 0.001);
+    vector<Eigenvector> answers2 = power_iteration(P2, 0.001);
+
+    double eig = answers[answers.size() - 1].eigenvalue;
+    double eig2 = answers2[answers2.size() - 1].eigenvalue;
+
+    cout << "w=0, w>0 Eigs: " << f*eig2 << " " << eig << endl;
+    file << cutoff << " " << f*eig2 << " " << eig << endl;
+}
 
 int main() {
     
@@ -353,15 +344,83 @@ int main() {
     omp_set_num_threads(num_procs - 1);
 
     double T = 0.25, w = 0.0;
-    plot_single_chi(T, w);
-    plot_single_chi3(T, w);
+    //plot_single_chi(T, w);
+    //plot_single_chi2(T, w);
+    //plot_single_chi3(T, w);
+    //return 0;
+
+    vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
+    unordered_map <double, vector<vector<vector<double>>>> cube_freq_map;
+    Matrix P(FS.size()); 
+    printf("P size: %d, val: %f\n", P.size, P(0,0));
+    save_potential_vs_q(FS, P, "potential.dat");
+    printf("P size: %d, val: %f\n", P.size, P(0,0));
+    create_P(P, FS, T, cube_freq_map);
+    printf("P size: %d, val: %f\n", P.size, P(0,0));
+    vector<Eigenvector> answers = power_iteration(P, 0.001);
+    printf("P size: %d, val: %f\n", P.size, P(0,0));
+
+    for (int i = 0; i < answers.size(); i++) {
+        printf("Eigenvalue: %f\n", answers[i].eigenvalue);
+    }
+
+    Eigenvector y(FS.size());
+    for (int i = 0; i < y.size; i++) {
+        y.eigenvector[i] = 1;
+    }
+    printf("Eigenvalue: %f\n", dot(y, P * y) / dot(y, y));
+
+    Eigenvector r(FS.size(), true);
+    printf("Random Eigenvector:\n");
+    for (int i = 0; i < r.size; i++) {
+        cout << r.eigenvector[i] << " ";
+    }
+    cout << endl;
+
+    Eigenvector after = P * r;
+    printf("Multiplied Eigenvector:\n");
+    for (int i = 0; i < after.size; i++) {
+        cout << after.eigenvector[i] << " ";
+    }
+    after.normalize();
+    cout << endl;
+
+    vector<double> x2(FS.size(), 0);
+        srand(time(0)); 
+    for (int i = 0; i < x2.size(); i++) {
+        x2[i] = ((double)rand()) / RAND_MAX;
+    }
+    printf("Random Eigenvector:\n");
+    for (int i = 0; i < x2.size(); i++) {
+        cout << x2[i] << " ";
+    }
+    //Eigenvector x(FS.size());
+    //for (int i = 0; i < x.size; i++) {
+    //    x.eigenvector[i] = 1;
+    //}
+    //printf("\nFirst Eigenvector: %f %f %f %f\n", x.eigenvector[0], x.eigenvector[1], x.eigenvector[2], x.eigenvector[3]);
+    //printf("Multiplied Eigenvector:\n");
+    //cout << P * x << endl;
+
+    //double result = 0;
+    //for (int i = 0; i < x.size; i++) {
+    //    result += x.eigenvector[i] * P(i, 0);
+    //}
+    //printf("Result: %f\n", result);
+
+
+
+
+
     return 0;
 
-    //for (int i = 0; i < 30; i++) {
-    //    double cutoff = 0.03 * i;
-    //    cout << "Cutoff: " << cutoff << endl;
-    //    init_config(mu, U, t, tn, w_D, mu, U, t, tn, cutoff);
-    //    chi_eig_with_freq(cutoff);
-    //}
+
+
+    for (int i = 1; i < 30; i++) {
+        double cutoff = 0.03 * i;
+        cout << "Cutoff: " << cutoff << endl;
+        init_config(mu, U, t, tn, w_D, mu, U, t, tn, cutoff);
+        eig_with_freq(cutoff);
+    }
     return 0;
 }

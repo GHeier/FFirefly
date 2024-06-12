@@ -2,6 +2,7 @@
 #include <vector>
 #include <math.h>
 
+#include <bits/stdc++.h>
 #include <ctime>
 #include <algorithm>
 
@@ -10,18 +11,23 @@
 #include "eigenvec.hpp"
 #include "matrix.hpp"
 
+using namespace std;
+
 Eigenvector::Eigenvector() {
     this->size = 0;
     this->eigenvector = vector<double>(0, 0);
     this->eigenvalue = 0;
 }
 
-Eigenvector::Eigenvector(int size) {
+Eigenvector::Eigenvector(int size, bool random) {
     this->size = size;
-    this->eigenvector = vector<double>(size);
-
-    std::srand(unsigned(std::time(nullptr)));
-    std::generate(this->eigenvector.begin(), this->eigenvector.end(), std::rand);
+    this->eigenvector = vector<double>(size, 0);
+    if (random) {
+        srand(time(0)); 
+        for (int i = 0; i < size; i++) {
+            this->eigenvector[i] = (double)rand() / RAND_MAX;
+        }
+    }
 }
 
 Eigenvector::Eigenvector(vector<double> eigenvector) {

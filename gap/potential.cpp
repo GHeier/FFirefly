@@ -134,31 +134,6 @@ double ratio(Vec q, Vec k, double T, double mu, double w) {
     return (f_qk - f_k) / (e_k - e_qk + w);
 }
 
-double integrand(Vec k, Vec q, double w, double T) {
-    //return 1;
-    //if (fabs(k.freq - w) < 0.001) return 0;
-    //return 1 / (k.freq - w);
-
-    double e_qk = epsilon(k+q) - mu;
-    double e_k = epsilon(k) - mu;
-    double f_k = f(e_k, T);
-    double f_qk = f(e_qk, T);
-
-    double dE = k.freq;
-    //if (dE != 0) cout << dE << endl;
-    //if (fabs(e_qk - e_k) > 0.1) {
-    //    cout << "dE: " << dE << " " << e_qk - e_k << endl;
-    //}
-
-    if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
-        if (T == 0 or exp(e_k/T) > 1e6)
-            return e_k < 0;
-        return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
-    }
-    if (fabs(w - dE) < 0.001) return 0;
-    return (f_qk - f_k) / (w - dE);
-}
-
 double modified_ratio(Vec q, Vec k, double T, double mu, double w, double delta) {
     double e_plus = epsilon(k + q/2) - mu;
     double e_minus = epsilon(k - q/2) - mu;
@@ -481,7 +456,7 @@ vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS, double 
         auto datIt = map.begin();
         advance(datIt, i);
         string key = datIt->first;
-        map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w, 500);
+        map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w, s_pts);
         progress_bar(1.0 * i / map.size());
     }
 
