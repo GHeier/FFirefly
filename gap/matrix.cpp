@@ -1,4 +1,5 @@
 #include <string>
+#include <cmath>
 #include <vector>
 #include "vec.h"
 #include "matrix.hpp"
@@ -70,6 +71,11 @@ Eigenvector Matrix::operator*(Eigenvector& k) {
     for (int i = 0; i < this->size; i++) {
         for (int j = 0; j < this->size; j++) {
             result.eigenvector[i] += this->vals[i][j] * k.eigenvector[j];
+            //if (isnan(result.eigenvector[i])) {
+            //    cout << "NAN" << endl;
+            //    cout << this->vals[i][j] << " " << k.eigenvector[j] << endl;
+            //    exit(1);
+            //}
         }
     }
     return result;

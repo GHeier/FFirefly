@@ -60,7 +60,6 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T, const unordered_
         for (int temp = 0; temp < i; temp++)
             ind1 += k[temp].size();
 
-        #pragma omp parallel for
         for (int j = 0; j < k[i].size(); j++) {
             Vec k1 = k[i][j];
             for (int x = 0; x < k.size(); x++) {
@@ -69,6 +68,7 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T, const unordered_
                 for (int temp = 0; temp < x; temp++)
                     ind2 += k[temp].size();
 
+                #pragma omp parallel for
                 for (int y = 0; y < k[x].size(); y++) {
                     Vec k2 = k[x][y];
                     double d1 = pow(k1.area/vp(k1),0.5); 
@@ -81,8 +81,8 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T, const unordered_
                     P(ind1 + j,ind2 + y) = - d1 * d2 * pow(fde1*fde2,0.5) * V(k1, k2, w, T, chi_cube2); 
                 }
             }
+            progress_bar(1.0 * (ind1 + j) / P.size);
         }
-        progress_bar(1.0 * ind1 / P.size);
     }
     cout << "P Matrix Created\n";
 
@@ -90,9 +90,8 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T, const unordered_
     P = P * w_D * (2 / pow(2*M_PI, dim)); 
 }
 
-unordered_map <double, vector<vector<vector<double>>>> chi_cube_freq(double T, double mu, double DOS) {
+unordered_map <double, vector<vector<vector<double>>>> chi_cube_freq(double T, double mu) {
     vector<double> des;
-    //cout << "Desired frequencies\n";
     for (int i = 0; i < l; i++) {
         double p1 = w_D * points[l-1][i];
         for (int j = 0; j < l; j++) {
@@ -104,21 +103,13 @@ unordered_map <double, vector<vector<vector<double>>>> chi_cube_freq(double T, d
         }
     }
 
-//    cout << "Taken frequencies\n";
-//    for (double w : des) {
-//        cout << "?" << w << endl;
-//    }
-
     unordered_map <double, vector<vector<vector<double>>>> cube_freq_map;
     for (int i = 0; i < des.size(); i++) {
-        printf("Chi Cube %d / %d\n", i+1, des.size());
+        string message = "Chi Cube " + to_string(i+1) + " / " + to_string(des.size());
         double w = des[i];
-        auto cube = chi_cube(T, mu, DOS, w);
+        auto cube = chi_cube(T, mu, w, message);
         cube_freq_map.insert(pair<double, vector<vector<vector<double>>>>(w, cube));
     }
-//    for (auto x : cube_freq_map) {
-//        cout << "Frequency: " << x.first << endl;
-//    }
     return cube_freq_map;
 }
 
@@ -239,11 +230,6 @@ double integrand(Vec k, Vec q, double w, double T) {
         if (T == 0 or exp(e_k/T) > 1e6)
             return e_k < 0;
         double temp = 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
-        if (temp > 10) {
-            cout << "Temp: " << temp << endl;
-            cout << "e_k: " << e_k << endl;
-            cout << "T: " << T << endl;
-        }
         return temp;
     }
     if (fabs(w - dE) == 0) return 0;

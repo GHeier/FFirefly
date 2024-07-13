@@ -38,7 +38,7 @@ double trap_cube(auto &f, double x0, double x1, double y0, double y1, double z0,
 double trap_8_cubes(auto &f, double x0, double x1, double y0, double y1, double z0, double z1);
 double adaptive_trapezoidal(auto &f, double x0, double x1, double y0, double y1, double z0, double z1, int xdivs, int ydivs, int zdivs, double error_relative);
 double iteratively_splitting_cubes(auto &f, double x0, double x1, double y0, double y1, double z0, double z1, double error_total, double error_relative);
-vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS, double w);
+vector<vector<vector<double>>> chi_cube(double T, double mu, double w, string message = "");
 double calculate_chi_from_cube(const vector<vector<vector<double>>> &chi_cube, Vec q);
 Vec to_IBZ_2(const Vec k);
 Vec to_IBZ_spherical(const Vec k);

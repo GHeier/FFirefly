@@ -61,7 +61,7 @@ void plot_potential(double T) {
         DOS += FS[i].area / vp(FS[i]);
     double n = 80.0;
     for (double mu = 0.0; mu > -2.0; mu--) {
-        unordered_map<double, vector<vector<vector<double>>>> cube = chi_cube_freq(T, mu, DOS);
+        unordered_map<double, vector<vector<vector<double>>>> cube = chi_cube_freq(T, mu);
         for (double i = 0; i < n; i++) {
             double q_mag = i/(n-1) * M_PI;
             Vec q(q_mag, q_mag, 0);
@@ -154,7 +154,7 @@ void plot_single_chi2(double T, double w) {
     double n = 50.0;
     double new_mu = 1.0;
     init_config(mu, U, t, tn, w_D, new_mu, U, t, tn, w_D);
-    vector<vector<vector<double>>> cube = chi_cube(T, mu, 0, w);
+    vector<vector<vector<double>>> cube = chi_cube(T, mu, w, "Cube 1/1");
     for (double i = 0; i < n; i++) {
         printf("\r Mu %.1f: %.3f" , new_mu, 100.0*i/(n-1));
         fflush(stdout);

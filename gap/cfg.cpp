@@ -11,13 +11,13 @@
 using namespace std;
 
 // Global Variables
-int n = 5; // Number of k points
+int n = 40; // Number of k points
 int s_div = (dim == 3) ? 40 : 300; // Number of integral surface divisions
 int s_pts = (dim == 3) ? 50 : 1000; // Number of integral surfaces
-int m = 40; // Number of chi points
+int m = 20; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 3; // Number of dimensions)
-string potential_name = "const";
+string potential_name = "scalapino";
 string band_name = "simple_cubic";
                
 // Constants
@@ -26,7 +26,7 @@ double tn = 0.0;
 double tnn = 0.0;
 double U = 4.0;
 double k_max = M_PI;
-double mu = 1.0;
+double mu = -1.0;
 double w_D = 0.5;
 
 void init_config(double &mu, double &U, double &t, double &tn, double &w_D, double new_mu, double new_U, double new_t, double new_tn, double new_w_D) {
@@ -136,9 +136,10 @@ double vp(const Vec k) {
 double V(const Vec k1, const Vec k2, double w, const double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube) {
     if (potential_name == "const") 
         return potential_const(k1, k2);
-    if (potential_name == "scalapino") 
-        //return potential_scal(k1, k2, T);
-        return potential_scalapino_cube(k1, k2, w, T, chi_cube);
+    if (potential_name == "scalapino") {
+        double t2 = potential_scalapino_cube(k1, k2, w, T, chi_cube);
+        return t2;
+    }
     if (potential_name == "scalapino_triplet") 
         return potential_scalapino_triplet(k1, k2, T, w, chi_cube);
     if (potential_name == "test") 

@@ -323,8 +323,8 @@ def plot_V_chi(file):
     mngr = plt.get_current_fig_manager()
     mngr.window.wm_geometry("+600+800")
 
-def plotGap_cart(potential, n, mu, dim, U, eigNum):
-    file = "../data/"+str(potential)+str(dim)+"D_mu="+str(mu)+"_U="+str(U)+"_wD=1.0_n="+str(n)+".dat"
+def plotGap_cart(potential, n, mu, dim, U, w_D, eigNum):
+    file = "../data/"+potential+str(dim)+"D_mu="+str(mu)+"_U="+str(U)+"_wD="+str(w_D)+"_n="+str(n)+".dat"
     df = pd.read_csv(file, delim_whitespace=True)
     fig = plt.figure(0)
     ax = fig.add_subplot(111, projection='3d')
@@ -345,17 +345,19 @@ def plot_4D_gap(file):
     y = df.iloc[:,1]
     z = df.iloc[:,2]
 
-    for i in range(2):
-        c = df.iloc[:,3+i]
-        fig = plt.figure(0)
-        ax = fig.add_subplot(111, projection='3d')
-        img = ax.scatter(x, y, z, c=c, cmap=cm.coolwarm) #mpl.colormaps['plasma'])
-        fig.colorbar(img)
-        plt.title(r"$\lambda$ #" + str(i) + r"$\Delta$ @ $\mu=-1.2$") 
-        plt.xlabel(r'$k_x$')
-        plt.ylabel(r'$k_y$')
-        ax.set_zlabel(r'$k_z$')
-        plt.show()
+    c = df.iloc[:,3]
+    fig = plt.figure(0)
+    ax = fig.add_subplot(111, projection='3d')
+#        for i in range(len(c)):
+#            if abs(c[i]) > 1.0:
+#                c[i] = 0.0
+    img = ax.scatter(x, y, z, c=c, cmap=cm.coolwarm) #mpl.colormaps['plasma'])
+    fig.colorbar(img)
+    plt.title(r"$\lambda$ #" + str(0) + r"$\Delta$ @ $\mu=-1.2$") 
+    plt.xlabel(r'$k_x$')
+    plt.ylabel(r'$k_y$')
+    ax.set_zlabel(r'$k_z$')
+    plt.show()
 
 def plot_coupling(file):
     df = pd.read_csv(file, delim_whitespace = True, header=None)
@@ -827,10 +829,17 @@ def plot_chi_sphere_3D():
     plt.plot(q, f * 0.001)
 
 if __name__ == "__main__":
+    
     plot_chi_single_test("../tests/single_chi_plot.dat")
     plot_chi_single_test("../tests/single_chi_plot2.dat")
     plot_chi_single_test("../tests/single_chi_plot3.dat")
     plt.show()
+    plotGap_cart("scalapino", 15, -1.0, 3, 4.0, 0.5, 0)
+    plot_4D_gap("../data/scalapino3D_mu=-1.0_U=4.0_wD=0.5_n=15.dat")
+    plot_4D_gap("../data/const3D_mu=-1.0_U=4.0_wD=0.5_n=15.dat")
+    plot_4D_gap("../data/test3D_mu=-1.0_U=4.0_wD=0.5_n=15.dat")
+    plot_4D_gap("../data/scalapino3D_mu=-1.0_U=4.0_wD=0.5_n=8.dat")
+    plot_4D_gap("../data/scalapino3D_mu=-1.0_U=4.0_wD=0.5_n=12.dat")
     #plot_eigenvalue_divergence()
     #plot_DOS()
     #plot_coupling("../tests/coupling.dat")

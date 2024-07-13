@@ -312,7 +312,7 @@ void eig_with_freq(double cutoff) {
 
     unordered_map <double, vector<vector<vector<double>>>> cube_freq_map;
     if (potential_name.find("scalapino") != string::npos)
-        cube_freq_map = chi_cube_freq(T, mu, 0.0);
+        cube_freq_map = chi_cube_freq(T, mu);
     printf("Cube Created\n");
 
     int size = 0; for (auto x : freq_FS) size += x.size();
@@ -338,83 +338,104 @@ void eig_with_freq(double cutoff) {
     file << cutoff << " " << f*eig2 << " " << eig << endl;
 }
 
+void test_cube_map() {
+    unordered_map<double, vector<vector<vector<double>>> > cube_freq_map;
+    cube_freq_map = chi_cube_freq(0.25, -1.2);
+    auto cube = chi_cube(0.25, -1.2, 0.0, "Cube 1/1");
+    for (int i = 0; i < cube.size(); i++) {
+        for (int j = 0; j < cube[i].size(); j++) {
+            for (int k = 0; k < cube[i][j].size(); k++) {
+                if (fabs(cube[i][j][k] - cube_freq_map.at(0.0)[i][j][k]) > 0.0001) {
+                    printf("Cube values: %f %f\n", cube[i][j][k], cube_freq_map.at(0.0)[i][j][k]);
+                }
+                if (i == 0) cout << cube[i][j][k] << " " << cube_freq_map.at(0.0)[i][j][k] << endl;
+            }
+        }
+    }
+}
+
 int main() {
     
     int num_procs = omp_get_num_procs();
     omp_set_num_threads(num_procs - 1);
 
+    test_cube_map();
+
     double T = 0.25, w = 0.0;
-    //plot_single_chi(T, w);
-    //plot_single_chi2(T, w);
-    //plot_single_chi3(T, w);
-    //return 0;
-
-    vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
-    unordered_map <double, vector<vector<vector<double>>>> cube_freq_map;
-    Matrix P(FS.size()); 
-    printf("P size: %d, val: %f\n", P.size, P(0,0));
-    save_potential_vs_q(FS, P, "potential.dat");
-    printf("P size: %d, val: %f\n", P.size, P(0,0));
-    create_P(P, FS, T, cube_freq_map);
-    printf("P size: %d, val: %f\n", P.size, P(0,0));
-    vector<Eigenvector> answers = power_iteration(P, 0.001);
-    printf("P size: %d, val: %f\n", P.size, P(0,0));
-
-    for (int i = 0; i < answers.size(); i++) {
-        printf("Eigenvalue: %f\n", answers[i].eigenvalue);
-    }
-
-    Eigenvector y(FS.size());
-    for (int i = 0; i < y.size; i++) {
-        y.eigenvector[i] = 1;
-    }
-    printf("Eigenvalue: %f\n", dot(y, P * y) / dot(y, y));
-
-    Eigenvector r(FS.size(), true);
-    printf("Random Eigenvector:\n");
-    for (int i = 0; i < r.size; i++) {
-        cout << r.eigenvector[i] << " ";
-    }
-    cout << endl;
-
-    Eigenvector after = P * r;
-    printf("Multiplied Eigenvector:\n");
-    for (int i = 0; i < after.size; i++) {
-        cout << after.eigenvector[i] << " ";
-    }
-    after.normalize();
-    cout << endl;
-
-    vector<double> x2(FS.size(), 0);
-        srand(time(0)); 
-    for (int i = 0; i < x2.size(); i++) {
-        x2[i] = ((double)rand()) / RAND_MAX;
-    }
-    printf("Random Eigenvector:\n");
-    for (int i = 0; i < x2.size(); i++) {
-        cout << x2[i] << " ";
-    }
-    //Eigenvector x(FS.size());
-    //for (int i = 0; i < x.size; i++) {
-    //    x.eigenvector[i] = 1;
-    //}
-    //printf("\nFirst Eigenvector: %f %f %f %f\n", x.eigenvector[0], x.eigenvector[1], x.eigenvector[2], x.eigenvector[3]);
-    //printf("Multiplied Eigenvector:\n");
-    //cout << P * x << endl;
-
-    //double result = 0;
-    //for (int i = 0; i < x.size; i++) {
-    //    result += x.eigenvector[i] * P(i, 0);
-    //}
-    //printf("Result: %f\n", result);
-
-
-
-
-
+    plot_single_chi(T, w);
+    plot_single_chi2(T, w);
+    plot_single_chi3(T, w);
     return 0;
 
+    Matrix A(2);
+    for (int i = 0; i < A.size; i++) {
+        for (int j = 0; j < A.size; j++) {
+            A(i, j) = 1;
+            printf("A(%i, %i): %.2f\n", i, j, A(i, j));
+        }
+    }
+    vector<Eigenvector> answers = power_iteration(A, 0.001);
+    for (auto x : answers) cout << x.eigenvalue << endl;
 
+    vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
+    printf("FS size: %i\n", FS.size());
+    unordered_map <double, vector<vector<vector<double>>>> cube_freq_map;
+    if (potential_name.find("scalapino") != string::npos)
+        cube_freq_map = chi_cube_freq(T, mu);
+    Matrix P2(FS.size()); create_P(P2, FS, T, cube_freq_map);
+    vector<Eigenvector> answers2 = power_iteration(P2, 0.001);
+    for (auto x : answers2) cout << x.eigenvalue << endl;
+    return 0;
+
+    auto cube = cube_freq_map.at(0.0);
+    auto cube2 = chi_cube(T, mu, 0.0, "Cube 1/1");
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            for (int k = 0; k < 5; k++) {
+                printf("Cube value: %f\n", cube[i][j][k]);
+            }
+        }
+    }
+    for (int i = 0; i < cube.size(); i++) {
+        for (int j = 0; j < cube[i].size(); j++) {
+            for (int k = 0; k < cube[i][j].size(); k++) {
+                if (fabs(cube[i][j][k] - cube2[i][j][k]) > 0.0001) {
+                    printf("Cube values: %f %f\n", cube[i][j][k], cube2[i][j][k]);
+                }
+                if (cube[i][j][k] > 1) cout << "Wrong\n";
+            }
+        }
+    }
+
+    int a = 0;
+    for (int i = 0; i < FS.size(); i++) {
+        for (int j = 0; j < FS.size(); j++) {
+            Vec k1 = FS[i];
+            Vec k2 = FS[j];
+            double c = chi_trapezoidal(k1 - k2, T, mu, 0, 200);
+            double c2 = integrate_susceptibility(k1 - k2, T, mu, 0, 200);
+            double c3 = calculate_chi_from_cube(cube2, k1 - k2);
+            double c4 = calculate_chi_from_cube(cube2, k1 + k2);
+            if (fabs(c - c2) > 0.001) {
+                printf("C1: %f, C2: %f, C3: %f\n", c, c2, c3);
+                cout << "Chi Failed\n";
+            }
+            double V1 = potential_scalapino_cube(k1, k2, 0, T, cube_freq_map);
+            double Vs = U*U * c3 / (1 - U*c3) 
+                + pow(U,3)*c3*c3 / (1 - U*U * c3*c3);
+            double Vs2 = U*U * c4 / (1 - U*c4) 
+                + pow(U,3)*c4*c4 / (1 - U*U * c4*c4);
+            double V3 = (Vs + Vs2) / 2;
+            if (fabs(V1 - V3) > 0.001) {
+                cout << "Failed\n";
+                cout << V1 << " " << V3 << endl;
+                a++;
+            }
+            if (a == 100) return 0;
+        }
+    }
+
+    return 0;
 
     for (int i = 1; i < 30; i++) {
         double cutoff = 0.03 * i;

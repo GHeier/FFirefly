@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <cassert>
 #include <vector>
 #include <string>
 #include <math.h>
@@ -23,13 +24,18 @@ void save(string file_name, double T, vector<Vec> k, std::vector<Eigenvector> so
     if (dim == 3) file << "x y z ";
     if (dim == 2) file << "x y ";
 
-    for (unsigned int i = 0; i < solutions.size(); i++) file << solutions[i].eigenvalue << " ";
+    assert(k.size() == solutions[0].size);
+
+    for (unsigned int i = 0; i < solutions.size(); i++) 
+        file << solutions[i].eigenvalue << " ";
     file << endl;
     for (unsigned int i = 0; i < k.size(); i++) {
-        Vec q = k[i]; if(not q.cartesian) q.to_cartesian();
+        Vec q = k[i]; 
+        if(not q.cartesian) 
+            q.to_cartesian();
         file << q; 
-        for (unsigned int j = 0; j < solutions[0].size; j++) {
-            file << solutions[j][i] << " ";
+        for (unsigned int j = 0; j < solutions.size(); j++) {
+            file << solutions[j].eigenvector[i] << " ";
         }
         file << endl;
     }

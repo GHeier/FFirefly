@@ -27,8 +27,6 @@ double potential_const(Vec k1, Vec k2) {
 }
 
 double potential_test(Vec k1, Vec k2) {
-    double volume_scaling = (2 / pow(2*M_PI, dim));
-    return -1.0;
     Vec q1 = k1;
     Vec q2 = k2;
     if (q1.cartesian == false) q1.to_cartesian();
@@ -58,13 +56,17 @@ double phonon_coulomb(Vec q) {
 double potential_scal(Vec k1, Vec k2, double T) {
     Vec q2 = k1 - k2;
     Vec q = to_IBZ_2(q2);
+    Vec q3 = to_IBZ_2(k1 + k2);
     
-    double chi_sub = chi_trapezoidal(q, T, mu, 0, 30);
-    if( chi_sub < 0.1) cout << chi_sub;
+    double Xm = chi_trapezoidal(q, T, mu, 0, 60);
+    double Xp = chi_trapezoidal(q3, T, mu, 0, 60);
+    //if( chi_sub < 0.1) cout << chi_sub;
 
-    double Vs = U*U * chi_sub / (1 - U*chi_sub) 
-        + pow(U,3)*chi_sub*chi_sub / (1 - U*U * chi_sub*chi_sub);
-    return Vs;
+    double Vm = U*U * Xm / (1 - U*Xm) 
+        + pow(U,3)*Xm*Xm / (1 - U*U * Xm*Xm);
+    double Vp = U*U * Xp / (1 - U*Xp) 
+        + pow(U,3)*Xp*Xp / (1 - U*U * Xp*Xp);
+    return (Vm + Vp) / 2;
 }
 
 double potential_scalapino_cube(Vec k1, Vec k2, double w, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_map) {
@@ -73,18 +75,26 @@ double potential_scalapino_cube(Vec k1, Vec k2, double w, double T, const unorde
     w = round(w,6);
     //if (w!=0) cout << w << endl;
 
-    auto chi_cube = chi_map.at(w);
+    auto cube = chi_map.at(w);
+    //auto cube1 = chi_cube(T, mu, w, "Potential Cube");
 
-    double chi_minus = calculate_chi_from_cube(chi_cube, q_minus);
-    double chi_plus = calculate_chi_from_cube(chi_cube, q_plus);
+    double Xm = calculate_chi_from_cube(cube, q_minus);
+    double Xp = calculate_chi_from_cube(cube, q_plus);
+    //double Xm1 = calculate_chi_from_cube(cube1, q_minus);
+    //double Xp1 = calculate_chi_from_cube(cube1, q_plus);
+    //double Xm2 = chi_trapezoidal(q, T, mu, 0, 60);
+    //double Xp2 = chi_trapezoidal(q3, T, mu, 0, 60);
+    //if (fabs(Xm - Xm1) > 0.0001) cout << "Mismatchm: " << Xm << " " << Xm1 << endl;
+    //if (fabs(Xp - Xp1) > 0.0001) cout << "Mismatchp: " << Xp << " " << Xp1 << endl;
+    //Xm = Xm1; Xp = Xp1;
 
-    double V_minus = U*U * chi_minus / (1 - U*chi_minus) 
-        + pow(U,3)*chi_minus*chi_minus / (1 - U*U * chi_minus*chi_minus);
-    double V_plus = U*U * chi_plus / (1 - U*chi_plus) 
-        + pow(U,3)*chi_plus*chi_plus / (1 - U*U * chi_plus*chi_plus);
+    double Vm = U*U * Xm / (1 - U*Xm) 
+        + pow(U,3)*Xm*Xm / (1 - U*U * Xm*Xm);
+    double Vp = U*U * Xp / (1 - U*Xp) 
+        + pow(U,3)*Xp*Xp / (1 - U*U * Xp*Xp);
 
     //return V_minus;
-    return 0.5 * (V_minus + V_plus);
+    return 0.5 * (Vm + Vp);
 }
 
 double potential_scalapino_triplet(Vec k1, Vec k2, double w, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_map) {
@@ -432,13 +442,11 @@ double iteratively_splitting_cubes(auto &f, double x0, double x1, double y0, dou
     return total_sum;
 }
 
-vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS, double w) {
+vector<vector<vector<double>>> chi_cube(double T, double mu, double w, string message) {
     int m_z = m*(dim%2) + 3*((dim+1)%2);
     vector<vector<vector<double>>> cube(m, vector<vector<double>> (m, vector<double> (m_z)));
     unordered_map<string, double> map;
-    cout << "Calculating Chi Cube...\n";
     double empty_val = -98214214;
-    map[vec_to_string(Vec(0,0,0))] = DOS;
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < m; j++) {
             for (int k = 0; k < m_z; k++) {
@@ -450,15 +458,16 @@ vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS, double 
         }
     }
     
-    cout << "Taking " << map.size() << " integrals in " << dim << " dimensions.\n";
+    //cout << "Taking " << map.size() << " integrals in " << dim << " dimensions.\n";
     //#pragma omp parallel for
     for(unsigned int i = 0; i < map.size(); i++) {
         auto datIt = map.begin();
         advance(datIt, i);
         string key = datIt->first;
         map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w, s_pts);
-        progress_bar(1.0 * i / map.size());
+        progress_bar(1.0 * i / (map.size()-1), message);
     }
+    cout << endl;
 
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < m; j++) {
@@ -470,7 +479,6 @@ vector<vector<vector<double>>> chi_cube(double T, double mu, double DOS, double 
         }
     }
 
-    cout << "\nChi Cube Created.\n";
     return cube;
 }
 

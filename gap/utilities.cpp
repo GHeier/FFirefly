@@ -1,21 +1,22 @@
 #include <math.h>
+#include <string>
 #include <iostream>
 #include <iomanip>
 
 using namespace std;
 
-void progress_bar(double progress) {
+void progress_bar(double progress, string message) {
     int barWidth = 70;
 
-    std::cout << "[";
-        int pos = barWidth * progress;
-            for (int i = 0; i < barWidth; ++i) {
-                        if (i < pos) std::cout << "=";
-                                else if (i == pos) std::cout << ">";
-                                        else std::cout << " ";
-                                            }
+    std::cout << message << " [";
+    int pos = barWidth * progress;
+    for (int i = 0; i < barWidth; ++i) {
+        if (i < pos) std::cout << "=";
+        else if (i == pos) std::cout << ">";
+        else std::cout << " ";
+    }
     std::cout << "] " << std::fixed << std::setprecision(2) << progress * 100.0 << " %  \r";
-        std::cout.flush();
+    std::cout.flush();
 }
 
 void progress_percent(double progress) {

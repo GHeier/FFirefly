@@ -46,26 +46,26 @@ using vec_map = std::unordered_map<Vec, double>;
  * return 2 solutions instead of 1
 */ 
 vector<Eigenvector> power_iteration(Matrix A, double error) {
-    Eigenvector x(A.size, true);
-    printf("Random Eigenvector:\n");
-    for (int i = 0; i < x.size; i++) {
-        cout << x.eigenvector[i] << " ";
-    }
-    double diff_mag = 1;
-    double rayleigh = dot(x, A * x) / dot(x, x);
-    double sum = 0;
     vector<Eigenvector> vals;
     for (int eig_num = 0; eig_num < 5; eig_num++) {
+        Eigenvector x(A.size, true);
+        double diff_mag = 1;
+        double rayleigh = dot(x, A * x) / dot(x, x);
+        double sum = 0;
+
         int iterations = 0;
         cout << "Eig Num: " << eig_num << endl;
+        string filename = "matrix" + std::to_string(eig_num) + ".txt";
+        ofstream file(filename);
+        for (int i = 0; i < A.size; i++) {
+            for (int j = 0; j < A.size; j++) {
+                file << A(i,j) << " ";
+            }
+            file << endl;
+        }
         for (int i = 0; diff_mag > error; i++) {
             Eigenvector x_new = A * x;
             x_new.normalize();
-            printf("Multiplying Eigenvector:\n");
-            for (int i = 0; i < x.size; i++) {
-                cout << x_new.eigenvector[i] << " ";
-            }
-            cout << endl;
 
             // Account for phase shift
             Eigenvector diff_vec = x - x_new;
@@ -77,7 +77,8 @@ vector<Eigenvector> power_iteration(Matrix A, double error) {
             //if ( i%100 == 0) cout << x.transpose()*A*x << endl;
             x = x_new;
             iterations = i;
-            cout << "Iteration: " << i << " " << dot(x, A * x) << endl;
+            //cout << i << " " << 1000 << " " << i%1000 << endl;
+            if (i%1000 == 0) cout << "Iteration: " << i << " " << dot(x, A * x) << endl;
             if (i%100 == 0 and i > 50000 and dot(x, A * x) < 0) break;
         }
         cout << "Iterations: " << iterations << endl;
@@ -95,6 +96,39 @@ vector<Eigenvector> power_iteration(Matrix A, double error) {
         diff_mag = 1; 
     }
     return vals;
+}
+
+vector<Eigenvector> lapack_diagonalization(Matrix A) {
+    // All variable definitions for LAPACK
+    double mat[A.size*A.size];
+    int N = A.size;
+    double val_r[N], val_i[N], vecs[N*N];
+    double work_test[1];
+    int LWORK = -1;
+    int info;
+    char jobvl = 'N';
+    char jobvr = 'V';
+    // Convert matrix to LAPACK format
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            mat[i*N+j] = A(i,j);
+        }
+    }
+    // Run LAPACK
+    dgeev_(&jobvl, &jobvr, &N, mat, &N, val_r, val_i, NULL, &N, vecs, &N, work_test, &LWORK, &info);
+    LWORK = work_test[0];
+    double work[LWORK];
+    dgeev_(&jobvl, &jobvr, &N, mat, &N, val_r, val_i, NULL, &N, vecs, &N, work, &LWORK, &info);
+    // Convert to Eigenvec format
+    vector<Eigenvector> eigenvectors(N);
+    for (int i = 0; i < N; i++) {
+        Eigenvector temp(N);
+        for (int j = 0; j < N; j++) {
+            temp[j] = vecs[i*N+j];
+        }
+        temp.eigenvalue = val_r[i];
+    }
+    return eigenvectors;
 }
 
 /*
@@ -120,15 +154,18 @@ double f_singlet_integral(double T) {
 // Picks the potential based on the global variable "potential_name"
 void create_P(Matrix &P, vector<Vec> &k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2) {
     cout << "Creating P Matrix\n";
-    #pragma omp parallel for
+    int a = 0;
     for (int i = 0; i < P.size; i++) {
         Vec k1 = k[i];
+        #pragma omp parallel for
         for (int j = 0; j < P.size; j++) {
             Vec k2 = k[j];
             P(i,j) = -pow(k1.area/vp(k1),0.5) * V(k1, k2, 0, T, chi_cube2) * pow(k2.area/vp(k2),0.5);
+            //assert(isnan(P(i,j)) == false);
         }
+        progress_bar(1.0 * i / P.size);
     }
-    cout << "P Matrix Created\n";
+    cout << "\nP Matrix Created\n";
     P = P * (2 / pow(2*M_PI, dim));
 }
 
@@ -139,7 +176,7 @@ double f(vector<Vec> k, double T) {
     cout << "\nTemperature point: " << T << endl;
     double DOS = 0; for (auto k1 : k) DOS += k1.area;
     DOS /= pow(2*M_PI, dim);
-    auto cube_map = chi_cube_freq(T, mu, DOS);
+    auto cube_map = chi_cube_freq(T, mu);
     //auto cube = chi_cube(T, mu, DOS, 0);
     Matrix P(k.size());
     create_P(P, k, T, cube_map);
@@ -189,6 +226,19 @@ void vector_to_wave(vector<Vec> &FS, vector<Eigenvector> &vectors) {
     }
 }
 
+void freq_vector_to_wave(vector<vector<Vec>> &freq_FS, vector<Eigenvector> &vectors) {
+    for (unsigned int x = 0; x < vectors.size(); x++) {
+        int ind = 0;
+        for (unsigned int i = 0; i < freq_FS.size(); i++) {
+            for (unsigned int j = 0; j < freq_FS[i].size(); j++) {
+                Vec k = freq_FS[i][j];
+                vectors[x].eigenvector[ind] /= pow(k.area/vp(k),0.5);
+                ind++;
+            }
+        }
+    }
+}
+
 double get_DOS(vector<Vec> &FS) {
     double sum = 0;
     for (auto k : FS) 
@@ -200,7 +250,7 @@ double coupling_calc(vector<Vec> &FS, double T) {
     cout << "Calculating Coupling Constant...\n";
     int size = FS.size();
     double DOS = get_DOS(FS);
-    auto cube_map = chi_cube_freq(T, mu, DOS);
+    auto cube_map = chi_cube_freq(T, mu);
     //auto cube = chi_cube(T, mu, DOS, 0);
     double f_integrated = f_singlet_integral(T);
 

@@ -8,7 +8,7 @@
 
 vector<vector<Vec>> freq_tetrahedron_method(double mu);
 void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2);
-unordered_map<double, vector<vector<vector<double>>>> chi_cube_freq(double T, double mu, double DOS);
+unordered_map <double, vector<vector<vector<double>>>> chi_cube_freq(double T, double mu);
 double integrand(Vec k, Vec q, double w, double T);
 double denominator(Vec k, Vec q);
 double denominator_diff(Vec k, Vec q);

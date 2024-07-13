@@ -1,3 +1,7 @@
+# Large data files
+*.dat
+*.txt
+
 # Prerequisites
 *.d
 
