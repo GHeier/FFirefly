@@ -8,31 +8,40 @@
 
 Matrix::Matrix() {
     this->size = 0;
-    this->vals = vector<vector<double>>(0, vector<double>(0, 0));
+    this->vals = new float[0];
+}
+
+Matrix::~Matrix() {
+    delete[] this->vals;
 }
 
 Matrix::Matrix(int size) {
     this->size = size;
-    this->vals = vector<vector<double>>(size, vector<double>(size, 0));
+    this->vals = new float[size*size]; 
     for (int i = 0; i < size; i++) {
-        this->vals[i][i] = 1;
+        this->vals[i*size + i] = 1;
     }
 }
 
-Matrix::Matrix(vector<vector<double>> vals) {
+Matrix::Matrix(vector<vector<float>> vals) {
     this->size = vals.size();
-    this->vals = vals;
+    this->vals = new float[this->size*this->size];
+    for (int i = 0; i < this->size; i++) {
+        for (int j = 0; j < this->size; j++) {
+            this->vals[i*this->size + j] = vals[i][j];
+        }
+    }
 }
 
-double& Matrix::operator()(int r, int c) {
-    return this->vals[r][c];
+float& Matrix::operator()(int r, int c) {
+    return this->vals[r*this->size + c];
 }
 
 Matrix Matrix::operator+(const Matrix& k) {
     Matrix result(this->size);
     for (int i = 0; i < this->size; i++) {
         for (int j = 0; j < this->size; j++) {
-            result.vals[i][j] = this->vals[i][j] + k.vals[i][j];
+            result.vals[i*this->size + j] = this->vals[i*this->size + j] + k.vals[i*this->size + j];
         }
     }
     return result;
@@ -42,7 +51,7 @@ Matrix Matrix::operator-(const Matrix& k) {
     Matrix result(this->size);
     for (int i = 0; i < this->size; i++) {
         for (int j = 0; j < this->size; j++) {
-            result.vals[i][j] = this->vals[i][j] - k.vals[i][j];
+            result.vals[i*this->size + j] = this->vals[i*this->size + j] - k.vals[i*this->size + j];
         }
     }
     return result;
@@ -58,7 +67,7 @@ Matrix Matrix::operator*(const Matrix& k1) {
     for (int i = 0; i < this->size; i++) {
         for (int j = 0; j < this->size; j++) {
             for (int k = 0; k < this->size; k++) {
-                result.vals[i][j] += this->vals[i][k] * k1.vals[k][j];
+                result.vals[i*this->size + j] += this->vals[i*this->size + k] * k1.vals[k*this->size + j];
             }
         }
     }
@@ -70,7 +79,7 @@ Eigenvector Matrix::operator*(Eigenvector& k) {
     #pragma omp parallel for
     for (int i = 0; i < this->size; i++) {
         for (int j = 0; j < this->size; j++) {
-            result.eigenvector[i] += this->vals[i][j] * k.eigenvector[j];
+            result.eigenvector[i] += this->vals[i*this->size + j] * k.eigenvector[j];
             //if (isnan(result.eigenvector[i])) {
             //    cout << "NAN" << endl;
             //    cout << this->vals[i][j] << " " << k.eigenvector[j] << endl;
@@ -81,21 +90,21 @@ Eigenvector Matrix::operator*(Eigenvector& k) {
     return result;
 }
 
-Matrix Matrix::operator*(double multiple) {
+Matrix Matrix::operator*(float multiple) {
     Matrix result(this->size);
     for (int i = 0; i < this->size; i++) {
         for (int j = 0; j < this->size; j++) {
-            result.vals[i][j] = this->vals[i][j] * multiple;
+            result.vals[i*this->size + j] = this->vals[i*this->size + j] * multiple;
         }
     }
     return result;
 }
 
-Matrix Matrix::operator/(double multiple) {
+Matrix Matrix::operator/(float multiple) {
     Matrix result(this->size);
     for (int i = 0; i < this->size; i++) {
         for (int j = 0; j < this->size; j++) {
-            result.vals[i][j] = this->vals[i][j] / multiple;
+            result.vals[i*this->size + j] = this->vals[i*this->size + j] / multiple;
         }
     }
     return result;
@@ -104,7 +113,9 @@ Matrix Matrix::operator/(double multiple) {
 bool Matrix::operator==(const Matrix& k) {
     for (int i = 0; i < this->size; i++) {
         for (int j = 0; j < this->size; j++) {
-            if (this->vals[i][j] != k.vals[i][j]) return false;
+            if (this->vals[i*this->size + j] != k.vals[i*this->size + j]) {
+                return false;
+            }
         }
     }
     return true;
@@ -113,7 +124,7 @@ bool Matrix::operator==(const Matrix& k) {
 std::ostream& operator<<(std::ostream& os, const Matrix& k) {
     for (int i = 0; i < k.size; i++) {
         for (int j = 0; j < k.size; j++) {
-            os << k.vals[i][j] << " ";
+            os << k.vals[i*k.size + j] << " ";
         }
         os << endl;
     }

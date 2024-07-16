@@ -5,8 +5,8 @@
 
 using namespace std;
 
-void progress_bar(double progress, string message = "");
-void progress_percent(double progress);
-double round(double number, int decimal_places);
+void progress_bar(float progress, string message = "");
+void progress_percent(float progress);
+float round(float number, int decimal_places);
 
 #endif

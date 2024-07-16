@@ -6,7 +6,7 @@
 
 using namespace std;
 
-double epsilon_sphere(const Vec k) {
+float epsilon_sphere(const Vec k) {
     Vec q = k;
     if (q.cartesian == false) q.to_cartesian();
     if (dim == 2) q.vals[2] = 0;
@@ -20,10 +20,10 @@ Vec fermi_velocity_sphere(const Vec k) {
     return 2*q;
 }
 
-double epsilon_SC(const Vec k, double t, double tn) {
+float epsilon_SC(const Vec k, float t, float tn) {
     Vec q = k;
     if (q.cartesian == false) q.to_cartesian();
-    double val = 0.0;
+    float val = 0.0;
     for (int i = 0; i < dim; i++) {
         val += -2*t*cos(q.vals[i]);
         val += -2*tnn*cos(q.vals[i]);
@@ -43,10 +43,10 @@ Vec fermi_velocity_SC(const Vec k) {
     return v;
 }
 
-double epsilon_SC_layered(const Vec k) {
+float epsilon_SC_layered(const Vec k) {
     Vec q = k;
     if (q.cartesian == false) q.to_cartesian();
-    double val = 0.0;
+    float val = 0.0;
     for (int i = 0; i < dim; i++) {
         if (i < 2) 
             val += (-2*t)*(cos(q.vals[i]));

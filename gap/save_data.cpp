@@ -18,23 +18,21 @@ using std::cout;
 using std::vector;
 using std::string;
 
-void save(string file_name, double T, vector<Vec> k, std::vector<Eigenvector> solutions) {
+void save(string file_name, float T, vector<Vec> FS, Eigenvector* solutions) {
     std::ofstream file(file_name);
     //file.open(file_name);
     if (dim == 3) file << "x y z ";
     if (dim == 2) file << "x y ";
 
-    assert(k.size() == solutions[0].size);
-
-    for (unsigned int i = 0; i < solutions.size(); i++) 
+    for (unsigned int i = 0; i < FS.size(); i++) 
         file << solutions[i].eigenvalue << " ";
     file << endl;
-    for (unsigned int i = 0; i < k.size(); i++) {
-        Vec q = k[i]; 
+    for (unsigned int i = 0; i < FS.size(); i++) {
+        Vec q = FS[i]; 
         if(not q.cartesian) 
             q.to_cartesian();
         file << q; 
-        for (unsigned int j = 0; j < solutions.size(); j++) {
+        for (unsigned int j = 0; j < FS.size(); j++) {
             file << solutions[j].eigenvector[i] << " ";
         }
         file << endl;
@@ -54,21 +52,21 @@ void save_potential_vs_q(vector<Vec> &FS, Matrix &P, string filename) {
         Vec k1 = FS[i];
         for (unsigned int j = 0; j < FS.size(); j++) {
             Vec k2 = FS[j];
-            double V = -P(i,j) * pow(vp(k2)/k2.area,0.5) * pow(vp(k1)/k1.area,0.5);
+            float V = -P(i,j) * pow(vp(k2)/k2.area,0.5) * pow(vp(k1)/k1.area,0.5);
             Vec q = k1 - k2; if (q.cartesian == false) q.to_cartesian();
             file << q << V << endl;
         }
     }
 }
 
-void save_chi_vs_q(const vector<vector<vector<double>>> &cube, vector<Vec> &FS, string filename) {
+void save_chi_vs_q(const vector<vector<vector<float>>> &cube, vector<Vec> &FS, string filename) {
     ofstream file(filename);
     for (unsigned int i = 0; i < FS.size(); i++) {
         Vec k1 = FS[i];
         for (unsigned int j = 0; j < FS.size(); j++) {
             Vec k2 = FS[j];
             Vec q = k1 - k2;
-            double chi = calculate_chi_from_cube(cube, q);
+            float chi = calculate_chi_from_cube(cube, q);
             file << q << chi << endl;
         }
     }

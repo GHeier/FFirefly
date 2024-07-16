@@ -23,6 +23,7 @@
 #include "vec.h"
 #include "utilities.h"
 #include "frequency_inclusion.hpp"
+#include "susceptibility.h"
 
 using std::cout;
 using std::endl;
@@ -31,27 +32,35 @@ using std::vector;
 using std::unordered_map;
 //using lambda_lanczos::LambdaLanczos;
 
-vector<vector<Vec>> freq_tetrahedron_method(double mu) {
+int matrix_size_from_freq_FS(vector<vector<Vec>> &freq_FS) {
+    int size = 0;
+    for (int i = 0; i < freq_FS.size(); i++) {
+        size += freq_FS[i].size();
+    }
+    return size;
+}
+
+vector<vector<Vec>> freq_tetrahedron_method(float MU) {
     assert( l % 2 != 0); // N must be odd that way frequencies are evenly spaced
     vector<vector<Vec>> basis;
 
-    double points_0th[1] = {0}; double *p0 = points_0th;
-    double points_1st[2] = {-1/pow(3,0.5), 1/pow(3,0.5)}; double *p1 = points_1st;
-    double points_2nd[3] = {-pow(3/5,0.5), 0, pow(3/5,0.5)}; double *p2 = points_2nd;
-    double points_3rd[4] = {-0.861136, -0.339981, 0.339981, 0.861136}; double *p3 = points_3rd;
-    double points_4th[5] = {-0.90618, -0.538469, 0, 0.538469, 0.90618}; double *p4 = points_4th;
+    float points_0th[1] = {0}; float *p0 = points_0th;
+    float points_1st[2] = {-1/pow(3,0.5), 1/pow(3,0.5)}; float *p1 = points_1st;
+    float points_2nd[3] = {-pow(3/5,0.5), 0, pow(3/5,0.5)}; float *p2 = points_2nd;
+    float points_3rd[4] = {-0.861136, -0.339981, 0.339981, 0.861136}; float *p3 = points_3rd;
+    float points_4th[5] = {-0.90618, -0.538469, 0, 0.538469, 0.90618}; float *p4 = points_4th;
 
-    double *points[5] = {p0, p1, p2, p3, p4};
+    float *points[5] = {p0, p1, p2, p3, p4};
 
     for (int i = 0; i < l; i++) {
-        double ep = w_D * points[l-1][i] + mu;
+        float ep = w_D * points[l-1][i] + MU;
         vector<Vec> layer = tetrahedron_method(e_base_avg, Vec(0,0,0), ep);
         basis.push_back(layer);
     }
     return basis;
 }
 
-void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2) {
+void create_P_freq(Matrix &P, vector<vector<Vec>> &k, float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube2) {
 
     cout << "Creating P Matrix with frequency\n";
     for (int i = 0; i < k.size(); i++) {
@@ -71,14 +80,14 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T, const unordered_
                 #pragma omp parallel for
                 for (int y = 0; y < k[x].size(); y++) {
                     Vec k2 = k[x][y];
-                    double d1 = pow(k1.area/vp(k1),0.5); 
-                    double d2 = pow(k2.area/vp(k2),0.5); 
+                    float d1 = pow(k1.area/vp(k1),0.5); 
+                    float d2 = pow(k2.area/vp(k2),0.5); 
                     // f * d_epsilon
-                    double fde1 = f_singlet(w_D * points[l-1][i], T) * weights[l-1][i];
-                    double fde2 = f_singlet(w_D * points[l-1][x], T) * weights[l-1][x];
-                    double w = w_D * (points[l-1][x] - points[l-1][i]);
+                    float fde1 = f_singlet(w_D * points[l-1][i], T) * weights[l-1][i];
+                    float fde2 = f_singlet(w_D * points[l-1][x], T) * weights[l-1][x];
+                    float w = w_D * (points[l-1][x] - points[l-1][i]);
 
-                    P(ind1 + j,ind2 + y) = - d1 * d2 * pow(fde1*fde2,0.5) * V(k1, k2, w, T, chi_cube2); 
+                    P(ind1 + j,ind2 + y) = (float)(- d1 * d2 * pow(fde1*fde2,0.5) * V(k1, k2, w, T, chi_cube2)); 
                 }
             }
             progress_bar(1.0 * (ind1 + j) / P.size);
@@ -90,59 +99,59 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T, const unordered_
     P = P * w_D * (2 / pow(2*M_PI, dim)); 
 }
 
-unordered_map <double, vector<vector<vector<double>>>> chi_cube_freq(double T, double mu) {
-    vector<double> des;
+unordered_map <float, vector<vector<vector<float>>>> chi_cube_freq(float T, float MU) {
+    vector<float> des;
     for (int i = 0; i < l; i++) {
-        double p1 = w_D * points[l-1][i];
+        float p1 = w_D * points[l-1][i];
         for (int j = 0; j < l; j++) {
-            double p2 = w_D * points[l-1][j];
-            double w = p1 - p2;
+            float p2 = w_D * points[l-1][j];
+            float w = p1 - p2;
             w = round(w, 6);
             if (count(des.begin(), des.end(), w) == 0)
                 des.push_back(w);
         }
     }
 
-    unordered_map <double, vector<vector<vector<double>>>> cube_freq_map;
+    unordered_map <float, vector<vector<vector<float>>>> cube_freq_map;
     for (int i = 0; i < des.size(); i++) {
         string message = "Chi Cube " + to_string(i+1) + " / " + to_string(des.size());
-        double w = des[i];
-        auto cube = chi_cube(T, mu, w, message);
-        cube_freq_map.insert(pair<double, vector<vector<vector<double>>>>(w, cube));
+        float w = des[i];
+        auto cube = chi_cube(T, MU, w, message);
+        cube_freq_map.insert(pair<float, vector<vector<vector<float>>>>(w, cube));
     }
     return cube_freq_map;
 }
 
-double calculate_chi_from_cube_map(const unordered_map<double, vector<vector<vector<double>>>> &chi_cube_map, Vec q, double w) {
+float calculate_chi_from_cube_map(const unordered_map<float, vector<vector<vector<float>>>> &chi_cube_map, Vec q, float w) {
     Vec v = to_IBZ_2(q);
-    double d = 2*k_max/(m-1);
+    float d = 2*K_MAX/(m-1);
 
-    double x = v.vals[0], y = v.vals[1], z = v.vals[2];
+    float x = v.vals[0], y = v.vals[1], z = v.vals[2];
     if (dim == 2) z = 0;
 
     int i = floor(x / d);
     int j = floor(y / d);
     int k = floor(z / d);
 
-    double x1 = i * d; 
-    double y1 = j * d; 
-    double z1 = k * d; 
+    float x1 = i * d; 
+    float y1 = j * d; 
+    float z1 = k * d; 
 
-    double x2 = x1 + d; 
-    double y2 = y1 + d; 
-    double z2 = z1 + d; 
+    float x2 = x1 + d; 
+    float y2 = y1 + d; 
+    float z2 = z1 + d; 
 
-    double dx = 0, dy = 0, dz = 0, wx = 0, wy = 0, wz = 0, w0 = 0;
+    float dx = 0, dy = 0, dz = 0, wx = 0, wy = 0, wz = 0, w0 = 0;
 
     // Make sure there's no issue with indexing
     //cout << q << q.vals(2) << endl;
     //int s = chi_cube.size()-1; 
     //assert( i < s and j < s and k < chi_cube[0][0].size()-1);
 
-    double f1 = chi_cube_map.at(w)[i][j][k], f2 = chi_cube_map.at(w)[i+1][j][k];
-    double f3 = chi_cube_map.at(w)[i+1][j+1][k], f4 = chi_cube_map.at(w)[i][j+1][k];
-    double f5 = chi_cube_map.at(w)[i][j][k+1], f6 = chi_cube_map.at(w)[i+1][j][k+1];
-    double f7 = chi_cube_map.at(w)[i+1][j+1][k+1], f8 = chi_cube_map.at(w)[i][j+1][k+1];
+    float f1 = chi_cube_map.at(w)[i][j][k], f2 = chi_cube_map.at(w)[i+1][j][k];
+    float f3 = chi_cube_map.at(w)[i+1][j+1][k], f4 = chi_cube_map.at(w)[i][j+1][k];
+    float f5 = chi_cube_map.at(w)[i][j][k+1], f6 = chi_cube_map.at(w)[i+1][j][k+1];
+    float f7 = chi_cube_map.at(w)[i+1][j+1][k+1], f8 = chi_cube_map.at(w)[i][j+1][k+1];
 
     if (x - x1 <= z2 - z and x - x1 >= y - y1) {// blue @ 1
         w0 = f1;
@@ -190,17 +199,19 @@ double calculate_chi_from_cube_map(const unordered_map<double, vector<vector<vec
     return w0 + wx*dx + wy*dy + wz*dz;
 }
 
-void get_bounds3(Vec q, double &upper, double &lower, double (*func)(Vec k, Vec q)) {
+void get_bounds3(Vec q, float &upper, float &lower, float (*func)(Vec k, Vec q)) {
+    auto get_k = [] (float i, int pts) { return K_MAX*(2.0*i/(n-1.0)-1.0); };
+
     upper = 0; lower = 1000;
     int pts = 100;
-    for (double i = 0; i < pts; i++) {
-        double x = get_k(i, pts);
-        for (double j = 0; j < pts; j++) {
-            double y = get_k(j, pts);
-            for (double k = 0; k < pts * (dim%2) + 1 * ((dim+1)%2); k++) {
-                double z = get_k(k, pts);
+    for (float i = 0; i < pts; i++) {
+        float x = get_k(i, pts);
+        for (float j = 0; j < pts; j++) {
+            float y = get_k(j, pts);
+            for (float k = 0; k < pts * (dim%2) + 1 * ((dim+1)%2); k++) {
+                float z = get_k(k, pts);
                 Vec k_val(x, y, z);
-                double val = func(k_val, q);
+                float val = func(k_val, q);
                 if (val > upper) upper = val;
                 if (val < lower) lower = val;
             }
@@ -209,34 +220,15 @@ void get_bounds3(Vec q, double &upper, double &lower, double (*func)(Vec k, Vec 
     lower *= 0.99; upper *= 0.99;
 }
 
-double denominator(Vec k, Vec q) {
+float denominator(Vec k, Vec q) {
     return e_diff(k, q);
 }
 
-double denominator_diff(Vec k, Vec q) {
+float denominator_diff(Vec k, Vec q) {
     return vp_diff(k, q);
 }
 
-double integrand(Vec k, Vec q, double w, double T) {
-    double dE = k.freq;
-    double e_k = epsilon(k) - mu;
-    //double e_qk = epsilon(k+q) - mu;
-    double e_qk = e_k + dE;
-    double f_k = f(e_k, T);
-    double f_qk = f(e_qk, T);
-
-
-    if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
-        if (T == 0 or exp(e_k/T) > 1e6)
-            return e_k < 0;
-        double temp = 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
-        return temp;
-    }
-    if (fabs(w - dE) == 0) return 0;
-    return (f_qk - f_k) / (w - dE);
-}
-
-void get_spacing_curve_consts(double w, double a, double b, double &A, double &upr, double &lwr) {
+void get_spacing_curve_consts(float w, float a, float b, float &A, float &upr, float &lwr) {
     A = b - w;
     lwr = (a - w) / A;
     upr = 1;
@@ -258,19 +250,18 @@ void get_spacing_curve_consts(double w, double a, double b, double &A, double &u
     //}
 }
 
-void get_spacing_vec(vector<double> &spacing, double w, double a, double b, int pts) {
-    double A, upr, lwr;
+void get_spacing_vec(vector<float> &spacing, float w, float a, float b, int pts) {
+    float A, upr, lwr;
     get_spacing_curve_consts(w, a, b, A, upr, lwr);
 
-    auto spacing_curve = [A, w] (double i, double pts) { 
-        double x = -1 + 2 * i / pts;
+    auto spacing_curve = [A, w] (float i, float pts) { 
+        float x = -1 + 2 * i / pts;
         return A * x + w;
-        return A * pow(x,3) + w; 
     };
 
-    double r = spacing_curve(0, pts);
+    float r = spacing_curve(0, pts);
     for (int i = 0; r < b; i++) {
-        double t = i;
+        float t = i;
         r = spacing_curve(i, pts);
         spacing.push_back(r);
     }

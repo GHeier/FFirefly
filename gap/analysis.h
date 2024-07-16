@@ -11,6 +11,14 @@
 
 using namespace std;
 
+/**
+ * @brief Plot the hopping integral ratios.
+ *
+ * The larger the nearest neighbor hopping, generally the farther shifted the Fermi Surface
+ * nesting point is, which leads to a stronger Tc. This project was not continued
+ *
+ */
 void plot_hopping_integral_ratios();
+
 
 #endif

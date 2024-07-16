@@ -15,33 +15,37 @@ using namespace std;
 
 Eigenvector::Eigenvector() {
     this->size = 0;
-    this->eigenvector = vector<double>(0, 0);
+    this->eigenvector = new float[0];
     this->eigenvalue = 0;
+}
+
+Eigenvector::~Eigenvector() {
+    delete[] this->eigenvector;
 }
 
 Eigenvector::Eigenvector(int size, bool random) {
     this->size = size;
-    this->eigenvector = vector<double>(size, 0);
+    this->eigenvector = new float[size];
     if (random) {
         srand(time(0)); 
         for (int i = 0; i < size; i++) {
-            this->eigenvector[i] = (double)rand() / RAND_MAX;
+            this->eigenvector[i] = (float)rand() / RAND_MAX;
         }
     }
 }
 
-Eigenvector::Eigenvector(vector<double> eigenvector) {
+Eigenvector::Eigenvector(vector<float> eigenvector) {
     this->size = eigenvector.size();
-    this->eigenvector = eigenvector;
+    this->eigenvector = eigenvector.data();
 }
 
-Eigenvector::Eigenvector(vector<double> eigenvector, double eigenvalue) {
+Eigenvector::Eigenvector(vector<float> eigenvector, float eigenvalue) {
     this->size = eigenvector.size();
-    this->eigenvector = eigenvector;
+    this->eigenvector = eigenvector.data();
     this->eigenvalue = eigenvalue;
 }
 
-double& Eigenvector::operator[](int index) {
+float& Eigenvector::operator[](int index) {
     return this->eigenvector[index];
 }
 
@@ -61,7 +65,7 @@ Eigenvector Eigenvector::operator-(const Eigenvector& k) {
     return result;
 }
 
-Eigenvector Eigenvector::operator*(double multiple) {
+Eigenvector Eigenvector::operator*(float multiple) {
     Eigenvector result(this->size);
     for (int i = 0; i < this->size; i++) {
         result.eigenvector[i] = this->eigenvector[i] * multiple;
@@ -77,7 +81,7 @@ Eigenvector Eigenvector::operator*(const Eigenvector& k) {
     return result;
 }
 
-Eigenvector Eigenvector::operator/(double multiple) {
+Eigenvector Eigenvector::operator/(float multiple) {
     Eigenvector result(this->size);
     for (int i = 0; i < this->size; i++) {
         result.eigenvector[i] = this->eigenvector[i] / multiple;
@@ -100,8 +104,8 @@ bool operator<(const Eigenvector& left, const Eigenvector& right) {
     return left.eigenvalue < right.eigenvalue;
 }
 
-double Eigenvector::norm() {
-    double sum = 0;
+float Eigenvector::norm() {
+    float sum = 0;
     for (int i = 0; i < this->size; i++) {
         sum += this->eigenvector[i] * this->eigenvector[i];
     }
@@ -109,14 +113,14 @@ double Eigenvector::norm() {
 }
 
 void Eigenvector::normalize() {
-    double norm = this->norm();
+    float norm = this->norm();
     for (int i = 0; i < this->size; i++) {
         this->eigenvector[i] /= norm;
     }
 }
 
-double dot(const Eigenvector& left, const Eigenvector& right) {
-    double sum = 0;
+float dot(const Eigenvector& left, const Eigenvector& right) {
+    float sum = 0;
     for (int i = 0; i < left.size; i++) {
         sum += left.eigenvector[i] * right.eigenvector[i];
     }

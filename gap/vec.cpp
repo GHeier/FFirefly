@@ -4,7 +4,7 @@
 #include "vec.h"
 #include "cfg.h"
 
-Vec::Vec(double x, double y, double z, bool is_cartesian, double area, double freq) {
+Vec::Vec(float x, float y, float z, bool is_cartesian, float area, float freq) {
     cartesian = is_cartesian;
     area = area;
     vals[0] = x;
@@ -15,9 +15,9 @@ Vec::Vec(double x, double y, double z, bool is_cartesian, double area, double fr
 
 void Vec::to_cartesian() {
     if (!cartesian) {
-        double x = vals[0] * sin(vals[1]) * cos(vals[2]);
-        double y = vals[0] * sin(vals[1]) * sin(vals[2]);
-        double z = vals[0] * cos(vals[1]);
+        float x = vals[0] * sin(vals[1]) * cos(vals[2]);
+        float y = vals[0] * sin(vals[1]) * sin(vals[2]);
+        float z = vals[0] * cos(vals[1]);
         vals[0] = x;
         vals[1] = y;
         vals[2] = z;
@@ -27,9 +27,9 @@ void Vec::to_cartesian() {
 
 void Vec::to_spherical() {
     if (cartesian) {
-        double r = sqrt(pow(vals[0], 2) + pow(vals[1], 2) + pow(vals[2], 2));
-        double theta = atan2(vals[1], vals[0]);
-        double phi = atan2(vals[2], hypot(vals[0], vals[1]));
+        float r = sqrt(pow(vals[0], 2) + pow(vals[1], 2) + pow(vals[2], 2));
+        float theta = atan2(vals[1], vals[0]);
+        float phi = atan2(vals[2], hypot(vals[0], vals[1]));
         vals[0] = r;
         vals[1] = theta;
         vals[2] = phi;
@@ -44,7 +44,7 @@ Vec string_to_vec(string str) {
     int iter = 0;
     while (end != -1) {
         string temp = str.substr(start, end - start);
-        double val = std::stod(temp);
+        float val = std::stod(temp);
         result.vals[iter] = val;
         start = end + 1;
         end = str.find(" ", start);
@@ -87,7 +87,7 @@ Vec operator-(const Vec& k, const Vec& q) {
     return result;
 }
 
-Vec operator*(const Vec& input, double multiple) {
+Vec operator*(const Vec& input, float multiple) {
     Vec result;
     if (input.cartesian == false) {
         result.vals[0] = input.vals[0] * multiple;
@@ -102,7 +102,7 @@ Vec operator*(const Vec& input, double multiple) {
     return result;
 }
 
-Vec operator*(double multiple, const Vec& input) {
+Vec operator*(float multiple, const Vec& input) {
     Vec result;
     if (input.cartesian == false) {
         result.vals[0] = input.vals[0] * multiple;
@@ -117,14 +117,14 @@ Vec operator*(double multiple, const Vec& input) {
     return result;
 }
 
-double operator*(const Vec& left, const Vec& right) {
+float operator*(const Vec& left, const Vec& right) {
     Vec left_new = left; Vec right_new = right;
     if (left_new.cartesian == false) left_new.to_cartesian();
     if (right_new.cartesian == false) right_new.to_cartesian();
     return left_new.vals[0] * right_new.vals[0] + left_new.vals[1] * right_new.vals[1] + left_new.vals[2] * right_new.vals[2];
 }
 
-Vec operator/(const Vec& input, double multiple) {
+Vec operator/(const Vec& input, float multiple) {
     Vec result;
     if (input.cartesian == false) {
         result.vals[0] = input.vals[0] / multiple;
@@ -139,7 +139,7 @@ Vec operator/(const Vec& input, double multiple) {
     return result;
 }
 
-double Vec::norm() {
+float Vec::norm() {
     if (cartesian) {
         return pow(pow(vals[0], 2) + pow(vals[1], 2) + pow(vals[2], 2), 0.5);
     }

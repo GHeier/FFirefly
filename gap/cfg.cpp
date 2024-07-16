@@ -11,26 +11,26 @@
 using namespace std;
 
 // Global Variables
-int n = 40; // Number of k points
-int s_div = (dim == 3) ? 40 : 300; // Number of integral surface divisions
-int s_pts = (dim == 3) ? 50 : 1000; // Number of integral surfaces
-int m = 20; // Number of chi points
-int l = 5; // Number of frequency points
-int dim = 3; // Number of dimensions)
-string potential_name = "scalapino";
-string band_name = "simple_cubic";
+int N = 20; // Number of k points
+int S_DIV = (dim == 3) ? 40 : 300; // Number of integral surface divisions
+int S_PTS = (dim == 3) ? 50 : 1000; // Number of integral surfaces
+int M = 10; // Number of chi points
+int L = 5; // Number of frequency points
+int DIM = 3; // Number of dimensions)
+string POTENTIAL_NAME = "scalapino";
+string BAND_NAME = "simple_cubic";
                
 // Constants
-double t = 1.0;
-double tn = 0.0;
-double tnn = 0.0;
-double U = 4.0;
-double k_max = M_PI;
-double mu = -1.0;
-double w_D = 0.5;
+float t = 1.0;
+float tn = 0.0;
+float tnn = 0.0;
+float U = 4.0;
+float K_MAX = M_PI;
+float MU = -1.0;
+float WC = 0.5;
 
-void init_config(double &mu, double &U, double &t, double &tn, double &w_D, double new_mu, double new_U, double new_t, double new_tn, double new_w_D) {
-    mu = new_mu;
+void init_config(float &MU, float &U, float &t, float &tn, float &w_D, float new_MU, float new_U, float new_t, float new_tn, float new_w_D) {
+    MU = new_MU;
     U = new_U;
     t = new_t;
     tn = new_tn;
@@ -38,7 +38,7 @@ void init_config(double &mu, double &U, double &t, double &tn, double &w_D, doub
 }
 
 // Energy band functions
-double epsilon(const Vec k) {
+float epsilon(const Vec k) {
     if (band_name == "simple_cubic_layered")
         return epsilon_SC_layered(k);
     if (band_name == "simple_cubic")
@@ -52,27 +52,15 @@ double epsilon(const Vec k) {
     }
 }
 
-double e_diff(const Vec k, const Vec q) {
+float e_diff(const Vec k, const Vec q) {
     return epsilon(k+q) - epsilon(k);
 }
 
-double e_base_avg(const Vec k, const Vec q) {
+float e_base_avg(const Vec k, const Vec q) {
     return epsilon(k);
 }
 
-double e_base(const Vec k, const Vec q) {
-    return epsilon(k+q) + epsilon(k-q);
-}
-
-double e_split(const Vec k, const Vec q) {
-    return epsilon(k+q) - epsilon(k-q);
-}
-
-double e_surface(const Vec k, const Vec q) {
-    return epsilon(k) - mu;
-} 
-
-double vp_diff(const Vec k, const Vec q) {
+float vp_diff(const Vec k, const Vec q) {
     Vec v;
     if (band_name == "simple_cubic_layered")
         v = fermi_velocity_SC_layered(k+q) - fermi_velocity_SC_layered(k);
@@ -88,38 +76,8 @@ double vp_diff(const Vec k, const Vec q) {
     return v.norm();
 }
 
-double vp_split(const Vec k, const Vec q) {
-    Vec v;
-    if (band_name == "simple_cubic_layered")
-        v = fermi_velocity_SC_layered(k+q/2) - fermi_velocity_SC_layered(k-q/2);
-    else if (band_name == "simple_cubic")
-        v = fermi_velocity_SC(k+q/2) - fermi_velocity_SC(k-q/2);
-    else if (band_name == "sphere")
-        v = fermi_velocity_sphere(k+q/2) - fermi_velocity_sphere(k-q/2);
-    else {
-        cout << "No band structure specified\n";
-        assert(1==2);
-        return 0;
-    }
-    return v.norm();
-}
-
-double vp_surface(const Vec k, const Vec q) {
-    if (band_name == "simple_cubic_layered")
-        return fermi_velocity_SC_layered(k).norm();
-    else if (band_name == "simple_cubic")
-        return fermi_velocity_SC(k).norm();
-    else if (band_name == "sphere")
-        return fermi_velocity_sphere(k).norm();
-    else {
-        cout << "No band structure specified\n";
-        assert(1==2);
-        return 0;
-    }
-}
-
 // Fermi Velocity corresponds to energy band functions above
-double vp(const Vec k) {
+float vp(const Vec k) {
     if (band_name == "simple_cubic_layered")
         return fermi_velocity_SC_layered(k).norm();
     else if (band_name == "simple_cubic")
@@ -133,11 +91,11 @@ double vp(const Vec k) {
     }
 }
 // Potential functions
-double V(const Vec k1, const Vec k2, double w, const double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube) {
+float V(const Vec k1, const Vec k2, float w, const float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube) {
     if (potential_name == "const") 
         return potential_const(k1, k2);
     if (potential_name == "scalapino") {
-        double t2 = potential_scalapino_cube(k1, k2, w, T, chi_cube);
+        float t2 = potential_scalapino_cube(k1, k2, w, T, chi_cube);
         return t2;
     }
     if (potential_name == "scalapino_triplet") 
@@ -151,30 +109,18 @@ double V(const Vec k1, const Vec k2, double w, const double T, const unordered_m
     }
 }
 
-// NOTE: Changes delta value as well
-int get_num_points_from_delta(double &delta) {
-    if (delta == 0) {
-        delta = 0.0001;
-    }
-    int pts = 10*k_max/delta + 1;
-    if (delta > 0.1) {
-        delta = 0;
-    }
-    return pts;
-}
-
 // Gaussian integration constants
-double weights_0th[1] = {2.0}; double * w0 = weights_0th;
-double weights_1st[2] = {1.0, 1.0}; double * w1 = weights_1st;
-double weights_2nd[3] = {5.0/9.0, 8.0/9.0, 5.0/9.0}; double * w2 = weights_2nd;
-double weights_3rd[4] = {0.347855, 0.652145, 0.652145, 0.347855}; double * w3 = weights_3rd;
-double weights_4th[5] = {0.236927, 0.478629, 0.568889, 0.478629, 0.236927}; double * w4 = weights_4th;
-double *weights[5] = {w0, w1, w2, w3, w4};
+float weights_0th[1] = {2.0}; float * w0 = weights_0th;
+float weights_1st[2] = {1.0, 1.0}; float * w1 = weights_1st;
+float weights_2nd[3] = {5.0/9.0, 8.0/9.0, 5.0/9.0}; float * w2 = weights_2nd;
+float weights_3rd[4] = {0.347855, 0.652145, 0.652145, 0.347855}; float * w3 = weights_3rd;
+float weights_4th[5] = {0.236927, 0.478629, 0.568889, 0.478629, 0.236927}; float * w4 = weights_4th;
+float *weights[5] = {w0, w1, w2, w3, w4};
 
-double points_0th[1] = {0}; double *p0 = points_0th;
-double points_1st[2] = {-1/pow(3,0.5), 1/pow(3,0.5)}; double *p1 = points_1st;
-double points_2nd[3] = {-pow(3/5,0.5), 0, pow(3/5,0.5)}; double *p2 = points_2nd;
-double points_3rd[4] = {-0.861136, -0.339981, 0.339981, 0.861136}; double *p3 = points_3rd;
-double points_4th[5] = {-0.90618, -0.538469, 0, 0.538469, 0.90618}; double *p4 = points_4th;
+float points_0th[1] = {0}; float *p0 = points_0th;
+float points_1st[2] = {-1/pow(3,0.5), 1/pow(3,0.5)}; float *p1 = points_1st;
+float points_2nd[3] = {-pow(3/5,0.5), 0, pow(3/5,0.5)}; float *p2 = points_2nd;
+float points_3rd[4] = {-0.861136, -0.339981, 0.339981, 0.861136}; float *p3 = points_3rd;
+float points_4th[5] = {-0.90618, -0.538469, 0, 0.538469, 0.90618}; float *p4 = points_4th;
 
-double *points[5] = {p0, p1, p2, p3, p4};
+float *points[5] = {p0, p1, p2, p3, p4};

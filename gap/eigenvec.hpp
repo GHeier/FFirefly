@@ -6,34 +6,42 @@
 #include <string>
 #include "vec.h"
 
+/**
+ * Eigenvector class
+ *
+ * This class is used to represent an eigenvector of a matrix.
+ * It contains the eigenvector itself, the eigenvalue associated with it, and the size of 
+ * the eigenvector.
+ */
 class Eigenvector {
     public:
         int size;
-        double eigenvalue;
-        vector<double> eigenvector;
+        float eigenvalue;
+        float* eigenvector;
 
         Eigenvector();
+        ~Eigenvector();
         Eigenvector(int size, bool random=false);
-        Eigenvector(vector<double> eigenvector);
-        Eigenvector(vector<double> eigenvector, double eigenvalue);
+        Eigenvector(vector<float> eigenvector);
+        Eigenvector(vector<float> eigenvector, float eigenvalue);
 
-        double& operator[](int index);
+        float& operator[](int index);
 
         Eigenvector operator+(const Eigenvector& k);
         Eigenvector operator-(const Eigenvector& k);
         Eigenvector operator*(const Eigenvector& k);
-        Eigenvector operator*(double multiple);
-        Eigenvector operator/(double multiple);
+        Eigenvector operator*(float multiple);
+        Eigenvector operator/(float multiple);
         bool operator==(const Eigenvector& k);
         bool operator!=(const Eigenvector& k);
         bool operator<(const Eigenvector& k);
-        double norm();
+        float norm();
         void normalize();
 
 };
 
 
-double dot(const Eigenvector& left, const Eigenvector& right);
+float dot(const Eigenvector& left, const Eigenvector& right);
 std::ostream& operator<<(std::ostream& os, const Eigenvector& k);
 
 #endif

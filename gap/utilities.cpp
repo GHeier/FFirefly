@@ -5,7 +5,7 @@
 
 using namespace std;
 
-void progress_bar(double progress, string message) {
+void progress_bar(float progress, string message) {
     int barWidth = 70;
 
     std::cout << message << " [";
@@ -19,11 +19,11 @@ void progress_bar(double progress, string message) {
     std::cout.flush();
 }
 
-void progress_percent(double progress) {
+void progress_percent(float progress) {
     std::cout << std::setprecision(8) << progress << "    \r";
     std::cout.flush();
 }
 
-double round(double number, int decimal_places) {
+float round(float number, int decimal_places) {
     return round(number * pow(10, decimal_places)) / pow(10, decimal_places);
 }
