@@ -11,6 +11,7 @@
 
 using std::vector;
 
+<<<<<<< HEAD
 // LAPACK functions
 extern "C" {
     void dgeev_( char* jobvl, char* jobvr, int* n, float* a,
@@ -131,5 +132,16 @@ float get_DOS(vector<Vec> &FS);
  * @return The coupling constant.
  */
 float coupling_calc(vector<Vec> &FS, float T);
+=======
+vector<Eigenvector> power_iteration(Matrix &A, double error);
+double f_singlet(double x, double T);
+double f_singlet_integral(double T);
+void create_P(Matrix &P, vector<Vec> &k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2);
+double f(vector<Vec> k, double T);
+double get_Tc(vector<Vec> k);
+void vector_to_wave(vector<Vec> &FS, vector<Eigenvector> &vectors);
+double get_DOS(vector<Vec> &FS);
+double coupling_calc(vector<Vec> &FS, double T);
+>>>>>>> origin/main
 
 #endif

@@ -32,6 +32,7 @@
 #include "utilities.h"
 #include "potential.h"
 #include "frequency_inclusion.hpp"
+#include "utilities.h"
 
 #include "plot.cpp"
 //#include "surface_integrals.cpp"
@@ -176,6 +177,7 @@ void test_IBZ() {
     cout << chi3 << " " << chi3_t << endl;
 }
 
+<<<<<<< HEAD
 //void test_pairing_interaction_parity(vector<Vec> &FS, double T, double mu) {
 //    double DOS = 0; for (auto x : FS) DOS += x.area / vp(x);
 //    DOS /= pow(2*M_PI, 3);
@@ -253,6 +255,23 @@ void test_IBZ() {
 //        temporary_file << w_D << " " << f*eig << " " << eigf2 << endl;
 //    }
 //}
+=======
+int f(unsigned ndim, const double *x, void *fdata, unsigned fdim, double *fval) {
+    //double sigma = *((double *) fdata); // we can pass σ via fdata argument
+    Vec q = *((Vec *) fdata);
+    //double sum = 0;
+    //unsigned i;
+    //for (i = 0; i < ndim; ++i) sum += x[i] * x[i];
+    //// compute the output value: note that fdim should == 1 from below
+    //fval[0] = exp(-sigma * sum);
+    Vec k_val(x[0], x[1], x[2]);
+    double T = 0.25;
+    fval[0] = ratio(q, k_val, T, mu, 0);
+    //cout << k_val << fval[0] << endl;
+    //fval[0] = x[0]*x[0] * x[1]*x[1] * x[2]*x[2];
+    return 0; // success*
+}
+>>>>>>> origin/main
 
 void integral_convergence(double T) {
     int n = 50;
@@ -315,12 +334,18 @@ void eig_with_freq(double cutoff) {
         cube_freq_map = chi_cube_freq(T, mu);
     printf("Cube Created\n");
 
+<<<<<<< HEAD
     int size = 0; for (auto x : freq_FS) size += x.size();
     printf("Size: %i\n", size);
 
     Matrix P(size); create_P_freq(P, freq_FS, T, cube_freq_map); 
     printf("Matrix Created\n");
     Matrix P2(FS.size()); create_P(P2, FS, T, cube_freq_map);
+=======
+    Matrix P; create_P_freq(P, freq_FS, T, cube_freq_map); 
+    printf("Matrix Created\n");
+    Matrix P2; create_P(P2, FS, T, cube_freq_map);
+>>>>>>> origin/main
     printf("Matrix Created\n");
 
     printf("Sample P values: %f %f %f %f\n", P(0,0), P(0,1), P(1,0), P(1,1));

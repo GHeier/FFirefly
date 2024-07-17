@@ -9,6 +9,7 @@
 
 using namespace std;
 
+<<<<<<< HEAD
 /**
  * Matrix class
  *
@@ -26,13 +27,29 @@ class Matrix {
         Matrix(vector<vector<float>> vals);
 
         float& operator()(int r, int c);
+=======
+class Matrix {
+    public:
+        int size;
+        vector<vector<double>> vals;
+        Matrix();
+        Matrix(int size);
+        Matrix(vector<vector<double>> vals);
+
+        double& operator()(int r, int c);
+>>>>>>> origin/main
 
         Matrix operator+(const Matrix& k);
         Matrix operator-(const Matrix& k);
         Matrix operator*(const Matrix& k);
         Eigenvector operator*(Eigenvector& k);
+<<<<<<< HEAD
         Matrix operator*(float multiple);
         Matrix operator/(float multiple);
+=======
+        Matrix operator*(double multiple);
+        Matrix operator/(double multiple);
+>>>>>>> origin/main
         bool operator==(const Matrix& k);
 };
 

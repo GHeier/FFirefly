@@ -8,6 +8,8 @@
  */
 
 #include <math.h>
+#include <cassert>
+#define assertm(exp, msg) assert(((void)msg, exp))
 #include <string>
 #include <cassert>
 #define assertm(exp, msg) assert(((void)msg, exp))
@@ -25,8 +27,13 @@ int s_div = (dim == 3) ? 40 : 300; // Number of integral surface divisions
 int s_pnts = (dim == 3) ? 50 : 1000; // Number of integral surfaces
 int m = 10; // Number of chi points
 int l = 5; // Number of frequency points
+<<<<<<< HEAD
 int dim = 3; // Number of dimensions)
 string potential_name = "scalapino";
+=======
+int dim = 2; // Number of dimensions)
+string potential_name = "const";
+>>>>>>> origin/main
 string band_name = "simple_cubic";
                
 // Constants
@@ -38,8 +45,14 @@ float k_max = M_PI;
 float mu = -1.0;
 float wc = 0.5;
 
+<<<<<<< HEAD
 void init_config(float &MU, float &U, float &t, float &tn, float &w_D, float new_MU, float new_U, float new_t, float new_tn, float new_w_D) {
     MU = new_MU;
+=======
+
+void init_config(double &mu, double &U, double &t, double &tn, double &w_D, double new_mu, double new_U, double new_t, double new_tn, double new_w_D) {
+    mu = new_mu;
+>>>>>>> origin/main
     U = new_U;
     t = new_t;
     tn = new_tn;
@@ -60,7 +73,7 @@ float epsilon(const Vec k) {
         return epsilon_sphere(k);
     else {
         cout << "Unknown Band structure: " << band_name << endl;
-        assert(1==2);
+        exit(1);
         return 0;
     }
 }
@@ -88,10 +101,27 @@ float vp_diff(const Vec k, const Vec q) {
         return 0;
     }
     return v.norm();
+<<<<<<< HEAD
+=======
 }
 
-// Fermi Velocity corresponds to energy band functions above
-float vp(const Vec k) {
+double vp_split(const Vec k, const Vec q) {
+    Vec v;
+    if (band_name == "simple_cubic_layered")
+        v = fermi_velocity_SC_layered(k+q/2) - fermi_velocity_SC_layered(k-q/2);
+    else if (band_name == "simple_cubic")
+        v = fermi_velocity_SC(k+q/2) - fermi_velocity_SC(k-q/2);
+    else if (band_name == "sphere")
+        v = fermi_velocity_sphere(k+q/2) - fermi_velocity_sphere(k-q/2);
+    else {
+        cout << "No band structure specified\n";
+        assert(1==2);
+        return 0;
+    }
+    return v.norm();
+}
+
+double vp_surface(const Vec k, const Vec q) {
     if (band_name == "simple_cubic_layered")
         return fermi_velocity_SC_layered(k).norm();
     else if (band_name == "simple_cubic")
@@ -101,6 +131,29 @@ float vp(const Vec k) {
     else {
         cout << "No band structure specified\n";
         assert(1==2);
+        return 0;
+    }
+>>>>>>> origin/main
+}
+
+// Fermi Velocity corresponds to energy band functions above
+float vp(const Vec k) {
+    if (band_name == "simple_cubic_layered")
+        return fermi_velocity_SC_layered(k).norm();
+<<<<<<< HEAD
+    else if (band_name == "simple_cubic")
+        return fermi_velocity_SC(k).norm();
+    else if (band_name == "sphere")
+=======
+    if (band_name == "simple_cubic") {
+        return fermi_velocity_SC(k).norm();
+    }
+    if (band_name == "sphere")
+>>>>>>> origin/main
+        return fermi_velocity_sphere(k).norm();
+    else {
+        cout << "No band structure specified\n";
+        exit(1);
         return 0;
     }
 }
@@ -119,7 +172,7 @@ float V(const Vec k1, const Vec k2, float w, const float T, const unordered_map<
         return potential_test(k1, k2);// / pow(2*M_PI, dim);
     else {
         cout << "Unknown Potential Function: " << potential_name << endl;
-        assert(1==2);
+        exit(1);
         return 0;
     }
 }
@@ -138,4 +191,9 @@ float points_2nd[3] = {-pow(3/5,0.5), 0, pow(3/5,0.5)}; float *p2 = points_2nd;
 float points_3rd[4] = {-0.861136, -0.339981, 0.339981, 0.861136}; float *p3 = points_3rd;
 float points_4th[5] = {-0.90618, -0.538469, 0, 0.538469, 0.90618}; float *p4 = points_4th;
 
+<<<<<<< HEAD
 float *points[5] = {p0, p1, p2, p3, p4};
+=======
+double *points[5] = {p0, p1, p2, p3, p4};
+
+>>>>>>> origin/main

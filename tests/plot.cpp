@@ -61,12 +61,18 @@ void plot_potential(double T) {
         DOS += FS[i].area / vp(FS[i]);
     double n = 80.0;
     for (double mu = 0.0; mu > -2.0; mu--) {
+<<<<<<< HEAD
         unordered_map<double, vector<vector<vector<double>>>> cube = chi_cube_freq(T, mu);
+=======
+        vector<vector<vector<double>>> cube = chi_cube(T, mu, DOS, 0);
+        unordered_map<double, vector<vector<vector<double>>> > cube_freq_map;
+        cube_freq_map[0] = cube;
+>>>>>>> origin/main
         for (double i = 0; i < n; i++) {
             double q_mag = i/(n-1) * M_PI;
             Vec q(q_mag, q_mag, 0);
             Vec zero;
-            double potential = V(zero, q, 0, T, cube);
+            double potential = V(zero, q, 0, T, cube_freq_map);
             //double potential = U*U * c / ( 1 - U * c) + U*U*U * c*c / ( 1 - U*U * c*c);
             file << q_mag << " " << potential << endl;
         }

@@ -13,7 +13,11 @@
 
 using namespace std;
 
+<<<<<<< HEAD
 void progress_bar(float progress, string message) {
+=======
+void progress_bar(double progress) {
+>>>>>>> origin/main
     int barWidth = 70;
 
     std::cout << message << " [";

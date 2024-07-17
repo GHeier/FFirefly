@@ -18,7 +18,11 @@ using namespace std;
  */
 class Vec {
     public:
+<<<<<<< HEAD
         float vals[3];
+=======
+        double vals[3];
+>>>>>>> origin/main
         bool cartesian = false;
         float area = 0;
         float freq = 0;
@@ -26,7 +30,11 @@ class Vec {
         Vec(float x = 0, float y = 0, float z = 0, bool is_cartesian=true, float area = 0, float freq = 0);
         void to_cartesian();
         void to_spherical();
+<<<<<<< HEAD
         float norm();
+=======
+        double norm();
+>>>>>>> origin/main
 
 };
 
