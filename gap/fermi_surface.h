@@ -46,22 +46,6 @@ float triangle_area_from_points(Vec k1, Vec k2, Vec k3);
 vector<VecAndEnergy> points_from_indices(float (*func)(Vec k, Vec q), Vec q, int i, int j, int k, int divs);
 
 /**
- * @brief Calculates the points in k-space from a set of points
- *
- * @param func The function to evaluate
- * @param q The q vector
- * @param x1 The x-coordinate of the first point
- * @param x2 The x-coordinate of the second point
- * @param y1 The y-coordinate of the first point
- * @param y2 The y-coordinate of the second point
- * @param z1 The z-coordinate of the first point
- * @param z2 The z-coordinate of the second point
- *
- * @return A vector of VecAndEnergy structs
- */
-vector<VecAndEnergy> points_from_points(float (*func)(Vec k, Vec q), Vec q, float x1, float x2, float y1, float y2, float z1, float z2);
-
-/**
  * @brief Picks out the points that are in each tetrahedron
  *
  * @param func The function to evaluate
@@ -94,11 +78,11 @@ bool surface_inside_cube(float s_val, vector<VecAndEnergy> p);
 bool surface_inside_tetrahedron(float s_val, vector<VecAndEnergy> ep_points);
 
 /**
- * @brief Calculates the area of the surface in the tetrahedron
+ * @brief Calculates the area of the surface in the tetrahedron (which could also be a triangle)
  *
- * @param cp The corner points of the tetrahedron
+ * @param cp The corner points of the tetrahedron/triangle
  *
- * @return The area of the surface in the tetrahedron
+ * @return The area of the surface in the tetrahedron/triangle
  */
 float area_in_corners(vector<Vec> cp);
 
@@ -111,22 +95,27 @@ float area_in_corners(vector<Vec> cp);
  * @param func The function to evaluate
  * @param q The q vector
  * @param s_val The value of the surface
+ *
  * @return A vector of Vec structs
  */
 vector<Vec> tetrahedron_method(float (*func)(Vec k, Vec q), Vec q, float s_val);
 
 /**
- * @brief Faster check for tetrahedrons that are inside the surface
+ * @brief gives index of lowest surface and number of surfaces in cube
  *
- * Done so that the code can run faster(ie no empty runs), which matters for a parallelized 
- * continuous sum
+ * This is a function designed to find the energy points inside of a surface. When isolating a 
+ * single cube, only some surfaces will be contained within that cube. Since performance is
+ * essential, we do not want to check every surface, so instead we use a sorted list of energy
+ * contours and find the first and last index of the surfaces that are contained within the cube.
  *
- * @param func The function to evaluate
- * @param q The q vector
- * @param s_val The value of the surface
- * @param points The points to check
+ * This is done via a binary search, and the lower index is returned along with the number of 
+ * additional surfaces that are contained within the cube.
  *
- * @return A vector of Vec structs
+ * @param L The lower bound of the surface
+ * @param U The upper bound of the surface
+ * @param sortedList The sorted list of surfaces
+ *
+ * @return A pair containing the lower index and the number of surfaces contained within the cube
  */
 pair<int, int> get_index_and_length(float L, float U, vector<float> &sortedList);
 

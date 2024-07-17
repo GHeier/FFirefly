@@ -1,3 +1,15 @@
+/**
+ * @file frequency_inclusion.cpp
+ *
+ * @brief This file is used to calculate the frequency dependent susceptibility. 
+ *
+ * @details It includes all the modifications taken to the standard BCS approach in order to allow 
+ * for frequency-dependent interactions that occur some energy away from the fermi surface, denoted 
+ * by the cutoff frequency, wc
+ *
+ * @author Griffin Heier
+ */
+
 #include <iostream>
 #include <unistd.h>
 #include <ctime>
@@ -32,6 +44,7 @@ using std::vector;
 using std::unordered_map;
 //using lambda_lanczos::LambdaLanczos;
 
+// Gets total matrix size
 int matrix_size_from_freq_FS(vector<vector<Vec>> &freq_FS) {
     int size = 0;
     for (int i = 0; i < freq_FS.size(); i++) {
@@ -40,6 +53,7 @@ int matrix_size_from_freq_FS(vector<vector<Vec>> &freq_FS) {
     return size;
 }
 
+// Defines all energy surfaces around FS
 vector<vector<Vec>> freq_tetrahedron_method(float MU) {
     assert( l % 2 != 0); // N must be odd that way frequencies are evenly spaced
     vector<vector<Vec>> basis;
@@ -53,13 +67,14 @@ vector<vector<Vec>> freq_tetrahedron_method(float MU) {
     float *points[5] = {p0, p1, p2, p3, p4};
 
     for (int i = 0; i < l; i++) {
-        float ep = w_D * points[l-1][i] + MU;
+        float ep = wc * points[l-1][i] + MU;
         vector<Vec> layer = tetrahedron_method(e_base_avg, Vec(0,0,0), ep);
         basis.push_back(layer);
     }
     return basis;
 }
 
+// Creates the P matrix based around the multiple energy surfaces calculated above
 void create_P_freq(Matrix &P, vector<vector<Vec>> &k, float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube2) {
 
     cout << "Creating P Matrix with frequency\n";
@@ -83,9 +98,9 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, float T, const unordered_m
                     float d1 = pow(k1.area/vp(k1),0.5); 
                     float d2 = pow(k2.area/vp(k2),0.5); 
                     // f * d_epsilon
-                    float fde1 = f_singlet(w_D * points[l-1][i], T) * weights[l-1][i];
-                    float fde2 = f_singlet(w_D * points[l-1][x], T) * weights[l-1][x];
-                    float w = w_D * (points[l-1][x] - points[l-1][i]);
+                    float fde1 = f_singlet(wc * points[l-1][i], T) * weights[l-1][i];
+                    float fde2 = f_singlet(wc * points[l-1][x], T) * weights[l-1][x];
+                    float w = wc * (points[l-1][x] - points[l-1][i]);
 
                     P(ind1 + j,ind2 + y) = (float)(- d1 * d2 * pow(fde1*fde2,0.5) * V(k1, k2, w, T, chi_cube2)); 
                 }
@@ -95,16 +110,18 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, float T, const unordered_m
     }
     cout << "P Matrix Created\n";
 
-    //return P * 2 * w_D / (l * k_size);
-    P = P * w_D * (2 / pow(2*M_PI, dim)); 
+    //return P * 2 * wc / (l * k_size);
+    P = P * wc * (2 / pow(2*M_PI, dim)); 
 }
 
+// Creates a map of multiple "chi cubes" that are used to calculate the frequency dependent 
+// susceptibility
 unordered_map <float, vector<vector<vector<float>>>> chi_cube_freq(float T, float MU) {
     vector<float> des;
     for (int i = 0; i < l; i++) {
-        float p1 = w_D * points[l-1][i];
+        float p1 = wc * points[l-1][i];
         for (int j = 0; j < l; j++) {
-            float p2 = w_D * points[l-1][j];
+            float p2 = wc * points[l-1][j];
             float w = p1 - p2;
             w = round(w, 6);
             if (count(des.begin(), des.end(), w) == 0)
@@ -124,7 +141,7 @@ unordered_map <float, vector<vector<vector<float>>>> chi_cube_freq(float T, floa
 
 float calculate_chi_from_cube_map(const unordered_map<float, vector<vector<vector<float>>>> &chi_cube_map, Vec q, float w) {
     Vec v = to_IBZ_2(q);
-    float d = 2*K_MAX/(m-1);
+    float d = 2*k_max/(m-1);
 
     float x = v.vals[0], y = v.vals[1], z = v.vals[2];
     if (dim == 2) z = 0;
@@ -199,8 +216,9 @@ float calculate_chi_from_cube_map(const unordered_map<float, vector<vector<vecto
     return w0 + wx*dx + wy*dy + wz*dz;
 }
 
-void get_bounds3(Vec q, float &upper, float &lower, float (*func)(Vec k, Vec q)) {
-    auto get_k = [] (float i, int pts) { return K_MAX*(2.0*i/(n-1.0)-1.0); };
+// Gets the highest and lowest energies available in the BZ
+void get_bounds(Vec q, float &upper, float &lower, float (*func)(Vec k, Vec q)) {
+    auto get_k = [] (float i, int pts) { return k_max*(2.0*i/(n-1.0)-1.0); };
 
     upper = 0; lower = 1000;
     int pts = 100;
@@ -220,14 +238,18 @@ void get_bounds3(Vec q, float &upper, float &lower, float (*func)(Vec k, Vec q))
     lower *= 0.99; upper *= 0.99;
 }
 
+// Denominator of susceptibility integral
 float denominator(Vec k, Vec q) {
     return e_diff(k, q);
 }
 
+// Derivative of denominator, used for surface integration
 float denominator_diff(Vec k, Vec q) {
     return vp_diff(k, q);
 }
 
+// Defines the constants of the integral spacing based around the upper and lower energy bounds
+// found in get_bounds
 void get_spacing_curve_consts(float w, float a, float b, float &A, float &upr, float &lwr) {
     A = b - w;
     lwr = (a - w) / A;
@@ -250,6 +272,7 @@ void get_spacing_curve_consts(float w, float a, float b, float &A, float &upr, f
     //}
 }
 
+// Creates the array of energies to be integrated over
 void get_spacing_vec(vector<float> &spacing, float w, float a, float b, int pts) {
     float A, upr, lwr;
     get_spacing_curve_consts(w, a, b, A, upr, lwr);

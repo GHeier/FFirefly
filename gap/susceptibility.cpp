@@ -1,3 +1,11 @@
+/**
+ * @file susceptibility.cpp
+ *
+ * @brief Calculates the susceptibility of the system.
+ *
+ * @author Griffin Heier
+ */
+
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -32,7 +40,7 @@ float f(float E, float T) {
 
 float integrand(Vec k, Vec q, float w, float T) {
     float dE = k.freq;
-    float e_k = epsilon(k) - MU;
+    float e_k = epsilon(k) - mu;
     //float e_qk = epsilon(k+q) - MU;
     float e_qk = e_k + dE;
     float f_k = f(e_k, T);
@@ -54,14 +62,14 @@ float integrate_susceptibility(Vec q, float T, float mu, float w, int num_points
     if (q.norm() < 0.0001) {
         vector<Vec> FS = tetrahedron_method(e_base_avg, q, mu);
         float sum = 0; for (auto x : FS) sum += x.area / vp(x);
-        return sum / pow(2*K_MAX,dim);
+        return sum / pow(2*k_max,dim);
     }
     if (q.norm() < 0.0001) q = Vec(0.01,0.01,0.01);
 
-    float a, b; get_bounds3(q, b, a, denominator);
+    float a, b; get_bounds(q, b, a, denominator);
     vector<float> spacing; get_spacing_vec(spacing, w, a, b, num_points);
     float c = tetrahedron_sum_continuous(denominator, denominator_diff, q, spacing, w, T);
-    return c / pow(2*K_MAX,dim);
+    return c / pow(2*k_max,dim);
 }
 
 float trapezoidal_integration(auto &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points) {
@@ -83,7 +91,7 @@ float trapezoidal_integration(auto &f, float x0, float x1, float y0, float y1, f
                 if (j == 0 or j == num_points - 1) w /= 2.0;
                 if ( (k == 0 or k == num_points - 1) and dim == 3) w /= 2.0;
 
-                //if (x*x + y*y + z*z > K_MAX*K_MAX) continue;
+                //if (x*x + y*y + z*z > k_max*k_max) continue;
                 //cout << x << " " << y << " " << z << " " << f(x,y,z) << endl;
                 sum += w * f(x,y,z);
             }
@@ -100,7 +108,7 @@ vector<vector<vector<float>>> chi_cube(float T, float mu, float w, string messag
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < m; j++) {
             for (int k = 0; k < m_z; k++) {
-                Vec q((2*K_MAX*i)/(m-1), (2*K_MAX*j)/(m-1), (2*K_MAX*k)/(m_z-1));
+                Vec q((2*k_max*i)/(m-1), (2*k_max*j)/(m-1), (2*k_max*k)/(m_z-1));
                 Vec q2 = to_IBZ_2(q);
                 if (map.find(vec_to_string(q2)) == map.end())
                     map[vec_to_string(q2)] = empty_val;
@@ -122,7 +130,7 @@ vector<vector<vector<float>>> chi_cube(float T, float mu, float w, string messag
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < m; j++) {
             for (int k = 0; k < m_z; k++) {
-                Vec q((2*K_MAX*i)/(m-1), (2*K_MAX*j)/(m-1), (2*K_MAX*k)/(m_z-1));
+                Vec q((2*k_max*i)/(m-1), (2*k_max*j)/(m-1), (2*k_max*k)/(m_z-1));
                 Vec q2 = to_IBZ_2(q);
                 cube[i][j][k] = map[vec_to_string(q2)];
             }
@@ -134,7 +142,7 @@ vector<vector<vector<float>>> chi_cube(float T, float mu, float w, string messag
 
 float calculate_chi_from_cube(const vector<vector<vector<float>>> &chi_cube, Vec q) {
     Vec v = to_IBZ_2(q);
-    float d = 2*K_MAX/(m-1);
+    float d = 2*k_max/(m-1);
 
     float x = v.vals[0], y = v.vals[1], z = v.vals[2];
     if (dim == 2) z = 0;

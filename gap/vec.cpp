@@ -1,3 +1,11 @@
+/**
+ * @file vec.cpp
+ *
+ * @brief This file contains the implementation of the Vec class
+ *
+ * @author Griffin Heier
+ */
+
 #include <vector>
 #include <string>
 #include <math.h>

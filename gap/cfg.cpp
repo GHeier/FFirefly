@@ -1,3 +1,12 @@
+/**
+ * @file cfg.cpp
+ *
+ * @brief Configuration file, containing constants, relevant number of divisions, and functions
+ * that can be called, pointing to the specific model required
+ *
+ * @author Griffin Heier
+ */
+
 #include <math.h>
 #include <string>
 #include <cassert>
@@ -11,23 +20,23 @@
 using namespace std;
 
 // Global Variables
-int N = 20; // Number of k points
-int S_DIV = (dim == 3) ? 40 : 300; // Number of integral surface divisions
-int S_PTS = (dim == 3) ? 50 : 1000; // Number of integral surfaces
-int M = 10; // Number of chi points
-int L = 5; // Number of frequency points
-int DIM = 3; // Number of dimensions)
-string POTENTIAL_NAME = "scalapino";
-string BAND_NAME = "simple_cubic";
+int n = 20; // Number of k points
+int s_div = (dim == 3) ? 40 : 300; // Number of integral surface divisions
+int s_pnts = (dim == 3) ? 50 : 1000; // Number of integral surfaces
+int m = 10; // Number of chi points
+int l = 5; // Number of frequency points
+int dim = 3; // Number of dimensions)
+string potential_name = "scalapino";
+string band_name = "simple_cubic";
                
 // Constants
 float t = 1.0;
 float tn = 0.0;
 float tnn = 0.0;
 float U = 4.0;
-float K_MAX = M_PI;
-float MU = -1.0;
-float WC = 0.5;
+float k_max = M_PI;
+float mu = -1.0;
+float wc = 0.5;
 
 void init_config(float &MU, float &U, float &t, float &tn, float &w_D, float new_MU, float new_U, float new_t, float new_tn, float new_w_D) {
     MU = new_MU;
@@ -35,6 +44,10 @@ void init_config(float &MU, float &U, float &t, float &tn, float &w_D, float new
     t = new_t;
     tn = new_tn;
     w_D = new_w_D;
+}
+
+void change_global_constant(float &a, float b) {
+    a = b;
 }
 
 // Energy band functions
@@ -52,6 +65,7 @@ float epsilon(const Vec k) {
     }
 }
 
+// Difference functions are all used for surface integration schemes
 float e_diff(const Vec k, const Vec q) {
     return epsilon(k+q) - epsilon(k);
 }
@@ -90,6 +104,7 @@ float vp(const Vec k) {
         return 0;
     }
 }
+
 // Potential functions
 float V(const Vec k1, const Vec k2, float w, const float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube) {
     if (potential_name == "const") 

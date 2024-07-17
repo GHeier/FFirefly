@@ -1,3 +1,12 @@
+/**
+ * @file band_structure.cpp
+ *
+ * @brief Band structure functions for sipmle systems
+ *
+ * @author Griffin Heier
+ */
+
+
 #include <math.h>
 #include <string>
 
@@ -6,6 +15,7 @@
 
 using namespace std;
 
+// Fermi gas
 float epsilon_sphere(const Vec k) {
     Vec q = k;
     if (q.cartesian == false) q.to_cartesian();
@@ -20,6 +30,7 @@ Vec fermi_velocity_sphere(const Vec k) {
     return 2*q;
 }
 
+// Cubic Lattice
 float epsilon_SC(const Vec k, float t, float tn) {
     Vec q = k;
     if (q.cartesian == false) q.to_cartesian();
@@ -43,6 +54,7 @@ Vec fermi_velocity_SC(const Vec k) {
     return v;
 }
 
+// Cubic lattice with different hopping in z-direction
 float epsilon_SC_layered(const Vec k) {
     Vec q = k;
     if (q.cartesian == false) q.to_cartesian();

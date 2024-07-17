@@ -1,3 +1,12 @@
+/*
+ * @file calculations.cpp
+ *
+ * @brief Contains the main functions for calculating and diagonalizing the interaction matrix, 
+ * critical temperature, and coupling constant
+ *
+ * @author Griffin Heier
+ */
+
 #include <iostream>
 #include <unistd.h>
 #include <ctime>
@@ -41,7 +50,7 @@ using vec_map = std::unordered_map<Vec, float>;
 /* Power iteration algorithm
  * Not optimized, but so fast it doesn't matter
  * Returns eigenvalue and eigenvector
- * NOTE: Technically returns MUltiple (up to 2) eigenvalues and eigenvectors
+ * NOTE: Technically returns multiple (up to 2) eigenvalues and eigenvectors
  * This is on the off chance that all eigenvalues are positive and nonzero it will 
  * return 2 solutions instead of 1
 */ 
@@ -146,7 +155,7 @@ float f_singlet(float x, float T) {
 // wD is the debye frequency
 float f_singlet_integral(float T) {
     auto f = [T](float x) {return f_singlet(x,T);};
-    float integral = boost::math::quadrature::gauss<float, 7>::integrate(f, 0, w_D);
+    float integral = boost::math::quadrature::gauss<float, 7>::integrate(f, 0, wc);
     return 2*integral;
 }
 
@@ -176,8 +185,8 @@ float f(vector<Vec> k, float T) {
     cout << "\nTemperature point: " << T << endl;
     float DOS = 0; for (auto k1 : k) DOS += k1.area;
     DOS /= pow(2*M_PI, dim);
-    auto cube_map = chi_cube_freq(T, MU);
-    //auto cube = chi_cube(T, MU, DOS, 0);
+    auto cube_map = chi_cube_freq(T, mu);
+    //auto cube = chi_cube(T, mu, DOS, 0);
     Matrix P(k.size());
     create_P(P, k, T, cube_map);
     float f_integrated = f_singlet_integral(T);
@@ -198,7 +207,7 @@ float get_Tc(vector<Vec> k) {
 
 //    cout << "Determining if Tc exists...\n";
 //    float max_eig = f(k, lower);
-//    cout << "MaxiMUm eigenvalue is: " << max_eig + 1 << endl;
+//    cout << "Maximum eigenvalue is: " << max_eig + 1 << endl;
 //    assert(max_eig <= 0); 
 //    cout << "Tc exists. Calculating exact Critical Temperature...\n";
     
@@ -254,8 +263,8 @@ float coupling_calc(vector<Vec> &FS, float T) {
     cout << "Calculating Coupling Constant...\n";
     int size = FS.size();
     float DOS = get_DOS(FS);
-    auto cube_map = chi_cube_freq(T, MU);
-    //auto cube = chi_cube(T, MU, DOS, 0);
+    auto cube_map = chi_cube_freq(T, mu);
+    //auto cube = chi_cube(T, mu, DOS, 0);
     float f_integrated = f_singlet_integral(T);
 
     float lambda = 0, normalization = 0;

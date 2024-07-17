@@ -125,6 +125,6 @@ float calculate_chi_from_cube_map(const unordered_map<float, vector<vector<vecto
  * @param lower The lower bound
  * @param func The function to be integrated
  */
-void get_bounds3(Vec q, float &upper, float &lower, float (*func)(Vec k, Vec q));
+void get_bounds(Vec q, float &upper, float &lower, float (*func)(Vec k, Vec q));
 
 #endif

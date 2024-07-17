@@ -1,3 +1,10 @@
+/**
+ * @file eigenvec.cpp
+ *
+ * @brief The implementation of the Eigenvector class
+ *
+ * @author Griffin Heier
+ */
 #include <string>
 #include <vector>
 #include <math.h>

@@ -1,3 +1,11 @@
+/**
+ * @file matrix.cpp
+ *
+ * @brief Matrix class, implemented in 1D for practicality
+ *
+ * @author Griffin Heier
+ */
+
 #include <string>
 #include <cmath>
 #include <vector>

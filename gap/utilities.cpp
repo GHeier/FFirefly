@@ -1,3 +1,11 @@
+/**
+ * @file utilities.cpp
+ *
+ * @brief Simple utilities, generally for display purposes unrelated to the codebase
+ *
+ * @author Griffin Heier
+ */
+
 #include <math.h>
 #include <string>
 #include <iostream>

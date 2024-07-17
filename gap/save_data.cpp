@@ -1,3 +1,11 @@
+/**
+ * @file save_data.cpp
+ *
+ * @brief File contains different functions to save calculated data. save() is for Gap Function
+ *
+ * @author Griffin Heier
+ */
+
 #include <iostream>
 #include <fstream>
 #include <cassert>
@@ -8,6 +16,7 @@
 
 #include "calculations.h"
 #include "potential.h"
+#include "susceptibility.h"
 #include "vec.h"
 #include "cfg.h"
 #include "matrix.hpp"

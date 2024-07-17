@@ -1,3 +1,14 @@
+/**
+ * @file main.cpp
+ *
+ * @brief Main file for the program
+ *
+ * @details This file finds the Fermi Surface(s), calculates the critical temperature, finds the 
+ * pairing symmetry, and saves the Gap functions to a file.
+ *
+ * @author Griffin Heier
+ */
+
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -42,7 +53,7 @@ int main() {
     cout << "Calculating Fermi Surface..." << endl;
 
     vector<vector<Vec>> freq_FS;
-    freq_FS = freq_tetrahedron_method(MU);
+    freq_FS = freq_tetrahedron_method(mu);
     vector<Vec> FS = freq_FS[(l+1)/2 - 1];
 
 
@@ -93,7 +104,7 @@ int main() {
     // Calculates the susceptibility matrix if it's going to be used in the potential
     // Otherwise it's passed as empty
     if (potential_name.find("scalapino") != string::npos) 
-        cube_freq_map = chi_cube_freq(T, MU);
+        cube_freq_map = chi_cube_freq(T, mu);
 
     // This calculates total size of the matrix
     int size = matrix_size_from_freq_FS(freq_FS);
@@ -143,7 +154,7 @@ int main() {
     std::ostringstream out;
     out.precision(1);
     out << std::fixed << "../data/" + potential_name << dim << "D" 
-        << "_mu=" << MU << "_U=" << U << "_wD=" << w_D 
+        << "_mu=" << mu << "_U=" << U << "_wD=" << wc 
         << "_n=" << n << ".dat";
     string file_name = std::move(out).str();
 
