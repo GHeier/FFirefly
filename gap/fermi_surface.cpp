@@ -38,16 +38,10 @@ float triangle_area_from_points(Vec k1, Vec k2, Vec k3) {
     Vec k12 = k1 - k2; if (k12.cartesian) k12.to_spherical();
     Vec k23 = k2 - k3; if (k23.cartesian) k23.to_spherical();
     Vec k13 = k1 - k3; if (k13.cartesian) k13.to_spherical();
-<<<<<<< HEAD
     // 0 index is radial distance
     float d12 = k12.vals[0];
     float d23 = k23.vals[0];
     float d13 = k13.vals[0];
-=======
-    double d12 = k12.vals[0];
-    double d23 = k23.vals[0];
-    double d13 = k13.vals[0];
->>>>>>> origin/main
 
     // Triangle area formula given side lengths
     float A = 0;
@@ -101,7 +95,6 @@ vector<VecAndEnergy> points_from_indices(float (*func)(Vec k, Vec q), Vec q, int
     return points;
 }
 
-<<<<<<< HEAD
 /**
  * @brief Picks out the points that create the surface inside of a tetrahedra
  *
@@ -117,9 +110,6 @@ vector<VecAndEnergy> points_from_indices(float (*func)(Vec k, Vec q), Vec q, int
  * @return A vector of Vec structs, sorted by energy
  */
 vector<Vec> points_in_tetrahedron(float (*func)(Vec k, Vec q), Vec q, float s_val, vector<VecAndEnergy> points) {
-=======
-vector<Vec> points_in_tetrahedron(double (*func)(Vec k, Vec q), Vec q, double s_val, vector<VecAndEnergy> points) {
->>>>>>> origin/main
     sort(points.begin(), points.end());
     Vec k1 = points[0].vec, k2 = points[1].vec, k3 = points[2].vec, k4 = points[3].vec;
     float ep1 = func(k1, q), ep2 = func(k2, q), ep3 = func(k3, q), ep4 = func(k4, q);
@@ -218,11 +208,8 @@ vector<Vec> tetrahedron_method(float (*func)(Vec k, Vec q), Vec q, float s_val) 
                 vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k, n);
                 if (not surface_inside_cube(s_val, points)) continue;
 
-<<<<<<< HEAD
                 // Finds every k-space point in all possible tetrahedra, along with its associated
                 // area in the surface, using the above functions
-=======
->>>>>>> origin/main
                 for (int c = 0; c < 6; c++) {
 
                     vector<VecAndEnergy> ep_points(4);
@@ -255,62 +242,9 @@ vector<Vec> tetrahedron_method(float (*func)(Vec k, Vec q), Vec q, float s_val) 
     return FS;
 }
 
-<<<<<<< HEAD
 // -1,0 is returned if there is no surface in the cube
 // length is the number of surfaces in the cube
 pair<int, int> get_index_and_length(float L, float U, vector<float> &sortedList) {
-=======
-double tetrahedron_sum(double (*func)(Vec k, Vec q), double (*func_diff)(Vec k, Vec q), Vec q, double s_val, double w, double T) {
-    vector<vector<double>> tetrahedrons {
-        {1, 2, 3, 5}, 
-        {1, 3, 4, 5},
-        {2, 5, 6, 3},
-        {4, 5, 8, 3},
-        {5, 8, 7, 3},
-        {5, 6, 7, 3}
-    };
-
-    double sum = 0;
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
-                vector<VecAndEnergy> points = points_from_indices(func, q, i, j, k, n);
-                if (not surface_inside_cube(s_val, points)) continue;
-
-                for (int c = 0; c < 6; c++) {
-
-                    vector<VecAndEnergy> ep_points(4);
-                    for (int p = 0; p < 4; p++) {
-                        ep_points[p] = points[tetrahedrons[c][p]-1];
-                    }
-
-                    if (not surface_inside_tetrahedron(s_val, ep_points)) continue;
-                    vector<Vec> corner_points = points_in_tetrahedron(func, q, s_val, ep_points);
-
-                    Vec average;
-
-                    double b = 0;
-                    if (corner_points[3] == average) b = 1.0;
-
-                    for (Vec q : corner_points) {
-                        average = (q + average);
-                    }
-                    average = average / (4-b);
-
-                    double A = area_in_corners(corner_points);
-                    if (dim == 2) A *= s_div / (2*k_max);
-                    Vec k_point = average; k_point.area = A;
-                    k_point.freq = s_val;
-                    sum += integrand(k_point, q, w, T) * k_point.area / func_diff(k_point, q);
-                }
-            }
-        }
-    }
-    return sum;
-}
-
-pair<int, int> get_index_and_length(double L, double U, vector<double> &sortedList) {
->>>>>>> origin/main
     int index = -1, length = 0;
     // Binary search for lower index
     int lower_index = std::lower_bound(sortedList.begin(), sortedList.end(), L) - sortedList.begin();
@@ -378,14 +312,10 @@ float tetrahedron_sum_continuous(float (*func)(Vec k, Vec q), float (*func_diff)
                         Vec k_point = average; k_point.area = A;
                         k_point.freq = s_val;
 
-<<<<<<< HEAD
                         // Surfaces being summed over. Depending on whether the surface is 
                         // at the beginning of the end of the list, we weight it differently
                         // This is trapezoidal integration
                         float dS;
-=======
-                        double dS;
->>>>>>> origin/main
                         if (ind == 0) dS = (svals[ind+1] - svals[ind]) / 2;
                         else if (ind == svals.size()-1) dS = (svals[ind] - svals[ind-1]) / 2;
                         else dS = (svals[ind+1] - svals[ind-1]) / 2;
@@ -464,7 +394,3 @@ float analytic_tetrahedron_sum(Vec q, float w) {
     }
     return sum;
 }
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/main

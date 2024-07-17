@@ -74,16 +74,9 @@ vector<vector<Vec>> freq_tetrahedron_method(float MU) {
     return basis;
 }
 
-<<<<<<< HEAD
 // Creates the P matrix based around the multiple energy surfaces calculated above
 void create_P_freq(Matrix &P, vector<vector<Vec>> &k, float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube2) {
 
-=======
-void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2) {
-
-    int size = 0;
-    for (auto x : k) size += x.size();
->>>>>>> origin/main
     cout << "Creating P Matrix with frequency\n";
     #pragma omp parallel for
     for (int i = 0; i < k.size(); i++) {
@@ -110,11 +103,7 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T, const unordered_
                     float fde2 = f_singlet(wc * points[l-1][x], T) * weights[l-1][x];
                     float w = wc * (points[l-1][x] - points[l-1][i]);
 
-<<<<<<< HEAD
                     P(ind1 + j,ind2 + y) = (float)(- d1 * d2 * pow(fde1*fde2,0.5) * V(k1, k2, w, T, chi_cube2)); 
-=======
-                    P(ind1 + j,ind2 + y) = - d1 * d2 * pow(fde1*fde2,0.5) * V(k1, k2, w, T, chi_cube2); 
->>>>>>> origin/main
                 }
             }
             progress_bar(1.0 * (ind1 + j) / P.size);
@@ -122,7 +111,6 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T, const unordered_
     }
     cout << "P Matrix Created\n";
 
-<<<<<<< HEAD
     //return P * 2 * wc / (l * k_size);
     P = P * wc * (2 / pow(2*M_PI, dim)); 
 }
@@ -131,15 +119,6 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T, const unordered_
 // susceptibility
 unordered_map <float, vector<vector<vector<float>>>> chi_cube_freq(float T, float MU) {
     vector<float> des;
-=======
-    //return P * 2 * w_D / (l * k_size);
-    P = P * w_D * (2 / pow(2*M_PI, dim)); 
-}
-
-unordered_map <double, vector<vector<vector<double>>>> chi_cube_freq(double T, double mu, double DOS) {
-    vector<double> des;
-    //cout << "Desired frequencies\n";
->>>>>>> origin/main
     for (int i = 0; i < l; i++) {
         float p1 = wc * points[l-1][i];
         for (int j = 0; j < l; j++) {
@@ -151,16 +130,7 @@ unordered_map <double, vector<vector<vector<double>>>> chi_cube_freq(double T, d
         }
     }
 
-<<<<<<< HEAD
     unordered_map <float, vector<vector<vector<float>>>> cube_freq_map;
-=======
-//    cout << "Taken frequencies\n";
-//    for (double w : des) {
-//        cout << "?" << w << endl;
-//    }
-
-    unordered_map <double, vector<vector<vector<double>>>> cube_freq_map;
->>>>>>> origin/main
     for (int i = 0; i < des.size(); i++) {
         string message = "Chi Cube " + to_string(i+1) + " / " + to_string(des.size());
         float w = des[i];
@@ -173,26 +143,17 @@ unordered_map <double, vector<vector<vector<double>>>> chi_cube_freq(double T, d
     return cube_freq_map;
 }
 
-<<<<<<< HEAD
 float calculate_chi_from_cube_map(const unordered_map<float, vector<vector<vector<float>>>> &chi_cube_map, Vec q, float w) {
     Vec v = to_IBZ_2(q);
     float d = 2*k_max/(m-1);
 
     float x = v.vals[0], y = v.vals[1], z = v.vals[2];
-=======
-double calculate_chi_from_cube_map(const unordered_map<double, vector<vector<vector<double>>>> &chi_cube_map, Vec q, double w) {
-    Vec v = to_IBZ_2(q);
-    double d = 2*k_max/(m-1);
-
-    double x = v.vals[0], y = v.vals[1], z = v.vals[2];
->>>>>>> origin/main
     if (dim == 2) z = 0;
 
     int i = floor(x / d);
     int j = floor(y / d);
     int k = floor(z / d);
 
-<<<<<<< HEAD
     float x1 = i * d; 
     float y1 = j * d; 
     float z1 = k * d; 
@@ -202,34 +163,16 @@ double calculate_chi_from_cube_map(const unordered_map<double, vector<vector<vec
     float z2 = z1 + d; 
 
     float dx = 0, dy = 0, dz = 0, wx = 0, wy = 0, wz = 0, w0 = 0;
-=======
-    double x1 = i * d; 
-    double y1 = j * d; 
-    double z1 = k * d; 
-
-    double x2 = x1 + d; 
-    double y2 = y1 + d; 
-    double z2 = z1 + d; 
-
-    double dx = 0, dy = 0, dz = 0, wx = 0, wy = 0, wz = 0, w0 = 0;
->>>>>>> origin/main
 
     // Make sure there's no issue with indexing
     //cout << q << q.vals(2) << endl;
     //int s = chi_cube.size()-1; 
     //assert( i < s and j < s and k < chi_cube[0][0].size()-1);
 
-<<<<<<< HEAD
     float f1 = chi_cube_map.at(w)[i][j][k], f2 = chi_cube_map.at(w)[i+1][j][k];
     float f3 = chi_cube_map.at(w)[i+1][j+1][k], f4 = chi_cube_map.at(w)[i][j+1][k];
     float f5 = chi_cube_map.at(w)[i][j][k+1], f6 = chi_cube_map.at(w)[i+1][j][k+1];
     float f7 = chi_cube_map.at(w)[i+1][j+1][k+1], f8 = chi_cube_map.at(w)[i][j+1][k+1];
-=======
-    double f1 = chi_cube_map.at(w)[i][j][k], f2 = chi_cube_map.at(w)[i+1][j][k];
-    double f3 = chi_cube_map.at(w)[i+1][j+1][k], f4 = chi_cube_map.at(w)[i][j+1][k];
-    double f5 = chi_cube_map.at(w)[i][j][k+1], f6 = chi_cube_map.at(w)[i+1][j][k+1];
-    double f7 = chi_cube_map.at(w)[i+1][j+1][k+1], f8 = chi_cube_map.at(w)[i][j+1][k+1];
->>>>>>> origin/main
 
     if (x - x1 <= z2 - z and x - x1 >= y - y1) {// blue @ 1
         w0 = f1;
@@ -299,12 +242,8 @@ void get_bounds(Vec q, float &upper, float &lower, float (*func)(Vec k, Vec q)) 
     lower *= 0.99; upper *= 0.99;
 }
 
-<<<<<<< HEAD
 // Denominator of susceptibility integral
 float denominator(Vec k, Vec q) {
-=======
-double denominator(Vec k, Vec q) {
->>>>>>> origin/main
     return e_diff(k, q);
 }
 
@@ -313,37 +252,9 @@ float denominator_diff(Vec k, Vec q) {
     return vp_diff(k, q);
 }
 
-<<<<<<< HEAD
 // Defines the constants of the integral spacing based around the upper and lower energy bounds
 // found in get_bounds
 void get_spacing_curve_consts(float w, float a, float b, float &A, float &upr, float &lwr) {
-=======
-double integrand(Vec k, Vec q, double w, double T) {
-    double dE = k.freq;
-    double e_k = epsilon(k) - mu;
-    //double e_qk = epsilon(k+q) - mu;
-    double e_qk = e_k + dE;
-    double f_k = f(e_k, T);
-    double f_qk = f(e_qk, T);
-
-
-    if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
-        if (T == 0 or exp(e_k/T) > 1e6)
-            return e_k < 0;
-        double temp = 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
-        if (temp > 10) {
-            cout << "Temp: " << temp << endl;
-            cout << "e_k: " << e_k << endl;
-            cout << "T: " << T << endl;
-        }
-        return temp;
-    }
-    if (fabs(w - dE) == 0) return 0;
-    return (f_qk - f_k) / (w - dE);
-}
-
-void get_spacing_curve_consts(double w, double a, double b, double &A, double &upr, double &lwr) {
->>>>>>> origin/main
     A = b - w;
     lwr = (a - w) / A;
     upr = 1;
@@ -365,14 +276,9 @@ void get_spacing_curve_consts(double w, double a, double b, double &A, double &u
     //}
 }
 
-<<<<<<< HEAD
 // Creates the array of energies to be integrated over
 void get_spacing_vec(vector<float> &spacing, float w, float a, float b, int pts) {
     float A, upr, lwr;
-=======
-void get_spacing_vec(vector<double> &spacing, double w, double a, double b, int pts) {
-    double A, upr, lwr;
->>>>>>> origin/main
     get_spacing_curve_consts(w, a, b, A, upr, lwr);
 
     auto spacing_curve = [A, w] (float i, float pts) { 

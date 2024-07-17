@@ -54,15 +54,7 @@ using vec_map = std::unordered_map<Vec, float>;
  * This is on the off chance that all eigenvalues are positive and nonzero it will 
  * return 2 solutions instead of 1
 */ 
-<<<<<<< HEAD
 vector<Eigenvector> power_iteration(Matrix A, float error) {
-=======
-vector<Eigenvector> power_iteration(Matrix &A, double error) {
-    Eigenvector x(A.size);
-    double diff_mag = 1;
-    double rayleigh = dot(x, A * x) / dot(x, x);
-    double sum = 0;
->>>>>>> origin/main
     vector<Eigenvector> vals;
     for (int eig_num = 0; eig_num < 5; eig_num++) {
         Eigenvector x(A.size, true);
@@ -94,11 +86,8 @@ vector<Eigenvector> power_iteration(Matrix &A, double error) {
             //if ( i%100 == 0) cout << x.transpose()*A*x << endl;
             x = x_new;
             iterations = i;
-<<<<<<< HEAD
             //cout << i << " " << 1000 << " " << i%1000 << endl;
             if (i%1000 == 0) cout << "Iteration: " << i << " " << dot(x, A * x) << endl;
-=======
->>>>>>> origin/main
             if (i%100 == 0 and i > 50000 and dot(x, A * x) < 0) break;
         }
         cout << "Iterations: " << iterations << endl;
@@ -172,20 +161,12 @@ float f_singlet_integral(float T) {
 
 // Create V matrix
 // Picks the potential based on the global variable "potential_name"
-<<<<<<< HEAD
 void create_P(Matrix &P, vector<Vec> &k, float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube2) {
     cout << "Creating P Matrix\n";
     int a = 0;
     for (int i = 0; i < P.size; i++) {
         Vec k1 = k[i];
         #pragma omp parallel for
-=======
-void create_P(Matrix &P, vector<Vec> &k, double T, const unordered_map<double, vector<vector<vector<double>>>> &chi_cube2) {
-    cout << "Creating P Matrix\n";
-    #pragma omp parallel for
-    for (int i = 0; i < P.size; i++) {
-        Vec k1 = k[i];
->>>>>>> origin/main
         for (int j = 0; j < P.size; j++) {
             Vec k2 = k[j];
             P(i,j) = (float)(-pow(k1.area/vp(k1),0.5) * V(k1, k2, 0, T, chi_cube2) * pow(k2.area/vp(k2),0.5));
@@ -193,11 +174,7 @@ void create_P(Matrix &P, vector<Vec> &k, double T, const unordered_map<double, v
         }
         progress_bar(1.0 * i / P.size);
     }
-<<<<<<< HEAD
     cout << "\nP Matrix Created\n";
-=======
-    cout << "P Matrix Created\n";
->>>>>>> origin/main
     P = P * (2 / pow(2*M_PI, dim));
 }
 
@@ -212,17 +189,10 @@ float f(vector<Vec> k, float T) {
     //auto cube = chi_cube(T, mu, DOS, 0);
     Matrix P(k.size());
     create_P(P, k, T, cube_map);
-<<<<<<< HEAD
     float f_integrated = f_singlet_integral(T);
 
     vector<Eigenvector> answers = power_iteration(P, 0.0001);
     float eig = answers[answers.size() - 1].eigenvalue;
-=======
-    double f_integrated = f_singlet_integral(T);
-
-    vector<Eigenvector> answers = power_iteration(P, 0.0001);
-    double eig = answers[answers.size() - 1].eigenvalue;
->>>>>>> origin/main
     eig *= f_integrated;
 
     cout << "Calculated Eigenvalue: " << eig << endl;
@@ -254,13 +224,8 @@ float get_Tc(vector<Vec> k) {
 }
 
 // Un-shifting the area-shifted eigenvectors in order to find wavefunction
-<<<<<<< HEAD
 void vector_to_wave(vector<Vec> &FS, Eigenvector *vectors) {
     for (unsigned int i = 0; i < FS.size(); i++) {
-=======
-void vector_to_wave(vector<Vec> &FS, vector<Eigenvector> &vectors) {
-    for (unsigned int i = 0; i < vectors.size(); i++) {
->>>>>>> origin/main
         Eigenvector temp(FS.size());
         for (unsigned int j = 0; j < FS.size(); j++) {
             Vec k = FS[j];

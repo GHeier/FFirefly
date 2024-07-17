@@ -13,7 +13,6 @@ using std::endl;
 using std::cout;
 using std::vector;
 
-<<<<<<< HEAD
 /**
  * @brief Save the Delta(kx, ky, kz)'s and their eigenvalues to the file
  */
@@ -30,11 +29,5 @@ void save_potential_vs_q(vector<Vec> &FS, Matrix &P, string filename);
  * @brief Save the chi vs q to the file
  */
 void save_chi_vs_q(const vector<vector<vector<float>>> &cube, vector<Vec> &FS, string filename);
-=======
-void save(string file_name, double T, vector<Vec> k, std::vector<Eigenvector> solutions);
-void save_FS(vector<Vec> FS);
-void save_potential_vs_q(vector<Vec> &FS, Matrix &P, string filename);
-void save_chi_vs_q(const vector<vector<vector<double>>> &cube, vector<Vec> &FS, string filename);
->>>>>>> origin/main
 
 #endif

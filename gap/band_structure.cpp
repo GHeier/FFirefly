@@ -20,11 +20,7 @@ float epsilon_sphere(const Vec k) {
     Vec q = k;
     if (q.cartesian == false) q.to_cartesian();
     if (dim == 2) q.vals[2] = 0;
-<<<<<<< HEAD
     return pow(q.norm(), 2);
-=======
-    return pow(q.norm(),2);
->>>>>>> origin/main
 }
 
 Vec fermi_velocity_sphere(const Vec k) {
@@ -41,10 +37,7 @@ float epsilon_SC(const Vec k, float t, float tn) {
     float val = 0.0;
     for (int i = 0; i < dim; i++) {
         val += -2*t*cos(q.vals[i]);
-<<<<<<< HEAD
         val += -2*tnn*cos(q.vals[i]);
-=======
->>>>>>> origin/main
     }
     val += -4*tn*cos(q.vals[0])*cos(q.vals[1]);
     return val;

@@ -27,35 +27,22 @@ using std::cout;
 using std::vector;
 using std::string;
 
-<<<<<<< HEAD
 void save(string file_name, float T, vector<Vec> FS, Eigenvector* solutions) {
-=======
-void save(string file_name, double T, vector<Vec> k, std::vector<Eigenvector> solutions) {
->>>>>>> origin/main
     std::ofstream file(file_name);
     //file.open(file_name);
     if (dim == 3) file << "x y z ";
     if (dim == 2) file << "x y ";
 
-<<<<<<< HEAD
     for (unsigned int i = 0; i < FS.size(); i++) 
         file << solutions[i].eigenvalue << " ";
-=======
-    for (unsigned int i = 0; i < solutions.size(); i++) file << solutions[i].eigenvalue << " ";
->>>>>>> origin/main
     file << endl;
     for (unsigned int i = 0; i < FS.size(); i++) {
         Vec q = FS[i]; 
         if(not q.cartesian) 
             q.to_cartesian();
         file << q; 
-<<<<<<< HEAD
         for (unsigned int j = 0; j < FS.size(); j++) {
             file << solutions[j].eigenvector[i] << " ";
-=======
-        for (unsigned int j = 0; j < solutions[0].size; j++) {
-            file << solutions[j][i] << " ";
->>>>>>> origin/main
         }
         file << endl;
     }
