@@ -125,22 +125,6 @@ Vec operator*(float multiple, const Vec& input) {
     return result;
 }
 
-Vec operator*(double multiple, const Vec& input) {
-    Vec result;
-    if (input.cartesian == false) {
-        result.vals[0] = input.vals[0] * multiple;
-        result.vals[1] = input.vals[1];
-        result.vals[2] = input.vals[2];
-    }
-    else {
-        result.vals[0] = input.vals[0] * multiple;
-        result.vals[1] = input.vals[1] * multiple;
-        result.vals[2] = input.vals[2] * multiple;
->>>>>>> origin/main
-    }
-    return result;
-}
-
 float operator*(const Vec& left, const Vec& right) {
     Vec left_new = left; Vec right_new = right;
     if (left_new.cartesian == false) left_new.to_cartesian();

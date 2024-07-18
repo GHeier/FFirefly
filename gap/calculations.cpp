@@ -135,7 +135,7 @@ Eigenvector* lapack_diagonalization(Matrix &A) {
         }
         temp.eigenvalue = val_r[i];
     }
-    //delete [] vecs;
+    delete [] vecs;
     delete [] work;
     return eigenvectors;
 }

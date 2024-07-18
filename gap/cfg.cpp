@@ -22,8 +22,8 @@ using namespace std;
 // Global Variables
 int n = 20; // Number of k points
 int s_div = (dim == 3) ? 40 : 300; // Number of integral surface divisions
-int s_pnts = (dim == 3) ? 50 : 1000; // Number of integral surfaces
-int m = 10; // Number of chi points
+int s_pts = (dim == 3) ? 50 : 1000; // Number of integral surfaces
+int m = 20; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 3; // Number of dimensions)
 string potential_name = "scalapino";
@@ -39,7 +39,7 @@ float mu = -1.0;
 float wc = 0.5;
 
 
-void init_config(double &mu, double &U, double &t, double &tn, double &w_D, double new_mu, double new_U, double new_t, double new_tn, double new_w_D) {
+void init_config(float &mu, float &U, float &t, float &tn, float &w_D, float new_mu, float new_U, float new_t, float new_tn, float new_w_D) {
     mu = new_mu;
     U = new_U;
     t = new_t;

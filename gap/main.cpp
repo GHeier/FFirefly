@@ -160,7 +160,7 @@ int main() {
 
     // Save file in cartesian coordinates for the sake of plotting easier
     save(file_name, T, FS, solutions);
-    delete [] solutions;
+    //delete [] solutions;
 
 
 
