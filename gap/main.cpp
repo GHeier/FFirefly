@@ -158,7 +158,7 @@ int main() {
     std::ostringstream out;
     out.precision(1);
     out << std::fixed << "../data/" + potential_name << dim << "D" 
-        << "_mu=" << mu << "_U=" << U << "_wD=" << wc 
+        << "_mu=" << mu << "_U=" << U << "_wc=" << wc 
         << "_n=" << n << ".dat";
     string file_name = std::move(out).str();
     cout << "File Name: " << file_name << endl;

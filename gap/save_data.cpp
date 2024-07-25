@@ -50,14 +50,14 @@ void save(string file_name, float T, vector<Vec> FS, Eigenvector* solutions) {
 }
 
 void save_with_freq(string file_name, float T, vector<vector<Vec>> &freq_FS, Eigenvector* solutions) {
-    return;
     std::ofstream file(file_name);
     if (dim == 3) file << "x y z ";
     if (dim == 2) file << "x y ";
 
     int size = matrix_size_from_freq_FS(freq_FS);
-    for (unsigned int i = 0; i < size; i++) 
-        file << solutions[i].eigenvalue << " ";
+    for (unsigned int i = 0; i < size; i++) {
+        cout << solutions[i].eigenvalue << " ";
+    }
     file << endl;
     for (unsigned int i = 0; i < freq_FS.size(); i++) {
         for (unsigned int j = 0; j < freq_FS[i].size(); j++) {

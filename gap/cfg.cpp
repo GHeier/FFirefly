@@ -26,7 +26,7 @@ int s_pts = (dim == 3) ? 50 : 1000; // Number of integral surfaces
 int m = 5; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 3; // Number of dimensions)
-string potential_name = "scalapino";
+string potential_name = "test";
 string band_name = "simple_cubic";
                
 // Constants

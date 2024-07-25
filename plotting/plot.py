@@ -20,14 +20,14 @@ def get_file_name(potential, n, mu, dim, U, wc):
             + str(dim)
             + "D_mu=" + str(mu)
             + "_U=" + str(U)
-            + "_wC=" + str(wc)
+            + "_wc=" + str(wc)
             + "_n=" + str(n)
             + ".dat"
             )
     return file
 
 if __name__ == '__main__':
-    potential = "scalapino"
+    potential = "test"
     dim = 3
     n = 20
     mu = -1.0
