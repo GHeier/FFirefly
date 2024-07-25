@@ -76,7 +76,7 @@ Eigenvector Eigenvector::operator=(const Eigenvector& other) {
 }
 
 float& Eigenvector::operator[](int index) {
-    return this->eigenvector[index];
+    return eigenvector[index];
 }
 
 Eigenvector& Eigenvector::operator+=(const Eigenvector& k) {

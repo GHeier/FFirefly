@@ -32,7 +32,7 @@ def plotGap(eigNum, file):
     plt.show()
 
 def plotGap_cart(potential, n, mu, dim, U, w_D, eigNum):
-    df = pd.read_csv(file, delim_whitespace=True)
+    df = pd.read_csv(file, delimiter=' ')
     fig = plt.figure(0)
     ax = fig.add_subplot(111, projection='3d')
     x = df.loc[:,'x'] 
@@ -46,7 +46,7 @@ def plotGap_cart(potential, n, mu, dim, U, w_D, eigNum):
     plt.show()
 
 def plot_4D_gap(file):
-    df = pd.read_csv(file, delim_whitespace=True)
+    df = pd.read_csv(file, delimiter=' ')
 
     x = df.iloc[:,0]
     y = df.iloc[:,1]

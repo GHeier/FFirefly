@@ -18,9 +18,9 @@ def get_file_name(potential, n, mu, dim, U, wc):
     file = ("../data/"
             + potential
             + str(dim)
-            + "D_mu=" + str(mu)+
-            " _U=" + str(U)
-            + "_wD=" + str(w_D)
+            + "D_mu=" + str(mu)
+            + "_U=" + str(U)
+            + "_wC=" + str(wc)
             + "_n=" + str(n)
             + ".dat"
             )
@@ -35,4 +35,5 @@ if __name__ == '__main__':
     wc = 0.5
 
     file1 = get_file_name(potential, n, mu, dim, U, wc)
-    plot_4D_gap(file1)
+    print(file1)
+    plot_gap.plot_4D_gap(file1)

@@ -151,7 +151,7 @@ int main() {
     // Sort solutions with highest eigenvalue/eigenvector pair first
     cout << "Sorting Eigenvectors..." << endl;
     //sort(solutions.rbegin(), solutions.rend());
-    //vector_to_wave(FS, solutions);
+    vector_to_wave(FS, solutions);
     
     // Defining file name based on cfg (config)
     cout << "Saving Eigenvectors..." << endl;
@@ -164,7 +164,7 @@ int main() {
     cout << "File Name: " << file_name << endl;
 
     // Save file in cartesian coordinates for the sake of plotting easier
-    //save_with_freq(file_name, T, freq_FS, solutions);
+    save_with_freq(file_name, T, freq_FS, solutions);
     cout << "Eigenvectors Saved\n";
     //delete [] solutions;
 
