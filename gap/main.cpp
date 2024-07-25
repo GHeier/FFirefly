@@ -60,7 +60,7 @@ int main() {
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
     save_FS(FS);
     float DOS = get_DOS(FS);
-    cout << "Density of States: " << DOS << endl;
+    printf("Density of States: %.5f\n", DOS);
 
 
 
@@ -106,19 +106,24 @@ int main() {
     if (potential_name.find("scalapino") != string::npos) 
         cube_freq_map = chi_cube_freq(T, mu);
 
-    // This calculates total size of the matrix
-    int size = matrix_size_from_freq_FS(freq_FS);
 
     //Matrix Pf2(size); 
     //create_P_freq(Pf2, freq_FS, T, cube_freq_map);
     Matrix P(FS.size());
     create_P(P, FS, T, cube_freq_map);
+    FILE *debug_file = fopen("debug_file.txt", "w");
+    for (int i = 0; i < FS.size(); i++) {
+        for (int j = 0; j < FS.size(); j++) {
+            fprintf(debug_file, "P(%d, %d) = %f\n", i, j, P(i,j));
+        }
+    }
 
     float f = f_singlet_integral(T);
     cout << "F-integral value: " << f << endl;
 
     cout << "Finding Eigenspace..." << endl;
-    Eigenvector *lapack_solutions = lapack_diagonalization(P);
+    Eigenvector solutions[P.size];
+    lapack_diagonalization(P, solutions);
 
     cout << "Saving Potential and Susceptibility Functions\n";
     //save_potential_vs_q(FS, P, "potential.dat");
@@ -145,9 +150,8 @@ int main() {
  */
     // Sort solutions with highest eigenvalue/eigenvector pair first
     cout << "Sorting Eigenvectors..." << endl;
-    Eigenvector* solutions = lapack_solutions;
     //sort(solutions.rbegin(), solutions.rend());
-    vector_to_wave(FS, solutions);
+    //vector_to_wave(FS, solutions);
     
     // Defining file name based on cfg (config)
     cout << "Saving Eigenvectors..." << endl;
@@ -157,9 +161,11 @@ int main() {
         << "_mu=" << mu << "_U=" << U << "_wD=" << wc 
         << "_n=" << n << ".dat";
     string file_name = std::move(out).str();
+    cout << "File Name: " << file_name << endl;
 
     // Save file in cartesian coordinates for the sake of plotting easier
-    save(file_name, T, FS, solutions);
+    //save_with_freq(file_name, T, freq_FS, solutions);
+    cout << "Eigenvectors Saved\n";
     //delete [] solutions;
 
 

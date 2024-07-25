@@ -37,10 +37,11 @@ vector<Eigenvector> power_iteration(Matrix A, float error);
  * @brief Calculates the eigenvectors of a matrix using the LAPACK library.
  *
  * @param A The matrix to calculate the eigenvectors of.
+ * @param eigenvectors The eigenvectors to store the results in.
  *
- * @return A vector of eigenvectors.
+ * @return nothing.
  */
-Eigenvector* lapack_diagonalization(Matrix &A);
+void lapack_diagonalization(Matrix &A, Eigenvector *eigenvectors);
 
 /**
  * @brief The tanh(beta*e)/(2e) function.

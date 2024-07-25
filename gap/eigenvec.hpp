@@ -25,10 +25,16 @@ class Eigenvector {
         Eigenvector(vector<float> eigenvector);
         Eigenvector(vector<float> eigenvector, float eigenvalue);
 
+        Eigenvector(const Eigenvector& other);
+        Eigenvector operator=(const Eigenvector& other);
         float& operator[](int index);
 
+        Eigenvector& operator+=(const Eigenvector& k);
+        Eigenvector& operator-=(const Eigenvector& k);
         Eigenvector operator+(const Eigenvector& k);
         Eigenvector operator-(const Eigenvector& k);
+        Eigenvector& operator*=(float multiple);
+        Eigenvector& operator/=(float multiple);
         Eigenvector operator*(const Eigenvector& k);
         Eigenvector operator*(float multiple);
         Eigenvector operator/(float multiple);

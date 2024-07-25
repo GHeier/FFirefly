@@ -27,6 +27,7 @@ class Matrix {
 
         float& operator()(int r, int c);
 
+        Matrix& operator*=(float constant);  // Operator overload for *=
         Matrix operator+(const Matrix& k);
         Matrix operator-(const Matrix& k);
         Matrix operator*(const Matrix& k);

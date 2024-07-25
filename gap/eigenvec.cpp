@@ -23,7 +23,7 @@ using namespace std;
 
 Eigenvector::Eigenvector() {
     this->size = 0;
-    this->eigenvector = new float[0];
+    this->eigenvector = nullptr;
     this->eigenvalue = 0;
 }
 
@@ -53,8 +53,44 @@ Eigenvector::Eigenvector(vector<float> eigenvector, float eigenvalue) {
     this->eigenvalue = eigenvalue;
 }
 
+Eigenvector::Eigenvector(const Eigenvector& other) {
+    this->size = other.size;
+    this->eigenvalue = other.eigenvalue;
+    this->eigenvector = new float[size];
+    for (int i = 0; i < size; i++) {
+        this->eigenvector[i] = other.eigenvector[i];
+    }
+}
+
+Eigenvector Eigenvector::operator=(const Eigenvector& other) {
+    if (this != &other) {
+        delete[] eigenvector;
+        size = other.size;
+        eigenvalue = other.eigenvalue;
+        eigenvector = new float[size];
+        for (int i = 0; i < size; i++) {
+            this->eigenvector[i] = other.eigenvector[i];
+        }
+    }
+    return *this;
+}
+
 float& Eigenvector::operator[](int index) {
     return this->eigenvector[index];
+}
+
+Eigenvector& Eigenvector::operator+=(const Eigenvector& k) {
+    for (int i = 0; i < this->size; i++) {
+        this->eigenvector[i] += k.eigenvector[i];
+    }
+    return *this;
+}
+
+Eigenvector& Eigenvector::operator-=(const Eigenvector& k) {
+    for (int i = 0; i < this->size; i++) {
+        this->eigenvector[i] -= k.eigenvector[i];
+    }
+    return *this;
 }
 
 Eigenvector Eigenvector::operator+(const Eigenvector& k) {
@@ -71,6 +107,20 @@ Eigenvector Eigenvector::operator-(const Eigenvector& k) {
         result.eigenvector[i] = this->eigenvector[i] - k.eigenvector[i];
     }
     return result;
+}
+
+Eigenvector& Eigenvector::operator*=(float constant) {
+    for (int i = 0; i < this->size; i++) {
+        this->eigenvector[i] *= constant;
+    }
+    return *this;
+}
+
+Eigenvector& Eigenvector::operator/=(float constant) {
+    for (int i = 0; i < this->size; i++) {
+        this->eigenvector[i] /= constant;
+    }
+    return *this;
 }
 
 Eigenvector Eigenvector::operator*(float multiple) {

@@ -18,6 +18,11 @@ using std::vector;
  */
 void save(string file_name, float T, vector<Vec> FS, Eigenvector* solutions);
 /**
+ * @brief Save the Delta(kx, ky, kz)'s and their eigenvalues to the file in the case where the 
+ * interaction is not rounded to just the FS.
+ */
+void save_with_freq(string file_name, float T, vector<vector<Vec>> &freq_FS, Eigenvector* solutions);
+/**
  * @brief Save the Fermi surface to the file
  */
 void save_FS(vector<Vec> FS);

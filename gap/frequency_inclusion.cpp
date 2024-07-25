@@ -263,17 +263,6 @@ void get_spacing_curve_consts(float w, float a, float b, float &A, float &upr, f
         lwr = -1;
         upr = (b - w) / A;
     }
-    //A = (w - a);
-    //upr = pow((b - w) / (w - a), 1.0/3.0);
-    //if (isnan(upr)) upr = - pow(fabs(b-w)/fabs(w-a), 1.0/3.0);
-    //lwr = -1;
-
-    //if (w - a > b - w) {
-    //    A = (b - w);
-    //    lwr = - pow((w - a) / (b - w), 1.0/3.0);
-    //    if (isnan(lwr)) lwr = - pow(fabs(b-w)/fabs(w-a), 1.0/3.0);
-    //    upr = 1;
-    //}
 }
 
 // Creates the array of energies to be integrated over

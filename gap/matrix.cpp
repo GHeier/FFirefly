@@ -16,7 +16,7 @@
 
 Matrix::Matrix() {
     this->size = 0;
-    this->vals = new float[0];
+    this->vals = nullptr;
 }
 
 Matrix::~Matrix() {
@@ -25,9 +25,18 @@ Matrix::~Matrix() {
 
 Matrix::Matrix(int size) {
     this->size = size;
+    float MB = (float)(this->size*this->size*sizeof(float))/1000000;
+    if (MB > 1) {
+        printf("Allocating %.0lf MB\n", MB);
+    }
+    else {
+        printf("Allocating %.3lf MB\n", MB);
+    }
     this->vals = new float[size*size]; 
     for (int i = 0; i < size; i++) {
-        this->vals[i*size + i] = 1;
+        for (int j = 0; j < size; j++) {
+            this->vals[i*size + j] = (i == j) ? 1 : 0;
+        }
     }
 }
 
@@ -91,6 +100,15 @@ Eigenvector Matrix::operator*(Eigenvector& k) {
         }
     }
     return result;
+}
+
+Matrix& Matrix::operator*=(float constant) {
+    for (int i = 0; i < this->size; i++) {
+        for (int j = 0; j < this->size; j++) {
+            this->vals[i * this->size + j] *= constant;
+        }
+    }
+    return *this;
 }
 
 Matrix Matrix::operator*(float multiple) {

@@ -107,7 +107,12 @@ vector<Eigenvector> power_iteration(Matrix A, float error) {
     return vals;
 }
 
-Eigenvector* lapack_diagonalization(Matrix &A) {
+void lapack_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
+    for (int i = 0; i < 1; i++) {
+        eigenvectors[i] = Eigenvector(A.size);
+        eigenvectors[i].eigenvalue = 0;
+    }
+    return;
     // All variable definitions for LAPACK
     printf("Diagonalization Step 1\n");
     int N = A.size;
@@ -125,19 +130,22 @@ Eigenvector* lapack_diagonalization(Matrix &A) {
     float *work = new float[LWORK];
     printf("Diagonalization Step 4\n");
     sgeev_(&jobvl, &jobvr, &N, A.vals, &N, val_r, val_i, NULL, &N, vecs, &N, work, &LWORK, &info);
+    // ssyev, syheev?
     printf("Diagonalization Step 5\n");
     // Convert to Eigenvec format
-    Eigenvector *eigenvectors = new Eigenvector[N];
     for (int i = 0; i < N; i++) {
-        Eigenvector temp(N);
+        eigenvectors[i] = Eigenvector(N);
+        eigenvectors[i].eigenvalue = val_r[i];
+        printf("%d\n", i);
         for (int j = 0; j < N; j++) {
-            temp[j] = vecs[i*N+j];
+            eigenvectors[i][j] = vecs[i*N+j];
         }
-        temp.eigenvalue = val_r[i];
+        printf("%d\n", i);
     }
-    delete [] vecs;
-    delete [] work;
-    return eigenvectors;
+    printf("Diagonalization Step 6\n");
+    delete [] vecs; vecs = nullptr;
+    delete [] work; work = nullptr;
+    printf("Diagonalization Step 7\n");
 }
 
 /*
@@ -166,16 +174,16 @@ void create_P(Matrix &P, vector<Vec> &k, float T, const unordered_map<float, vec
     int a = 0;
     for (int i = 0; i < P.size; i++) {
         Vec k1 = k[i];
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (int j = 0; j < P.size; j++) {
             Vec k2 = k[j];
             P(i,j) = (float)(-pow(k1.area/vp(k1),0.5) * V(k1, k2, 0, T, chi_cube2) * pow(k2.area/vp(k2),0.5));
-            //assert(isnan(P(i,j)) == false);
+            assert(isnan(P(i,j)) == false);
         }
         progress_bar(1.0 * i / P.size);
     }
+    P *= (2 / pow(2*M_PI, dim));
     cout << "\nP Matrix Created\n";
-    P = P * (2 / pow(2*M_PI, dim));
 }
 
 // Returns the highest eigenvalue-1 of a given matrix V at temperature T
@@ -226,12 +234,10 @@ float get_Tc(vector<Vec> k) {
 // Un-shifting the area-shifted eigenvectors in order to find wavefunction
 void vector_to_wave(vector<Vec> &FS, Eigenvector *vectors) {
     for (unsigned int i = 0; i < FS.size(); i++) {
-        Eigenvector temp(FS.size());
-        for (unsigned int j = 0; j < FS.size(); j++) {
+        for (unsigned int j = 0; j < vectors[i].size; j++) {
             Vec k = FS[j];
-            temp[j] = vectors[i].eigenvector[j] / pow(k.area/vp(k),0.5);
+            vectors[i][j] /= pow(k.area/vp(k),0.5);
         }
-        vectors[i] = temp;
     }
 }
 
@@ -245,7 +251,7 @@ void freq_vector_to_wave(vector<vector<Vec>> &freq_FS, Eigenvector *vectors) {
         for (unsigned int i = 0; i < freq_FS.size(); i++) {
             for (unsigned int j = 0; j < freq_FS[i].size(); j++) {
                 Vec k = freq_FS[i][j];
-                vectors[x].eigenvector[ind] /= pow(k.area/vp(k),0.5);
+                vectors[x][ind] /= pow(k.area/vp(k),0.5);
                 ind++;
             }
         }
