@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include <map>
+#include <memory>
 #include <boost/functional/hash.hpp>
 
 //#include <lambda_lanczos/lambda_lanczos.hpp>

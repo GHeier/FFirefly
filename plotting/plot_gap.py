@@ -60,7 +60,7 @@ def plot_4D_gap(file):
 #                c[i] = 0.0
     img = ax.scatter(x, y, z, c=c, cmap=cm.coolwarm) #mpl.colormaps['plasma'])
     fig.colorbar(img)
-    plt.title(r"$\lambda$ #" + str(0) + r"$\Delta$ @ $\mu=-1.2$") 
+    plt.title(r"$\lambda$ #" + str(0) + r"$\Delta$ @ $\mu=-1.0$") 
     plt.xlabel(r'$k_x$')
     plt.ylabel(r'$k_y$')
     ax.set_zlabel(r'$k_z$')

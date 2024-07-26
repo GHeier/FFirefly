@@ -17,8 +17,10 @@
 
 #include <vector>
 #include <algorithm>
+#include <memory>
+#include <omp.h>
 
-#include <Eigen/Dense>
+//#include <Eigen/Dense>
 //#include <lambda_lanczos/lambda_lanczos.hpp>
 
 #include "cfg.h"
@@ -122,8 +124,8 @@ int main() {
     cout << "F-integral value: " << f << endl;
 
     cout << "Finding Eigenspace..." << endl;
-    Eigenvector solutions[P.size];
-    lapack_diagonalization(P, solutions);
+    Eigenvector *solutions = new Eigenvector[num_eigenvalues_to_save];
+    lapack_hermitian_diagonalization(P, solutions);
 
     cout << "Saving Potential and Susceptibility Functions\n";
     //save_potential_vs_q(FS, P, "potential.dat");
@@ -150,23 +152,24 @@ int main() {
  */
     // Sort solutions with highest eigenvalue/eigenvector pair first
     cout << "Sorting Eigenvectors..." << endl;
-    //sort(solutions.rbegin(), solutions.rend());
+    sort(solutions, solutions + num_eigenvalues_to_save, descending_eigenvalues);
     vector_to_wave(FS, solutions);
     
     // Defining file name based on cfg (config)
     cout << "Saving Eigenvectors..." << endl;
     std::ostringstream out;
     out.precision(1);
-    out << std::fixed << "../data/" + potential_name << dim << "D" 
+    out << std::fixed << "data/" + potential_name << dim << "D" 
         << "_mu=" << mu << "_U=" << U << "_wc=" << wc 
         << "_n=" << n << ".dat";
     string file_name = std::move(out).str();
     cout << "File Name: " << file_name << endl;
 
     // Save file in cartesian coordinates for the sake of plotting easier
-    save_with_freq(file_name, T, freq_FS, solutions);
+    //save_with_freq(file_name, T, freq_FS, solutions);
+    save(file_name, T, FS, solutions);
     cout << "Eigenvectors Saved\n";
-    //delete [] solutions;
+    delete [] solutions;
 
 
 

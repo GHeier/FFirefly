@@ -13,6 +13,7 @@
 #include <string>
 #include <math.h>
 #include <unordered_map>
+#include <memory>
 
 #include "calculations.h"
 #include "frequency_inclusion.hpp"
@@ -34,7 +35,7 @@ void save(string file_name, float T, vector<Vec> FS, Eigenvector* solutions) {
     if (dim == 3) file << "x y z ";
     if (dim == 2) file << "x y ";
 
-    for (unsigned int i = 0; i < FS.size(); i++) 
+    for (unsigned int i = 0; i < num_eigenvalues_to_save; i++) 
         file << solutions[i].eigenvalue << " ";
     file << endl;
     for (unsigned int i = 0; i < FS.size(); i++) {
@@ -42,7 +43,7 @@ void save(string file_name, float T, vector<Vec> FS, Eigenvector* solutions) {
         if(not q.cartesian) 
             q.to_cartesian();
         file << q; 
-        for (unsigned int j = 0; j < FS.size(); j++) {
+        for (unsigned int j = 0; j < num_eigenvalues_to_save; j++) {
             file << solutions[j].eigenvector[i] << " ";
         }
         file << endl;
@@ -55,19 +56,26 @@ void save_with_freq(string file_name, float T, vector<vector<Vec>> &freq_FS, Eig
     if (dim == 2) file << "x y ";
 
     int size = matrix_size_from_freq_FS(freq_FS);
-    for (unsigned int i = 0; i < size; i++) {
-        cout << solutions[i].eigenvalue << " ";
+    for (unsigned int i = 0; i < num_eigenvalues_to_save; i++) {
+        file << solutions[i].eigenvalue << " ";
     }
     file << endl;
+    int ind = 0;
+    printf("Size: %d\n", size);
+    printf("Eigenvector size: %d\n", solutions[0].size);
     for (unsigned int i = 0; i < freq_FS.size(); i++) {
         for (unsigned int j = 0; j < freq_FS[i].size(); j++) {
             Vec q = freq_FS[i][j]; 
             if(not q.cartesian) 
                 q.to_cartesian();
             file << q; 
-            for (unsigned int k = 0; k < size; k++) {
-                file << solutions[k].eigenvector[i * freq_FS.size() + j] << " ";
+            for (unsigned int k = 0; k < num_eigenvalues_to_save; k++) {
+                if (ind >= size) {
+                    printf("Breaking\n");
+                }
+                file << solutions[k][ind] << " ";
             }
+            ind++;
             file << endl;
         }
     }

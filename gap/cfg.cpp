@@ -20,14 +20,15 @@
 using namespace std;
 
 // Global Variables
-int n = 20; // Number of k points
+int n = 19; // Number of k points
 int s_div = (dim == 3) ? 40 : 300; // Number of integral surface divisions
 int s_pts = (dim == 3) ? 50 : 1000; // Number of integral surfaces
 int m = 5; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 3; // Number of dimensions)
-string potential_name = "test";
+string potential_name = "scalapino";
 string band_name = "simple_cubic";
+int num_eigenvalues_to_save = 3;
                
 // Constants
 float t = 1.0;

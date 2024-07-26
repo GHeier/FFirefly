@@ -9,6 +9,7 @@
 #include <string>
 #include <cmath>
 #include <vector>
+#include <memory>
 #include "vec.h"
 #include "matrix.hpp"
 #include "eigenvec.hpp"

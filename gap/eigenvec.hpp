@@ -6,6 +6,8 @@
 #include <string>
 #include "vec.h"
 
+using namespace std;
+
 /**
  * Eigenvector class
  *
@@ -17,7 +19,7 @@ class Eigenvector {
     public:
         int size;
         float eigenvalue;
-        float* eigenvector;
+        unique_ptr<float[]> eigenvector;
 
         Eigenvector();
         ~Eigenvector();
@@ -47,6 +49,7 @@ class Eigenvector {
 };
 
 
+bool descending_eigenvalues(const Eigenvector& left, const Eigenvector& right);
 float dot(const Eigenvector& left, const Eigenvector& right);
 std::ostream& operator<<(std::ostream& os, const Eigenvector& k);
 

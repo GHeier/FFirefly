@@ -13,6 +13,7 @@
 #include <bits/stdc++.h>
 #include <ctime>
 #include <algorithm>
+#include <memory>
 
 #include "vec.h"
 #include "cfg.h"
@@ -27,13 +28,11 @@ Eigenvector::Eigenvector() {
     this->eigenvalue = 0;
 }
 
-Eigenvector::~Eigenvector() {
-    delete[] this->eigenvector;
-}
+Eigenvector::~Eigenvector() {}
 
 Eigenvector::Eigenvector(int size, bool random) {
     this->size = size;
-    this->eigenvector = new float[size];
+    eigenvector = make_unique<float[]>(size);
     if (random) {
         srand(time(0)); 
         for (int i = 0; i < size; i++) {
@@ -42,21 +41,10 @@ Eigenvector::Eigenvector(int size, bool random) {
     }
 }
 
-Eigenvector::Eigenvector(vector<float> eigenvector) {
-    this->size = eigenvector.size();
-    this->eigenvector = eigenvector.data();
-}
-
-Eigenvector::Eigenvector(vector<float> eigenvector, float eigenvalue) {
-    this->size = eigenvector.size();
-    this->eigenvector = eigenvector.data();
-    this->eigenvalue = eigenvalue;
-}
-
 Eigenvector::Eigenvector(const Eigenvector& other) {
     this->size = other.size;
     this->eigenvalue = other.eigenvalue;
-    this->eigenvector = new float[size];
+    eigenvector = make_unique<float[]>(size);
     for (int i = 0; i < size; i++) {
         this->eigenvector[i] = other.eigenvector[i];
     }
@@ -64,10 +52,9 @@ Eigenvector::Eigenvector(const Eigenvector& other) {
 
 Eigenvector Eigenvector::operator=(const Eigenvector& other) {
     if (this != &other) {
-        delete[] eigenvector;
         size = other.size;
         eigenvalue = other.eigenvalue;
-        eigenvector = new float[size];
+        eigenvector = make_unique<float[]>(size);
         for (int i = 0; i < size; i++) {
             this->eigenvector[i] = other.eigenvector[i];
         }
@@ -154,12 +141,12 @@ bool Eigenvector::operator==(const Eigenvector& k) {
     return true;
 }
 
-bool operator!=(const Eigenvector& left, const Eigenvector& right) {
-    return left.eigenvalue != right.eigenvalue;
+bool Eigenvector::operator!=(const Eigenvector& k) {
+    return !(*this == k);
 }
 
-bool operator<(const Eigenvector& left, const Eigenvector& right) {
-    return left.eigenvalue < right.eigenvalue;
+bool Eigenvector::operator<(const Eigenvector& k) {
+    return this->eigenvalue < k.eigenvalue;
 }
 
 float Eigenvector::norm() {
@@ -175,6 +162,10 @@ void Eigenvector::normalize() {
     for (int i = 0; i < this->size; i++) {
         this->eigenvector[i] /= norm;
     }
+}
+
+bool descending_eigenvalues(const Eigenvector& left, const Eigenvector& right) {
+    return left.eigenvalue > right.eigenvalue;
 }
 
 float dot(const Eigenvector& left, const Eigenvector& right) {

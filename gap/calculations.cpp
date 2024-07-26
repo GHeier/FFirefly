@@ -17,6 +17,8 @@
 #include <vector>
 #include <algorithm>
 #include <unordered_map>
+#include <memory>
+#include <lapacke.h>
 #include <boost/functional/hash.hpp>
 
 //#include <lambda_lanczos/lambda_lanczos.hpp>
@@ -107,47 +109,99 @@ vector<Eigenvector> power_iteration(Matrix A, float error) {
     return vals;
 }
 
-void lapack_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
-    for (int i = 0; i < 1; i++) {
-        eigenvectors[i] = Eigenvector(A.size);
-        eigenvectors[i].eigenvalue = 0;
-    }
-    return;
-    // All variable definitions for LAPACK
-    printf("Diagonalization Step 1\n");
-    int N = A.size;
-    float val_r[N], val_i[N];
-    float *vecs = new float[N*N];
-    float work_test[1];
-    int LWORK = -1;
-    int info;
-    char jobvl = 'N';
-    char jobvr = 'V';
-    printf("Diagonalization Step 2\n");
-    sgeev_(&jobvl, &jobvr, &N, A.vals, &N, val_r, val_i, NULL, &N, vecs, &N, work_test, &LWORK, &info);
-    printf("Diagonalization Step 3\n");
-    LWORK = static_cast<int>(work_test[0]);
-    float *work = new float[LWORK];
-    printf("Diagonalization Step 4\n");
-    sgeev_(&jobvl, &jobvr, &N, A.vals, &N, val_r, val_i, NULL, &N, vecs, &N, work, &LWORK, &info);
-    // ssyev, syheev?
-    printf("Diagonalization Step 5\n");
-    // Convert to Eigenvec format
-    for (int i = 0; i < N; i++) {
-        eigenvectors[i] = Eigenvector(N);
-        eigenvectors[i].eigenvalue = val_r[i];
-        printf("%d\n", i);
-        for (int j = 0; j < N; j++) {
-            eigenvectors[i][j] = vecs[i*N+j];
-        }
-        printf("%d\n", i);
-    }
-    printf("Diagonalization Step 6\n");
-    delete [] vecs; vecs = nullptr;
-    delete [] work; work = nullptr;
-    printf("Diagonalization Step 7\n");
-}
+//void lapack_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
+//    // All variable definitions for LAPACK
+//    printf("Diagonalization Step 1\n");
+//    int N = A.size;
+//    float val_r[N], val_i[N];
+//    float *vecs = new float[N*N];
+//    float work_test[1];
+//    int LWORK = -1;
+//    int info;
+//    char jobvl = 'N';
+//    char jobvr = 'V';
+//    printf("Diagonalization Step 2\n");
+//    sgeev_(&jobvl, &jobvr, &N, A.vals, &N, val_r, val_i, NULL, &N, vecs, &N, work_test, &LWORK, &info);
+//    printf("Diagonalization Step 3\n");
+//    LWORK = static_cast<int>(work_test[0]);
+//    float *work = new float[LWORK];
+//    printf("Diagonalization Step 4\n");
+//    sgeev_(&jobvl, &jobvr, &N, A.vals, &N, val_r, val_i, NULL, &N, vecs, &N, work, &LWORK, &info);
+//    // ssyev, syheev?
+//    printf("Diagonalization Step 5\n");
+//    // Convert to Eigenvec format
+//    for (int i = 0; i < N; i++) {
+//        eigenvectors[i] = Eigenvector(N);
+//        eigenvectors[i].eigenvalue = val_r[i];
+//        printf("%d\n", i);
+//        for (int j = 0; j < N; j++) {
+//            eigenvectors[i][j] = vecs[i*N+j];
+//        }
+//        printf("%d\n", i);
+//    }
+//    printf("Diagonalization Step 6\n");
+//    delete [] vecs; vecs = nullptr;
+//    delete [] work; work = nullptr;
+//    printf("Diagonalization Step 7\n");
+//}
 
+void lapack_hermitian_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
+    const int N = A.size; // Dimension of the matrix
+    const int lda = N;
+    const int il = N + 1 - num_eigenvalues_to_save; // Index of the first eigenvalue to be found
+    const int iu = N; // Index of the last eigenvalue to be found
+    const char jobz = 'V'; // Compute eigenvalues and eigenvectors
+    const char range = 'I'; // Compute a subset of eigenvalues
+    const char uplo = 'L'; // Lower triangle of A is stored
+    const float abstol = 0.0f; // Use default tolerance
+
+    float *w = new float[N]; // Array for eigenvalues
+    float *z = new float[N * N]; // Array for eigenvectors
+    int isuppz[2 * N]; // Support array for eigenvectors
+
+    int m; // Total number of eigenvalues found
+    int info;
+
+    printf("Diagonalizing Matrix\n");
+    info = LAPACKE_ssyevr(LAPACK_ROW_MAJOR, jobz, range, uplo, N,
+                          A.vals, lda, 0.0f, 0.0f, il, iu, abstol, &m, w,
+                          z, lda, isuppz);
+    
+    if (info != 0) {
+        std::cerr << "Error: LAPACKE_ssyevr returned " << info << "\n";
+        delete[] w;
+        delete[] z;
+        return;
+    }
+    
+    printf("Diagonalization Successful\n");
+    int count = 0;
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            if (z[i*N+j] != 0) {
+                count++;
+            }
+        }
+    }
+    printf("Nonzero elements: %d\n", count);
+
+    count = 0;
+    // Convert to Eigenvector format
+    for (int i = 0; i < num_eigenvalues_to_save; ++i) {
+        eigenvectors[i] = Eigenvector(N);
+        eigenvectors[i].eigenvalue = w[i];
+        for (int j = 0; j < N; ++j) {
+            eigenvectors[i][j] = z[j * N + i];
+            if (z[j * N + i] != 0) {
+                count++;
+            }
+        }
+    }
+    printf("Nonzero elements: %d\n", count);
+
+    delete[] w; 
+    delete[] z;
+}
 /*
  * f_singlet is the part of the linearized BCS gap equation:
  *  epsilon * Delta_k = sum { V_kk' Delta_k' tanh(E_k / 2*T) / (2*E_k) }
@@ -233,7 +287,7 @@ float get_Tc(vector<Vec> k) {
 
 // Un-shifting the area-shifted eigenvectors in order to find wavefunction
 void vector_to_wave(vector<Vec> &FS, Eigenvector *vectors) {
-    for (unsigned int i = 0; i < FS.size(); i++) {
+    for (unsigned int i = 0; i < num_eigenvalues_to_save; i++) {
         for (unsigned int j = 0; j < vectors[i].size; j++) {
             Vec k = FS[j];
             vectors[i][j] /= pow(k.area/vp(k),0.5);

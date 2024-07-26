@@ -12,14 +12,14 @@
 using std::vector;
 
 // LAPACK functions
-extern "C" {
-    void dgeev_( char* jobvl, char* jobvr, int* n, float* a,
-                int* lda, float* wr, float* wi, float* vl, int* ldvl,
-                float* vr, int* ldvr, float* work, int* lwork, int* info );
-    void sgeev_(char* jobvl, char* jobvr, int* n, float* a,
-                int* lda, float* wr, float* wi, float* vl, int* ldvl,
-                float* vr, int* ldvr, float* work, int* lwork, int* info);
-}
+//extern "C" {
+//    void dgeev_( char* jobvl, char* jobvr, int* n, float* a,
+//                int* lda, float* wr, float* wi, float* vl, int* ldvl,
+//                float* vr, int* ldvr, float* work, int* lwork, int* info );
+//    void sgeev_(char* jobvl, char* jobvr, int* n, float* a,
+//                int* lda, float* wr, float* wi, float* vl, int* ldvl,
+//                float* vr, int* ldvr, float* work, int* lwork, int* info);
+//}
 
 /**
  * @brief Calculates up to the first two leading eigenvectors of a matrix using the power 
@@ -41,7 +41,7 @@ vector<Eigenvector> power_iteration(Matrix A, float error);
  *
  * @return nothing.
  */
-void lapack_diagonalization(Matrix &A, Eigenvector *eigenvectors);
+void lapack_hermitian_diagonalization(Matrix &A, Eigenvector *eigenvectors);
 
 /**
  * @brief The tanh(beta*e)/(2e) function.
