@@ -28,6 +28,8 @@ class Matrix {
         float& operator()(int r, int c);
 
         Matrix& operator*=(float constant);  // Operator overload for *=
+        Matrix& operator+=(const Matrix& k);
+        Matrix& operator-=(const Matrix& k);
         Matrix operator+(const Matrix& k);
         Matrix operator-(const Matrix& k);
         Matrix operator*(const Matrix& k);
@@ -38,5 +40,6 @@ class Matrix {
 };
 
 std::ostream& operator<<(std::ostream& os, const Matrix& k);
+std::istream& operator>>(std::istream& is, Matrix& k);
 
 #endif

@@ -14,6 +14,8 @@ extern int dim;
 extern string potential_name;
 extern string band_name;
 extern int num_eigenvalues_to_save;
+extern bool FS_only;
+
 extern float mu;
 extern float k_max;
 

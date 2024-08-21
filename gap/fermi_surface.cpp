@@ -15,6 +15,7 @@
 #include <vector>
 #include <boost/math/tools/roots.hpp>
 #include <algorithm>
+#include <memory>
 #include "cfg.h"
 #include "vec.h"
 //#include "frequency_inclusion.hpp"

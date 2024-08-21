@@ -14,7 +14,7 @@ import plot_info
 import plot_chi
 
 
-def get_file_name(potential, n, mu, dim, U, wc):
+def get_file_name(potential, n, mu, dim, U, wc, FS_only):
     file = ("../data/"
             + potential
             + str(dim)
@@ -22,18 +22,19 @@ def get_file_name(potential, n, mu, dim, U, wc):
             + "_U=" + str(U)
             + "_wc=" + str(wc)
             + "_n=" + str(n)
-            + ".dat"
+            + FS_only + ".dat"
             )
     return file
 
 if __name__ == '__main__':
     potential = "scalapino"
     dim = 3
-    n = 19
-    mu = -1.0
+    n = 10
+    mu = -1.8
     U = 4.0
     wc = 0.5
+    FS_only = ""
 
-    file1 = get_file_name(potential, n, mu, dim, U, wc)
+    file1 = get_file_name(potential, n, mu, dim, U, wc, FS_only)
     print(file1)
     plot_gap.plot_4D_gap(file1)

@@ -79,7 +79,6 @@ vector<vector<Vec>> freq_tetrahedron_method(float MU) {
 void create_P_freq(Matrix &P, vector<vector<Vec>> &k, float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube2) {
 
     cout << "Creating P Matrix with frequency\n";
-    #pragma omp parallel for
     for (int i = 0; i < k.size(); i++) {
 
         int ind1 = 0;
@@ -107,13 +106,14 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, float T, const unordered_m
                     P(ind1 + j,ind2 + y) = (float)(- d1 * d2 * pow(fde1*fde2,0.5) * V(k1, k2, w, T, chi_cube2)); 
                 }
             }
-            progress_bar(1.0 * (ind1 + j) / P.size);
+            string message = "Portion " + to_string(i) + " of " + to_string(k.size());
+            progress_bar(1.0 * (ind1 + j) / P.size, message);
         }
     }
     cout << "P Matrix Created\n";
 
     //return P * 2 * wc / (l * k_size);
-    P = P * wc * (2 / pow(2*M_PI, dim)); 
+    P *= wc * (2 / pow(2*M_PI, dim)); 
 }
 
 // Creates a map of multiple "chi cubes" that are used to calculate the frequency dependent 
@@ -223,7 +223,7 @@ float calculate_chi_from_cube_map(const unordered_map<float, vector<vector<vecto
 
 // Gets the highest and lowest energies available in the BZ
 void get_bounds(Vec q, float &upper, float &lower, float (*func)(Vec k, Vec q)) {
-    auto get_k = [] (float i, int pts) { return k_max*(2.0*i/(n-1.0)-1.0); };
+    auto get_k = [] (float i, int pts) { return k_max*(2.0*i/(pts-1.0)-1.0); };
 
     upper = 0; lower = 1000;
     int pts = 100;

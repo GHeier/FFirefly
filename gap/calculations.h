@@ -34,7 +34,26 @@ using std::vector;
 vector<Eigenvector> power_iteration(Matrix A, float error);
 
 /**
+ * @brief Calculates the leading positive eigenvalue/eigenvector of a matrix using the power iteration method.
+ *
+ * @param A The matrix to calculate the eigenvectors of.
+ *
+ * @return The leading eigenvector.
+ */
+Eigenvector power_iteration(Matrix &A);
+
+/**
  * @brief Calculates the eigenvectors of a matrix using the LAPACK library.
+ *
+ * @param A The matrix to calculate the eigenvectors of.
+ * @param eigenvectors The eigenvectors to store the results in.
+ *
+ * @return nothing.
+ */
+void lapack_diagonalization(Matrix &A, Eigenvector *eigenvectors);
+
+/**
+ * @brief Calculates the first n eigenvectors of a matrix using the LAPACK library.
  *
  * @param A The matrix to calculate the eigenvectors of.
  * @param eigenvectors The eigenvectors to store the results in.

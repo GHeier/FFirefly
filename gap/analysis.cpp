@@ -11,6 +11,7 @@
 
 #include <math.h>
 #include <vector>
+#include <memory>
 
 #include "cfg.h"
 #include "fermi_surface.h"

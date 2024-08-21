@@ -66,14 +66,6 @@ vector<Eigenvector> power_iteration(Matrix A, float error) {
 
         int iterations = 0;
         cout << "Eig Num: " << eig_num << endl;
-        string filename = "matrix" + std::to_string(eig_num) + ".txt";
-        ofstream file(filename);
-        for (int i = 0; i < A.size; i++) {
-            for (int j = 0; j < A.size; j++) {
-                file << A(i,j) << " ";
-            }
-            file << endl;
-        }
         for (int i = 0; diff_mag > error; i++) {
             Eigenvector x_new = A * x;
             x_new.normalize();
@@ -109,41 +101,61 @@ vector<Eigenvector> power_iteration(Matrix A, float error) {
     return vals;
 }
 
-//void lapack_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
-//    // All variable definitions for LAPACK
-//    printf("Diagonalization Step 1\n");
-//    int N = A.size;
-//    float val_r[N], val_i[N];
-//    float *vecs = new float[N*N];
-//    float work_test[1];
-//    int LWORK = -1;
-//    int info;
-//    char jobvl = 'N';
-//    char jobvr = 'V';
-//    printf("Diagonalization Step 2\n");
-//    sgeev_(&jobvl, &jobvr, &N, A.vals, &N, val_r, val_i, NULL, &N, vecs, &N, work_test, &LWORK, &info);
-//    printf("Diagonalization Step 3\n");
-//    LWORK = static_cast<int>(work_test[0]);
-//    float *work = new float[LWORK];
-//    printf("Diagonalization Step 4\n");
-//    sgeev_(&jobvl, &jobvr, &N, A.vals, &N, val_r, val_i, NULL, &N, vecs, &N, work, &LWORK, &info);
-//    // ssyev, syheev?
-//    printf("Diagonalization Step 5\n");
-//    // Convert to Eigenvec format
-//    for (int i = 0; i < N; i++) {
-//        eigenvectors[i] = Eigenvector(N);
-//        eigenvectors[i].eigenvalue = val_r[i];
-//        printf("%d\n", i);
-//        for (int j = 0; j < N; j++) {
-//            eigenvectors[i][j] = vecs[i*N+j];
-//        }
-//        printf("%d\n", i);
-//    }
-//    printf("Diagonalization Step 6\n");
-//    delete [] vecs; vecs = nullptr;
-//    delete [] work; work = nullptr;
-//    printf("Diagonalization Step 7\n");
-//}
+Eigenvector power_iteration(Matrix &A) {
+    Eigenvector x(A.size, true);
+    float diff_percent = 1;
+    for (int i = 0; diff_percent < 0.01; i++) {
+        Eigenvector x_new = A * x;
+        x_new.normalize();
+        x_new.eigenvalue = dot(x_new, A * x_new) / dot(x_new, x_new);
+        diff_percent = fabs((x_new.eigenvalue - x.eigenvalue) / x.eigenvalue);
+        printf("Iteration: %d, Eigenvalue: %f, Diff Percent: %f\n", i, x_new.eigenvalue, diff_percent);
+        x = x_new;
+    }
+    if (x.eigenvalue < 0) {
+        A -= Matrix(A.size)*x.eigenvalue;
+        return power_iteration(A);
+    }
+    return x;
+}
+
+void lapack_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
+    int N = A.size;
+    
+    // Allocate memory for eigenvalues and eigenvectors
+    float *val_r = new float[N]; // Real parts of eigenvalues
+    float *val_i = new float[N]; // Imaginary parts of eigenvalues (for non-symmetric matrices)
+    float *vecs = new float[N * N]; // Eigenvectors
+
+    int info;
+    
+    // LAPACKE_sgeev parameters:
+    // 'N' -> No computation of left eigenvectors
+    // 'V' -> Compute right eigenvectors
+    info = LAPACKE_sgeev(LAPACK_ROW_MAJOR, 'N', 'V', N, A.vals, N, val_r, val_i, NULL, N, vecs, N);
+    
+    if (info > 0) {
+        std::cerr << "The algorithm failed to compute eigenvalues." << std::endl;
+        delete[] val_r;
+        delete[] val_i;
+        delete[] vecs;
+        return;
+    }
+    
+    // Convert to Eigenvector format
+    for (int i = 0; i < num_eigenvalues_to_save; i++) {
+        eigenvectors[i] = Eigenvector(N);
+        eigenvectors[i].eigenvalue = val_r[i];
+        for (int j = 0; j < N; j++) {
+            eigenvectors[i][j] = vecs[i * N + j];
+        }
+    }
+
+    // Clean up
+    delete[] val_r;
+    delete[] val_i;
+    delete[] vecs;
+}
 
 void lapack_hermitian_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
     const int N = A.size; // Dimension of the matrix
@@ -162,6 +174,16 @@ void lapack_hermitian_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
     int m; // Total number of eigenvalues found
     int info;
 
+    int count = 0;
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            if (A.vals[i*N+j] != 0) {
+                count++;
+            }
+        }
+    }
+    printf("Nonzero elements: %d\n", count);
+
     printf("Diagonalizing Matrix\n");
     info = LAPACKE_ssyevr(LAPACK_ROW_MAJOR, jobz, range, uplo, N,
                           A.vals, lda, 0.0f, 0.0f, il, iu, abstol, &m, w,
@@ -175,7 +197,7 @@ void lapack_hermitian_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
     }
     
     printf("Diagonalization Successful\n");
-    int count = 0;
+    count = 0;
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
             if (z[i*N+j] != 0) {
@@ -296,11 +318,8 @@ void vector_to_wave(vector<Vec> &FS, Eigenvector *vectors) {
 }
 
 void freq_vector_to_wave(vector<vector<Vec>> &freq_FS, Eigenvector *vectors) {
-    int size = 0;
-    for (auto x : freq_FS) {
-        size += x.size();
-    }
-    for (unsigned int x = 0; x < size; x++) {
+    int size = matrix_size_from_freq_FS(freq_FS);
+    for (unsigned int x = 0; x < num_eigenvalues_to_save; x++) {
         int ind = 0;
         for (unsigned int i = 0; i < freq_FS.size(); i++) {
             for (unsigned int j = 0; j < freq_FS[i].size(); j++) {

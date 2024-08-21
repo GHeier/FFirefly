@@ -65,6 +65,15 @@ Matrix Matrix::operator+(const Matrix& k) {
     return result;
 } 
 
+Matrix& Matrix::operator+=(const Matrix& k) {
+    for (int i = 0; i < this->size; i++) {
+        for (int j = 0; j < this->size; j++) {
+            this->vals[i*this->size + j] += k.vals[i*this->size + j];
+        }
+    }
+    return *this;
+}
+
 Matrix Matrix::operator-(const Matrix& k) {
     Matrix result(this->size);
     for (int i = 0; i < this->size; i++) {
@@ -73,6 +82,15 @@ Matrix Matrix::operator-(const Matrix& k) {
         }
     }
     return result;
+}
+
+Matrix& Matrix::operator-=(const Matrix& k) {
+    for (int i = 0; i < this->size; i++) {
+        for (int j = 0; j < this->size; j++) {
+            this->vals[i*this->size + j] -= k.vals[i*this->size + j];
+        }
+    }
+    return *this;
 }
 
 Matrix Matrix::operator*(const Matrix& k1) {
@@ -151,4 +169,13 @@ std::ostream& operator<<(std::ostream& os, const Matrix& k) {
         os << endl;
     }
     return os;
+}
+
+std::istream& operator>>(std::istream& is, Matrix& k) {
+    for (int i = 0; i < k.size; i++) {
+        for (int j = 0; j < k.size; j++) {
+            is >> k.vals[i*k.size + j];
+        }
+    }
+    return is;
 }

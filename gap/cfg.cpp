@@ -20,15 +20,16 @@
 using namespace std;
 
 // Global Variables
-int n = 19; // Number of k points
+int n = 10; // Number of k points
 int s_div = (dim == 3) ? 40 : 300; // Number of integral surface divisions
 int s_pts = (dim == 3) ? 50 : 1000; // Number of integral surfaces
-int m = 5; // Number of chi points
+int m = 20; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 3; // Number of dimensions)
 string potential_name = "scalapino";
 string band_name = "simple_cubic";
-int num_eigenvalues_to_save = 3;
+int num_eigenvalues_to_save = 1;
+bool FS_only = false;
                
 // Constants
 float t = 1.0;
@@ -36,7 +37,7 @@ float tn = 0.0;
 float tnn = 0.0;
 float U = 4.0;
 float k_max = M_PI;
-float mu = -1.0;
+float mu = -1.8;
 float wc = 0.5;
 
 
