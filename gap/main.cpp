@@ -37,16 +37,7 @@
 
 using std::string;
 
-int main() {
-    // Sets the number of threads used in parallelization to one less than the maximum
-    // This allows for the main thread to be used for other tasks
-    int num_procs = omp_get_num_procs();
-    omp_set_num_threads(num_procs - 1);
-
-
-
-
-
+void find_gap_function() {
 
 /* 
  * ========================================================================================
@@ -189,19 +180,16 @@ int main() {
     else save_with_freq(file_name, T, freq_FS, solutions);
     cout << "Eigenvectors Saved\n";
     delete [] solutions;
+}
 
+int main() {
+    // Sets the number of threads used in parallelization to one less than the maximum
+    // This allows for the main thread to be used for other tasks
+    int num_procs = omp_get_num_procs();
+    omp_set_num_threads(num_procs - 1);
 
-
-
-
-
-
-
-
-
-
-
-
+    // Finds the gap function
+    find_gap_function();
 
     return 0;
 }

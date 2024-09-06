@@ -27,9 +27,9 @@ int m = 20; // Number of chi points
 int l = 5; // Number of frequency points
 int dim = 3; // Number of dimensions)
 string potential_name = "scalapino";
-string band_name = "simple_cubic";
+string band_name = "sphere";
 int num_eigenvalues_to_save = 1;
-bool FS_only = false;
+bool FS_only = true;
                
 // Constants
 float t = 1.0;
@@ -37,7 +37,7 @@ float tn = 0.0;
 float tnn = 0.0;
 float U = 4.0;
 float k_max = M_PI;
-float mu = -1.8;
+float mu = pow(3,0.5);
 float wc = 0.5;
 
 
