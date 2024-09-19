@@ -54,7 +54,7 @@ float integrate_susceptibility(Vec q, float T, float mu, float w, int num_points
  *
  * @return float
  */
-float trapezoidal_integration(auto &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points);
+float trapezoidal_integration(const function<float(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points);
 
 /**
  * @brief Calculate the susceptibility cube

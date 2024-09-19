@@ -14,25 +14,26 @@
 #include <boost/functional/hash.hpp>
 #include <gsl/gsl_integration.h>
 #include <omp.h>
+#include <functional>
 
 //#include <boost/math/tools/roots.hpp>
 //#include <Eigen/Dense>
 //#include <gsl/gsl_integration.h>
 //#include <python3.10/Python.h>
 
-#include "cfg.h"
-#include "fermi_surface.h"
-#include "vec.h"
-#include "matrix.hpp"
-#include "eigenvec.hpp"
-//#include "analysis.h"
+#include "analysis.h"
 #include "band_structure.h"
-//#include "py_port.h"
-#include "save_data.h"
-#include "utilities.h"
-#include "potential.h"
+#include "calculations.h"
+#include "cfg.h"
+#include "eigenvec.hpp"
+#include "fermi_surface.h"
 #include "frequency_inclusion.hpp"
+#include "matrix.hpp"
+#include "potential.h"
+#include "save_data.h"
+#include "susceptibility.h"
 #include "utilities.h"
+#include "vec.h"
 
 #include "plot.cpp"
 //#include "surface_integrals.cpp"
@@ -111,46 +112,24 @@ bool test_coordinate_transforms() {
     return true;
 }
 
-void test_get_k() {
-    int n = 5;
-    double correct_values[n] = {-M_PI, -M_PI/2, 0, M_PI/2, M_PI};
-    for (int i = 0; i < n; i++) {
-        double value = get_k(i, n);
-        if ( fabs(value - correct_values[i]) > 0.000001)
-            cout << "get_k() failed test.\n";
-    }
-}
-
-void test_set(vector<Vec> FS_vecs) {
-    vector<string> q;
-    for (int i = 0; i < FS_vecs.size(); i++) {
-        for (int j = 0; j < FS_vecs.size(); j++) {
-            Vec k_plus = to_IBZ_spherical(FS_vecs[i] + FS_vecs[j]);
-            Vec k_minus = to_IBZ_spherical(FS_vecs[i] - FS_vecs[j]);
-            q.push_back(vec_to_string(k_plus));
-            q.push_back(vec_to_string(k_minus));
-        }
-    }
-    unordered_set<string> s( q.begin(), q.end() );
-    for (auto x: s)
-        cout << x << endl;
-    cout << q.size() << endl;
-    cout << s.size() << endl;
-
-}
-
 void test_IBZ2() {
+    float T = 0.25;
+    float w = 0.0;
     int num = 10;
-    for (double i = 0; i < num; i++) {
-        for (double j = 0; j < num; j++) {
-            for (double k = 0; k < num; k++) {
-                double x = get_k(i, num);
-                double y = get_k(j, num);
-                double z = get_k(k, num);
-                Vec input(x, y, z);
-                Vec output = to_IBZ_2(input);
-                double chi1 = chi_trapezoidal(input, 0.25, -1.2, 0, 40);
-                double chi2 = chi_trapezoidal(output, 0.25, -1.2, 0, 40);
+    for (float i = 0; i < num; i++) {
+        for (float j = 0; j < num; j++) {
+            for (float k = 0; k < num; k++) {
+                float x = i/num * 2 * k_max;
+                float y = j/num * 2 * k_max;
+                float z = k/num * 2 * k_max;
+                Vec q(x, y, z); Vec input = q;
+                auto f = [T, w, q] (float x, float y, float z) {
+                    Vec k(x, y, z);
+                    return integrand(k, q, w, T);
+                };
+                float chi1 = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
+                q = to_IBZ_2(q); Vec output = q;
+                float chi2 = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
                 if (fabs(chi1 - chi2) > 0.0000001) 
                     cout << "Failed for " << input << "->" << output << endl;
             }
@@ -159,85 +138,46 @@ void test_IBZ2() {
 }
 
 void test_IBZ() {
-    double T = 0.25, mu = -1.2;
-    Vec q1(1, 2, .7);
-    Vec q2(.1, -2, .7);
-    Vec q3(-.8, -1.2, -1.1);
-    double chi1 = chi_trapezoidal(q1, T, mu, 0, 30);
-    double chi2 = chi_trapezoidal(q2, T, mu, 0, 30);
-    double chi3 = chi_trapezoidal(q3, T, mu, 0, 30);
-    Vec q1_t = to_IBZ_2(q1);
-    Vec q2_t = to_IBZ_2(q2);
-    Vec q3_t = to_IBZ_2(q3);
-    double chi1_t = chi_trapezoidal(q1_t, T, mu, 0, 30);
-    double chi2_t = chi_trapezoidal(q2_t, T, mu, 0, 30);
-    double chi3_t = chi_trapezoidal(q3_t, T, mu, 0, 30);
+    float T = 0.25, mu = -1.2, w = 0.0;
+    Vec q(1, 2, .7);
+    auto f = [T, w, q] (float x, float y, float z) {
+        Vec k(x, y, z);
+        return integrand(k, q, w, T);
+    };
+    float chi1 = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
+    q = to_IBZ_2(q);
+    float chi1_t = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
     cout << chi1 << " " << chi1_t << endl;
+
+    q = Vec(.1, -2, .7);
+    float chi2 = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
+    q = to_IBZ_2(q);
+    float chi2_t = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
     cout << chi2 << " " << chi2_t << endl;
+
+    q = Vec(-.8, -1.2, -1.1);
+    float chi3 = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
+    q = to_IBZ_2(q);
+    float chi3_t = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
     cout << chi3 << " " << chi3_t << endl;
 }
 
-<<<<<<< HEAD
-//void test_pairing_interaction_parity(vector<Vec> &FS, double T, double mu) {
-//    double DOS = 0; for (auto x : FS) DOS += x.area / vp(x);
-//    DOS /= pow(2*M_PI, 3);
-//    auto cube = chi_cube(T, mu, DOS, 0);
-//    Vec k2;
-//    double num = 10;
-//    for (double i = 0; i < num; i++) {
-//        for (double j = 0; j < num; j++) {
-//            for (double k = 0; k < num; k++) {
-//                double x = get_k(i, num);
-//                double y = get_k(j, num);
-//                double z = get_k(k, num);
-//
-//                Vec k1(x, y, z);
-//
-//                double V1 = potential_scalapino_cube(k1, k2, T, cube);
-//                double V2 = potential_scalapino_cube(-1*k1, k2, T, cube);
-//
-//                if ( fabs(V1 - V2) > 0.00001) 
-//                    cout << k1 << "->" << V1 << ", " << V2 << endl;
-//            }
-//        }
-//    }
-//
-//}
-
-//bool test_potential_test() { 
-//    vector<Vec> FS = tetrahedron_method(mu); cout << "FS created\n";
-//    double T = 0.25;
-//    vector<vector<vector<double>>> cube;
-//    MatrixXd P = create_P(FS, T, cube); cout << "Matrix Created\n";
-//
-//    EigenSolver<MatrixXd> s(P);
-//    
-//    VectorXcd vals = s.eigenvalues();// * f / FS.size();
-//    //VectorXcd vals = s.eigenvalues() * f / FS.size();
-//    EigenSolver<MatrixXd>::EigenvectorsType vecs;
-//    vecs = s.eigenvectors(); 
-//    
-//    cout << vals << endl;
-//
-//    //if (vals[0] == 1.0 and vals[1] == 0.5) return true;
-//    return false;
-//}
 
 //void eigenvalue_divergence() {
 //    ofstream temporary_file("eigenvalue_divergence.txt");
 //    for (int i = 1; i < 20; i++) {
 //        printf("Plot Progress: %i out of 50\n", i);
 //
-//        double cutoff = 0.03 * i;
-//        init_config(mu, U, t, tn, w_D, mu, U, t, tn, cutoff);
+//        float cutoff = 0.03 * i;
+//        init_config(mu, U, t, tn, wc, mu, U, t, tn, cutoff);
 //
 //        vector<vector<Vec>> freq_FS;
 //        freq_FS = freq_tetrahedron_method(mu);
 //        vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
-//        double T = 0.25;
+//        float T = 0.25;
 //
-//        double DOS = get_DOS(freq_FS[(l+1)/2 - 1]);
-//        unordered_map<double, vector<vector<vector<double>>>> cube;
+//        float DOS = get_DOS(freq_FS[(l+1)/2 - 1]);
+//        unordered_map<float, vector<vector<vector<float>>>> cube;
 //        if (potential_name != "test") cube = chi_cube_freq(T, mu, DOS);
 //        cout << "Frequencies: " << cube.size() << endl;
 //        for (auto x : cube) {
@@ -246,125 +186,75 @@ void test_IBZ() {
 //
 //        Matrix Pf2; create_P_freq(Pf2, freq_FS, T, cube);
 //        Matrix P; create_P(P, FS, T, cube);
-//        double f = f_singlet_integral(T);
+//        float f = f_singlet_integral(T);
 //
 //        vector<Eigenvector> answers = power_iteration(P, 0.001);
 //        vector<Eigenvector> answersf2 = power_iteration(Pf2, 0.001);
-//        double eig = answers[answers.size() - 1].eigenvalue;
-//        double eigf2 = answersf2[answersf2.size() - 1].eigenvalue;
-//        temporary_file << w_D << " " << f*eig << " " << eigf2 << endl;
+//        float eig = answers[answers.size() - 1].eigenvalue;
+//        float eigf2 = answersf2[answersf2.size() - 1].eigenvalue;
+//        temporary_file << wc << " " << f*eig << " " << eigf2 << endl;
 //    }
 //}
-=======
-int f(unsigned ndim, const double *x, void *fdata, unsigned fdim, double *fval) {
-    //double sigma = *((double *) fdata); // we can pass σ via fdata argument
-    Vec q = *((Vec *) fdata);
-    //double sum = 0;
-    //unsigned i;
-    //for (i = 0; i < ndim; ++i) sum += x[i] * x[i];
-    //// compute the output value: note that fdim should == 1 from below
-    //fval[0] = exp(-sigma * sum);
-    Vec k_val(x[0], x[1], x[2]);
-    double T = 0.25;
-    fval[0] = ratio(q, k_val, T, mu, 0);
-    //cout << k_val << fval[0] << endl;
-    //fval[0] = x[0]*x[0] * x[1]*x[1] * x[2]*x[2];
-    return 0; // success*
-}
->>>>>>> origin/main
 
-void integral_convergence(double T) {
+void integral_convergence(float T) {
     int n = 50;
-    double mag = 0.04*M_PI;
+    float mag = 0.04*M_PI;
     Vec q(mag, mag, mag);
-    double c2 = integrate_susceptibility(q, T, mu, 0.5, 800);
+    float c2 = integrate_susceptibility(q, T, mu, 0.5, 800);
     for (int i = 0; i < 10; i++) {
-        double c1 = integrate_susceptibility(q, T, mu, 0.5, n);
+        float c1 = integrate_susceptibility(q, T, mu, 0.5, n);
         cout << "Points: " << n << " , Results: " << c1 << " " << c2 << endl;
         n += 50;
     }
 }
 
-void imaginary_integral_convergence(double T, double w) {
-    double mag = M_PI;
-    Vec q(mag, mag, mag);
-    //cout << "Answer: " << integrate_susceptibility(q, T, mu, w, 500) << endl;
-    for (int i = 50; i < 500; i+=50) {
-        double c1 = imaginary_integration(q, T, mu, w, i, 0.0001);
-        double c2 = chi_trapezoidal(q, T, mu, w, i);
-        double c3 = integrate_susceptibility(q, T, mu, w, i);
-        //double c3 = 0;
-        cout << "Points: " << i << ", Results: " << c1 << " " << c2 << " " << c3 << endl;
-    }
-}
-
-void split_surface_vals(Vec q) {
-    vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
-    double min_val = 1000;
-    double max_val = -1000;
-    for (auto k : FS) {
-        cout << k << " " << e_split(k, q) << endl;
-        if (e_split(k, q) < min_val) min_val = e_split(k, q);
-        if (e_split(k, q) > max_val) max_val = e_split(k, q);
-        if (e_split(k, q) > max_val) max_val = e_split(k, q);
-        if (e_split(k, q) > max_val) max_val = e_split(k, q);
-    }
-    cout << min_val << " " << max_val << endl;
-}
-
 void mu_to_n() {
     for (int i = 0; i < 5000; i++) {
-        double newmu = -0.4 + 0.2/1000.0 * i;
+        float newmu = -0.4 + 0.2/1000.0 * i;
         cout << "Mu: " << newmu << 
             " n: " << 2 * integrate_susceptibility(Vec(0,0,0), 0, newmu, 0, 1000) << endl;
     }
 }
 
-void eig_with_freq(double cutoff) {
+void eig_with_freq(float cutoff) {
     ofstream file("eig_freq.dat", std::ios_base::app);
-    double T = 0.01;
-    init_config(mu, U, t, tn, w_D, mu, U, t, tn, cutoff);
+    float T = 0.01;
+    init_config(mu, U, t, tn, wc, mu, U, t, tn, cutoff);
     
     vector<vector<Vec>> freq_FS = freq_tetrahedron_method(mu);
     vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
     printf("FS created\n");
 
-    unordered_map <double, vector<vector<vector<double>>>> cube_freq_map;
+    unordered_map <float, vector<vector<vector<float>>>> cube_freq_map;
     if (potential_name.find("scalapino") != string::npos)
         cube_freq_map = chi_cube_freq(T, mu);
     printf("Cube Created\n");
 
-<<<<<<< HEAD
     int size = 0; for (auto x : freq_FS) size += x.size();
     printf("Size: %i\n", size);
 
     Matrix P(size); create_P_freq(P, freq_FS, T, cube_freq_map); 
     printf("Matrix Created\n");
     Matrix P2(FS.size()); create_P(P2, FS, T, cube_freq_map);
-=======
-    Matrix P; create_P_freq(P, freq_FS, T, cube_freq_map); 
-    printf("Matrix Created\n");
-    Matrix P2; create_P(P2, FS, T, cube_freq_map);
->>>>>>> origin/main
     printf("Matrix Created\n");
 
     printf("Sample P values: %f %f %f %f\n", P(0,0), P(0,1), P(1,0), P(1,1));
     printf("Sample P2 values: %f %f %f %f\n", P2(0,0), P2(0,1), P2(1,0), P2(1,1));
     
-    double f = f_singlet_integral(T);
+    float f = f_singlet_integral(T);
 
     vector<Eigenvector> answers = power_iteration(P, 0.001);
     vector<Eigenvector> answers2 = power_iteration(P2, 0.001);
 
-    double eig = answers[answers.size() - 1].eigenvalue;
-    double eig2 = answers2[answers2.size() - 1].eigenvalue;
+    float eig = answers[answers.size() - 1].eigenvalue;
+    float eig2 = answers2[answers2.size() - 1].eigenvalue;
 
     cout << "w=0, w>0 Eigs: " << f*eig2 << " " << eig << endl;
     file << cutoff << " " << f*eig2 << " " << eig << endl;
 }
 
 void test_cube_map() {
-    unordered_map<double, vector<vector<vector<double>>> > cube_freq_map;
+    unordered_map<float, vector<vector<vector<float>>> > cube_freq_map;
     cube_freq_map = chi_cube_freq(0.25, -1.2);
     auto cube = chi_cube(0.25, -1.2, 0.0, "Cube 1/1");
     for (int i = 0; i < cube.size(); i++) {
@@ -384,89 +274,15 @@ int main() {
     int num_procs = omp_get_num_procs();
     omp_set_num_threads(num_procs - 1);
 
-    test_cube_map();
+    //test_cube_map();
 
-    double T = 0.25, w = 0.0;
+    float T = 0.25, w = 0.0;
+    printf("Starting Test\n");
     plot_single_chi(T, w);
+    printf("Test Complete\n");
     plot_single_chi2(T, w);
+    printf("Test Complete\n");
     plot_single_chi3(T, w);
-    return 0;
-
-    Matrix A(2);
-    for (int i = 0; i < A.size; i++) {
-        for (int j = 0; j < A.size; j++) {
-            A(i, j) = 1;
-            printf("A(%i, %i): %.2f\n", i, j, A(i, j));
-        }
-    }
-    vector<Eigenvector> answers = power_iteration(A, 0.001);
-    for (auto x : answers) cout << x.eigenvalue << endl;
-
-    vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
-    printf("FS size: %i\n", FS.size());
-    unordered_map <double, vector<vector<vector<double>>>> cube_freq_map;
-    if (potential_name.find("scalapino") != string::npos)
-        cube_freq_map = chi_cube_freq(T, mu);
-    Matrix P2(FS.size()); create_P(P2, FS, T, cube_freq_map);
-    vector<Eigenvector> answers2 = power_iteration(P2, 0.001);
-    for (auto x : answers2) cout << x.eigenvalue << endl;
-    return 0;
-
-    auto cube = cube_freq_map.at(0.0);
-    auto cube2 = chi_cube(T, mu, 0.0, "Cube 1/1");
-    for (int i = 0; i < 5; i++) {
-        for (int j = 0; j < 5; j++) {
-            for (int k = 0; k < 5; k++) {
-                printf("Cube value: %f\n", cube[i][j][k]);
-            }
-        }
-    }
-    for (int i = 0; i < cube.size(); i++) {
-        for (int j = 0; j < cube[i].size(); j++) {
-            for (int k = 0; k < cube[i][j].size(); k++) {
-                if (fabs(cube[i][j][k] - cube2[i][j][k]) > 0.0001) {
-                    printf("Cube values: %f %f\n", cube[i][j][k], cube2[i][j][k]);
-                }
-                if (cube[i][j][k] > 1) cout << "Wrong\n";
-            }
-        }
-    }
-
-    int a = 0;
-    for (int i = 0; i < FS.size(); i++) {
-        for (int j = 0; j < FS.size(); j++) {
-            Vec k1 = FS[i];
-            Vec k2 = FS[j];
-            double c = chi_trapezoidal(k1 - k2, T, mu, 0, 200);
-            double c2 = integrate_susceptibility(k1 - k2, T, mu, 0, 200);
-            double c3 = calculate_chi_from_cube(cube2, k1 - k2);
-            double c4 = calculate_chi_from_cube(cube2, k1 + k2);
-            if (fabs(c - c2) > 0.001) {
-                printf("C1: %f, C2: %f, C3: %f\n", c, c2, c3);
-                cout << "Chi Failed\n";
-            }
-            double V1 = potential_scalapino_cube(k1, k2, 0, T, cube_freq_map);
-            double Vs = U*U * c3 / (1 - U*c3) 
-                + pow(U,3)*c3*c3 / (1 - U*U * c3*c3);
-            double Vs2 = U*U * c4 / (1 - U*c4) 
-                + pow(U,3)*c4*c4 / (1 - U*U * c4*c4);
-            double V3 = (Vs + Vs2) / 2;
-            if (fabs(V1 - V3) > 0.001) {
-                cout << "Failed\n";
-                cout << V1 << " " << V3 << endl;
-                a++;
-            }
-            if (a == 100) return 0;
-        }
-    }
-
-    return 0;
-
-    for (int i = 1; i < 30; i++) {
-        double cutoff = 0.03 * i;
-        cout << "Cutoff: " << cutoff << endl;
-        init_config(mu, U, t, tn, w_D, mu, U, t, tn, cutoff);
-        eig_with_freq(cutoff);
-    }
+    printf("Test Complete\n");
     return 0;
 }

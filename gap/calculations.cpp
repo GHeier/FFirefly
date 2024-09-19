@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include <memory>
-#include <lapacke.h>
+#include <openblas/lapacke.h>
 #include <boost/functional/hash.hpp>
 
 //#include <lambda_lanczos/lambda_lanczos.hpp>

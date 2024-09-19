@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <functional>
 
 #include <omp.h>
 #include <boost/functional/hash.hpp>
@@ -72,7 +73,7 @@ float integrate_susceptibility(Vec q, float T, float mu, float w, int num_points
     return c / pow(2*k_max,dim);
 }
 
-float trapezoidal_integration(auto &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points) {
+float trapezoidal_integration(const function<float(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points) {
     float sum = 0;
     float dx = (x1 - x0) / (num_points - 1);
     float dy = (y1 - y0) / (num_points - 1);
