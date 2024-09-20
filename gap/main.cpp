@@ -17,10 +17,8 @@
 
 #include <vector>
 #include <algorithm>
-#include <memory>
-#include <omp.h>
 
-//#include <Eigen/Dense>
+#include <Eigen/Dense>
 //#include <lambda_lanczos/lambda_lanczos.hpp>
 
 #include "cfg.h"
@@ -28,7 +26,6 @@
 #include "frequency_inclusion.hpp"
 #include "calculations.h"
 #include "potential.h"
-#include "susceptibility.h"
 #include "save_data.h"
 #include "vec.h"
 #include "matrix.hpp"
@@ -36,8 +33,16 @@
 #include "utilities.h"
 
 using std::string;
+float get_max_eigenvalue() {
+    // Sets the number of threads used in parallelization to one less than the maximum
+    // This allows for the main thread to be used for other tasks
+    int num_procs = omp_get_num_procs();
+    omp_set_num_threads(num_procs - 1);
 
-void find_gap_function() {
+
+
+
+
 
 /* 
  * ========================================================================================
@@ -54,7 +59,7 @@ void find_gap_function() {
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
     save_FS(FS);
     float DOS = get_DOS(FS);
-    printf("Density of States: %.5f\n", DOS);
+    cout << "Density of States: " << DOS << endl;
 
 
 
@@ -94,46 +99,28 @@ void find_gap_function() {
  * ========================== MATRIX CREATION AND DIAGONALIZATION  ========================
    ========================================================================================
  */
+
     unordered_map <float, vector<vector<vector<float>>>> cube_freq_map;
     // Calculates the susceptibility matrix if it's going to be used in the potential
     // Otherwise it's passed as empty
-    if (potential_name.find("scalapino") != string::npos) {
-        if (not FS_only) cube_freq_map = chi_cube_freq(T, mu);
-        else {
-            auto cube = chi_cube(T, mu, 0, "Chi Cube 1 / 1");
-            cube_freq_map.insert(pair<float, vector<vector<vector<float>>>>(0, cube));
-        }
-    }
+    if (potential_name.find("scalapino") != string::npos) 
+        cube_freq_map = chi_cube_freq(T, mu);
 
+    // This calculates total size of the matrix
+    int size = matrix_size_from_freq_FS(freq_FS);
 
-    int m_size = FS.size();
-    if (not FS_only) m_size = matrix_size_from_freq_FS(freq_FS);
+    //Matrix Pf2(size); 
+    //create_P_freq(Pf2, freq_FS, T, cube_freq_map);
+    Matrix P(FS.size());
+    create_P(P, FS, T, cube_freq_map);
 
-    Matrix P(m_size);
-    if (FS_only && potential_name != "save") {
-        create_P(P, FS, T, cube_freq_map);
-        float f = f_singlet_integral(T);
-        cout << "F-integral value: " << f << endl;
-    }
-    else if (potential_name != "save"){
-        create_P_freq(P, freq_FS, T, cube_freq_map);
-    }
-
-    //ofstream file("P.dat");
-    //file << P;
-    else {
-        ifstream read_file("P.dat");
-        read_file >> P;
-    }
+    float f = f_singlet_integral(T);
+    cout << "F-integral value: " << f << endl;
 
     cout << "Finding Eigenspace..." << endl;
-    Eigenvector *solutions = new Eigenvector[num_eigenvalues_to_save];
-    lapack_hermitian_diagonalization(P, solutions);
-    //lapack_diagonalization(P, solutions);
-    //Eigenvector leading = power_iteration(P);
-    //solutions[0] = leading;
+    Eigenvector *lapack_solutions = lapack_diagonalization(P);
 
-    //cout << "Saving Potential and Susceptibility Functions\n";
+    cout << "Saving Potential and Susceptibility Functions\n";
     //save_potential_vs_q(FS, P, "potential.dat");
     //if (cube.size() != 0 ) 
     //    save_chi_vs_q(cube, FS, "chi.dat");
@@ -158,38 +145,47 @@ void find_gap_function() {
  */
     // Sort solutions with highest eigenvalue/eigenvector pair first
     cout << "Sorting Eigenvectors..." << endl;
-    sort(solutions, solutions + num_eigenvalues_to_save, descending_eigenvalues);
-    cout << "Sorted Eigenvectors\n";
-    if(FS_only) vector_to_wave(FS, solutions);
-    else freq_vector_to_wave(freq_FS, solutions);
+    Eigenvector* solutions = lapack_solutions;
+    //sort(solutions.rbegin(), solutions.rend());
+    vector_to_wave(FS, solutions);
     
     // Defining file name based on cfg (config)
     cout << "Saving Eigenvectors..." << endl;
-    string bcs = "";
-    if (FS_only) bcs = "_FS_only";
     std::ostringstream out;
     out.precision(1);
-    out << std::fixed << "data/" + potential_name << dim << "D" 
-        << "_mu=" << mu << "_U=" << U << "_wc=" << wc 
-        << "_n=" << n << bcs << ".dat";
+    out << std::fixed << "../data/" + potential_name << dim << "D" 
+        << "_mu=" << mu << "_U=" << U << "_wD=" << wc 
+        << "_n=" << n << ".dat";
     string file_name = std::move(out).str();
-    cout << "File Name: " << file_name << endl;
 
     // Save file in cartesian coordinates for the sake of plotting easier
-    if (FS_only) save(file_name, T, FS, solutions);
-    else save_with_freq(file_name, T, freq_FS, solutions);
-    cout << "Eigenvectors Saved\n";
-    delete [] solutions;
+    save(file_name, T, FS, solutions);
+    //delete [] solutions;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	return solutions[0].eigenvalue;
+
 }
-
+// This is ASPEN here to work again
 int main() {
-    // Sets the number of threads used in parallelization to one less than the maximum
-    // This allows for the main thread to be used for other tasks
-    int num_procs = omp_get_num_procs();
-    omp_set_num_threads(num_procs - 1);
-
-    // Finds the gap function
-    find_gap_function();
-
-    return 0;
+	int num_iters = 20;
+	for (int i = 0; i < num_iters; i++) {
+		float new_mu = 0 - 4.0 * i / num_iters;
+		change_global_constant(mu, new_mu);
+		float eig = get_max_eigenvalue();
+		printf("Iteration %i | Eigenvalue: %.4f\n", i, eig);
+	}
+   	return 0;
 }

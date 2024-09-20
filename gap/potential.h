@@ -37,7 +37,7 @@ float potential_test(Vec k1, Vec k2);
  * @param q 
  * @return float 
  */
-float phonon_coulomb(Vec q);
+float phonon_coulomb(Vec q, Vec c, float DOS);
 
 /**
  * @brief Scalapino singlet potential (FLEX) done via direct integration

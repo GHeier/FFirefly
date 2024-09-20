@@ -20,25 +20,31 @@
 using namespace std;
 
 // Global Variables
-int n = 10; // Number of k points
+int n = 20; // Number of k points
 int s_div = (dim == 3) ? 40 : 300; // Number of integral surface divisions
 int s_pts = (dim == 3) ? 50 : 1000; // Number of integral surfaces
 int m = 20; // Number of chi points
 int l = 5; // Number of frequency points
-int dim = 3; // Number of dimensions)
-string potential_name = "scalapino";
-string band_name = "sphere";
-int num_eigenvalues_to_save = 1;
-bool FS_only = true;
+int dim = 3; // Number of dimensions
+string potential_name = "phonon_coulomb";
+string band_name = "simple_cubic";
                
 // Constants
+float ε = 55.263494;
+float e = 1;
 float t = 1.0;
 float tn = 0.0;
 float tnn = 0.0;
 float U = 4.0;
 float k_max = M_PI;
-float mu = pow(3,0.5);
+float mu = 1.0;
 float wc = 0.5;
+float N = 1;
+float M = 15.999;
+float C = 1;
+float Vol = 1;
+
+Vec c(5000, 4000, 0); // lntdal ultsonic wave velocity ([001], [110], 0)
 
 
 void init_config(float &mu, float &U, float &t, float &tn, float &w_D, float new_mu, float new_U, float new_t, float new_tn, float new_w_D) {
@@ -109,17 +115,27 @@ float vp(const Vec k) {
     }
 }
 
-// Potential functions
+// Overloaded function for V
 float V(const Vec k1, const Vec k2, float w, const float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube) {
-    if (potential_name == "const") 
+    float DOS;
+    return V(k1, k2, w, T, chi_cube, DOS);
+}
+
+// Original function for V (NO CHANGE FROM ORIGINAL)
+float V(const Vec k1, const Vec k2, float w, const float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube, float DOS) {
+    if (potential_name == "const")
         return potential_const(k1, k2);
     if (potential_name == "scalapino") {
         float t2 = potential_scalapino_cube(k1, k2, w, T, chi_cube);
         return t2;
     }
-    if (potential_name == "scalapino_triplet") 
+    if (potential_name == "scalapino_triplet")
         return potential_scalapino_triplet(k1, k2, T, w, chi_cube);
-    if (potential_name == "test") 
+    if (potential_name == "phonon_coulomb") {
+        Vec q = k1 - k2;
+        return phonon_coulomb(q, c, DOS);
+    }
+    if (potential_name == "test")
         return potential_test(k1, k2);// / pow(2*M_PI, dim);
     else {
         cout << "Unknown Potential Function: " << potential_name << endl;
@@ -127,6 +143,7 @@ float V(const Vec k1, const Vec k2, float w, const float T, const unordered_map<
         return 0;
     }
 }
+
 
 // Gaussian integration constants
 float weights_0th[1] = {2.0}; float * w0 = weights_0th;

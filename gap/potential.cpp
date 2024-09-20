@@ -41,17 +41,24 @@ float potential_test(Vec k1, Vec k2) {
     Vec q2 = k2;
     if (q1.cartesian == false) q1.to_cartesian();
     if (q2.cartesian == false) q2.to_cartesian();
-    return -1.0*( cos(q1.vals[0]) - cos(q1.vals[1]) )*( cos(q2.vals[0]) - cos(q2.vals[1]) ) + (-0.5)*sin(q1.vals[0])*sin(q1.vals[1])*sin(q2.vals[0])*sin(q2.vals[1]);
+    return -1*( cos(q1.vals[0]) - cos(q1.vals[1]) )*( cos(q2.vals[0]) - cos(q2.vals[1]) ) + (-0.5)*sin(q1.vals[0])*sin(q1.vals[1])*sin(q2.vals[0])*sin(q2.vals[1]);
 }
 
-float phonon_coulomb(Vec q) {
+float phonon_coulomb(Vec q, Vec c, float DOS) {
     if (q.cartesian == false) q.to_cartesian();
+    if (c.cartesian == false) c.to_cartesian();
+    float cx = c.vals[0];
+    float cy = c.vals[1];
     float qx = q.vals[0];
-    float Vp = 1/3;
+    float qy = q.vals[1];
+    
+    float α = ((cy * cy) - (cx * cx)) / (cx * cx);
+    float q_s_sq = (8 * M_PI * e * e * DOS) / (Vol * ε);
+    float Vp = 0.0; //if qnorm = 0, set Vp = 0 s.t. Vp is callable for Vp + Vc
     if (q.norm() != 0) {
-        Vp = 1/(1+2*qx*qx / pow(q.norm(), 2));
+        float Vp = (C * C) / (N * M * (cx * cx)) * (1 + (α * ((qx * qx) / (q.norm() * q.norm()))));
     }
-    float Vc = 1 / (1 + q.norm());
+    float Vc = (4 * M_PI * e * e) / (Vol * ε * ((q.norm() * q.norm()) + q_s_sq));
     return Vp + Vc;
 }
 
