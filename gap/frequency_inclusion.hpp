@@ -2,6 +2,7 @@
 #ifndef FREQUENCY_INCLUSION_H
 #define FREQUENCY_INCLUSION_H
 
+#include <complex>
 #include "fermi_surface.h"
 #include "calculations.h"
 
@@ -40,6 +41,8 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, float T, const unordered_m
  * @return unordered_map<float, vector<vector<vector<float>>>>
  */
 unordered_map <float, vector<vector<vector<float>>>> chi_cube_freq(float T, float mu);
+
+vector<vector<vector<vector<complex<float>>>>> create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_min, float w_max);
 
 /**
  * @brief Is the numerator of the susceptibility integral

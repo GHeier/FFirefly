@@ -3,6 +3,8 @@
 #define SUSCEPTIBILITY_H_
 
 #include <vector>
+#include <complex>
+#include <functional>
 #include "vec.h"
 #include "fermi_surface.h"
 #include "potential.h"
@@ -43,8 +45,10 @@ float integrand(Vec k, Vec q, float w, float T);
  */
 float integrate_susceptibility(Vec q, float T, float mu, float w, int num_points);
 
+complex<float> complex_susceptibility_integration(Vec q, float T, float mu, complex<float> w, int num_points);
+
 /**
- * @brief Integrate a general function via the trapezoidal method
+ * @brief Integrate a complex function via the trapezoidal method
  *
  * @param q Momentum transfer
  * @param T Temperature
@@ -54,7 +58,7 @@ float integrate_susceptibility(Vec q, float T, float mu, float w, int num_points
  *
  * @return float
  */
-float trapezoidal_integration(const function<float(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points);
+complex<float> trapezoidal_integration(const function<complex<float>(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points);
 
 /**
  * @brief Calculate the susceptibility cube

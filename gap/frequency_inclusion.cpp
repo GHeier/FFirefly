@@ -17,6 +17,7 @@
 #include <fstream>
 #include <string>
 #include <math.h>
+#include <complex>
 #include <vector>
 #include <algorithm>
 #include <unordered_map>
@@ -142,6 +143,57 @@ unordered_map <float, vector<vector<vector<float>>>> chi_cube_freq(float T, floa
 //        cout << "Frequency: " << x.first << endl;
 //    }
     return cube_freq_map;
+}
+
+vector<vector<vector<vector<complex<float>>>>> create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_min, float w_max) {
+    int m_z = m*(dim%2) + 3*((dim+1)%2);
+    vector<vector<vector<vector<complex<float>>>>> matsubara_cube(m, vector<vector<vector<complex<float>>>> (m, vector<vector<complex<float>>> (m_z, vector<complex<float>> (w_pts))));
+    unordered_map<string, complex<float>> map;
+    float empty_val = -98214214;
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < m; j++) {
+            for (int k = 0; k < m_z; k++) {
+                for (int l = 0; l < w_pts; l++) {
+                    Vec q((2*k_max*i)/(m-1), (2*k_max*j)/(m-1), (2*k_max*k)/(m_z-1));
+                    float w = w_min + l * (w_max - w_min) / (w_pts - 1);
+                    q = to_IBZ_2(q);
+                    string key = vec_to_string(q) + " " + to_string(w);
+                    if (map.find(key) == map.end())
+                        map[key] = empty_val;
+                }
+            }
+        }
+    }
+    
+    cout << "Taking " << map.size() << " integrals in " << dim << "+1 dimensions.\n";
+    #pragma omp parallel for
+    for(unsigned int i = 0; i < map.size(); i++) {
+        auto datIt = map.begin();
+        advance(datIt, i);
+        string key = datIt->first;
+        vector<string> split_key = unpack_string(key);
+        Vec q(stof(split_key[0]), stof(split_key[1]), stof(split_key[2]));
+        complex<float> w(0.0, stof(split_key[3]));
+        map[key] = complex_susceptibility_integration(q, T, mu, w, 100);
+        //progress_bar(1.0 * i / (map.size()-1), message);
+    }
+    cout << endl;
+
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < m; j++) {
+            for (int k = 0; k < m_z; k++) {
+                for (int l = 0; l < w_pts; l++) {
+                    Vec q((2*k_max*i)/(m-1), (2*k_max*j)/(m-1), (2*k_max*k)/(m_z-1));
+                    q = to_IBZ_2(q);
+                    float w = w_min + l * (w_max - w_min) / (w_pts - 1);
+                    string key = vec_to_string(q) + " " + to_string(w);
+                    matsubara_cube[i][j][k][l] = map[key];
+                }
+            }
+        }
+    }
+
+    return matsubara_cube;
 }
 
 float calculate_chi_from_cube_map(const unordered_map<float, vector<vector<vector<float>>>> &chi_cube_map, Vec q, float w) {

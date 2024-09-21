@@ -61,6 +61,22 @@ Vec string_to_vec(string str) {
     return result;
 }
 
+vector<string> unpack_string(string str) {
+    vector<string> result(4);
+    int start = 0;
+    int end = str.find(" ");
+    int iter = 0;
+    while (end != -1) {
+        string temp = str.substr(start, end - start);
+        float val = std::stod(temp);
+        result[iter] = val;
+        start = end + 1;
+        end = str.find(" ", start);
+        iter++;
+    }
+    return result;
+}
+
 string vec_to_string(Vec k) {
     string result = "";
     for (int i = 0; i < dim; i++) {

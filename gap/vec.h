@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -32,6 +33,7 @@ class Vec {
 
 /// A type alias for Vec when converting a vector to and from a string for a hash map.
 Vec string_to_vec(string str);
+vector<string> unpack_string(string str);
 /// A type alias for Vec when converting a vector to and from a string for a hash map.
 string vec_to_string(Vec k);
 Vec operator+(const Vec& k, const Vec& q);

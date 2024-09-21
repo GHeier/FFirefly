@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <fstream>
 #include <math.h>
+#include <complex>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -73,28 +74,44 @@ float integrate_susceptibility(Vec q, float T, float mu, float w, int num_points
     return c / pow(2*k_max,dim);
 }
 
-float trapezoidal_integration(const function<float(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points) {
-    float sum = 0;
+complex<float> complex_susceptibility_integration(Vec q, float T, float mu, complex<float> w, int num_points) {
+    auto func = [T, q, w, mu](float x, float y, float z) -> complex<float> {
+        Vec k(x,y,z);
+        float e_k = epsilon(k) - mu;
+        float e_kq = epsilon(k+q) - mu;
+        float f_kq = f(e_kq, T);
+        float f_k = f(e_k, T);
+        if (fabs(e_kq - e_k) < 0.0001 and fabs(w) < 0.0001) {
+            if (T == 0 or exp(e_k/T) > 1e6) return e_k < 0;
+            return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
+        }
+        return (f_kq - f_k) / (w - (e_kq - e_k));
+    };
+    return trapezoidal_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, num_points);
+}
+
+complex<float> trapezoidal_integration(const function<complex<float>(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points) {
+    complex<float> sum = 0;
     float dx = (x1 - x0) / (num_points - 1);
     float dy = (y1 - y0) / (num_points - 1);
     float dz = (z1 - z0) / (num_points - 1);
     if (dim == 2) dz = 1;
     int counter = 0;
-    #pragma omp parallel for reduction(+:sum)
+    //#pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < num_points; i++) {
         float x = x0 + i*dx;
         for (int j = 0; j < num_points; j++) {
             float y = y0 + j*dy;
             for (float k = 0; k < num_points * (dim%2) + 1 * ((dim+1)%2); k++) {
                 float z = z0 + k*dz;
-                float w = 1.0;
-                if (i == 0 or i == num_points - 1) w /= 2.0;
-                if (j == 0 or j == num_points - 1) w /= 2.0;
-                if ( (k == 0 or k == num_points - 1) and dim == 3) w /= 2.0;
+                float weight = 1.0;
+                if (i == 0 or i == num_points - 1) weight /= 2.0;
+                if (j == 0 or j == num_points - 1) weight /= 2.0;
+                if ( (k == 0 or k == num_points - 1) and dim == 3) weight /= 2.0;
 
                 //if (x*x + y*y + z*z > k_max*k_max) continue;
                 //cout << x << " " << y << " " << z << " " << f(x,y,z) << endl;
-                sum += w * f(x,y,z);
+                sum += weight * f(x,y,z);
             }
         }
     }
