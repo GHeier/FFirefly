@@ -3,6 +3,7 @@
 #define SAVE_DATA_H_
 
 #include <vector>
+#include <complex>
 
 #include "calculations.h"
 #include "vec.h"
@@ -34,5 +35,7 @@ void save_potential_vs_q(vector<Vec> &FS, Matrix &P, string filename);
  * @brief Save the chi vs q to the file
  */
 void save_chi_vs_q(const vector<vector<vector<float>>> &cube, vector<Vec> &FS, string filename);
+
+void save_matsubara_cube(const vector<vector<vector<vector<complex<float>>>>> &cube, float wmin, float wmax, string filename);
 
 #endif

@@ -14,6 +14,7 @@
 #include <math.h>
 #include <unordered_map>
 #include <memory>
+#include <complex>
 
 #include "calculations.h"
 #include "frequency_inclusion.hpp"
@@ -110,6 +111,29 @@ void save_chi_vs_q(const vector<vector<vector<float>>> &cube, vector<Vec> &FS, s
             Vec q = k1 - k2;
             float chi = calculate_chi_from_cube(cube, q);
             file << q << chi << endl;
+        }
+    }
+}
+
+void save_matsubara_cube(const vector<vector<vector<vector<complex<float>>>>> &cube, float wmin, float wmax, string filename) {
+    ofstream file(filename);
+    file << "Size of each dimension: "<< 
+        cube.size() << " " 
+        << cube[0].size() << " " 
+        << cube[0][0].size() << " " 
+        << cube[0][0][0].size() << endl;
+    for (unsigned int i = 0; i < cube.size(); i++) {
+        for (unsigned int j = 0; j < cube[i].size(); j++) {
+            for (unsigned int k = 0; k < cube[i][j].size(); k++) {
+                Vec q(2*k_max*i/(cube.size()-1)
+                        , 2*k_max*j/(cube[i].size()-1)
+                        , 2*k_max*k/(cube[i][j].size()-1));
+                for (unsigned int l = 0; l < cube[i][j][k].size(); l++) {
+                    float w = wmin + (wmax - wmin) * l / (cube[i][j][k].size()-1);
+                    file << q << w << " : " << cube[i][j][k][l] << " ";
+                }
+                file << endl;
+            }
         }
     }
 }
