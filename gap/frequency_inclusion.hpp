@@ -42,7 +42,19 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, float T, const unordered_m
  */
 unordered_map <float, vector<vector<vector<float>>>> chi_cube_freq(float T, float mu);
 
-vector<vector<vector<vector<complex<float>>>>> create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_min, float w_max);
+/**
+ * @brief Creates the susceptibility cube in 4D using the Matsubara frequencies
+ * 
+ * @param T The temperature
+ * @param mu The chemical potential
+ * @param m_pts The number of k points
+ * @param w_pts The number of Matsubara frequencies
+ * @param w_min The minimum Matsubara frequency
+ * @param w_max The maximum Matsubara frequency
+ *
+ * @return vector<vector<vector<vector<complex<float>>>>> The Matsubara cube
+ */
+vector<vector<vector<vector<complex<float>>>>> create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_min, float w_max, int num_integral_pts);
 
 /**
  * @brief Is the numerator of the susceptibility integral

@@ -145,16 +145,17 @@ unordered_map <float, vector<vector<vector<float>>>> chi_cube_freq(float T, floa
     return cube_freq_map;
 }
 
-vector<vector<vector<vector<complex<float>>>>> create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_min, float w_max) {
-    int m_z = m*(dim%2) + 3*((dim+1)%2);
+vector<vector<vector<vector<complex<float>>>>> create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_min, float w_max, int num_integral_pts) {
+    int m_z = m * (dim%2) + 1*((dim+1)%2);
     vector<vector<vector<vector<complex<float>>>>> matsubara_cube(m, vector<vector<vector<complex<float>>>> (m, vector<vector<complex<float>>> (m_z, vector<complex<float>> (w_pts))));
     unordered_map<string, complex<float>> map;
     float empty_val = -98214214;
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < m; j++) {
+    for (int i = 0; i < m_pts; i++) {
+        for (int j = 0; j < m_pts; j++) {
             for (int k = 0; k < m_z; k++) {
+                Vec q((2.0*k_max*i)/(1.0*m_pts-1), (2.0*k_max*j)/(1.0*m_pts-1), (2.0*k_max*k)/(1.0*m_z-1));
+                if (m_z == 1) q = Vec(2*k_max*i/(m_pts-1) , 2*k_max*j/(m_pts-1), 0);
                 for (int l = 0; l < w_pts; l++) {
-                    Vec q((2*k_max*i)/(m-1), (2*k_max*j)/(m-1), (2*k_max*k)/(m_z-1));
                     float w = w_min + l * (w_max - w_min) / (w_pts - 1);
                     q = to_IBZ_2(q);
                     string key = vec_to_string(q) + " " + to_string(w);
@@ -171,19 +172,20 @@ vector<vector<vector<vector<complex<float>>>>> create_matsubara_cube(float T, fl
         auto datIt = map.begin();
         advance(datIt, i);
         string key = datIt->first;
-        vector<string> split_key = unpack_string(key);
-        Vec q(stof(split_key[0]), stof(split_key[1]), stof(split_key[2]));
-        complex<float> w(0.0, stof(split_key[3]));
-        map[key] = complex_susceptibility_integration(q, T, mu, w, 100);
+        vector<float> split_key = unpack_string(key);
+        Vec q(split_key[0], split_key[1], split_key[2]);
+        complex<float> w = complex<float>(0, split_key[3]);
+        map[key] = complex_susceptibility_integration(q, T, MU, w, num_integral_pts);
         //progress_bar(1.0 * i / (map.size()-1), message);
     }
     cout << endl;
 
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < m; j++) {
+    for (int i = 0; i < m_pts; i++) {
+        for (int j = 0; j < m_pts; j++) {
             for (int k = 0; k < m_z; k++) {
                 for (int l = 0; l < w_pts; l++) {
-                    Vec q((2*k_max*i)/(m-1), (2*k_max*j)/(m-1), (2*k_max*k)/(m_z-1));
+                    Vec q((2.0*k_max*i)/(m_pts-1), (2.0*k_max*j)/(m_pts-1), (2.0*k_max*k)/(m_z-1));
+                    if (m_z == 1) q = Vec(2*k_max*i/(m-1) , 2*k_max*j/(m-1), 0);
                     q = to_IBZ_2(q);
                     float w = w_min + l * (w_max - w_min) / (w_pts - 1);
                     string key = vec_to_string(q) + " " + to_string(w);

@@ -21,6 +21,11 @@ using namespace std;
 float f(float E, float T);
 
 /**
+ * @brief Same as integrand, but without using .freq to define constant surfaces
+ */
+float ratio(Vec k, Vec q, float w, float T);
+
+/**
  * @brief Integrand of the susceptibility
  *
  * @param k Momentum
@@ -45,6 +50,17 @@ float integrand(Vec k, Vec q, float w, float T);
  */
 float integrate_susceptibility(Vec q, float T, float mu, float w, int num_points);
 
+/**
+ * @brief Integrate the complex susceptibility (uses iw instead of w for frequency)
+ *
+ * @param q Momentum transfer
+ * @param T Temperature
+ * @param mu Chemical potential
+ * @param w Frequency
+ * @param num_points Number of points
+ *
+ * @return complex<float>
+ */
 complex<float> complex_susceptibility_integration(Vec q, float T, float mu, complex<float> w, int num_points);
 
 /**
@@ -58,8 +74,20 @@ complex<float> complex_susceptibility_integration(Vec q, float T, float mu, comp
  *
  * @return float
  */
-complex<float> trapezoidal_integration(const function<complex<float>(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points);
+complex<float> complex_trapezoidal_integration(const function<complex<float>(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points);
 
+/**
+ * @brief Integrate a function via the trapezoidal method
+ *
+ * @param q Momentum transfer
+ * @param T Temperature
+ * @param mu Chemical potential
+ * @param w Frequency
+ * @param num_points Number of points
+ *
+ * @return float
+ */
+float trapezoidal_integration(const function<float(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points);
 /**
  * @brief Calculate the susceptibility cube
  *

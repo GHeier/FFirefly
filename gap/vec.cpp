@@ -61,26 +61,34 @@ Vec string_to_vec(string str) {
     return result;
 }
 
-vector<string> unpack_string(string str) {
+vector<float> unpack_string(string str) {
     vector<string> result(4);
     int start = 0;
     int end = str.find(" ");
     int iter = 0;
     while (end != -1) {
         string temp = str.substr(start, end - start);
-        float val = std::stod(temp);
-        result[iter] = val;
+        result[iter] = temp;
         start = end + 1;
         end = str.find(" ", start);
         iter++;
     }
-    return result;
+    result[3] = str.substr(start, str.length() - start);
+    vector<float> result_float(4);
+    for (int i = 0; i < 4; i++) {
+        if (result[i] == "") {
+            result_float[i] = 0;
+            continue;
+        }
+        result_float[i] = std::stod(result[i]);
+    }
+    return result_float;
 }
 
 string vec_to_string(Vec k) {
     string result = "";
     for (int i = 0; i < dim; i++) {
-        result += to_string(std::ceil(k.vals[i]*100.0)/100.0) + " ";
+        result += to_string(k.vals[i]) + " ";
     }
     return result;
 }
@@ -183,7 +191,9 @@ bool operator<(const Vec& left, const Vec& right) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Vec& k) {
-    os << vec_to_string(k);
+    for (int i = 0; i < dim; i++) {
+        os << k.vals[i] << " ";
+    }
     return os;
 }
 

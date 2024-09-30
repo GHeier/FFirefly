@@ -40,6 +40,23 @@ float f(float E, float T) {
     return 1 / (1 + exp(E/T));
 }
 
+float ratio(Vec k, Vec q, float w, float T) {
+    float e_k = epsilon(k) - mu;
+    float e_qk = epsilon(k+q) - mu;
+    float dE = e_qk - e_k;
+    float f_k = f(e_k, T);
+    float f_qk = f(e_qk, T);
+
+    if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
+        if (T == 0 or exp(e_k/T) > 1e6)
+            return e_k < 0;
+        float temp = 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
+        return temp;
+    }
+    if (fabs(w - dE) == 0) return 0;
+    return (f_qk - f_k) / (w - dE);
+}
+
 float integrand(Vec k, Vec q, float w, float T) {
     float dE = k.freq;
     float e_k = epsilon(k) - mu;
@@ -47,7 +64,6 @@ float integrand(Vec k, Vec q, float w, float T) {
     float e_qk = e_k + dE;
     float f_k = f(e_k, T);
     float f_qk = f(e_qk, T);
-
 
     if (fabs(dE) < 0.0001 and fabs(w) < 0.0001) {
         if (T == 0 or exp(e_k/T) > 1e6)
@@ -81,16 +97,46 @@ complex<float> complex_susceptibility_integration(Vec q, float T, float mu, comp
         float e_kq = epsilon(k+q) - mu;
         float f_kq = f(e_kq, T);
         float f_k = f(e_k, T);
-        if (fabs(e_kq - e_k) < 0.0001 and fabs(w) < 0.0001) {
+        if (fabs(e_kq - e_k) < 0.0001 and fabs(w.imag()) < 0.0001 and fabs(w.real()) < 0.0001) {
             if (T == 0 or exp(e_k/T) > 1e6) return e_k < 0;
             return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
         }
         return (f_kq - f_k) / (w - (e_kq - e_k));
     };
-    return trapezoidal_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, num_points);
+    float d = pow(2*k_max,dim);
+    return complex_trapezoidal_integration(func, -k_max, k_max, -k_max, k_max, 
+            -k_max, k_max, num_points) / d;
 }
 
-complex<float> trapezoidal_integration(const function<complex<float>(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points) {
+float trapezoidal_integration(const function<float(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points) {
+    float sum = 0;
+    float dx = (x1 - x0) / (num_points - 1);
+    float dy = (y1 - y0) / (num_points - 1);
+    float dz = (z1 - z0) / (num_points - 1);
+    if (dim == 2) dz = 1;
+    int counter = 0;
+    #pragma omp parallel for reduction(+:sum)
+    for (int i = 0; i < num_points; i++) {
+        float x = x0 + i*dx;
+        for (int j = 0; j < num_points; j++) {
+            float y = y0 + j*dy;
+            for (float k = 0; k < num_points * (dim%2) + 1 * ((dim+1)%2); k++) {
+                float z = z0 + k*dz;
+                float weight = 1.0;
+                if (i == 0 or i == num_points - 1) weight /= 2.0;
+                if (j == 0 or j == num_points - 1) weight /= 2.0;
+                if ( (k == 0 or k == num_points - 1) and dim == 3) weight /= 2.0;
+
+                //if (x*x + y*y + z*z > k_max*k_max) continue;
+                //cout << x << " " << y << " " << z << " " << f(x,y,z) << endl;
+                sum += weight * f(x,y,z);
+            }
+        }
+    }
+    return sum * dx * dy * dz;
+}
+
+complex<float> complex_trapezoidal_integration(const function<complex<float>(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points) {
     complex<float> sum = 0;
     float dx = (x1 - x0) / (num_points - 1);
     float dy = (y1 - y0) / (num_points - 1);
@@ -126,7 +172,7 @@ vector<vector<vector<float>>> chi_cube(float T, float mu, float w, string messag
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < m; j++) {
             for (int k = 0; k < m_z; k++) {
-                Vec q((2*k_max*i)/(m-1), (2*k_max*j)/(m-1), (2*k_max*k)/(m_z-1));
+                Vec q((2.0*k_max*i)/(1.0*m-1), (2.0*k_max*j)/(1.0*m-1), (2.0*k_max*k)/(1.0*m_z-1));
                 Vec q2 = to_IBZ_2(q);
                 if (map.find(vec_to_string(q2)) == map.end())
                     map[vec_to_string(q2)] = empty_val;

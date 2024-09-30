@@ -7,6 +7,7 @@
 #include <string>
 #include <math.h>
 #include <vector>
+#include <complex>
 
 #include <unordered_set>
 #include <unordered_map>
@@ -38,7 +39,6 @@ using std::unordered_map;
 
 void plot_chi(float T, float w) {
     ofstream file("chi_plot.dat");
-    file << "q chi " << endl;
     float n = 50.0;
     for (float new_mu = 0; new_mu > -4.0; new_mu--) {
         for (float i = 0; i < n; i++) {
@@ -46,11 +46,27 @@ void plot_chi(float T, float w) {
             Vec q(q_mag, q_mag, q_mag);
             auto f = [T, w, q] (float x, float y, float z) -> float {
                 Vec k(x, y, z);
-                return integrand(k, q, w, T);
+                return ratio(k, q, w, T);
             };
-            float c = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
+            float c = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60) / pow(2*M_PI, dim);
             //float c2 = varied_chi_trapezoidal(q, T, mu, 40);
             file << q_mag << " " << c << endl;
+        }
+        file << endl;
+    }
+}
+
+void plot_complex_chi(float T, complex<float> w) {
+    ofstream file("chi_complex_plot.dat");
+    float n = 500.0;
+    for (float new_mu = 0; new_mu > -4.0; new_mu--) {
+        for (float i = 0; i < n; i++) {
+            float q_mag = i/(n-1) * M_PI;
+            Vec q(q_mag, q_mag, q_mag);
+            complex<float> c = complex_susceptibility_integration(q, T, mu, w, 100);
+            //float c2 = varied_chi_trapezoidal(q, T, mu, 40);
+            file << q_mag << " " << c.real() << " " << c.imag() << endl;
+            cout << q_mag << " " << c.real() << " " << c.imag() << endl;
         }
         file << endl;
     }

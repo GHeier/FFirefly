@@ -8,6 +8,7 @@
 #include <string>
 //#include <math.h>
 #include <vector>
+#include <complex>
 
 #include <unordered_set>
 #include <unordered_map>
@@ -127,9 +128,9 @@ void test_IBZ2() {
                     Vec k(x, y, z);
                     return integrand(k, q, w, T);
                 };
-                float chi1 = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
+                complex<float> chi1 = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
                 q = to_IBZ_2(q); Vec output = q;
-                float chi2 = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
+                complex<float> chi2 = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
                 if (fabs(chi1 - chi2) > 0.0000001) 
                     cout << "Failed for " << input << "->" << output << endl;
             }
@@ -144,21 +145,21 @@ void test_IBZ() {
         Vec k(x, y, z);
         return integrand(k, q, w, T);
     };
-    float chi1 = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
+    complex<float> chi1 = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
     q = to_IBZ_2(q);
-    float chi1_t = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
+    complex<float> chi1_t = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
     cout << chi1 << " " << chi1_t << endl;
 
     q = Vec(.1, -2, .7);
-    float chi2 = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
+    complex<float> chi2 = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
     q = to_IBZ_2(q);
-    float chi2_t = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
+    complex<float> chi2_t = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
     cout << chi2 << " " << chi2_t << endl;
 
     q = Vec(-.8, -1.2, -1.1);
-    float chi3 = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
+    complex<float> chi3 = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
     q = to_IBZ_2(q);
-    float chi3_t = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
+    complex<float> chi3_t = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
     cout << chi3 << " " << chi3_t << endl;
 }
 
@@ -277,6 +278,13 @@ int main() {
     //test_cube_map();
 
     float T = 0.25, w = 0.0;
+    complex<float> wz = complex<float>(0.0, 0.0);
+    printf("Starting Complex Test\n");
+    plot_complex_chi(T, wz);
+    printf("Starting Real Test\n");
+    plot_chi(T, w);
+    printf("Tests Complete\n");
+    return 0;
     printf("Starting Test\n");
     plot_single_chi(T, w);
     printf("Test Complete\n");
