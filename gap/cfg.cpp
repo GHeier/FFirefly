@@ -28,6 +28,7 @@ int l = 5; // Number of frequency points
 int dim = 3; // Number of dimensions
 string potential_name = "phonon_coulomb";
 string band_name = "simple_cubic";
+int num_eigenvalues_to_save = 1;
                
 // Constants
 float ε = 55.263494;

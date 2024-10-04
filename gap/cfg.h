@@ -24,6 +24,7 @@ extern float tn;
 extern float tnn;
 extern float U;
 extern float wc;
+extern int num_eigenvalues_to_save;
 
 extern float Vol;
 extern float N;

@@ -3,6 +3,7 @@
 #define SUSCEPTIBILITY_H_
 
 #include <vector>
+#include <functional>
 #include "vec.h"
 #include "fermi_surface.h"
 #include "potential.h"
