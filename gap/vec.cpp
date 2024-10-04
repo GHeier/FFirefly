@@ -63,7 +63,7 @@ Vec string_to_vec(string str) {
 
 string vec_to_string(Vec k) {
     string result = "";
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < dim; i++) {
         result += to_string(std::ceil(k.vals[i]*100.0)/100.0) + " ";
     }
     return result;
@@ -149,6 +149,7 @@ Vec operator/(const Vec& input, float multiple) {
 
 float Vec::norm() {
     if (cartesian) {
+        if (dim == 2) return pow(pow(vals[0], 2) + pow(vals[1], 2), 0.5);
         return pow(pow(vals[0], 2) + pow(vals[1], 2) + pow(vals[2], 2), 0.5);
     }
     return vals[0];

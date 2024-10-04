@@ -54,10 +54,11 @@ float get_max_eigenvalue() {
     vector<vector<Vec>> freq_FS;
     freq_FS = freq_tetrahedron_method(mu);
     vector<Vec> FS = freq_FS[(l+1)/2 - 1];
+    vector<Vec> layer = tetrahedron_method(e_base_avg, Vec(0,0,0), 0);
 
 
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
-    save_FS(FS);
+    save_FS(layer);
     float DOS = get_DOS(FS);
     cout << "Density of States: " << DOS << endl;
 

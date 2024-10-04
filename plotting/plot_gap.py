@@ -31,7 +31,7 @@ def plotGap(eigNum, file):
     plt.ylabel(r'$\Delta$')
     plt.show()
 
-def plotGap_cart(potential, n, mu, dim, U, w_D, eigNum):
+def plotGap_cart(file, mu, eigNum):
     df = pd.read_csv(file, delimiter=' ')
     fig = plt.figure(0)
     ax = fig.add_subplot(111, projection='3d')
@@ -40,6 +40,20 @@ def plotGap_cart(potential, n, mu, dim, U, w_D, eigNum):
     #z = df.loc[:,'z'] 
     c = df.iloc[:,2+eigNum]
     img = ax.scatter(x, y, c)
+    plt.title(r'$\Delta$ @ $\mu=$'+str(mu))
+    plt.xlabel('kx')
+    plt.ylabel('ky')
+    plt.show()
+
+def plotGap_color(file, mu, eigNum):
+    df = pd.read_csv(file, delimiter=' ')
+    x = df.loc[:,'x']
+    y = df.loc[:,'y']
+    c = df.iloc[:,2+eigNum]
+
+    fig, ax = plt.subplots()
+    img = ax.scatter(x, y, c=c, cmap=cm.coolwarm)
+    fig.colorbar(img)
     plt.title(r'$\Delta$ @ $\mu=$'+str(mu))
     plt.xlabel('kx')
     plt.ylabel('ky')
