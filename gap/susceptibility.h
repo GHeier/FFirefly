@@ -2,6 +2,7 @@
 #ifndef SUSCEPTIBILITY_H_
 #define SUSCEPTIBILITY_H_
 
+#include <functional>
 #include <vector>
 #include <functional>
 #include "vec.h"
