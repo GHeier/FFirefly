@@ -119,7 +119,8 @@ float get_max_eigenvalue() {
     cout << "F-integral value: " << f << endl;
 
     cout << "Finding Eigenspace..." << endl;
-    Eigenvector *lapack_solutions = lapack_diagonalization(P);
+    Eigenvector *lapack_solutions = new Eigenvector[num_eigenvalues_to_save];
+    lapack_hermitian_diagonalization(P, lapack_solutions);
 
     cout << "Saving Potential and Susceptibility Functions\n";
     //save_potential_vs_q(FS, P, "potential.dat");

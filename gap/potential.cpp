@@ -45,6 +45,7 @@ float potential_test(Vec k1, Vec k2) {
 }
 
 float phonon_coulomb(Vec q, Vec c, float DOS) {
+	return 1;
     if (q.cartesian == false) q.to_cartesian();
     if (c.cartesian == false) c.to_cartesian();
     float cx = c.vals[0];
