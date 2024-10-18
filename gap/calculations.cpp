@@ -254,7 +254,11 @@ void create_P(Matrix &P, vector<Vec> &k, float T, const unordered_map<float, vec
         for (int j = 0; j < P.size; j++) {
             Vec k2 = k[j];
             P(i,j) = (float)(-pow(k1.area/vp(k1),0.5) * V(k1, k2, 0, T, chi_cube2) * pow(k2.area/vp(k2),0.5));
-            assert(isnan(P(i,j)) == false);
+            if (isnan(P(i,j)) == true) {  // debugging statement
+		    cout << "P matrix issue. P(i, j) = " << P(i,j) << std::endl;
+		    exit(0);
+	    }
+	    //assert(isnan(P(i,j)) == false); //ORIGINAL WORK
         }
         progress_bar(1.0 * i / P.size);
     }

@@ -45,7 +45,7 @@ float potential_test(Vec k1, Vec k2) {
 }
 
 float phonon_coulomb(Vec q, Vec c, float DOS) {
-	return 1;
+	//return 1; //this was a test by Griffin that confirmed that the p_c is working
     if (q.cartesian == false) q.to_cartesian();
     if (c.cartesian == false) c.to_cartesian();
     float cx = c.vals[0];
@@ -55,11 +55,22 @@ float phonon_coulomb(Vec q, Vec c, float DOS) {
     
     float α = ((cy * cy) - (cx * cx)) / (cx * cx);
     float q_s_sq = (8 * M_PI * e * e * DOS) / (Vol * ε);
-    float Vp = 0.0; //if qnorm = 0, set Vp = 0 s.t. Vp is callable for Vp + Vc
-    if (q.norm() != 0) {
-        float Vp = (C * C) / (N * M * (cx * cx)) * (1 + (α * ((qx * qx) / (q.norm() * q.norm()))));
+    float Vp = 0;
+    float Vc = 0;
+    if (q.norm() == 0) { 
+	Vp = 0.0; //if qnorm = 0, set Vp = 0 s.t. Vp is callable for Vp + Vc
+	cout << "norm of q is zero, setting Vp to " << Vp << std::endl; //DEBUG STUFF
+	if (q_s_sq == 0) {
+		Vc == 0; //if qnorm = 0 and q_s_sq = 0, set Vc = 0 st Vc is callable for Vp + Vc
+		cout << "norm of q and q_s_sq are zero, setting Vc to " << Vp << std::endl;
+	}
+	}
+    if (q.norm() != 0 and q_s_sq !=0) {
+        Vp = (C * C) / (N * M * (cx * cx)) * (1 + (α * ((qx * qx) / (q.norm() * q.norm()))));
+	Vc = (4 * M_PI * e * e) / (Vol * ε * ((q.norm() * q.norm()) + q_s_sq));
     }
-    float Vc = (4 * M_PI * e * e) / (Vol * ε * ((q.norm() * q.norm()) + q_s_sq));
+    cout << "Vc = " << Vc << std::endl; //DEBUG STUFF
+    //cout << "Vp + Vc = " << (Vp + Vc) << std::endl; //DEBUG STUFF
     return Vp + Vc;
 }
 
