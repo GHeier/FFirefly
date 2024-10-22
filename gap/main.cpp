@@ -189,7 +189,7 @@ int main() {
     float mu = -0.0;
     float m_pts = 40;
     float w_pts = 40;
-    float num_integral_pts = 150;
+    float num_integral_pts = 150; 
     float w_min = 0.000;
     float w_max = 10.45;
 
