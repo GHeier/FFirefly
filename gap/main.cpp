@@ -39,7 +39,7 @@ void find_gap_function() {
    ========================================================================================
  */
     cout << "Calculating Fermi Surface..." << endl;
-
+ 
     vector<vector<Vec>> freq_FS;
     freq_FS = freq_tetrahedron_method(mu);
     vector<Vec> FS = freq_FS[(l+1)/2 - 1];
