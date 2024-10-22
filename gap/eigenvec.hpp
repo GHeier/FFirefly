@@ -3,8 +3,8 @@
 #define eigenvector_class_H
 
 #include <iostream>
-#include <string>
-#include "vec.h"
+#include <memory>
+#include <vector>
 
 using namespace std;
 

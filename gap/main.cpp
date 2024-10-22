@@ -15,25 +15,19 @@
 #include <fstream>
 #include <string>
 
-#include <vector>
 #include <algorithm>
-#include <memory>
 #include <omp.h>
 
-//#include <Eigen/Dense>
-//#include <lambda_lanczos/lambda_lanczos.hpp>
 
 #include "cfg.h"
 #include "fermi_surface.h"
 #include "frequency_inclusion.hpp"
 #include "calculations.h"
-#include "potential.h"
 #include "susceptibility.h"
 #include "save_data.h"
 #include "vec.h"
 #include "matrix.hpp"
 #include "eigenvec.hpp"
-#include "utilities.h"
 
 using std::string;
 

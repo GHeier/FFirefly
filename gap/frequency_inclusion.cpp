@@ -14,15 +14,12 @@
 #include <unistd.h>
 #include <ctime>
 
-#include <fstream>
 #include <string>
 #include <math.h>
 #include <complex>
 #include <vector>
 #include <algorithm>
 #include <unordered_map>
-#include <map>
-#include <memory>
 #include <boost/functional/hash.hpp>
 
 //#include <lambda_lanczos/lambda_lanczos.hpp>
@@ -30,10 +27,7 @@
 #include <boost/math/quadrature/gauss.hpp>
 
 #include "calculations.h"
-#include "band_structure.h"
 #include "cfg.h"
-#include "fermi_surface.h"
-#include "potential.h"
 #include "vec.h"
 #include "utilities.h"
 #include "frequency_inclusion.hpp"
