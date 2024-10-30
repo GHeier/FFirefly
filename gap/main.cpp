@@ -178,6 +178,7 @@ void find_gap_function() {
 }
 
 int main() {
+    printf("Starting Program\n");
     // Sets the number of threads used in parallelization to one less than the maximum
     // This allows for the main thread to be used for other tasks
     int num_procs = omp_get_num_procs();
@@ -193,7 +194,7 @@ int main() {
     float w_min = 0.000;
     float w_max = 10.45;
 
-    vector<vector<vector<vector<complex<float>>>>> matsubara_cube = 
+    MatCube matsubara_cube =
         create_matsubara_cube(T, mu, m_pts, w_pts, w_min, w_max, num_integral_pts);
     save_matsubara_cube(matsubara_cube, w_min, w_max, "matsubara_cube.dat");
 

@@ -3,8 +3,34 @@
 #define FREQUENCY_INCLUSION_H
 
 #include <complex>
-#include "fermi_surface.h"
 #include "calculations.h"
+
+struct MatCube {
+    vector<vector<vector<vector<complex<float>>>>> cube;
+    float w_min;
+    float w_max;
+    int w_pts;
+    int mx_pts;
+    int my_pts;
+    int mz_pts;
+    int num_integral_pts;
+
+    // Constructor
+    MatCube(int mx, int my, int mz, int w_pts, int num_integral_pts=0, float w_min=0, float w_max=0)
+        : w_min(w_min), w_max(w_max), w_pts(w_pts), 
+        num_integral_pts(num_integral_pts), 
+        mx_pts(mx), my_pts(my), mz_pts(mz)
+    {
+        // Initialize 'cube' to the specified dimensions
+        cube = vector<vector<vector<vector<complex<float>>>>>(
+            mx, vector<vector<vector<complex<float>>>>(
+                my, vector<vector<complex<float>>>(
+                    mz, vector<complex<float>>(w_pts)
+                )
+            )
+        );
+    }
+};
 
 /**
  * @brief Calculates the size of the matrix from the surfaces defined, including those beyond
@@ -52,9 +78,9 @@ unordered_map <float, vector<vector<vector<float>>>> chi_cube_freq(float T, floa
  * @param w_min The minimum Matsubara frequency
  * @param w_max The maximum Matsubara frequency
  *
- * @return vector<vector<vector<vector<complex<float>>>>> The Matsubara cube
+ * @return MatCube The Matsubara cube
  */
-vector<vector<vector<vector<complex<float>>>>> create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_min, float w_max, int num_integral_pts);
+MatCube create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_min, float w_max, int num_integral_pts);
 
 /**
  * @brief Is the numerator of the susceptibility integral

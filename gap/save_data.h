@@ -6,6 +6,7 @@
 #include <complex>
 
 #include "calculations.h"
+#include "frequency_inclusion.hpp"
 #include "vec.h"
 #include "matrix.hpp"
 #include "cfg.h"
@@ -36,6 +37,6 @@ void save_potential_vs_q(vector<Vec> &FS, Matrix &P, string filename);
  */
 void save_chi_vs_q(const vector<vector<vector<float>>> &cube, vector<Vec> &FS, string filename);
 
-void save_matsubara_cube(const vector<vector<vector<vector<complex<float>>>>> &cube, float wmin, float wmax, string filename);
+void save_matsubara_cube(const MatCube &cube, float wmin, float wmax, string filename);
 
 #endif

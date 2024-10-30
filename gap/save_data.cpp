@@ -115,22 +115,22 @@ void save_chi_vs_q(const vector<vector<vector<float>>> &cube, vector<Vec> &FS, s
     }
 }
 
-void save_matsubara_cube(const vector<vector<vector<vector<complex<float>>>>> &cube, float wmin, float wmax, string filename) {
+void save_matsubara_cube(const MatCube &cube, float wmin, float wmax, string filename) {
     ofstream file(filename);
     file << "Size of each dimension, then min&max values for each dimension\n" << 
-        cube.size() << " " 
-        << cube[0].size() << " " 
-        << cube[0][0].size() << " " 
-        << cube[0][0][0].size() << " "
+        cube.cube.size() << " " 
+        << cube.cube[0].size() << " " 
+        << cube.cube[0][0].size() << " " 
+        << cube.cube[0][0][0].size() << " "
         << 0 << " " << 2*k_max << " "
         << 0 << " " << 2*k_max << " "
         << 0 << " " << 2*k_max << " "
         << wmin << " " << wmax << endl;
 
-    int mx = cube.size();
-    int my = cube[0].size();
-    int mz = cube[0][0].size();
-    int mw = cube[0][0][0].size();
+    int mx = cube.cube.size();
+    int my = cube.cube[0].size();
+    int mz = cube.cube[0][0].size();
+    int mw = cube.cube[0][0][0].size();
 
     for (unsigned int i = 0; i < mx; i++) {
         for (unsigned int j = 0; j < my; j++) {
@@ -140,9 +140,9 @@ void save_matsubara_cube(const vector<vector<vector<vector<complex<float>>>>> &c
                 for (unsigned int l = 0; l < mw; l++) {
                     float w = wmin + (wmax - wmin) * l / (mw - 1);
                     file << q; if (dim == 2) file << "0 ";
-                    file << w << " (" << cube[i][j][k][l].real() 
-                        << ", " << cube[i][j][k][l].imag() << ") \n";
-                    if (w == 0 and cube[i][j][k][l].real() == 0) {
+                    file << w << " (" << cube.cube[i][j][k][l].real() 
+                        << ", " << cube.cube[i][j][k][l].imag() << ") \n";
+                    if (w == 0 and cube.cube[i][j][k][l].real() == 0) {
                         printf("Zero at %d %d %d %d\n", i, j, k, l);
                         printf("q: %f %f %f\n", q.vals[0], q.vals[1], q.vals[2]);
                     }

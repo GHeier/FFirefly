@@ -7,25 +7,19 @@
  */
 
 #include <iostream>
-#include <iomanip>
-#include <fstream>
 #include <math.h>
 #include <complex>
 #include <string>
-#include <vector>
 #include <algorithm>
 #include <functional>
 
 #include <omp.h>
 #include <boost/functional/hash.hpp>
-#include <tuple>
 #include <unordered_map>
 
 #include "utilities.h"
-#include "potential.h"
 #include "vec.h"
 #include "fermi_surface.h"
-#include "band_structure.h"
 #include "cfg.h"
 #include "frequency_inclusion.hpp"
 #include "susceptibility.h"
@@ -168,7 +162,7 @@ vector<vector<vector<float>>> chi_cube(float T, float mu, float w, string messag
     int m_z = m*(dim%2) + 3*((dim+1)%2);
     vector<vector<vector<float>>> cube(m, vector<vector<float>> (m, vector<float> (m_z)));
     unordered_map<string, float> map;
-    float empty_val = -98214214;
+    float empty_val = -98214214.0;
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < m; j++) {
             for (int k = 0; k < m_z; k++) {

@@ -139,11 +139,11 @@ unordered_map <float, vector<vector<vector<float>>>> chi_cube_freq(float T, floa
     return cube_freq_map;
 }
 
-vector<vector<vector<vector<complex<float>>>>> create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_min, float w_max, int num_integral_pts) {
+MatCube create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_min, float w_max, int num_integral_pts) {
     int m_z = m * (dim%2) + 1*((dim+1)%2);
-    vector<vector<vector<vector<complex<float>>>>> matsubara_cube(m, vector<vector<vector<complex<float>>>> (m, vector<vector<complex<float>>> (m_z, vector<complex<float>> (w_pts))));
+    MatCube matsubara_cube(m_pts, m_pts, m_z, w_pts, num_integral_pts);
     unordered_map<string, complex<float>> map;
-    float empty_val = -98214214;
+    float empty_val = -98214214.0;
     for (int i = 0; i < m_pts; i++) {
         for (int j = 0; j < m_pts; j++) {
             for (int k = 0; k < m_z; k++) {
@@ -183,7 +183,7 @@ vector<vector<vector<vector<complex<float>>>>> create_matsubara_cube(float T, fl
                     q = to_IBZ_2(q);
                     float w = w_min + l * (w_max - w_min) / (w_pts - 1);
                     string key = vec_to_string(q) + " " + to_string(w);
-                    matsubara_cube[i][j][k][l] = map[key];
+                    matsubara_cube.cube[i][j][k][l] = map[key];
                 }
             }
         }

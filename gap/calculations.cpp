@@ -11,11 +11,8 @@
 #include <unistd.h>
 #include <ctime>
 
-#include <fstream>
-#include <string>
 #include <math.h>
 #include <vector>
-#include <algorithm>
 #include <unordered_map>
 #include <memory>
 #include <openblas/lapacke.h>
@@ -27,8 +24,6 @@
 
 #include "calculations.h"
 #include "cfg.h"
-#include "fermi_surface.h"
-#include "potential.h"
 #include "vec.h"
 #include "matrix.hpp"
 #include "eigenvec.hpp"
@@ -37,7 +32,6 @@
 
 using std::cout;
 using std::endl;
-using std::sort;
 using std::vector;
 using std::unordered_map;
 //using lambda_lanczos::LambdaLanczos;
