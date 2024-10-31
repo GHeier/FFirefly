@@ -1,37 +1,39 @@
 #include <math.h>
-#include <vector>
-#include <iostream>
 #include <fstream>
-#include <iomanip>
-#include <string>
-#include "cfg.h"
-#include "potential.h"
-#include "frequency_inclusion.hpp"
+#include "../gap/cfg.h"
+#include "../gap/frequency_inclusion.hpp"
+#include "../gap/fermi_surface.h"
+#include "../gap/utilities.h"
+#include "../gap/frequency_inclusion.hpp"
+#include "../gap/susceptibility.h"
+#include "../gap/vec.h"
 
-double analytic_fermi_gas_chi(Vec q, double w, double mu) {
-    double q_plus_sqr = w + q.vals.squaredNorm();
-    double q_minus_sqr = w - q.vals.squaredNorm();
+using namespace std;
+
+float analytic_fermi_gas_chi(Vec q, float w, float mu) {
+    float q_plus_sqr = w + pow(q.norm(), 2);
+    float q_minus_sqr = w - pow(q.norm(), 2);
     vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
-    double N_3 = get_DOS(FS);
-    return N_3 / mu * 0.75 * ( -1.0 + (4*q.vals.squaredNorm() - pow(q_minus_sqr,2)) / (8*pow(q.vals.norm(),3)) 
-            * log( (1+q_minus_sqr/(2*q.vals.norm())) / ( 1 - q_minus_sqr/(2*q.vals.norm())))
-            - (4*q.vals.squaredNorm() - pow(q_plus_sqr,2)) / (8*pow(q.vals.norm(),3)) 
-            * log((1+q_plus_sqr/(2*q.vals.norm())) / (1 - q_plus_sqr / (2*q.vals.norm()))));
+    float N_3 = get_DOS(FS);
+    return N_3 / mu * 0.75 * ( -1.0 + (4*pow(q.norm(),2) - pow(q_minus_sqr,2)) / (8*pow(q.norm(),3)) 
+            * log( (1+q_minus_sqr/(2*q.norm())) / ( 1 - q_minus_sqr/(2*q.norm())))
+            - (4*pow(q.norm(),2) - pow(q_plus_sqr,2)) / (8*pow(q.norm(),3)) 
+            * log((1+q_plus_sqr/(2*q.norm())) / (1 - q_plus_sqr / (2*q.norm()))));
 }
 
-double numerical_fermi_gas_chi(Vec q, double w, double mu, unordered_map<double, vector<vector<vector<double>>>> &chi_map) {
+float numerical_fermi_gas_chi(Vec q, float w, float mu, unordered_map<float, vector<vector<vector<float>>>> &chi_map) {
     w = round(w, 6);
-    return calculate_chi_from_cube(chi_map.at(w), q);
+    return calculate_chi_from_cube_map(chi_map, q, w);
 }
 
-void plot_chis(double T, double w) {
+void plot_chis(float T, float w) {
     vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
-    auto chi_map = chi_cube_freq(T, mu, get_DOS(FS));
+    auto chi_map = chi_cube_freq(T, mu);
     ofstream file("chi_freq_v_q.txt");
-    //double mu = 1.0;
-    double n = 50;
+    //float mu = 1.0;
+    float n = 50;
     for (int i = 1; i < n; i++) {
-        double mag = M_PI * i / n;
+        float mag = M_PI * i / n;
         Vec q(mag, mag, mag);
         file << q << " " 
             << analytic_fermi_gas_chi(q, w, mu)
@@ -40,19 +42,17 @@ void plot_chis(double T, double w) {
     }
 }
 
-double integrate_chi(Vec q, double T, double w) {
+float integrate_chi(Vec q, float T, float w) {
     return integrate_susceptibility(q, T, mu, w, 100);
 }
 
-void plot_test_chi_analytic(double T, double w, double delta) {
+void plot_test_chi_analytic(float T, float w, float delta) {
     ofstream file("chi_test_analytic.txt");
-    double n = 50;
-    int pts = get_num_points_from_delta(delta);
+    float n = 50;
     for (int i = 1; i < n; i++) {
-        double mag = M_PI * i / (n-1);
+        float mag = M_PI * i / (n-1);
         Vec q(mag, mag, mag);
-        double integral = modified_integral_wrapper(q,T,mu,w,delta,pts);
-        //double integral = integrate_susceptibility(q, T, mu, w, 100);
+        float integral = integrate_susceptibility(q, T, mu, w, 100);
         file << q << " " << integral << endl;
     }
 }

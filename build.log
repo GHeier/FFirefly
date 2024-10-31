@@ -1,0 +1,7 @@
+/usr/bin/ld: build/tests/matsubara_tests.o: in function `test_real_integration()':
+/home/g/Research/bcs_diagonalization/tests/matsubara_tests.cpp:50:(.text+0x140): undefined reference to `trapezoidal_integration(std::function<float (float, float, float)> const&, float, float, float, float, float, float, int)'
+/usr/bin/ld: build/tests/plot.o: in function `plot_single_chi(float, float)':
+/home/g/Research/bcs_diagonalization/tests/plot.cpp:153:(.text+0x3011): undefined reference to `trapezoidal_integration(std::function<float (float, float, float)> const&, float, float, float, float, float, float, int)'
+/usr/bin/ld: build/tests/plot.o: in function `plot_chi(float, float)':
+/home/g/Research/bcs_diagonalization/tests/plot.cpp:37:(.text+0x3534): undefined reference to `trapezoidal_integration(std::function<float (float, float, float)> const&, float, float, float, float, float, float, int)'
+collect2: error: ld returned 1 exit status

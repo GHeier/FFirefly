@@ -87,7 +87,7 @@ complex<float> complex_trapezoidal_integration(const function<complex<float>(flo
  *
  * @return float
  */
-float trapezoidal_integration(const function<float(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points);
+float trapezoidal_integration(const function<double(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points);
 /**
  * @brief Calculate the susceptibility cube
  *

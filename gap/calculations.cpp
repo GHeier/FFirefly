@@ -14,7 +14,6 @@
 #include <math.h>
 #include <vector>
 #include <unordered_map>
-#include <memory>
 #include <openblas/lapacke.h>
 #include <boost/functional/hash.hpp>
 

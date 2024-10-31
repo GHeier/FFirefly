@@ -4,22 +4,24 @@
 
 #include <complex>
 #include "calculations.h"
+#include "interpolate.h"
+#include "vec.h"
 
 struct MatCube {
     vector<vector<vector<vector<complex<float>>>>> cube;
+    float x_min;
+    float x_max;
+    float y_min;
+    float y_max;
+    float z_min;
+    float z_max;
     float w_min;
     float w_max;
-    int w_pts;
-    int mx_pts;
-    int my_pts;
-    int mz_pts;
     int num_integral_pts;
 
     // Constructor
-    MatCube(int mx, int my, int mz, int w_pts, int num_integral_pts=0, float w_min=0, float w_max=0)
-        : w_min(w_min), w_max(w_max), w_pts(w_pts), 
-        num_integral_pts(num_integral_pts), 
-        mx_pts(mx), my_pts(my), mz_pts(mz)
+    MatCube(int mx, int my, int mz, int w_pts, float x_min, float x_max, float y_min, float y_max, float z_min, float z_max, float w_min, float w_max, int num_integral_pts)
+        : x_min(x_min), x_max(x_max), y_min(y_min), y_max(y_max), z_min(z_min), z_max(z_max), w_min(w_min), w_max(w_max), num_integral_pts(num_integral_pts)
     {
         // Initialize 'cube' to the specified dimensions
         cube = vector<vector<vector<vector<complex<float>>>>>(
@@ -29,6 +31,12 @@ struct MatCube {
                 )
             )
         );
+    }
+
+    // Accessor
+    complex<float> operator()(Vec q, complex<float> w) {
+        return interpolate_4D_complex(q.vals[0], q.vals[1], q.vals[2], w.imag(), 
+                x_min, x_max, y_min, y_max, z_min, z_max, w_min, w_max, cube);
     }
 };
 

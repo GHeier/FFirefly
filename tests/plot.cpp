@@ -9,33 +9,19 @@
 #include <vector>
 #include <complex>
 
-#include <unordered_set>
 #include <unordered_map>
 #include <boost/functional/hash.hpp>
 #include <gsl/gsl_integration.h>
-#include <functional>
 
-//#include <boost/math/tools/roots.hpp>
-//#include <Eigen/Dense>
-//#include <gsl/gsl_integration.h>
-//#include <python3.10/Python.h>
+#include "../gap/cfg.h"
+#include "../gap/fermi_surface.h"
+#include "../gap/vec.h"
+#include "../gap/analysis.h"
+#include "../gap/save_data.h"
+#include "../gap/calculations.h"
+#include "../gap/susceptibility.h"
 
-#include "cfg.h"
-#include "fermi_surface.h"
-#include "vec.h"
-#include "analysis.h"
-#include "band_structure.h"
-//#include "py_port.h"
-#include "save_data.h"
-#include "utilities.h"
-#include "potential.h"
-#include "calculations.h"
-
-using std::cout;
-using std::endl;
-using std::string;
-using std::vector;
-using std::unordered_map;
+using namespace std;
 
 void plot_chi(float T, float w) {
     ofstream file("chi_plot.dat");

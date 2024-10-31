@@ -25,9 +25,9 @@ int s_div = (dim == 3) ? 40 : 300; // Number of integral surface divisions
 int s_pts = (dim == 3) ? 50 : 1000; // Number of integral surfaces
 int m = 40; // Number of chi points
 int l = 5; // Number of frequency points
-int dim = 2; // Number of dimensions)
+int dim = 3; // Number of dimensions)
 string potential_name = "scalapino";
-string band_name = "sphere";
+string band_name = "simple_cubic";
 int num_eigenvalues_to_save = 1;
 bool FS_only = true;
                
@@ -37,16 +37,16 @@ float tn = 0.0;
 float tnn = 0.0;
 float U = 4.0;
 float k_max = M_PI;
-float mu = 1.0;
+float mu = 0.0;
 float wc = 0.05;
 
 
-void init_config(float &mu, float &U, float &t, float &tn, float &w_D, float new_mu, float new_U, float new_t, float new_tn, float new_w_D) {
+void init_config(float &mu, float &U, float &t, float &tn, float &wc, float new_mu, float new_U, float new_t, float new_tn, float new_wc) {
     mu = new_mu;
     U = new_U;
     t = new_t;
     tn = new_tn;
-    w_D = new_w_D;
+    wc = new_wc;
 }
 
 void change_global_constant(float &a, float b) {

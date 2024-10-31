@@ -67,4 +67,3 @@ void test_interpolate_4D() {
 
     cout << "4D interpolation tests passed!" << endl;
 }
-

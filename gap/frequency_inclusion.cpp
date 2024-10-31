@@ -22,7 +22,6 @@
 #include <unordered_map>
 #include <boost/functional/hash.hpp>
 
-//#include <lambda_lanczos/lambda_lanczos.hpp>
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/quadrature/gauss.hpp>
 
@@ -140,8 +139,14 @@ unordered_map <float, vector<vector<vector<float>>>> chi_cube_freq(float T, floa
 }
 
 MatCube create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_min, float w_max, int num_integral_pts) {
-    int m_z = m * (dim%2) + 1*((dim+1)%2);
-    MatCube matsubara_cube(m_pts, m_pts, m_z, w_pts, num_integral_pts);
+    // Create the Matsubara cube
+    // The Matsubara cube is a 4D cube that contains the susceptibility at each point in k-space and frequency space
+    // The cube is created by integrating the susceptibility over the entire BZ
+    // The cube is then used to interpolate the susceptibility at each point in the BZ
+    // The cube is then used to calculate the V matrix
+    int m_z = m * (dim%2) + 1*((dim+1)%2); // If dim == 2, m_z = 1, if dim == 3, m_z = m
+    MatCube matsubara_cube(m_pts, m_pts, m_z, w_pts, -k_max, k_max, -k_max, k_max, -k_max, k_max, w_min, w_max, num_integral_pts);
+    // First determine irreducible BZ points
     unordered_map<string, complex<float>> map;
     float empty_val = -98214214.0;
     for (int i = 0; i < m_pts; i++) {
@@ -159,7 +164,7 @@ MatCube create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_m
             }
         }
     }
-    
+    // Now take the integrals at these points
     cout << "Taking " << map.size() << " integrals in " << dim << "+1 dimensions.\n";
     #pragma omp parallel for
     for(unsigned int i = 0; i < map.size(); i++) {
@@ -174,6 +179,7 @@ MatCube create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_m
     }
     cout << endl;
 
+    // Now fill the cube with the values. The cube is filled over the entirety of the BZ, not just the IBZ. This is out of laziness
     for (int i = 0; i < m_pts; i++) {
         for (int j = 0; j < m_pts; j++) {
             for (int k = 0; k < m_z; k++) {
