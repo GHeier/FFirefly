@@ -45,6 +45,9 @@ float M = 15.999;
 float C = 1;
 float Vol = 1;
 
+// Debugging DOS REMEMBER TO FIX HEADER WHEN U COMMENT OUT
+// float DOS = 1
+
 Vec c(5000, 4000, 0); // lntdal ultsonic wave velocity ([001], [110], 0)
 
 
@@ -116,14 +119,8 @@ float vp(const Vec k) {
     }
 }
 
-// Overloaded function for V
-float V(const Vec k1, const Vec k2, float w, const float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube) {
-    float DOS;
-    return V(k1, k2, w, T, chi_cube, DOS);
-}
-
 // Original function for V (NO CHANGE FROM ORIGINAL)
-float V(const Vec k1, const Vec k2, float w, const float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube, float DOS) {
+float V(const Vec k1, const Vec k2, float w, const float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube) {
     if (potential_name == "const")
         return potential_const(k1, k2);
     if (potential_name == "scalapino") {
@@ -134,7 +131,7 @@ float V(const Vec k1, const Vec k2, float w, const float T, const unordered_map<
         return potential_scalapino_triplet(k1, k2, T, w, chi_cube);
     if (potential_name == "phonon_coulomb") {
         Vec q = k1 - k2;
-        return phonon_coulomb(q, c, DOS);
+        return phonon_coulomb(q, c);
     }
     if (potential_name == "test")
         return potential_test(k1, k2);// / pow(2*M_PI, dim);

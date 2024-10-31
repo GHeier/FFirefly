@@ -44,7 +44,7 @@ float potential_test(Vec k1, Vec k2) {
     return -1*( cos(q1.vals[0]) - cos(q1.vals[1]) )*( cos(q2.vals[0]) - cos(q2.vals[1]) ) + (-0.5)*sin(q1.vals[0])*sin(q1.vals[1])*sin(q2.vals[0])*sin(q2.vals[1]);
 }
 
-float phonon_coulomb(Vec q, Vec c, float DOS) {
+float phonon_coulomb(Vec q, Vec c) {
     if (q.cartesian == false) q.to_cartesian();
     if (c.cartesian == false) c.to_cartesian();
 
@@ -54,14 +54,18 @@ float phonon_coulomb(Vec q, Vec c, float DOS) {
     float qy = q.vals[1];
 
     float α = ((cy * cy) - (cx * cx)) / (cx * cx);
-    float q_s_sq = (8 * M_PI * e * e * DOS) / (Vol * ε);
+    float q_s_sq = (8 * M_PI * e * e) / (Vol * ε);
+    float C_sq = C * C;
+    float denom_Vp = (N * M * (cx*cx) * (1 + ((α*qx*qx)/(q.norm()*q.norm()))));
+
     float Vp = 0;
     float Vc = 0;
 
+    // 2D norm:
     float norm = sqrt((qx*qx)+(qy*qy));
-    if (norm != q.norm()){
-	    cout << "DEBUG: q.norm() = " << q.norm() << ", but manually computed norm is " << norm << endl;
-    }
+    //if (norm != q.norm()){
+	    //cout << "DEBUG: q.norm() = " << q.norm() << ", but manually computed norm is " << norm << endl;
+    //}
 
     cout << "DEBUG: q.norm() = " << q.norm() << endl;
     cout << "DEBUG: q_s_sq = " << q_s_sq << endl;
@@ -74,16 +78,19 @@ float phonon_coulomb(Vec q, Vec c, float DOS) {
             Vc = 0;
             cout << "DEBUG: norm of q and q_s_sq are zero, setting Vc to " << Vc << endl;
         }
-    }
-
+	    }
+    cout << "DEBUG: numerator of Vp = " << (C_sq) << endl;
+    cout << "DEBUG: denominator of Vp = " << (denom_Vp) << endl;
+    cout << "DEBUG: N = " << N << endl;
     if (q.norm() != 0 && q_s_sq != 0) {
-        Vp = (C * C) / (N * M * (cx * cx)) * (1 + (α * ((qx * qx) / (q.norm() * q.norm()))));
-        Vc = (4 * M_PI * e * e) / (Vol * ε * ((q.norm() * q.norm()) + q_s_sq));
-        cout << "DEBUG: Calculated Vp = " << Vp << endl;
-        cout << "DEBUG: Calculated Vc = " << Vc << endl;
+    	Vp = ((C_sq) / (denom_Vp));
+    	Vc = (4 * M_PI * e * e) / (Vol * ε * ((q.norm() * q.norm()) + q_s_sq));
+    	cout << "DEBUG: Calculated Vp = " << Vp << endl;
+    	cout << "DEBUG: Calculated Vc = " << Vc << endl;
     }
 
     cout << "DEBUG: Returning Vp + Vc = " << (Vp + Vc) << endl;
+    cout << endl;
     return Vp + Vc;
 }
 

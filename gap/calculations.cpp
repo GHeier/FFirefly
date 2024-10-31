@@ -248,6 +248,7 @@ float f_singlet_integral(float T) {
 void create_P(Matrix &P, vector<Vec> &k, float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube2) {
     cout << "Creating P Matrix\n";
     int a = 0;
+    float DOS = get_DOS(k);
     for (int i = 0; i < P.size; i++) {
         Vec k1 = k[i];
         //#pragma omp parallel for
@@ -263,6 +264,7 @@ void create_P(Matrix &P, vector<Vec> &k, float T, const unordered_map<float, vec
         progress_bar(1.0 * i / P.size);
     }
     P *= (2 / pow(2*M_PI, dim));
+    P *= 1 / DOS; // bc eigenvalue
     cout << "\nP Matrix Created\n";
 }
 

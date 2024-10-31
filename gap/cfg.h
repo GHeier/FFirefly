@@ -31,6 +31,9 @@ extern float N;
 extern float M;
 extern float C;
 
+// DEBUGGING DOS
+// extern float DOS;
+
 void init_config(float &mu, float &U, float &t, float &tn, float &w_D, float new_mu, float new_U, float new_t, float new_tn, float new_w_D);
 void change_global_constant(float &a, float b);
 float epsilon(const Vec k);
