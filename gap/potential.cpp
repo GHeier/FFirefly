@@ -45,34 +45,48 @@ float potential_test(Vec k1, Vec k2) {
 }
 
 float phonon_coulomb(Vec q, Vec c, float DOS) {
-	//return 1; //this was a test by Griffin that confirmed that the p_c is working
     if (q.cartesian == false) q.to_cartesian();
     if (c.cartesian == false) c.to_cartesian();
+
     float cx = c.vals[0];
     float cy = c.vals[1];
     float qx = q.vals[0];
     float qy = q.vals[1];
-    
+
     float α = ((cy * cy) - (cx * cx)) / (cx * cx);
     float q_s_sq = (8 * M_PI * e * e * DOS) / (Vol * ε);
     float Vp = 0;
     float Vc = 0;
-    if (q.norm() == 0) { 
-	Vp = 0.0; //if qnorm = 0, set Vp = 0 s.t. Vp is callable for Vp + Vc
-	cout << "norm of q is zero, setting Vp to " << Vp << std::endl; //DEBUG STUFF
-	if (q_s_sq == 0) {
-		Vc == 0; //if qnorm = 0 and q_s_sq = 0, set Vc = 0 st Vc is callable for Vp + Vc
-		cout << "norm of q and q_s_sq are zero, setting Vc to " << Vp << std::endl;
-	}
-	}
-    if (q.norm() != 0 and q_s_sq !=0) {
-        Vp = (C * C) / (N * M * (cx * cx)) * (1 + (α * ((qx * qx) / (q.norm() * q.norm()))));
-	Vc = (4 * M_PI * e * e) / (Vol * ε * ((q.norm() * q.norm()) + q_s_sq));
+
+    float norm = sqrt((qx*qx)+(qy*qy));
+    if (norm != q.norm()){
+	    cout << "DEBUG: q.norm() = " << q.norm() << ", but manually computed norm is " << norm << endl;
     }
-    cout << "Vc = " << Vc << std::endl; //DEBUG STUFF
-    //cout << "Vp + Vc = " << (Vp + Vc) << std::endl; //DEBUG STUFF
+
+    cout << "DEBUG: q.norm() = " << q.norm() << endl;
+    cout << "DEBUG: q_s_sq = " << q_s_sq << endl;
+
+    if (q.norm() == 0) {
+        Vp = 0.0;
+        cout << "DEBUG: norm of q is zero, setting Vp to " << Vp << endl;
+
+        if (q_s_sq == 0) {
+            Vc = 0;
+            cout << "DEBUG: norm of q and q_s_sq are zero, setting Vc to " << Vc << endl;
+        }
+    }
+
+    if (q.norm() != 0 && q_s_sq != 0) {
+        Vp = (C * C) / (N * M * (cx * cx)) * (1 + (α * ((qx * qx) / (q.norm() * q.norm()))));
+        Vc = (4 * M_PI * e * e) / (Vol * ε * ((q.norm() * q.norm()) + q_s_sq));
+        cout << "DEBUG: Calculated Vp = " << Vp << endl;
+        cout << "DEBUG: Calculated Vc = " << Vc << endl;
+    }
+
+    cout << "DEBUG: Returning Vp + Vc = " << (Vp + Vc) << endl;
     return Vp + Vc;
 }
+
 
 float potential_scal(Vec k1, Vec k2, float T) {
     Vec q_minus = to_IBZ_2(k1 - k2);
