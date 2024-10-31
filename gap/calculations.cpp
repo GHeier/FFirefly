@@ -240,7 +240,6 @@ float f_singlet_integral(float T) {
 // Picks the potential based on the global variable "potential_name"
 void create_P(Matrix &P, vector<Vec> &k, float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube2) {
     cout << "Creating P Matrix\n";
-    int a = 0;
     for (int i = 0; i < P.size; i++) {
         Vec k1 = k[i];
         //#pragma omp parallel for
