@@ -116,8 +116,8 @@ int main() {
     omp_set_num_threads(num_procs - 1);
 
     complex<float> w = 0.0;
-    //plot_matsubara_cube(w);
-    //compare_real_vs_complex_susceptibility();
+    plot_matsubara_cube(w);
+    compare_real_vs_complex_susceptibility();
     if( not test_real_integration()) cout << "Real Integration Test Failed" << endl;
     if( not test_complex_integration()) cout << "Complex Integration Test Failed" << endl;
 

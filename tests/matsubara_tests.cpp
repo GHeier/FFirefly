@@ -18,6 +18,7 @@ void plot_matsubara_cube(complex<float> w) {
         complex<float> c = matsubara_cube(q, w);
         file << mag << " " << c.real() << " " << c.imag() << endl;
     }
+    printf("Output written to matsubara_test_plot.dat\n");
 }
 
 bool compare_real_vs_complex_susceptibility() {
@@ -38,26 +39,24 @@ bool compare_real_vs_complex_susceptibility() {
             return false;
         }
     }
+    printf("Output written to real_vs_complex_integration.dat\n");
     return true;
 }
 
 bool test_real_integration() {
     auto func = [](float x, float y, float z) -> double {
-        double c = 1.0;
-        return c / (x + c);
+        double c = 0.0;
+        return 1 / (x + c);
     };
-    printf("Real Integration Test\n");
-    float c = trapezoidal_integration(func, 1.0, 2.0, 0.0, 1.0, 0.0, 1.0, 1000);
-    cout << "Real Integration Test: " << c << endl;
+    float c = trapezoidal_integration(func, 1.0, 2.0, 0.0, 1.0, 0.0, 1.0, 300);
     return (abs(c - 0.69316) < 0.001);
 }
 
 bool test_complex_integration() {
     auto func = [](float x, float y, float z) -> complex<float> {
-        complex<float> c = {1.0, 0.0};
-        return (float)1 / (x + c);
+        complex<float> c = {0.0, 1.0};
+        return (float)1.0/(x+c);
     };
-    complex<float> c = complex_trapezoidal_integration(func, 1.0, 2.0, 0.0, 1.0, 0.0, 1.0, 1000);
-    cout << "Complex Integration Test: " << c.real() << " " << c.imag() << endl;
+    complex<float> c = complex_trapezoidal_integration(func, 1.0, 2.0, 0.0, 1.0, 0.0, 1.0, 300);
     return (abs(c.real() - 0.45815) < 0.001 and abs(c.imag() - (-0.32175)) < 0.001);
 }

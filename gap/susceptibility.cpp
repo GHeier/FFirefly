@@ -104,56 +104,55 @@ complex<float> complex_susceptibility_integration(Vec q, float T, float mu, comp
 
 float trapezoidal_integration(const function<double(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points) {
     double sum = 0;
-    double dx = (x1 - x0) / (num_points - 1);
-    double dy = (y1 - y0) / (num_points - 1);
-    double dz = (z1 - z0) / (num_points - 1);
+    float dx = (x1 - x0) / (num_points - 1);
+    float dy = (y1 - y0) / (num_points - 1);
+    float dz = (z1 - z0) / (num_points - 1);
     if (dim == 2) dz = 1;
     int counter = 0;
     #pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < num_points; i++) {
-        double x = x0 + i*dx;
+        float x = x0 + i*dx;
         for (int j = 0; j < num_points; j++) {
-            double y = y0 + j*dy;
-            for (double k = 0; k < num_points * (dim%2) + 1 * ((dim+1)%2); k++) {
-                double z = z0 + k*dz;
-                double weight = 1.0;
+            float y = y0 + j*dy;
+            for (float k = 0; k < num_points * (dim%2) + 1 * ((dim+1)%2); k++) {
+                float z = z0 + k*dz;
+                float weight = 1.0;
                 if (i == 0 or i == num_points - 1) weight /= 2.0;
                 if (j == 0 or j == num_points - 1) weight /= 2.0;
                 if ( (k == 0 or k == num_points - 1) and dim == 3) weight /= 2.0;
 
-                sum += weight * f(x,y,z);
+                sum += weight * f(x,y,z) * dx * dy * dz;
             }
         }
     }
-    printf("Sum, dx, dy, dz: %f %f %f %f\n", sum, dx, dy, dz);
-    return (float)sum * dx * dy * dz;
+    return (float)sum;
 }
 
 complex<float> complex_trapezoidal_integration(const function<complex<float>(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points) {
     complex<double> sum = 0;
-    double dx = (x1 - x0) / (num_points - 1);
-    double dy = (y1 - y0) / (num_points - 1);
-    double dz = (z1 - z0) / (num_points - 1);
-    double num_z_points = num_points;
+    float dx = (x1 - x0) / (num_points - 1);
+    float dy = (y1 - y0) / (num_points - 1);
+    float dz = (z1 - z0) / (num_points - 1);
+    float num_z_points = num_points;
     if (dim == 2) dz = 1;
 
     //#pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < num_points; i++) {
-        double x = x0 + i * dx;
+        float x = x0 + i * dx;
         for (int j = 0; j < num_points; j++) {
-            double y = y0 + j * dy;
-            for (double k = 0; k < num_points; k++) {
-                double z = z0 + k * dz;
+            float y = y0 + j * dy;
+            for (float k = 0; k < num_points; k++) {
+                float z = z0 + k * dz;
                 float weight = 1.0;
                 if (i == 0 || i == num_points - 1) weight /= 2.0;
                 if (j == 0 || j == num_points - 1) weight /= 2.0;
                 if ((k == 0 || k == num_points - 1) && dim == 3) weight /= 2.0;
 
-                sum += weight * f(x, y, z);
+                sum += weight * f(x, y, z) * dx * dy * dz;
             }
         }
     }
-    return complex<float>(static_cast<float>(sum.real()), static_cast<float>(sum.imag())) * static_cast<float>(dx * dy * dz);
+    return complex<float>(static_cast<float>(sum.real()), static_cast<float>(sum.imag()));
 }
 
 vector<vector<vector<float>>> chi_cube(float T, float mu, float w, string message) {
