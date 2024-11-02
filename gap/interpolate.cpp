@@ -248,11 +248,12 @@ complex<float> interpolate_2D_complex(float x_val, float y_val, float x_min, flo
     float x_rel = (x_val - x_min) / dx - i;
     float y_rel = (y_val - y_min) / dy - j;
 
-    complex<float> result = (1 - x_rel) * (1 - y_rel) * f[i][j] +
-                            x_rel * (1 - y_rel) * f[i + 1][j] +
-                            (1 - x_rel) * y_rel * f[i][j + 1] +
-                            x_rel * y_rel * f[i + 1][j + 1];
+    complex<float> fx1 = (1 - x_rel) * f[i][j] + x_rel * f[i + 1][j];
+    complex<float> fx2 = (1 - x_rel) * f[i][j + 1] + x_rel * f[i + 1][j + 1];
+
+    complex<float> result = (1 - y_rel) * fx1 + y_rel * fx2;
     return result;
+
 }
 
 complex<float> interpolate_3D_complex(float x_val, float y_val, float z_val, float x_min, float x_max, float y_min, float y_max, float z_min, float z_max, vector<vector<vector<complex<float>>>> &f) {
@@ -293,14 +294,16 @@ complex<float> interpolate_3D_complex(float x_val, float y_val, float z_val, flo
     float y_rel = (y_val - y_min) / dy - j;
     float z_rel = (z_val - z_min) / dz - k;
 
-    complex<float> result = (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * f[i][j][k] +
-                            x_rel * (1 - y_rel) * (1 - z_rel) * f[i + 1][j][k] +
-                            (1 - x_rel) * y_rel * (1 - z_rel) * f[i][j + 1][k] +
-                            x_rel * y_rel * (1 - z_rel) * f[i + 1][j + 1][k] +
-                            (1 - x_rel) * (1 - y_rel) * z_rel * f[i][j][k + 1] +
-                            x_rel * (1 - y_rel) * z_rel * f[i + 1][j][k + 1] +
-                            (1 - x_rel) * y_rel * z_rel * f[i][j + 1][k + 1] +
-                            x_rel * y_rel * z_rel * f[i + 1][j + 1][k + 1];
+    complex<float> fx1 = (1 - x_rel) * f[i][j][k] + x_rel * f[i + 1][j][k];
+    complex<float> fx2 = (1 - x_rel) * f[i][j+1][k] + x_rel * f[i + 1][j+1][k];
+    complex<float> fx3 = (1 - x_rel) * f[i][j][k+1] + x_rel * f[i + 1][j][k+1];
+    complex<float> fx4 = (1 - x_rel) * f[i][j+1][k+1] + x_rel * f[i + 1][j+1][k+1];
+
+    complex<float> fy1 = (1 - y_rel) * fx1 + y_rel * fx2;
+    complex<float> fy2 = (1 - y_rel) * fx3 + y_rel * fx4;
+
+    complex<float> result = (1 - z_rel) * fy1 + z_rel * fy2;
+
     return result;
 }
 
@@ -317,6 +320,8 @@ complex<float> interpolate_4D_complex(float x_val, float y_val, float z_val, flo
     // f: vector of function values at the grid points
     // returns: interpolated value of f(x_val, y_val, z_val, w_val)
 
+    printf("Input values: %f %f %f %f\n", x_val, y_val, z_val, w_val);
+    printf("Bounds: %f %f %f %f %f %f %f %f\n", x_min, x_max, y_min, y_max, z_min, z_max, w_min, w_max);
     assert(x_val >= x_min && x_val <= x_max);
     assert(y_val >= y_min && y_val <= y_max);
     assert(z_val >= z_min && z_val <= z_max);
@@ -348,25 +353,28 @@ complex<float> interpolate_4D_complex(float x_val, float y_val, float z_val, flo
     float y_rel = (y_val - y_min) / dy - j;
     float z_rel = (z_val - z_min) / dz - k;
     float w_rel = (w_val - w_min) / dw - l;
+    printf("Relative values: %f %f %f %f\n", x_rel, y_rel, z_rel, w_rel);
+    printf("Cube values: %f %f %f %f %f %f %f %f\n", f[i][j][k][l].real(), f[i + 1][j][k][l].real(), f[i][j + 1][k][l].real(), f[i + 1][j + 1][k][l].real(), f[i][j][k + 1][l].real(), f[i + 1][j][k + 1][l].real(), f[i][j + 1][k + 1][l].real(), f[i + 1][j + 1][k + 1][l].real());
 
-complex<float> result =
-        (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * (1 - w_rel) * f[i][j][k][l] +
-        x_rel * (1 - y_rel) * (1 - z_rel) * (1 - w_rel) * f[i + 1][j][k][l] +
-        (1 - x_rel) * y_rel * (1 - z_rel) * (1 - w_rel) * f[i][j + 1][k][l] +
-        x_rel * y_rel * (1 - z_rel) * (1 - w_rel) * f[i + 1][j + 1][k][l] +
-        (1 - x_rel) * (1 - y_rel) * z_rel * (1 - w_rel) * f[i][j][k + 1][l] +
-        x_rel * (1 - y_rel) * z_rel * (1 - w_rel) * f[i + 1][j][k + 1][l] +
-        (1 - x_rel) * y_rel * z_rel * (1 - w_rel) * f[i][j + 1][k + 1][l] +
-        x_rel * y_rel * z_rel * (1 - w_rel) * f[i + 1][j + 1][k + 1][l] +
-        (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * w_rel * f[i][j][k][l + 1] +
-        x_rel * (1 - y_rel) * (1 - z_rel) * w_rel * f[i + 1][j][k][l + 1] +
-        (1 - x_rel) * y_rel * (1 - z_rel) * w_rel * f[i][j + 1][k][l + 1] +
-        x_rel * y_rel * (1 - z_rel) * w_rel * f[i + 1][j + 1][k][l + 1] +
-        (1 - x_rel) * (1 - y_rel) * z_rel * w_rel * f[i][j][k + 1][l + 1] +
-        x_rel * (1 - y_rel) * z_rel * w_rel * f[i + 1][j][k + 1][l + 1] +
-        (1 - x_rel) * y_rel * z_rel * w_rel * f[i][j + 1][k + 1][l + 1] +
-        x_rel * y_rel * z_rel * w_rel * f[i + 1][j + 1][k + 1][l + 1];
 
+    complex<float> fx1 = f[i][j][k][l] * (1 - x_rel) + f[i + 1][j][k][l] * x_rel;
+    complex<float> fx2 = f[i][j+1][k][l] * (1 - x_rel) + f[i + 1][j+1][k][l] * x_rel;
+    complex<float> fx3 = f[i][j][k+1][l] * (1 - x_rel) + f[i+1][j][k+1][l] * x_rel;
+    complex<float> fx4 = f[i][j+1][k+1][l] * (1 - x_rel) + f[i + 1][j + 1][k+1][l] * x_rel;
+    complex<float> fx5 = f[i][j][k][l+1] * (1 - x_rel) + f[i + 1][j][k][l+1] * x_rel;
+    complex<float> fx6 = f[i][j+1][k][l+1] * (1 - x_rel) + f[i + 1][j+1][k][l+1] * x_rel;
+    complex<float> fx7 = f[i][j][k+1][l+1] * (1 - x_rel) + f[i+1][j][k+1][l+1] * x_rel;
+    complex<float> fx8 = f[i][j+1][k+1][l+1] * (1 - x_rel) + f[i + 1][j + 1][k+1][l+1] * x_rel;
+
+    complex<float> fy1 = (1 - y_rel) * fx1 + y_rel * fx2;
+    complex<float> fy2 = (1 - y_rel) * fx3 + y_rel * fx4;
+    complex<float> fy3 = (1 - y_rel) * fx5 + y_rel * fx6;
+    complex<float> fy4 = (1 - y_rel) * fx7 + y_rel * fx8;
+
+    complex<float> fz1 = (1 - z_rel) * fy1 + z_rel * fy2;
+    complex<float> fz2 = (1 - z_rel) * fy3 + z_rel * fy4;
+
+    complex<float> result = (1 - w_rel) * fz1 + w_rel * fz2;
     return result;
 }
 

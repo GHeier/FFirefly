@@ -28,6 +28,8 @@
 //#include "surface_integrals.cpp"
 //#include "freq_test.cpp"
 #include "matsubara_tests.h"
+#include "interpolate_test.h"
+#include "plot.h"
 
 using std::cout;
 using std::endl;
@@ -115,12 +117,24 @@ int main() {
     int num_procs = omp_get_num_procs();
     omp_set_num_threads(num_procs - 1);
 
-    complex<float> w = 0.0;
+    complex<float> w = complex<float>(0.0, 0.0);
+
+    test_interpolate_2D();
+    test_interpolate_3D();
+    test_interpolate_4D();
+    if (not check_matcube_interpolation() )
+        cout << "Matcube Interpolation Test Failed" << endl;
     //plot_matsubara_cube(w);
+    if (not compare_real_vs_complex_susceptibility_integration(Vec(1,1,1), 0.25, 0.0, 0.0, 100))
+        cout << "Real vs Complex Susceptibility Integration Test Failed" << endl;
     //compare_real_vs_complex_susceptibility();
-    plot_real_susceptibility();
-    if( not test_real_integration()) cout << "Real Integration Test Failed" << endl;
-    if( not test_complex_integration()) cout << "Complex Integration Test Failed" << endl;
+    //plot_real_susceptibility_integration(w.real());
+    //plot_complex_susceptibility_integration(w);
+    //plot_real_trapezoidal_susceptibility_integration(0.0);
+    if (not test_real_integration()) 
+        cout << "Real Integration Test Failed" << endl;
+    if (not test_complex_integration()) 
+        cout << "Complex Integration Test Failed" << endl;
 
     return 0;
 }

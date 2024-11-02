@@ -1,15 +1,11 @@
-#include <iomanip>
 #include <iostream>
 #include <fstream>
-//#include <chrono>
 
 #include <cstring>
 #include <string>
 #include <math.h>
-#include <vector>
 #include <complex>
 
-#include <unordered_map>
 #include <boost/functional/hash.hpp>
 #include <gsl/gsl_integration.h>
 
@@ -20,179 +16,83 @@
 #include "../gap/save_data.h"
 #include "../gap/calculations.h"
 #include "../gap/susceptibility.h"
+#include "../gap/save_data.h"
 
 using namespace std;
 
-void plot_chi(float T, float w) {
-    ofstream file("chi_plot.dat");
-    float n = 50.0;
-    for (float new_mu = 0; new_mu > -4.0; new_mu--) {
-        for (float i = 0; i < n; i++) {
-            float q_mag = i/(n-1) * M_PI;
-            Vec q(q_mag, q_mag, q_mag);
-            auto f = [T, w, q] (float x, float y, float z) -> float {
-                Vec k(x, y, z);
-                return ratio(k, q, w, T);
-            };
-            float c = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60) / pow(2*M_PI, dim);
-            //float c2 = varied_chi_trapezoidal(q, T, mu, 40);
-            file << q_mag << " " << c << endl;
-        }
-        file << endl;
+void plot_real_susceptibility_integration(float w) {
+    float T = 0.25;
+    float mu = 0.0;
+    int num_points = 100;
+    ofstream file("susceptibility_integration.dat");
+    for (int i = 0; i < 50; i++) {
+        float mag = M_PI * i / 49.0;
+        Vec q(mag, mag, mag);
+        float c = integrate_susceptibility(q, T, mu, w, num_points);
+        file << mag << " " << c << endl;
     }
+    printf("Output written to susceptibility_integration.dat\n");
 }
 
-void plot_complex_chi(float T, complex<float> w) {
-    ofstream file("chi_complex_plot.dat");
-    float n = 500.0;
-    for (float new_mu = 0; new_mu > -4.0; new_mu--) {
-        for (float i = 0; i < n; i++) {
-            float q_mag = i/(n-1) * M_PI;
-            Vec q(q_mag, q_mag, q_mag);
-            complex<float> c = complex_susceptibility_integration(q, T, mu, w, 100);
-            //float c2 = varied_chi_trapezoidal(q, T, mu, 40);
-            file << q_mag << " " << c.real() << " " << c.imag() << endl;
-            cout << q_mag << " " << c.real() << " " << c.imag() << endl;
-        }
-        file << endl;
+void plot_complex_susceptibility_integration(complex<float> w) {
+    float T = 0.25;
+    float mu = 0.0;
+    int num_points = 100;
+    ofstream file("complex_susceptibility_integration.dat");
+    for (int i = 0; i < 50; i++) {
+        float mag = M_PI * i / 49.0;
+        Vec q(mag, mag, mag);
+        complex<float> c = complex_susceptibility_integration(q, T, mu, w, num_points);
+        file << mag << " " << c.real() << " " << c.imag() << endl;
     }
+    printf("Output written to complex_susceptibility_integration.dat\n");
 }
 
-void plot_potential(float T) {
-    ofstream file("info.log");
-    file << "q V " << endl;
-    auto FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
-    float DOS = 0;
-    for (int i = 0; i < FS.size(); i++)
-        DOS += FS[i].area / vp(FS[i]);
-    float n = 80.0;
-    for (float mu = 0.0; mu > -2.0; mu--) {
-        unordered_map<float, vector<vector<vector<float>>>> cube = chi_cube_freq(T, mu);
-        for (float i = 0; i < n; i++) {
-            float q_mag = i/(n-1) * M_PI;
-            Vec q(q_mag, q_mag, 0);
-            Vec zero;
-            float potential = V(zero, q, 0, T, cube);
-            //float potential = U*U * c / ( 1 - U * c) + U*U*U * c*c / ( 1 - U*U * c*c);
-            file << q_mag << " " << potential << endl;
-        }
-        file << endl;
-    }
-}
+void plot_real_trapezoidal_susceptibility_integration(float w) {
+    float T = 0.25;
+    float mu = 0.0;
+    int num_points = 100;
+    ofstream file("trap_susceptibility_integration.dat");
+    for (int i = 0; i < 50; i++) {
+        float mag = M_PI * i / 49.0;
+        Vec q(mag, mag, mag);
 
-void plot_chi2(float T) {
-    ofstream file("chi_plot2.dat");
-    file << "q chi " << endl;
-    float n = 50.0;
-    for (float mu = -0.0; mu > -4.0; mu-=1.0) {
-        vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
-        float DOS = get_DOS(FS);
-        vector<vector<vector<float>>> cube = chi_cube(T, mu, DOS, 0);
-        for (float i = 0; i < n; i++) {
-            float q_mag = i/(n-1) * M_PI;
-            Vec q(q_mag, q_mag, q_mag);
-            float c = calculate_chi_from_cube(cube, q);
-            file << q_mag << " " << c << endl;
-        }
-        file << endl;
-    }
-}
-
-void plot_chi3(float T, float w, float eta, int pts) {
-    ofstream file("chi_plot3.dat");
-    file << "q chi " << endl;
-    float n = 50.0;
-    for (float mu = 0.0; mu < 4.0; mu++) {
-        for (float i = 0; i < n; i++) {
-            printf("\r Mu %.1f: %.3f" , mu, i/(n-1));
-            float q_mag = i/(n-1) * M_PI;
-            Vec q(q_mag, q_mag, q_mag);
-            float c = integrate_susceptibility(q, T, mu, 0, 3*pts);
-            //float c = modified_integral_wrapper(q, T, mu, 0, delta, pts);
-            file << q_mag << " " << c << endl;
-        }
-        file << endl;
-    }
-}
-
-void plot_chi4(float T, float w, int pts) {
-    ofstream file("chi_plot4.dat");
-    file << "q chi " << endl;
-    Vec q_temp(M_PI, M_PI, M_PI);
-    float n = 50.0;
-    for (float mu = 0.0; mu > -4.0; mu--) {
-        for (float i = 0; i < n; i++) {
-            printf("\r Mu %.1f: %.3f" , mu, 100.0*i/(n-1));
-            float q_mag = i/(n-1) * M_PI;
-            Vec q(q_mag, q_mag, q_mag);
-            float c = integrate_susceptibility(q, T, mu, w, pts);
-            //cout << c << endl;
-            //cout << integrate_susceptibility(q_temp,T,mu,0,30) << endl;
-            file << q_mag << " " << c << endl;
-            fflush(stdout);
-        }
-        file << endl;
-    }
-}
-
-void plot_single_chi(float T, float w) {
-    ofstream file("single_chi_plot.dat");
-    file << "q chi " << endl;
-    float n = 50.0;
-    float new_mu = 1.0;
-    init_config(mu, U, t, tn, wc, new_mu, U, t, tn, wc);
-    for (float i = 0; i < n; i++) {
-        printf("\r Mu %.1f: %.3f" , new_mu, 100.0*i/(n-1));
-        fflush(stdout);
-        float q_mag = i/(n-1) * M_PI;
-        Vec q(q_mag, q_mag, q_mag);
-        auto f = [T, w, q] (float x, float y, float z) {
-            Vec k(x, y, z);
-            return integrand(k, q, w, T);
+        auto func = [T, q, w, mu](float x, float y, float z) -> float {
+            Vec k(x,y,z);
+            float e_k = epsilon(k) - mu;
+            float e_kq = epsilon(k+q) - mu;
+            float f_kq = f(e_kq, T);
+            float f_k = f(e_k, T);
+            if (fabs(e_kq - e_k) < 0.0001 and fabs(w) < 0.0001) {
+                if (T == 0 or exp(e_k/T) > 1e6) return e_k < 0;
+                return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
+            }
+            return (f_kq - f_k) / (w - (e_kq - e_k));
         };
-        float c = trapezoidal_integration(f, -M_PI, M_PI, -M_PI, M_PI, -M_PI, M_PI, 60);
-        file << q_mag << " " << c << endl;
+
+
+        float c = trapezoidal_integration(func, -k_max, k_max, -k_max, k_max, -k_max, k_max, num_points);
+        c /= pow(2*M_PI, dim);
+        file << mag << " " << c << endl;
     }
-    cout << endl;
+    printf("Output written to trap_susceptibility_integration.dat\n");
 }
 
-void plot_single_chi2(float T, float w) {
-    ofstream file("single_chi_plot2.dat");
-    file << "q chi " << endl;
-    float n = 50.0;
-    float new_mu = 1.0;
-    init_config(mu, U, t, tn, wc, new_mu, U, t, tn, wc);
-    vector<vector<vector<float>>> cube = chi_cube(T, mu, w, "Cube 1/1");
-    for (float i = 0; i < n; i++) {
-        printf("\r Mu %.1f: %.3f" , new_mu, 100.0*i/(n-1));
-        fflush(stdout);
-        float q_mag = i/(n-1) * M_PI;
-        Vec q(q_mag, q_mag, q_mag);
-        float c = calculate_chi_from_cube(cube, q);
-        file << q_mag << " " << c << endl;
-    }
-    cout << endl;
-}
+void plot_matsubara_cube(complex<float> w) {
+    float T = 0.25;
+    float mu = 0.0;
+    MatCube matsubara_cube = create_matsubara_cube(T, mu, m, w_pts, -max_freq, max_freq, 100);
+    save_matsubara_cube(matsubara_cube, matsubara_cube.w_min, matsubara_cube.w_max, "matsubara_cube.dat");
+    ofstream file("matsubara_test_plot.dat");
 
-void plot_single_chi3(float T, float w) {
-    ofstream file("single_chi_plot3.dat");
-    file << "q chi " << endl;
-    float n = 50.0;
-    float new_mu = 1.0;
-    init_config(mu, U, t, tn, wc, new_mu, U, t, tn, wc);
-    for (float i = 0; i < n; i++) {
-        printf("\r Mu %.1f: %.3f" , new_mu, 100.0*i/(n-1));
-        fflush(stdout);
-        float q_mag = i/(n-1) * M_PI;
-        Vec q(q_mag, q_mag, q_mag);
-        float c = integrate_susceptibility(q, T, mu, w, s_pts);
-        if (isnan(c)) {
-            cout << "NAN: " << q << endl;
-            assert(false);
-        }
-        file << q_mag << " " << c << endl;
+    // Plot along q = (pi, pi, pi)
+    for (int i = 0; i < 100; i++) {
+        float mag = M_PI * i / 99.0;
+        Vec q(mag, mag, mag);
+        complex<float> c = matsubara_cube(q, w);
+        file << mag << " " << c.real() << " " << c.imag() << endl;
     }
-    cout << endl;
+    printf("Output written to matsubara_test_plot.dat\n");
 }
 
 void plot_surfaces(Vec q, float T, float w) {

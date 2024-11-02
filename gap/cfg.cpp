@@ -23,8 +23,10 @@ using namespace std;
 int n = 20; // Number of k points
 int s_div = (dim == 3) ? 40 : 300; // Number of integral surface divisions
 int s_pts = (dim == 3) ? 50 : 1000; // Number of integral surfaces
-int m = 40; // Number of chi points
-int l = 5; // Number of frequency points
+int m = 10; // Number of chi points
+int l = 5; // Number of BCS frequency points
+int w_pts = 5; // Number of matsubara frequency points
+float max_freq = 10.0; // Maximum frequency for matsubara
 int dim = 3; // Number of dimensions)
 string potential_name = "scalapino";
 string band_name = "simple_cubic";

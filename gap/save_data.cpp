@@ -143,8 +143,8 @@ void save_matsubara_cube(const MatCube &cube, float wmin, float wmax, string fil
                     file << w << " (" << cube.cube[i][j][k][l].real() 
                         << ", " << cube.cube[i][j][k][l].imag() << ") \n";
                     if (w == 0 and cube.cube[i][j][k][l].real() == 0) {
-                        printf("Zero at %d %d %d %d\n", i, j, k, l);
-                        printf("q: %f %f %f\n", q.vals[0], q.vals[1], q.vals[2]);
+                        //printf("Zero at %d %d %d %d\n", i, j, k, l);
+                        //printf("q: %f %f %f\n", q.vals[0], q.vals[1], q.vals[2]);
                     }
                 }
                 file << endl;

@@ -10,6 +10,8 @@ extern int s_div;
 extern int s_pts;
 extern int m;
 extern int l;
+extern int w_pts; 
+extern float max_freq; 
 extern int dim;
 extern string potential_name;
 extern string band_name;

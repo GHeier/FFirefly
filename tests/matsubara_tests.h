@@ -4,12 +4,14 @@
 
 #include <complex>
 
+#include "../gap/vec.h"
+
 using namespace std;
 
-void plot_matsubara_cube(complex<float> w);
+bool check_matcube_interpolation();
 bool compare_real_vs_complex_susceptibility();
+bool compare_real_vs_complex_susceptibility_integration(Vec q, float T, float mu, float w, float num_points);
 bool test_real_integration();
 bool test_complex_integration();
-void plot_real_susceptibility();
 
 #endif

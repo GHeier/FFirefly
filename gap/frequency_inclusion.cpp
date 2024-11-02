@@ -145,14 +145,14 @@ MatCube create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_m
     // The cube is then used to interpolate the susceptibility at each point in the BZ
     // The cube is then used to calculate the V matrix
     int m_z = m * (dim%2) + 1*((dim+1)%2); // If dim == 2, m_z = 1, if dim == 3, m_z = m
-    MatCube matsubara_cube(m_pts, m_pts, m_z, w_pts, -k_max, k_max, -k_max, k_max, -k_max, k_max, w_min, w_max, num_integral_pts);
+    MatCube matsubara_cube(m_pts, m_pts, m_z, w_pts, 0, k_max, 0, k_max, 0, k_max, w_min, w_max, num_integral_pts);
     // First determine irreducible BZ points
     unordered_map<string, complex<float>> map;
     float empty_val = -98214214.0;
     for (int i = 0; i < m_pts; i++) {
         for (int j = 0; j < m_pts; j++) {
             for (int k = 0; k < m_z; k++) {
-                Vec q((2.0*k_max*i)/(1.0*m_pts-1), (2.0*k_max*j)/(1.0*m_pts-1), (2.0*k_max*k)/(1.0*m_z-1));
+                Vec q((k_max*i)/(1.0*m_pts-1), (k_max*j)/(1.0*m_pts-1), (k_max*k)/(1.0*m_z-1));
                 if (m_z == 1) q = Vec(2*k_max*i/(m_pts-1) , 2*k_max*j/(m_pts-1), 0);
                 for (int l = 0; l < w_pts; l++) {
                     float w = w_min + l * (w_max - w_min) / (w_pts - 1);
@@ -184,8 +184,8 @@ MatCube create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_m
         for (int j = 0; j < m_pts; j++) {
             for (int k = 0; k < m_z; k++) {
                 for (int l = 0; l < w_pts; l++) {
-                    Vec q((2.0*k_max*i)/(m_pts-1), (2.0*k_max*j)/(m_pts-1), (2.0*k_max*k)/(m_z-1));
-                    if (m_z == 1) q = Vec(2*k_max*i/(m-1) , 2*k_max*j/(m-1), 0);
+                    Vec q((k_max*i)/(m_pts-1), (k_max*j)/(m_pts-1), (k_max*k)/(m_z-1));
+                    if (m_z == 1) q = Vec(k_max*i/(m-1) , k_max*j/(m-1), 0);
                     q = to_IBZ_2(q);
                     float w = w_min + l * (w_max - w_min) / (w_pts - 1);
                     string key = vec_to_string(q) + " " + to_string(w);
