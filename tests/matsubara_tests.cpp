@@ -5,6 +5,8 @@
 #include "../gap/frequency_inclusion.hpp"
 #include "../gap/cfg.h"
 #include "../gap/susceptibility.h"
+#include "../gap/save_data.h"
+#include "../gap/fermi_surface.h"
 
 using namespace std;
 
@@ -12,27 +14,25 @@ bool check_matcube_interpolation() {
     float T = 0.25;
     float mu = 0.0;
     MatCube matsubara_cube = create_matsubara_cube(T, mu, m, w_pts, -max_freq, max_freq, 100);
+    save_matsubara_cube(matsubara_cube, matsubara_cube.w_min, matsubara_cube.w_max, "matsubara_cube.dat");
+
     complex<float> w1(0.0, 0.0);
     complex<float> w2(0.0, 0.5);
     complex<float> w3(0.0, 1.0);
-    complex<float> w4(0.0, M_PI);
 
     Vec q1(0.0, 0.0, 0.0); complex<float> c1 = matsubara_cube(q1, w1);
     Vec q2(0.5, 0.5, 0.5); complex<float> c2 = matsubara_cube(q2, w2);
-    //Vec q3(1.0, 1.0, 1.0); complex<float> c3 = matsubara_cube(q3, w3);
-    //Vec q4(M_PI, M_PI, M_PI); complex<float> c4 = matsubara_cube(q4, w4);
+    Vec q3(1.0, 1.0, 1.0); complex<float> c3 = matsubara_cube(q3, w3);
 
-    complex<float> i1 = complex_susceptibility_integration(q1, T, mu, w1.imag(), 100);
-    complex<float> i2 = complex_susceptibility_integration(q2, T, mu, w2.imag(), 100);
-    //complex<float> i3 = complex_susceptibility_integration(q3, T, mu, w3.imag(), 100);
-    //complex<float> i4 = complex_susceptibility_integration(q4, T, mu, w4.imag(), 100);
+    complex<float> i1 = complex_susceptibility_integration(q1, T, mu, w1, 100);
+    complex<float> i2 = complex_susceptibility_integration(q2, T, mu, w2, 100);
+    complex<float> i3 = complex_susceptibility_integration(q3, T, mu, w3, 100);
+    printf("Real and imaginary parts of Matsubara cube and integration methods\n");
+    printf("i1: (%f, %f) c1: (%f, %f)\n", i1.real(), i1.imag(), c1.real(), c1.imag());
+    printf("i2: (%f, %f) c2: (%f, %f)\n", i2.real(), i2.imag(), c2.real(), c2.imag());
+    printf("i3: (%f, %f) c3: (%f, %f)\n", i3.real(), i3.imag(), c3.real(), c3.imag());
 
-    printf("Matcube: %f %f \n", c1.real(), c2.real());
-    printf("Integration: %f  %f\n", i1.real(), i2.real());
-    return (abs(c1 - i1) < 0.001 and abs(c2 - i2) < 0.001 );
-    //        and abs(c3 - i3) < 0.001 and abs(c4 - i4) < 0.001);
-
-    return true;
+    return (abs(c1 - i1) < 0.001 and abs(c2 - i2) < 0.001 and abs(c3 - i3) < 0.001); 
 }
 
 bool check_susceptibility_integration_methods_are_equivalent(Vec q, float T, float mu, float w, int num_points) {
@@ -88,6 +88,41 @@ bool compare_real_vs_complex_susceptibility_integration(Vec q, float T, float mu
         return false;
     }
     return true;
+}
+
+bool check_nonzero_imaginary_part() {
+    Vec q(1.0, 1.0, 1.0);
+    float T = 0.25;
+    float mu = 1.0;
+    complex<float> w(0.0, 0.5);
+    int num_points = 100;
+    complex<float> c = complex_susceptibility_integration(q, T, mu, w, num_points);
+    return (abs(c.imag()) > 0.001);
+}
+
+void complex_integration_convergence_test() {
+    Vec q(1.0, 1.0, 1.0);
+    float T = 0.005;
+    float mu = 1.0;
+    complex<float> w(1.0, 0.5);
+    int num_points = 100;
+    for (int i = 0; i < 100; i++) {
+        int num_points = 100 + i * 10;
+        complex<float> c = complex_susceptibility_integration(q, T, mu, w, num_points);
+        cout << num_points << " " << c.real() << " " << c.imag() << endl;
+    }
+}
+
+void analytical_integration_convergence_test() {
+    Vec q(1.0, 1.0, 1.0);
+    float T = 0.005;
+    float mu = 1.0;
+    float w = 0;
+    for (int i = 0; i < 100; i++) {
+        int num_points = 100 + i * 10;
+        float c = analytic_tetrahedron_sum(q, w, num_points);
+        cout << num_points << " " << c << endl;
+    }
 }
 
 bool test_real_integration() {

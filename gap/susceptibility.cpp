@@ -23,6 +23,7 @@
 #include "cfg.h"
 #include "frequency_inclusion.hpp"
 #include "susceptibility.h"
+#include "integration.h"
 
 using namespace std;
 
@@ -69,6 +70,24 @@ float integrand(Vec k, Vec q, float w, float T) {
     return (f_qk - f_k) / (w - dE);
 }
 
+complex<float> integrand(Vec k, Vec q, complex<float> w, float T) {
+    float dE = k.freq;
+    float e_k = epsilon(k) - mu;
+    //float e_qk = epsilon(k+q) - MU;
+    float e_qk = e_k + dE;
+    float f_k = f(e_k, T);
+    float f_qk = f(e_qk, T);
+
+    if (fabs(dE) < 0.0001 and fabs(w.real()) < 0.0001 and fabs(w.imag()) < 0.0001) {
+        if (T == 0 or exp(e_k/T) > 1e6)
+            return e_k < 0;
+        float temp = 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
+        return temp;
+    }
+    if (fabs(w - dE) == 0) return 0;
+    return (f_qk - f_k) / (w - dE);
+}
+
 float integrate_susceptibility(Vec q, float T, float mu, float w, int num_points) {
     //return imaginary_integration(q, T, mu, w, num_points, 0.000);
     if (q.norm() < 0.0001) {
@@ -77,10 +96,20 @@ float integrate_susceptibility(Vec q, float T, float mu, float w, int num_points
         return sum / pow(2*k_max,dim);
     }
     if (q.norm() < 0.0001) q = Vec(0.01,0.01,0.01);
+    auto func = [q, w, T](Vec k) -> float {
+        return ratio(k, q, w, T);
+    };
+    auto denom = [q, w](Vec k) -> float { 
+        return w - (epsilon(k+q) - epsilon(k)); 
+    };
+    auto denom_diff = [q, w](Vec k) -> float { 
+        return vp_diff(k, q); 
+    };
 
     float a, b; get_bounds(q, b, a, denominator);
     vector<float> spacing; get_spacing_vec(spacing, w, a, b, num_points);
-    float c = tetrahedron_sum_continuous(denominator, denominator_diff, q, spacing, w, T);
+    //float c = tetrahedron_sum_continuous(denominator, denominator_diff, q, spacing, w, T);
+    float c = surface_transform_integral(func, denom, denom_diff, spacing);
     return c / pow(2*k_max,dim);
 }
 
@@ -97,7 +126,44 @@ complex<float> complex_susceptibility_integration(Vec q, float T, float mu, comp
         }
         return (f_kq - f_k) / (w - (e_kq - e_k));
     };
+    auto func_r = [T, q, w, mu](Vec k) -> float {
+        float e_k = epsilon(k) - mu;
+        float e_kq = epsilon(k+q) - mu;
+        float f_kq = f(e_kq, T);
+        float f_k = f(e_k, T);
+        if (fabs(e_kq - e_k) < 0.0001 and fabs(w.imag()) < 0.0001 and fabs(w.real()) < 0.0001) {
+            if (T == 0 or exp(e_k/T) > 1e6) return e_k < 0;
+            return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
+        }
+        return (f_kq - f_k)*(w.real() - (e_kq - e_k)) / 
+            ((w.real() - (e_kq - e_k))*(w.real() - (e_kq - e_k)) + w.imag()*w.imag());
+    };
+    auto func_i = [T, q, w, mu](Vec k) -> float {
+        float e_k = epsilon(k) - mu;
+        float e_kq = epsilon(k+q) - mu;
+        float f_kq = f(e_kq, T);
+        float f_k = f(e_k, T);
+        if (fabs(e_kq - e_k) < 0.0001 and fabs(w.imag()) < 0.0001 and fabs(w.real()) < 0.0001) {
+            if (T == 0 or exp(e_k/T) > 1e6) return e_k < 0;
+            return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
+        }
+        return -(f_kq - f_k) * w.imag() /
+            ((w.real() - (e_kq - e_k))*(w.real() - (e_kq - e_k)) + w.imag()*w.imag());
+    };
+    auto denom = [q, w](Vec k) -> float { 
+        return w.real() - (epsilon(k+q) - epsilon(k)); 
+    };
+    auto denom_diff = [q, w](Vec k) -> float { 
+        return vp_diff(k, q); 
+    };
     float d = pow(2*k_max,dim);
+    float a, b; get_surface_transformed_bounds(b, a, denom);
+    vector<float> spacing; get_spacing_vec(spacing, w.real(), a, b, num_points);
+    float c_real = surface_transform_integral(func_r, denom, denom_diff, spacing);
+    float c_imag = surface_transform_integral(func_i, denom, denom_diff, spacing);
+    complex<float> c(c_real, c_imag);
+    return c / d;
+
     return complex_trapezoidal_integration(func, -k_max, k_max, -k_max, k_max, 
             -k_max, k_max, num_points) / d;
 }
@@ -129,14 +195,15 @@ float trapezoidal_integration(const function<double(float, float, float)> &f, fl
 }
 
 complex<float> complex_trapezoidal_integration(const function<complex<float>(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points) {
-    complex<double> sum = 0;
+    double sum_real = 0;
+    double sum_imag = 0;
     float dx = (x1 - x0) / (num_points - 1);
     float dy = (y1 - y0) / (num_points - 1);
     float dz = (z1 - z0) / (num_points - 1);
     float num_z_points = num_points;
     if (dim == 2) dz = 1;
 
-    //#pragma omp parallel for reduction(+:sum)
+    #pragma omp parallel for reduction(+:sum_real, sum_imag)
     for (int i = 0; i < num_points; i++) {
         float x = x0 + i * dx;
         for (int j = 0; j < num_points; j++) {
@@ -148,14 +215,18 @@ complex<float> complex_trapezoidal_integration(const function<complex<float>(flo
                 if (j == 0 || j == num_points - 1) weight /= 2.0;
                 if ((k == 0 || k == num_points - 1) && dim == 3) weight /= 2.0;
 
-                sum += weight * f(x, y, z) * dx * dy * dz;
+                double f_real = f(x, y, z).real();
+                double f_imag = f(x, y, z).imag();
+                sum_real += weight * f_real * dx * dy * dz;
+                sum_imag += weight * f_imag * dx * dy * dz;
             }
         }
     }
-    return complex<float>(static_cast<float>(sum.real()), static_cast<float>(sum.imag()));
+    return complex<float>(sum_real, sum_imag);
 }
 
 vector<vector<vector<float>>> chi_cube(float T, float mu, float w, string message) {
+    int num_points = (dim == 3) ? 50 : 1000; // Number of integral surfaces
     int m_z = m*(dim%2) + 3*((dim+1)%2);
     vector<vector<vector<float>>> cube(m, vector<vector<float>> (m, vector<float> (m_z)));
     unordered_map<string, float> map;
@@ -177,7 +248,7 @@ vector<vector<vector<float>>> chi_cube(float T, float mu, float w, string messag
         auto datIt = map.begin();
         advance(datIt, i);
         string key = datIt->first;
-        map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w, s_pts);
+        map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w, num_points);
         progress_bar(1.0 * i / (map.size()-1), message);
     }
     cout << endl;

@@ -320,8 +320,6 @@ complex<float> interpolate_4D_complex(float x_val, float y_val, float z_val, flo
     // f: vector of function values at the grid points
     // returns: interpolated value of f(x_val, y_val, z_val, w_val)
 
-    printf("Input values: %f %f %f %f\n", x_val, y_val, z_val, w_val);
-    printf("Bounds: %f %f %f %f %f %f %f %f\n", x_min, x_max, y_min, y_max, z_min, z_max, w_min, w_max);
     assert(x_val >= x_min && x_val <= x_max);
     assert(y_val >= y_min && y_val <= y_max);
     assert(z_val >= z_min && z_val <= z_max);
@@ -353,9 +351,6 @@ complex<float> interpolate_4D_complex(float x_val, float y_val, float z_val, flo
     float y_rel = (y_val - y_min) / dy - j;
     float z_rel = (z_val - z_min) / dz - k;
     float w_rel = (w_val - w_min) / dw - l;
-    printf("Relative values: %f %f %f %f\n", x_rel, y_rel, z_rel, w_rel);
-    printf("Cube values: %f %f %f %f %f %f %f %f\n", f[i][j][k][l].real(), f[i + 1][j][k][l].real(), f[i][j + 1][k][l].real(), f[i + 1][j + 1][k][l].real(), f[i][j][k + 1][l].real(), f[i + 1][j][k + 1][l].real(), f[i][j + 1][k + 1][l].real(), f[i + 1][j + 1][k + 1][l].real());
-
 
     complex<float> fx1 = f[i][j][k][l] * (1 - x_rel) + f[i + 1][j][k][l] * x_rel;
     complex<float> fx2 = f[i][j+1][k][l] * (1 - x_rel) + f[i + 1][j+1][k][l] * x_rel;

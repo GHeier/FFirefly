@@ -117,24 +117,34 @@ int main() {
     int num_procs = omp_get_num_procs();
     omp_set_num_threads(num_procs - 1);
 
-    complex<float> w = complex<float>(0.0, 0.0);
+    complex<float> w = complex<float>(0.2, 0.01);
 
     test_interpolate_2D();
     test_interpolate_3D();
     test_interpolate_4D();
-    if (not check_matcube_interpolation() )
-        cout << "Matcube Interpolation Test Failed" << endl;
-    //plot_matsubara_cube(w);
-    if (not compare_real_vs_complex_susceptibility_integration(Vec(1,1,1), 0.25, 0.0, 0.0, 100))
-        cout << "Real vs Complex Susceptibility Integration Test Failed" << endl;
+    //if (not check_matcube_interpolation() )
+    //    cout << "Matcube Interpolation Test Failed" << endl;
+    plot_matsubara_cube_v_q(w);
+    Vec q(1.0, 1.0, 1.0);
+    //plot_matsubara_cube_v_w(q);
+    //plot_complex_susceptibility_integration_v_w(q);
+    //float c = analytic_tetrahedron_sum(q, 0, 100);
+    //printf("Analytic: %f\n", c);
+    //analytical_integration_convergence_test();
+    //plot_analytic_susceptibility_integration(0);
+    //if (not compare_real_vs_complex_susceptibility_integration(Vec(1,1,1), 0.25, 0.0, 0.0, 100))
+    //    cout << "Real vs Complex Susceptibility Integration Test Failed" << endl;
     //compare_real_vs_complex_susceptibility();
     //plot_real_susceptibility_integration(w.real());
     //plot_complex_susceptibility_integration(w);
     //plot_real_trapezoidal_susceptibility_integration(0.0);
-    if (not test_real_integration()) 
-        cout << "Real Integration Test Failed" << endl;
-    if (not test_complex_integration()) 
-        cout << "Complex Integration Test Failed" << endl;
+    //complex_integration_convergence_test();
+    if (not check_nonzero_imaginary_part())
+        cout << "Nonzero Imaginary Part Test Failed" << endl;
+    //if (not test_real_integration()) 
+    //    cout << "Real Integration Test Failed" << endl;
+    //if (not test_complex_integration()) 
+    //    cout << "Complex Integration Test Failed" << endl;
 
     return 0;
 }

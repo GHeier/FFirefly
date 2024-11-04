@@ -38,6 +38,18 @@ float ratio(Vec k, Vec q, float w, float T);
 float integrand(Vec k, Vec q, float w, float T);
 
 /**
+ * @brief Integrand of the susceptibility
+ *
+ * @param k Momentum
+ * @param q Momentum transfer
+ * @param w Frequency
+ * @param T Temperature
+ *
+ * @return complex<float>
+ */
+complex<float> integrand(Vec k, Vec q, complex<float> w, float T);
+
+/**
  * @brief Integrate the susceptibility
  *
  * @param q Momentum transfer

@@ -17,6 +17,7 @@
 #include "../gap/calculations.h"
 #include "../gap/susceptibility.h"
 #include "../gap/save_data.h"
+#include "../gap/utilities.h"
 
 using namespace std;
 
@@ -46,6 +47,33 @@ void plot_complex_susceptibility_integration(complex<float> w) {
         file << mag << " " << c.real() << " " << c.imag() << endl;
     }
     printf("Output written to complex_susceptibility_integration.dat\n");
+}
+
+void plot_complex_susceptibility_integration_v_w(Vec q) {
+    float T = 0.005;
+    float mu = 1.0;
+    int num_points = 2000;
+    ofstream file("complex_susceptibility_integration.dat");
+    for (int i = 0; i < 50; i++) {
+        float mag = max_freq * i / 49.0;
+        complex<float> w(mag, 0.01);
+        complex<float> c = complex_susceptibility_integration(q, T, mu, w, num_points);
+        file << mag << " " << c.real() << " " << c.imag() << endl;
+    }
+    printf("Output written to complex_susceptibility_integration.dat\n");
+}
+
+void plot_analytic_susceptibility_integration(float w) {
+    float mu = 1.0;
+    int num_points = 300;
+    ofstream file("analytic_susceptibility_integration.dat");
+    for (int i = 1; i < 50; i++) {
+        float mag = M_PI * i / 49.0;
+        Vec q(mag, mag, mag);
+        float c = analytic_tetrahedron_sum(q, w, num_points);
+        file << mag << " " << c << endl;
+    }
+    printf("Output written to analytic_susceptibility_integration.dat\n");
 }
 
 void plot_real_trapezoidal_susceptibility_integration(float w) {
@@ -78,9 +106,9 @@ void plot_real_trapezoidal_susceptibility_integration(float w) {
     printf("Output written to trap_susceptibility_integration.dat\n");
 }
 
-void plot_matsubara_cube(complex<float> w) {
-    float T = 0.25;
-    float mu = 0.0;
+void plot_matsubara_cube_v_q(complex<float> w) {
+    float T = 0.005;
+    float mu = 1.0;
     MatCube matsubara_cube = create_matsubara_cube(T, mu, m, w_pts, -max_freq, max_freq, 100);
     save_matsubara_cube(matsubara_cube, matsubara_cube.w_min, matsubara_cube.w_max, "matsubara_cube.dat");
     ofstream file("matsubara_test_plot.dat");
@@ -94,6 +122,21 @@ void plot_matsubara_cube(complex<float> w) {
     }
     printf("Output written to matsubara_test_plot.dat\n");
 }
+
+void plot_matsubara_cube_v_w(Vec q) {
+    float T = 0.005;
+    float mu = 1.0;
+    MatCube matsubara_cube = create_matsubara_cube(T, mu, m, w_pts, -max_freq, max_freq, 100);
+    save_matsubara_cube(matsubara_cube, matsubara_cube.w_min, matsubara_cube.w_max, "matsubara_cube.dat");
+    ofstream file("matsubara_test_w_plot.dat");
+    for (int i = 0; i < 100; i++) {
+        float mag = max_freq * i / 99.0;
+        complex<float> w(mag, 0.01);
+        complex<float> c = matsubara_cube(q, w);
+        file << mag << " " << c.real() << " " << c.imag() << endl;
+    }
+}
+
 
 void plot_surfaces(Vec q, float T, float w) {
     float a, b;
