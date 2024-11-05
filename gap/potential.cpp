@@ -67,30 +67,30 @@ double phonon_coulomb(Vec q, Vec c) {
 	    //cout << "DEBUG: q.norm() = " << q.norm() << ", but manually computed norm is " << norm << endl;
     //}
 
-    cout << "DEBUG: q.norm() = " << q.norm() << endl;
-    cout << "DEBUG: q_s_sq = " << q_s_sq << endl;
+    //cout << "DEBUG: q.norm() = " << q.norm() << endl;
+    //cout << "DEBUG: q_s_sq = " << q_s_sq << endl;
 
     if (q.norm() == 0) {
         Vp = 0;
-        cout << "DEBUG: norm of q is zero, setting Vp to " << Vp << endl;
+        //cout << "DEBUG: norm of q is zero, setting Vp to " << Vp << endl;
 
         if (q_s_sq == 0) {
             Vc = 0;
-            cout << "DEBUG: norm of q and q_s_sq are zero, setting Vc to " << Vc << endl;
+            //cout << "DEBUG: norm of q and q_s_sq are zero, setting Vc to " << Vc << endl;
         }
             }
-    cout << "DEBUG: numerator of Vp = " << (C_sq) << endl;
-    cout << "DEBUG: denominator of Vp = " << (denom_Vp) << endl;
-    cout << "DEBUG: N = " << N << endl;
+    //cout << "DEBUG: numerator of Vp = " << (C_sq) << endl;
+    //cout << "DEBUG: denominator of Vp = " << (denom_Vp) << endl;
+    //cout << "DEBUG: N = " << N << endl;
     if (q.norm() != 0 && q_s_sq != 0) {
         Vp = ((C_sq) / (denom_Vp));
         Vc = (4 * M_PI * e * e) / (Vol * ε * ((q.norm() * q.norm()) + q_s_sq));
-        cout << "DEBUG: Calculated Vp = " << Vp << endl;
-        cout << "DEBUG: Calculated Vc = " << Vc << endl;
+        //cout << "DEBUG: Calculated Vp = " << Vp << endl;
+        //cout << "DEBUG: Calculated Vc = " << Vc << endl;
     }
 
-    cout << "DEBUG: Returning Vp + Vc = " << (Vp + Vc) << endl;
-    cout << endl;
+    //cout << "DEBUG: Returning Vp + Vc = " << (Vp + Vc) << endl;
+    //cout << endl;
     return Vp + Vc;
 }
 
