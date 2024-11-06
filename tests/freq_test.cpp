@@ -2,10 +2,10 @@
 #include <fstream>
 #include "../gap/cfg.h"
 #include "../gap/frequency_inclusion.hpp"
-#include "../gap/fermi_surface.h"
 #include "../gap/utilities.h"
 #include "../gap/frequency_inclusion.hpp"
 #include "../gap/susceptibility.h"
+#include "../gap/band_structure.h"
 #include "../gap/vec.h"
 
 using namespace std;
@@ -13,7 +13,7 @@ using namespace std;
 float analytic_fermi_gas_chi(Vec q, float w, float mu) {
     float q_plus_sqr = w + pow(q.norm(), 2);
     float q_minus_sqr = w - pow(q.norm(), 2);
-    vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
+    vector<Vec> FS = get_FS(mu);
     float N_3 = get_DOS(FS);
     return N_3 / mu * 0.75 * ( -1.0 + (4*pow(q.norm(),2) - pow(q_minus_sqr,2)) / (8*pow(q.norm(),3)) 
             * log( (1+q_minus_sqr/(2*q.norm())) / ( 1 - q_minus_sqr/(2*q.norm())))
@@ -27,7 +27,7 @@ float numerical_fermi_gas_chi(Vec q, float w, float mu, unordered_map<float, vec
 }
 
 void plot_chis(float T, float w) {
-    vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
+    vector<Vec> FS = get_FS(mu);
     auto chi_map = chi_cube_freq(T, mu);
     ofstream file("chi_freq_v_q.txt");
     //float mu = 1.0;

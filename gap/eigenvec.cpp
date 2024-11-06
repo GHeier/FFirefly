@@ -6,19 +6,14 @@
  * @author Griffin Heier
  */
 
-#include <string>
-#include <vector>
 #include <math.h>
 
 #include <bits/stdc++.h>
 #include <ctime>
-#include <algorithm>
 #include <memory>
 
-#include "vec.h"
 #include "cfg.h"
 #include "eigenvec.hpp"
-#include "matrix.hpp"
 
 using namespace std;
 

@@ -20,7 +20,6 @@
 
 
 #include "cfg.h"
-#include "fermi_surface.h"
 #include "frequency_inclusion.hpp"
 #include "calculations.h"
 #include "susceptibility.h"
@@ -28,6 +27,7 @@
 #include "vec.h"
 #include "matrix.hpp"
 #include "eigenvec.hpp"
+#include "band_structure.h"
 
 using std::string;
 
@@ -43,7 +43,7 @@ void find_gap_function() {
     vector<vector<Vec>> freq_FS;
     freq_FS = freq_tetrahedron_method(mu);
     vector<Vec> FS = freq_FS[(l+1)/2 - 1];
-    vector<Vec> layer = tetrahedron_method(e_base_avg, Vec(0,0,0), 0);
+    vector<Vec> layer = get_FS(mu);
 
 
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
@@ -187,10 +187,10 @@ int main() {
     // Finds the gap function
     //find_gap_function();
     float T = 1.0 / 600.0;
-    float mu = -0.0;
+    float mu = -1.0;
     float m_pts = 40;
     float w_pts = 40;
-    float num_integral_pts = 150; 
+    float num_integral_pts = 3000;
     float w_min = 0.000;
     float w_max = 10.45;
 

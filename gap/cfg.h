@@ -27,11 +27,6 @@ extern float wc;
 
 void init_config(float &mu, float &U, float &t, float &tn, float &w_D, float new_mu, float new_U, float new_t, float new_tn, float new_w_D);
 void change_global_constant(float &a, float b);
-float epsilon(const Vec k);
-float e_diff(const Vec k, const Vec q);
-float e_base_avg(const Vec k, const Vec q);
-float vp_diff(const Vec k, const Vec q);
-float vp(const Vec k);
 float V(const Vec k1, const Vec k2, float w, const float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube);
 int get_num_points_from_delta(float &delta);
 

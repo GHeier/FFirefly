@@ -4,7 +4,6 @@
 
 #include <vector>
 #include "vec.h"
-#include "fermi_surface.h"
 
 using namespace std;
 

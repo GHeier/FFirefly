@@ -11,11 +11,7 @@
 #include <string>
 #include <cassert>
 #define assertm(exp, msg) assert(((void)msg, exp))
-#include <unordered_map>
-#include "vec.h"
 #include "cfg.h"
-#include "band_structure.h"
-#include "potential.h"
 
 using namespace std;
 
@@ -51,81 +47,6 @@ void init_config(float &mu, float &U, float &t, float &tn, float &wc, float new_
 
 void change_global_constant(float &a, float b) {
     a = b;
-}
-
-// Energy band functions
-float epsilon(const Vec k) {
-    if (band_name == "simple_cubic_layered")
-        return epsilon_SC_layered(k);
-    if (band_name == "simple_cubic")
-        return epsilon_SC(k, t, tn);
-    if (band_name == "sphere")
-        return epsilon_sphere(k);
-    else {
-        cout << "Unknown Band structure: " << band_name << endl;
-        exit(1);
-        return 0;
-    }
-}
-
-// Difference functions are all used for surface integration schemes
-float e_diff(const Vec k, const Vec q) {
-    return epsilon(k+q) - epsilon(k);
-}
-
-float e_base_avg(const Vec k, const Vec q) {
-    return epsilon(k);
-}
-
-float vp_diff(const Vec k, const Vec q) {
-    Vec v;
-    if (band_name == "simple_cubic_layered")
-        v = fermi_velocity_SC_layered(k+q) - fermi_velocity_SC_layered(k);
-    else if (band_name == "simple_cubic")
-        v = fermi_velocity_SC(k+q) - fermi_velocity_SC(k);
-    else if (band_name == "sphere")
-        v = fermi_velocity_sphere(k+q) - fermi_velocity_sphere(k);
-    else {
-        cout << "No band structure specified\n";
-        assert(1==2);
-        return 0;
-    }
-    return v.norm();
-}
-
-// Fermi Velocity corresponds to energy band functions above
-float vp(const Vec k) {
-    if (band_name == "simple_cubic_layered")
-        return fermi_velocity_SC_layered(k).norm();
-    if (band_name == "simple_cubic") {
-        return fermi_velocity_SC(k).norm();
-    }
-    if (band_name == "sphere")
-        return fermi_velocity_sphere(k).norm();
-    else {
-        cout << "No band structure specified\n";
-        exit(1);
-        return 0;
-    }
-}
-
-// Potential functions
-float V(const Vec k1, const Vec k2, float w, const float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube) {
-    if (potential_name == "const") 
-        return potential_const(k1, k2);
-    if (potential_name == "scalapino") {
-        float t2 = potential_scalapino_cube(k1, k2, w, T, chi_cube);
-        return t2;
-    }
-    if (potential_name == "scalapino_triplet") 
-        return potential_scalapino_triplet(k1, k2, T, w, chi_cube);
-    if (potential_name == "test") 
-        return potential_test(k1, k2);// / pow(2*M_PI, dim);
-    else {
-        cout << "Unknown Potential Function: " << potential_name << endl;
-        exit(1);
-        return 0;
-    }
 }
 
 // Gaussian integration constants

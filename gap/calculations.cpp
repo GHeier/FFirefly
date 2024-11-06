@@ -27,20 +27,10 @@
 #include "matrix.hpp"
 #include "eigenvec.hpp"
 #include "utilities.h"
+#include "band_structure.h"
 #include "frequency_inclusion.hpp"
 
-using std::cout;
-using std::endl;
-using std::vector;
-using std::unordered_map;
-//using lambda_lanczos::LambdaLanczos;
-
-
-namespace std {
-    template<> struct hash<::Vec> : boost::hash<::Vec> {};
-}
-
-using vec_map = std::unordered_map<Vec, float>;
+using namespace std;
 
 /* Power iteration algorithm
  * Not optimized, but so fast it doesn't matter

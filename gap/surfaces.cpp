@@ -16,7 +16,6 @@
 
 #include "cfg.h"
 #include "vec.h"
-#include "fermi_surface.h"
 
 using namespace std;
 
@@ -45,7 +44,7 @@ float triangle_area_from_points(Vec k1, Vec k2, Vec k3) {
     return A;
 }
 
-vector<Vec> points_from_indices2(function<float(Vec)> func, int i, int j, int k, int divs) {
+vector<Vec> points_from_indices(function<float(Vec)> func, int i, int j, int k, int divs) {
     float x1 = 2*k_max * i / divs       - k_max; 
     float x2 = 2*k_max * (i+1) / divs   - k_max; 
     float y1 = 2*k_max * j / divs       - k_max; 
@@ -171,7 +170,7 @@ float area_in_corners(vector<Vec> cp) {
 }
 
 // This is the method that defines the surface; It is the culmination and the point of this file
-vector<Vec> tetrahedron_method2(function<float(Vec k)> func, float s_val) {
+vector<Vec> tetrahedron_method(function<float(Vec k)> func, float s_val) {
     vector<vector<float>> tetrahedrons {
         {1, 2, 3, 5}, 
         {1, 3, 4, 5},
@@ -185,7 +184,7 @@ vector<Vec> tetrahedron_method2(function<float(Vec k)> func, float s_val) {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
-                vector<Vec> points = points_from_indices2(func, i, j, k, n);
+                vector<Vec> points = points_from_indices(func, i, j, k, n);
                 if (not surface_inside_cube(s_val, points)) continue;
 
                 // Finds every k-space point in all possible tetrahedra, along with its associated
@@ -237,5 +236,4 @@ pair<int, int> get_index_and_length(float L, float U, vector<float> &sortedList)
     }
     return {lower_index, length};
 }
-
 

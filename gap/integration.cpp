@@ -9,7 +9,7 @@ int s_div = (dim == 3) ? 40 : 300; // Number of integral surface divisions
 int s_pts = (dim == 3) ? 50 : 1000; // Number of integral surfaces
 // Defines the constants of the integral spacing based around the upper and lower energy bounds
 // found in get_bounds
-void get_spacing_curve_consts2(float w, float a, float b, float &A, float &upr, float &lwr) {
+void get_spacing_curve_consts(float w, float a, float b, float &A, float &upr, float &lwr) {
     A = b - w;
     lwr = (a - w) / A;
     upr = 1;
@@ -21,9 +21,9 @@ void get_spacing_curve_consts2(float w, float a, float b, float &A, float &upr, 
 }
 
 // Creates the array of energies to be integrated over
-void get_spacing_vec2(vector<float> &spacing, float w, float a, float b, int pts) {
+void get_spacing_vec(vector<float> &spacing, float w, float a, float b, int pts) {
     float A, upr, lwr;
-    get_spacing_curve_consts2(w, a, b, A, upr, lwr);
+    get_spacing_curve_consts(w, a, b, A, upr, lwr);
 
     auto spacing_curve = [A, w] (float i, float pts) { 
         float x = -1 + 2 * i / pts;
@@ -77,7 +77,7 @@ float surface_transform_integral(function<float(Vec)> integrand,
     for (int i = 0; i < s_div; i++) {
         for (int j = 0; j < s_div; j++) {
             for (int k = 0; k < s_div * (dim%2) + 1 * ((dim+1)%2); k++) {
-                vector<Vec> points = points_from_indices2(func, i, j, k, s_div);
+                vector<Vec> points = points_from_indices(func, i, j, k, s_div);
                 float min = 1000, max = -1000;
                 for (Vec p : points) {
                     if (func(p) < min) min = func(p);
@@ -130,4 +130,61 @@ float surface_transform_integral(function<float(Vec)> integrand,
         }
     }
     return (float)sum;
+}
+
+float trapezoidal_integration(const function<double(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points) {
+    double sum = 0;
+    float dx = (x1 - x0) / (num_points - 1);
+    float dy = (y1 - y0) / (num_points - 1);
+    float dz = (z1 - z0) / (num_points - 1);
+    if (dim == 2) dz = 1;
+    int counter = 0;
+    #pragma omp parallel for reduction(+:sum)
+    for (int i = 0; i < num_points; i++) {
+        float x = x0 + i*dx;
+        for (int j = 0; j < num_points; j++) {
+            float y = y0 + j*dy;
+            for (float k = 0; k < num_points * (dim%2) + 1 * ((dim+1)%2); k++) {
+                float z = z0 + k*dz;
+                float weight = 1.0;
+                if (i == 0 or i == num_points - 1) weight /= 2.0;
+                if (j == 0 or j == num_points - 1) weight /= 2.0;
+                if ( (k == 0 or k == num_points - 1) and dim == 3) weight /= 2.0;
+
+                sum += weight * f(x,y,z) * dx * dy * dz;
+            }
+        }
+    }
+    return (float)sum;
+}
+
+complex<float> complex_trapezoidal_integration(const function<complex<float>(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points) {
+    double sum_real = 0;
+    double sum_imag = 0;
+    float dx = (x1 - x0) / (num_points - 1);
+    float dy = (y1 - y0) / (num_points - 1);
+    float dz = (z1 - z0) / (num_points - 1);
+    float num_z_points = num_points;
+    if (dim == 2) dz = 1;
+
+    #pragma omp parallel for reduction(+:sum_real, sum_imag)
+    for (int i = 0; i < num_points; i++) {
+        float x = x0 + i * dx;
+        for (int j = 0; j < num_points; j++) {
+            float y = y0 + j * dy;
+            for (float k = 0; k < num_points; k++) {
+                float z = z0 + k * dz;
+                float weight = 1.0;
+                if (i == 0 || i == num_points - 1) weight /= 2.0;
+                if (j == 0 || j == num_points - 1) weight /= 2.0;
+                if ((k == 0 || k == num_points - 1) && dim == 3) weight /= 2.0;
+
+                double f_real = f(x, y, z).real();
+                double f_imag = f(x, y, z).imag();
+                sum_real += weight * f_real * dx * dy * dz;
+                sum_imag += weight * f_imag * dx * dy * dz;
+            }
+        }
+    }
+    return complex<float>(sum_real, sum_imag);
 }

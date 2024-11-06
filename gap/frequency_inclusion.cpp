@@ -31,6 +31,7 @@
 #include "utilities.h"
 #include "frequency_inclusion.hpp"
 #include "susceptibility.h"
+#include "band_structure.h"
 
 using std::cout;
 using std::endl;
@@ -63,7 +64,7 @@ vector<vector<Vec>> freq_tetrahedron_method(float MU) {
 
     for (int i = 0; i < l; i++) {
         float ep = wc * points[l-1][i] + MU;
-        vector<Vec> layer = tetrahedron_method(e_base_avg, Vec(0,0,0), ep);
+        vector<Vec> layer = get_FS(ep);
         basis.push_back(layer);
     }
     return basis;
@@ -166,7 +167,7 @@ MatCube create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_m
     }
     // Now take the integrals at these points
     cout << "Taking " << map.size() << " integrals in " << dim << "+1 dimensions.\n";
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for(unsigned int i = 0; i < map.size(); i++) {
         auto datIt = map.begin();
         advance(datIt, i);
@@ -175,7 +176,7 @@ MatCube create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_m
         Vec q(split_key[0], split_key[1], split_key[2]);
         complex<float> w = complex<float>(0, split_key[3]);
         map[key] = complex_susceptibility_integration(q, T, MU, w, num_integral_pts);
-        //progress_bar(1.0 * i / (map.size()-1), message);
+        progress_bar(1.0 * i / (map.size()-1), "MatCube Creation");
     }
     cout << endl;
 
@@ -275,65 +276,3 @@ float calculate_chi_from_cube_map(const unordered_map<float, vector<vector<vecto
     return w0 + wx*dx + wy*dy + wz*dz;
 }
 
-// Gets the highest and lowest energies available in the BZ
-void get_bounds(Vec q, float &upper, float &lower, float (*func)(Vec k, Vec q)) {
-    auto get_k = [] (float i, int pts) { return k_max*(2.0*i/(pts-1.0)-1.0); };
-
-    upper = 0; lower = 1000;
-    int pts = 100;
-    for (float i = 0; i < pts; i++) {
-        float x = get_k(i, pts);
-        for (float j = 0; j < pts; j++) {
-            float y = get_k(j, pts);
-            for (float k = 0; k < pts * (dim%2) + 1 * ((dim+1)%2); k++) {
-                float z = get_k(k, pts);
-                Vec k_val(x, y, z);
-                float val = func(k_val, q);
-                if (val > upper) upper = val;
-                if (val < lower) lower = val;
-            }
-        }
-    }
-    lower *= 0.99; upper *= 0.99;
-}
-
-// Denominator of susceptibility integral
-float denominator(Vec k, Vec q) {
-    return e_diff(k, q);
-}
-
-// Derivative of denominator, used for surface integration
-float denominator_diff(Vec k, Vec q) {
-    return vp_diff(k, q);
-}
-
-// Defines the constants of the integral spacing based around the upper and lower energy bounds
-// found in get_bounds
-void get_spacing_curve_consts(float w, float a, float b, float &A, float &upr, float &lwr) {
-    A = b - w;
-    lwr = (a - w) / A;
-    upr = 1;
-    if ( w - a > b - w) {
-        A = w - a;
-        lwr = -1;
-        upr = (b - w) / A;
-    }
-}
-
-// Creates the array of energies to be integrated over
-void get_spacing_vec(vector<float> &spacing, float w, float a, float b, int pts) {
-    float A, upr, lwr;
-    get_spacing_curve_consts(w, a, b, A, upr, lwr);
-
-    auto spacing_curve = [A, w] (float i, float pts) { 
-        float x = -1 + 2 * i / pts;
-        return A * x + w;
-    };
-
-    float r = spacing_curve(0, pts);
-    for (int i = 0; r < b; i++) {
-        float t = i;
-        r = spacing_curve(i, pts);
-        spacing.push_back(r);
-    }
-}

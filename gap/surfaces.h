@@ -33,7 +33,7 @@ float triangle_area_from_points(Vec k1, Vec k2, Vec k3);
  *
  * @return A vector of Vecs 
  */
-vector<Vec> points_from_indices2(function<float(Vec)> func, int i, int j, int k, int divs);
+vector<Vec> points_from_indices(function<float(Vec)> func, int i, int j, int k, int divs);
 
 /**
  * @brief Picks out the points that are in each tetrahedron
@@ -88,7 +88,7 @@ float area_in_corners(vector<Vec> cp);
  *
  * @return A vector of Vec structs
  */
-vector<Vec> tetrahedron_method2(function<float(Vec k)> func, float s_val);
+vector<Vec> tetrahedron_method(function<float(Vec k)> func, float s_val);
 
 /**
  * @brief gives index of lowest surface and number of surfaces in cube

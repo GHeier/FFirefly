@@ -3,7 +3,6 @@
 #define ANALYSIS_H_
 
 #include "cfg.h"
-#include "fermi_surface.h"
 #include "potential.h"
 #include "vec.h"
 #include "save_data.h"

@@ -9,29 +9,23 @@
 #include <iostream>
 #include <fstream>
 #include <cassert>
-#include <vector>
 #include <string>
 #include <math.h>
-#include <unordered_map>
 #include <memory>
-#include <complex>
 
 #include "calculations.h"
 #include "frequency_inclusion.hpp"
-#include "potential.h"
 #include "susceptibility.h"
 #include "vec.h"
 #include "cfg.h"
+#include "band_structure.h"
 #include "matrix.hpp"
 #include "eigenvec.hpp"
 
-using std::endl;
-using std::cout;
-using std::vector;
-using std::string;
+using namespace std;
 
 void save(string file_name, float T, vector<Vec> FS, Eigenvector* solutions) {
-    std::ofstream file(file_name);
+    ofstream file(file_name);
     //file.open(file_name);
     if (dim == 3) file << "x y z ";
     if (dim == 2) file << "x y ";
@@ -52,7 +46,7 @@ void save(string file_name, float T, vector<Vec> FS, Eigenvector* solutions) {
 }
 
 void save_with_freq(string file_name, float T, vector<vector<Vec>> &freq_FS, Eigenvector* solutions) {
-    std::ofstream file(file_name);
+    ofstream file(file_name);
     if (dim == 3) file << "x y z ";
     if (dim == 2) file << "x y ";
 
@@ -83,7 +77,7 @@ void save_with_freq(string file_name, float T, vector<vector<Vec>> &freq_FS, Eig
 }
 
 void save_FS(vector<Vec> FS) {
-    std::ofstream file;
+    ofstream file;
     file.open("FS.dat");
     for (Vec k : FS)
         file << k << endl;

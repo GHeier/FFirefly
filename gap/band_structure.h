@@ -7,55 +7,23 @@
 
 using namespace std;
 
+float epsilon(const Vec k);
+float e_diff(const Vec k, const Vec q);
+float vp(const Vec k);
+float vp_diff(const Vec k, const Vec q);
 
-/**
- * @brief Returns the energy of a free electron in a sphere.
- * 
- * @param k The wave vector.
- * @return float The energy of the electron.
- */
 float epsilon_sphere(const Vec k);
 
-/**
- * @brief Returns the Fermi velocity of a free electron in a sphere.
- * 
- * @param k The wave vector.
- * @return Vec The Fermi velocity of the electron.
- */
 Vec fermi_velocity_sphere(const Vec k);
 
-/**
- * @brief Returns the energy of an electron in a simple cubic lattice.
- * 
- * @param k The wave vector.
- * @param t The hopping parameter.
- * @param tn The next-nearest neighbor hopping parameter.
- * @return float The energy of the electron.
- */
 float epsilon_SC(const Vec k, float t, float tn);
 
-/**
- * @brief Returns the Fermi velocity of an electron in a simple cubic lattice.
- * 
- * @param k The wave vector.
- * @return Vec The Fermi velocity of the electron.
- */
 Vec fermi_velocity_SC(const Vec k);
 
-/**
- * @brief Returns the energy of an electron in a layered simple cubic lattice.
- * 
- * @param k The wave vector.
- * @return float The energy of the electron.
- */
 float epsilon_SC_layered(const Vec k);
 
-/**
- * @brief Returns the Fermi velocity of an electron in a layered simple cubic lattice.
- * 
- * @param k The wave vector.
- * @return Vec The Fermi velocity of the electron.
- */
 Vec fermi_velocity_SC_layered(const Vec k);
+
+vector<Vec> get_FS(float E);
 
 #endif

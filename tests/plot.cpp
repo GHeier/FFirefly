@@ -10,13 +10,15 @@
 #include <gsl/gsl_integration.h>
 
 #include "../gap/cfg.h"
-#include "../gap/fermi_surface.h"
 #include "../gap/vec.h"
 #include "../gap/analysis.h"
 #include "../gap/save_data.h"
 #include "../gap/calculations.h"
 #include "../gap/susceptibility.h"
 #include "../gap/save_data.h"
+#include "../gap/integration.h"
+#include "../gap/band_structure.h"
+#include "../gap/surfaces.h"
 #include "../gap/utilities.h"
 
 using namespace std;
@@ -64,13 +66,12 @@ void plot_complex_susceptibility_integration_v_w(Vec q) {
 }
 
 void plot_analytic_susceptibility_integration(float w) {
-    float mu = 1.0;
-    int num_points = 300;
+    int num_points = 212;
     ofstream file("analytic_susceptibility_integration.dat");
     for (int i = 1; i < 50; i++) {
         float mag = M_PI * i / 49.0;
         Vec q(mag, mag, mag);
-        float c = analytic_tetrahedron_sum(q, w, num_points);
+        float c = analytic_tetrahedron_linear_energy_method(q, w, num_points);
         file << mag << " " << c << endl;
     }
     printf("Output written to analytic_susceptibility_integration.dat\n");
@@ -89,8 +90,8 @@ void plot_real_trapezoidal_susceptibility_integration(float w) {
             Vec k(x,y,z);
             float e_k = epsilon(k) - mu;
             float e_kq = epsilon(k+q) - mu;
-            float f_kq = f(e_kq, T);
-            float f_k = f(e_k, T);
+            float f_kq = fermi_dirac(e_kq, T);
+            float f_k = fermi_dirac(e_k, T);
             if (fabs(e_kq - e_k) < 0.0001 and fabs(w) < 0.0001) {
                 if (T == 0 or exp(e_k/T) > 1e6) return e_k < 0;
                 return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
@@ -139,8 +140,11 @@ void plot_matsubara_cube_v_w(Vec q) {
 
 
 void plot_surfaces(Vec q, float T, float w) {
+    auto e_diff_denom = [q] (Vec k) -> float {
+        return e_diff(k, q);
+    };
     float a, b;
-    get_bounds(q, b, a, denominator);
+    get_surface_transformed_bounds(b, a, e_diff_denom);
     a *= 0.99; b*= 0.99;
     b = (b - a) * 0.5;
     a = -b;
@@ -157,7 +161,7 @@ void plot_surfaces(Vec q, float T, float w) {
     for (int i = 0; i <= pts; i++) {
         float s = spacing(i, pts);
         ofstream file("test_surface" + to_string(i) + ".dat");
-        vector<Vec> surface = tetrahedron_method(denominator, q, s);
+        vector<Vec> surface = tetrahedron_method(e_diff_denom, s);
         printf("S: %.3f, size: %d\n", s, surface.size());
         for (auto x: surface) {
             file << x << endl;
@@ -167,15 +171,18 @@ void plot_surfaces(Vec q, float T, float w) {
 }
 
 void plot_surfaces2(Vec q, float T, float w) {
+    auto e_diff_denom = [q] (Vec k) -> float {
+        return e_diff(k, q);
+    };
     float a, b;
-    get_bounds(q, b, a, denominator);
+    get_surface_transformed_bounds(b, a, e_diff_denom);
 
     vector<float> spacing;
     get_spacing_vec(spacing, w, a, b, 20);
 
     for (int i = 0; i < spacing.size(); i++) {
         ofstream file("test_surface" + to_string(i) + ".dat");
-        vector<Vec> surface = tetrahedron_method(denominator, q, spacing[i]);
+        vector<Vec> surface = tetrahedron_method(e_diff_denom, spacing[i]);
         //printf("S: %.3f, size: %d\n", spacing[i], surface.size());
         for (auto x: surface) {
             file << x << endl;

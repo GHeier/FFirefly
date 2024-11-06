@@ -16,28 +16,17 @@
 #include "../gap/calculations.h"
 #include "../gap/cfg.h"
 #include "../gap/eigenvec.hpp"
-#include "../gap/fermi_surface.h"
 #include "../gap/frequency_inclusion.hpp"
 #include "../gap/matrix.hpp"
-#include "../gap/potential.h"
 #include "../gap/save_data.h"
 #include "../gap/susceptibility.h"
-#include "../gap/utilities.h"
 #include "../gap/vec.h"
 
-//#include "surface_integrals.cpp"
-//#include "freq_test.cpp"
 #include "matsubara_tests.h"
 #include "interpolate_test.h"
 #include "plot.h"
 
-using std::cout;
-using std::endl;
-using std::string;
-using std::vector;
-using std::unordered_map;
-//using namespace Eigen;
-
+using namespace std;
 
 void integral_convergence(float T) {
     int n = 50;
@@ -65,7 +54,7 @@ void eig_with_freq(float cutoff) {
     init_config(mu, U, t, tn, wc, mu, U, t, tn, cutoff);
     
     vector<vector<Vec>> freq_FS = freq_tetrahedron_method(mu);
-    vector<Vec> FS = tetrahedron_method(e_base_avg, Vec(0,0,0), mu);
+    vector<Vec> FS = get_FS(mu);
     printf("FS created\n");
 
     unordered_map <float, vector<vector<vector<float>>>> cube_freq_map;
@@ -124,14 +113,14 @@ int main() {
     test_interpolate_4D();
     //if (not check_matcube_interpolation() )
     //    cout << "Matcube Interpolation Test Failed" << endl;
-    plot_matsubara_cube_v_q(w);
+    //plot_matsubara_cube_v_q(w);
     Vec q(1.0, 1.0, 1.0);
     //plot_matsubara_cube_v_w(q);
     //plot_complex_susceptibility_integration_v_w(q);
     //float c = analytic_tetrahedron_sum(q, 0, 100);
     //printf("Analytic: %f\n", c);
     //analytical_integration_convergence_test();
-    //plot_analytic_susceptibility_integration(0);
+    plot_analytic_susceptibility_integration(0);
     //if (not compare_real_vs_complex_susceptibility_integration(Vec(1,1,1), 0.25, 0.0, 0.0, 100))
     //    cout << "Real vs Complex Susceptibility Integration Test Failed" << endl;
     //compare_real_vs_complex_susceptibility();

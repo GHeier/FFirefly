@@ -1,19 +1,70 @@
 /**
  * @file band_structure.cpp
  *
- * @brief Band structure functions for sipmle systems
+ * @brief Band structure functions for simple systems
+ * Includes e(k), v(k), and Fermi Surface functions
  *
  * @author Griffin Heier
  */
 
 
 #include <math.h>
-#include <string>
 
 #include "vec.h"
 #include "cfg.h"
+#include "surfaces.h"
+#include "band_structure.h"
 
 using namespace std;
+
+// Energy band functions
+float epsilon(const Vec k) {
+    if (band_name == "simple_cubic_layered")
+        return epsilon_SC_layered(k);
+    if (band_name == "simple_cubic")
+        return epsilon_SC(k, t, tn);
+    if (band_name == "sphere")
+        return epsilon_sphere(k);
+    else {
+        cout << "Unknown Band structure: " << band_name << endl;
+        exit(1);
+    }
+}
+
+// Difference functions are all used for surface integration schemes
+float e_diff(const Vec k, const Vec q) {
+    return epsilon(k+q) - epsilon(k);
+}
+
+// Fermi Velocity corresponds to energy band functions above
+float vp(const Vec k) {
+    if (band_name == "simple_cubic_layered")
+        return fermi_velocity_SC_layered(k).norm();
+    if (band_name == "simple_cubic") {
+        return fermi_velocity_SC(k).norm();
+    }
+    if (band_name == "sphere")
+        return fermi_velocity_sphere(k).norm();
+    else {
+        cout << "No band structure specified\n";
+        exit(1);
+    }
+}
+
+float vp_diff(const Vec k, const Vec q) {
+    Vec v;
+    if (band_name == "simple_cubic_layered")
+        v = fermi_velocity_SC_layered(k+q) - fermi_velocity_SC_layered(k);
+    else if (band_name == "simple_cubic")
+        v = fermi_velocity_SC(k+q) - fermi_velocity_SC(k);
+    else if (band_name == "sphere")
+        v = fermi_velocity_sphere(k+q) - fermi_velocity_sphere(k);
+    else {
+        cout << "No band structure specified\n";
+        exit(1);
+    }
+    return v.norm();
+}
 
 // Fermi gas
 float epsilon_sphere(const Vec k) {
@@ -81,4 +132,8 @@ Vec fermi_velocity_SC_layered(const Vec k) {
     return v;
 }
 
+// E indicates the chemical potential at which to find the Fermi surface
+vector<Vec> get_FS(float E) {
+    return tetrahedron_method(epsilon, E);
+}
 

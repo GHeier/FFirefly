@@ -7,29 +7,38 @@
  */
 
 #include <iostream>
-#include <iomanip>
-#include <fstream>
 #include <math.h>
-#include <string>
 #include <vector>
-#include <algorithm>
 
 #include <omp.h>
 #include <boost/functional/hash.hpp>
-#include <tuple>
 #include <unordered_map>
-#include <algorithm>
 
-#include "utilities.h"
 #include "potential.h"
 #include "vec.h"
-#include "fermi_surface.h"
-#include "band_structure.h"
 #include "cfg.h"
-#include "frequency_inclusion.hpp"
 #include "susceptibility.h"
+#include "utilities.h"
 
 using namespace std;
+
+// Potential functions
+float V(const Vec k1, const Vec k2, float w, const float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube) {
+    if (potential_name == "const") 
+        return potential_const(k1, k2);
+    if (potential_name == "scalapino") {
+        float t2 = potential_scalapino_cube(k1, k2, w, T, chi_cube);
+        return t2;
+    }
+    if (potential_name == "scalapino_triplet") 
+        return potential_scalapino_triplet(k1, k2, T, w, chi_cube);
+    if (potential_name == "test") 
+        return potential_test(k1, k2);// / pow(2*M_PI, dim);
+    else {
+        cout << "Unknown Potential Function: " << potential_name << endl;
+        exit(1);
+    }
+}
 
 
 float potential_const(Vec k1, Vec k2) {
@@ -47,7 +56,7 @@ float potential_test(Vec k1, Vec k2) {
 float phonon_coulomb(Vec q) {
     if (q.cartesian == false) q.to_cartesian();
     float qx = q.vals[0];
-    float Vp = 1/3;
+    float Vp = 1.0/3.0;
     if (q.norm() != 0) {
         Vp = 1/(1+2*qx*qx / pow(q.norm(), 2));
     }

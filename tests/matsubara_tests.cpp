@@ -6,7 +6,9 @@
 #include "../gap/cfg.h"
 #include "../gap/susceptibility.h"
 #include "../gap/save_data.h"
-#include "../gap/fermi_surface.h"
+#include "../gap/band_structure.h"
+#include "../gap/integration.h"
+#include "../gap/susceptibility.h"
 
 using namespace std;
 
@@ -40,8 +42,8 @@ bool check_susceptibility_integration_methods_are_equivalent(Vec q, float T, flo
         Vec k(x,y,z);
         float e_k = epsilon(k) - mu;
         float e_kq = epsilon(k+q) - mu;
-        float f_kq = f(e_kq, T);
-        float f_k = f(e_k, T);
+        float f_kq = fermi_dirac(e_kq, T);
+        float f_k = fermi_dirac(e_k, T);
         if (fabs(e_kq - e_k) < 0.0001 and fabs(w) < 0.0001) {
             if (T == 0 or exp(e_k/T) > 1e6) return e_k < 0;
             return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
@@ -120,7 +122,7 @@ void analytical_integration_convergence_test() {
     float w = 0;
     for (int i = 0; i < 100; i++) {
         int num_points = 100 + i * 10;
-        float c = analytic_tetrahedron_sum(q, w, num_points);
+        float c = analytic_tetrahedron_linear_energy_method(q, w, num_points);
         cout << num_points << " " << c << endl;
     }
 }

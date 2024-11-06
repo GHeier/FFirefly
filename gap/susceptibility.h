@@ -6,48 +6,16 @@
 #include <complex>
 #include <functional>
 #include "vec.h"
-#include "fermi_surface.h"
 #include "potential.h"
 
 using namespace std;
 
-/**
- * @brief Fermi-Dirac distribution function
- * 
- * @param E Energy
- * @param T Temperature
- * @return float 
- */
-float f(float E, float T);
+float fermi_dirac(float E, float T);
 
 /**
  * @brief Same as integrand, but without using .freq to define constant surfaces
  */
 float ratio(Vec k, Vec q, float w, float T);
-
-/**
- * @brief Integrand of the susceptibility
- *
- * @param k Momentum
- * @param q Momentum transfer
- * @param w Frequency
- * @param T Temperature
- *
- * @return float
- */
-float integrand(Vec k, Vec q, float w, float T);
-
-/**
- * @brief Integrand of the susceptibility
- *
- * @param k Momentum
- * @param q Momentum transfer
- * @param w Frequency
- * @param T Temperature
- *
- * @return complex<float>
- */
-complex<float> integrand(Vec k, Vec q, complex<float> w, float T);
 
 /**
  * @brief Integrate the susceptibility
@@ -75,31 +43,6 @@ float integrate_susceptibility(Vec q, float T, float mu, float w, int num_points
  */
 complex<float> complex_susceptibility_integration(Vec q, float T, float mu, complex<float> w, int num_points);
 
-/**
- * @brief Integrate a complex function via the trapezoidal method
- *
- * @param q Momentum transfer
- * @param T Temperature
- * @param mu Chemical potential
- * @param w Frequency
- * @param num_points Number of points
- *
- * @return float
- */
-complex<float> complex_trapezoidal_integration(const function<complex<float>(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points);
-
-/**
- * @brief Integrate a function via the trapezoidal method
- *
- * @param q Momentum transfer
- * @param T Temperature
- * @param mu Chemical potential
- * @param w Frequency
- * @param num_points Number of points
- *
- * @return float
- */
-float trapezoidal_integration(const function<double(float, float, float)> &f, float x0, float x1, float y0, float y1, float z0, float z1, int num_points);
 /**
  * @brief Calculate the susceptibility cube
  *
@@ -140,4 +83,9 @@ float calculate_chi_from_cube(const vector<vector<vector<float>>> &chi_cube, Vec
  */
 Vec to_IBZ_2(const Vec k);
 
+void sanitize_I_vals(float &V1, float &V2, float &V3, float &V4);
+vector<float> getUnique(float a, float b, float c, float d);
+bool check_two_equal(float V1, float V2, float V3, float V4);
+float get_I(float D1, float D2, float D3, float V1, float V2, float V3, float V4);
+float analytic_tetrahedron_linear_energy_method(Vec q, float w, int num_pts);
 #endif
