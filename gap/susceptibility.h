@@ -87,5 +87,6 @@ void sanitize_I_vals(float &V1, float &V2, float &V3, float &V4);
 vector<float> getUnique(float a, float b, float c, float d);
 bool check_two_equal(float V1, float V2, float V3, float V4);
 float get_I(float D1, float D2, float D3, float V1, float V2, float V3, float V4);
+bool scattering_available(Vec q, vector<Vec> p);
 float analytic_tetrahedron_linear_energy_method(Vec q, float w, int num_pts);
 #endif

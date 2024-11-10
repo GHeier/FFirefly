@@ -342,6 +342,14 @@ float get_I(float D1, float D2, float D3, float V1, float V2, float V3, float V4
     return r;
 }
 
+bool scattering_available(Vec q, vector<Vec> p) {
+    for (Vec v : p) {
+        if (epsilon(v) < mu and epsilon(v+q) < mu) return false;
+        if (epsilon(v) > mu and epsilon(v+q) > mu) return false;
+    }
+    return true;
+}
+
 // Computes the sum analytically, which should be quite a bit faster
 // Done at zero temperature is the only caveat
 float analytic_tetrahedron_linear_energy_method(Vec q, float w, int num_pts) {
@@ -354,14 +362,18 @@ float analytic_tetrahedron_linear_energy_method(Vec q, float w, int num_pts) {
         {5, 6, 7, 3}
     };
 
-    float sum = 0;
-    float Omega = pow(2*k_max,3) / (6*num_pts*num_pts*num_pts);
-    if (dim == 2) Omega = pow(2*k_max,2) / (2*n*n);
+    float bound = k_max;
+    double sum = 0;
+    double Omega = pow(2*bound,3) / (6*num_pts*num_pts*num_pts);
+    float d3x = 1 / pow(num_pts, 3);
+    if (dim == 2) Omega = pow(2*bound,2) / (2*n*n);
     #pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < num_pts; i++) {
         for (int j = 0; j < num_pts; j++) {
             for (int k = 0; k < num_pts * (dim%2) + 1 * ((dim+1)%2); k++) {
+                Vec temp(2*bound * i / (num_pts-1) - bound, 2*bound * j / (num_pts-1) - bound, 2*bound * k / (num_pts-1) - bound);
                 vector<Vec> points = points_from_indices(epsilon, i, j, k, num_pts);
+                //sum += points[0].vals[0] * Omega * 6;
 
                 for (int c = 0; c < 6; c++) {
 
@@ -369,11 +381,12 @@ float analytic_tetrahedron_linear_energy_method(Vec q, float w, int num_pts) {
                     for (int p = 0; p < 4; p++) {
                         ep_points[p] = points[tetrahedrons[c][p]-1];
                     }
+                    //if (not scattering_available(q, ep_points)) continue;
                     // Sort by e(k)
                     sort(ep_points.begin(), ep_points.end(), [](Vec a, Vec b) { 
                             return a.freq < b.freq; 
                     });
-                    float Theta_kq = ep_points[3].freq < mu ? 1 : 0;
+                    float Theta_kq = epsilon(ep_points[3]+q) < mu ? 1 : 0;
                     float Theta_k = ep_points[0].freq < mu ? 1 : 0;
 
                     float V1 = e_diff(ep_points[3],q) - w;
@@ -386,11 +399,21 @@ float analytic_tetrahedron_linear_energy_method(Vec q, float w, int num_pts) {
                     float D3 = (V3 - V4) * (V3 - V2) * (V3 - V1);
 
                     float I = get_I(D1, D2, D3, V1, V2, V3, V4);
-                    sum += (Theta_kq - Theta_k) * Omega * I;
+                    //sum += (Theta_k - Theta_kq) * Omega * I;
+                    //sum += 1 / (q.norm() * q.norm() + 2*q*temp) * Omega;
+                    //sum += Omega;
+                    //sum += temp.vals[0] * d3x;
                 }
             }
         }
+        float Delta_x = 0.25;
+        float dx = 2*Delta_x / num_pts;
+        float x = 2*Delta_x * i / (num_pts-1) - Delta_x;
+        float val1 = (x + 1)*(x + 1) - x*x;
+        float val2 = (x + dx + 1)*(x + dx + 1) - (x + dx)*(x + dx);
+        //sum += 1 / (1 + 2.0 * x) * dx * 4*M_PI*M_PI;
+        sum += 4*M_PI*M_PI * log(fabs((val1 + val2) / val1));
     }
     assert(not isnan(sum));
-    return sum;
+    return (float)sum;
 }
