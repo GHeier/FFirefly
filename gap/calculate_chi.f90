@@ -1,9 +1,55 @@
 module globals
+    use, intrinsic :: iso_c_binding  ! Ensure C interoperability
     implicit none
     real(8), parameter :: pi = 3.1415926535897932384626433832795028841971
     integer :: nb, ne, nge(3), ngw(3), nke, nkw
     real(8) :: ef, qmesh(3), bvec(3,3), VBZ
+
     contains
+        subroutine convert_to_bz_matrix(cell, bz_matrix) bind(C, name="cell_to_BZ")
+            use, intrinsic :: iso_c_binding
+            implicit none
+            real(c_float), dimension(3,3), intent(in) :: cell       
+            real(c_float), dimension(3,3), intent(out) :: bz_matrix 
+            real(c_float) :: volume
+            real(c_float), dimension(3) :: a, b, c, cross_bc, cross_ca, cross_ab
+
+            ! Extract lattice vectors
+            a = cell(:, 1)
+            b = cell(:, 2)
+            c = cell(:, 3)
+
+            ! Calculate the volume of the unit cell using a dot product and cross product
+            cross_bc = [b(2)*c(3) - b(3)*c(2), b(3)*c(1) - b(1)*c(3), b(1)*c(2) - b(2)*c(1)]
+            volume = dot_product(a, cross_bc)
+
+            ! Calculate the reciprocal lattice vectors
+            cross_ca = [c(2)*a(3) - c(3)*a(2), c(3)*a(1) - c(1)*a(3), c(1)*a(2) - c(2)*a(1)]
+            cross_ab = [a(2)*b(3) - a(3)*b(2), a(3)*b(1) - a(1)*b(3), a(1)*b(2) - a(2)*b(1)]
+
+            bz_matrix(:, 1) = 2.0 * 3.141592653589793d0 * cross_bc / volume
+            bz_matrix(:, 2) = 2.0 * 3.141592653589793d0 * cross_ca / volume
+            bz_matrix(:, 3) = 2.0 * 3.141592653589793d0 * cross_ab / volume
+        end subroutine convert_to_bz_matrix
+
+        subroutine read_data()
+            real(8), dimension(3,3) :: cell
+            real(8), dimension(3) :: a, b, c
+            real(8) :: volume
+            integer :: i, j
+            call get_command_argument(1, file)
+            open(10, file)
+            do  
+                read(10, '(A)', iostat=ios) line
+                if (ios /= 0) exit
+            end do
+            close(20)
+            cell(:, 1) = a
+            cell(:, 2) = b
+            cell(:, 3) = c
+            call convert_to_bz_matrix(cell, bvec)
+        end subroutine read_data
+
         subroutine get_vals()
             bvec(1:3,1) = [3d0, 0d0, 0d0]
             bvec(1:3,2) = [0d0, 3d0, 0d0]
