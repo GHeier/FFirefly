@@ -309,32 +309,37 @@ float get_I(float D1, float D2, float D3, float V1, float V2, float V3, float V4
     sanitize_I_vals(V1, V2, V3, V4);
     vector<float> V = getUnique(V1, V2, V3, V4);
     if (find(V.begin(), V.end(), 0) != V.end()) {
+        printf("Option 0\n");
         return 0;
     }
     if (V.size() == 1) {
+        printf("Option 1\n");
         float r = 1 / V[0];
         return r;
     }
     if (V.size() == 2 and check_two_equal(V1, V2, V3, V4)) {
+        printf("Option 2\n");
         float t1 = 2 * V[0] * V[1] / pow(V[0] - V[1], 3) * log(fabs(V[1] / V[0]));
         float t2 = (V[0] + V[1]) / (pow(V[0] - V[1], 2));
         float r = 3 * (t1 + t2);
         return 3 * (t1 + t2);
     }
     else if (V.size() == 2) {
+        printf("Option 3\n");
         float t1 = V[1]*V[1] / (pow(V[0] - V[1],3)) * log(fabs(V[0]/V[1]));
         float t2 = (1.5 * V[1]*V[1] + 0.5 * V[0]*V[0] - 2 * V[0]*V[1]) / pow(V[0] - V[1],3);
         float r = 3 * (t1 + t2);
         return r;
     }
     if (V.size() == 3) {
+        printf("Option 4\n");
         float t1 = V[1] * V[1] / (pow(V[1] - V[0], 2) * (V[1] - V[2])) * log(fabs(V[1] / V[0]));
         float t2 = V[2] * V[2] / (pow(V[2] - V[0], 2) * (V[2] - V[1])) * log(fabs(V[2] / V[0]));
         float t3 = V[0] / ((V[1] - V[0]) * (V[2] - V[0]));
         float r = 3 * (t1 + t2 + t3);
         return r;
     }
-
+    printf("Option 5\n");
     float t1 = (V1*V1/D1*log(fabs(V1/V4)));
     float t2 = (V2*V2/D2*log(fabs(V2/V4)));
     float t3 = (V3*V3/D3*log(fabs(V3/V4)));
@@ -362,16 +367,19 @@ float analytic_tetrahedron_linear_energy_method(Vec q, float w, int num_pts) {
         {5, 6, 7, 3}
     };
 
-    float bound = k_max;
+    float upper = 1.1;
+    float lower = 1.0;
+    float width = (upper - lower) / 2;
     double sum = 0;
-    double Omega = pow(2*bound,3) / (6*num_pts*num_pts*num_pts);
+    double Omega = pow(2*width,3) / (6*num_pts*num_pts*num_pts);
     float d3x = 1 / pow(num_pts, 3);
-    if (dim == 2) Omega = pow(2*bound,2) / (2*n*n);
-    #pragma omp parallel for reduction(+:sum)
+    if (dim == 2) Omega = pow(2*width,2) / (2*n*n);
+    //#pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < num_pts; i++) {
         for (int j = 0; j < num_pts; j++) {
             for (int k = 0; k < num_pts * (dim%2) + 1 * ((dim+1)%2); k++) {
-                Vec temp(2*bound * i / (num_pts-1) - bound, 2*bound * j / (num_pts-1) - bound, 2*bound * k / (num_pts-1) - bound);
+                //Vec temp(2*width * i / (num_pts-1) - lower, 2*width * j / (num_pts-1) - lower, 2*width * k / (num_pts-1) - lower);
+                Vec temp(i * (upper - lower) / (num_pts-1) + lower, j * (upper - lower) / (num_pts-1) + lower, k * (upper - lower) / (num_pts-1) + lower);
                 vector<Vec> points = points_from_indices(epsilon, i, j, k, num_pts);
                 //sum += points[0].vals[0] * Omega * 6;
 
@@ -400,19 +408,13 @@ float analytic_tetrahedron_linear_energy_method(Vec q, float w, int num_pts) {
 
                     float I = get_I(D1, D2, D3, V1, V2, V3, V4);
                     //sum += (Theta_k - Theta_kq) * Omega * I;
+                    sum += Omega * I;
                     //sum += 1 / (q.norm() * q.norm() + 2*q*temp) * Omega;
                     //sum += Omega;
                     //sum += temp.vals[0] * d3x;
                 }
             }
         }
-        float Delta_x = 0.25;
-        float dx = 2*Delta_x / num_pts;
-        float x = 2*Delta_x * i / (num_pts-1) - Delta_x;
-        float val1 = (x + 1)*(x + 1) - x*x;
-        float val2 = (x + dx + 1)*(x + dx + 1) - (x + dx)*(x + dx);
-        //sum += 1 / (1 + 2.0 * x) * dx * 4*M_PI*M_PI;
-        sum += 4*M_PI*M_PI * log(fabs((val1 + val2) / val1));
     }
     assert(not isnan(sum));
     return (float)sum;

@@ -13,6 +13,7 @@ extern float max_freq;
 extern int dim;
 extern string potential_name;
 extern string band_name;
+extern string calculation_type;
 extern int num_eigenvalues_to_save;
 extern bool FS_only;
 
@@ -25,10 +26,6 @@ extern float tnn;
 extern float U;
 extern float wc;
 
+void load_config(ifstream &file);
 void init_config(float &mu, float &U, float &t, float &tn, float &w_D, float new_mu, float new_U, float new_t, float new_tn, float new_w_D);
 void change_global_constant(float &a, float b);
-float V(const Vec k1, const Vec k2, float w, const float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube);
-int get_num_points_from_delta(float &delta);
-
-extern float *weights[5];
-extern float *points[5];

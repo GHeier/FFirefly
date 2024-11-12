@@ -2,6 +2,7 @@
 #ifndef FREQUENCY_INCLUSION_H
 #define FREQUENCY_INCLUSION_H
 
+#include <fstream>
 #include <complex>
 #include "calculations.h"
 #include "interpolate.h"
@@ -42,6 +43,23 @@ struct MatCube {
         q = to_IBZ_2(q);
         return interpolate_4D_complex(q.vals[0], q.vals[1], q.vals[2], w.imag(), 
                 x_min, x_max, y_min, y_max, z_min, z_max, w_min, w_max, cube);
+    }
+
+    // Data Loading
+    void load_data(string filename) {
+        ifstream file(filename);
+        float x_val, y_val, z_val, w_val, re, im;
+        // Now fill the cube with the values. The cube is filled over the entirety of the BZ
+        for (int i = 0; i < cube.size(); i++) {
+            for (int j = 0; j < cube[0].size(); j++) {
+                for (int k = 0; k < cube[0][0].size(); k++) {
+                    for (int l = 0; l < cube[0][0][0].size(); l++) {
+                        file >> x_val >> y_val >> z_val >> w_val >> re >> im;
+                        cube[i][j][k][l] = complex<float>(re, im);
+                    }
+                }
+            }
+        }
     }
 };
 

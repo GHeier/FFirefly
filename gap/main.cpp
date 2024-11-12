@@ -177,8 +177,14 @@ void find_gap_function() {
     delete [] solutions;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     printf("Starting Program\n");
+    ifstream file(argv[1]);
+    if (not file.is_open()) {
+        cout << "Error: Could not open file" << endl;
+        exit(1);
+    }
+    load_config(file);
     // Sets the number of threads used in parallelization to one less than the maximum
     // This allows for the main thread to be used for other tasks
     int num_procs = omp_get_num_procs();

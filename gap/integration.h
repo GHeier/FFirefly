@@ -10,6 +10,8 @@
 
 extern int s_div;
 extern int s_pts;
+extern float *weights[5];
+extern float *points[5];
 
 /**
  * @brief Integrate a complex function via the trapezoidal method
