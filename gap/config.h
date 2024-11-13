@@ -51,6 +51,6 @@ void get_dimensions();
 void convert_to_BZ(const float cell[3][3], float brillouin_zone[3][3]);
 void set_string(char *dest, const char *src);
 
-void load_config(FILE *file);
+void load_c_config(FILE *file);
 
 #endif // CONFIG_H

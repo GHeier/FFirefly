@@ -7,22 +7,22 @@ module confighub
     integer(c_int), bind(C, name="c_w_pts") :: c_w_pts
     integer(c_int), bind(C, name="c_dim") :: c_dim
 
-    real(c_double), bind(C, name="c_mu") :: c_mu
-    real(c_double), bind(C, name="c_U") :: c_U
-    real(c_double), bind(C, name="c_wc") :: c_wc
-    real(c_double), bind(C, name="c_cell") :: c_cell(3,3)
-    real(c_double), bind(C, name="c_brillouin_zone") :: c_brillouin_zone(3,3)
-    real(c_double), bind(C, name="c_max_freq") :: c_max_freq
+    real(c_float), bind(C, name="c_mu") :: c_mu
+    real(c_float), bind(C, name="c_U") :: c_U
+    real(c_float), bind(C, name="c_wc") :: c_wc
+    real(c_float), bind(C, name="c_cell") :: c_cell(3,3)
+    real(c_float), bind(C, name="c_brillouin_zone") :: c_brillouin_zone(3,3)
+    real(c_float), bind(C, name="c_max_freq") :: c_max_freq
 
-    character(len=1), bind(C, name="c_calculation_type") :: c_calculation_type
-    character(len=1), bind(C, name="c_outdir") :: c_outdir
-    character(len=1), bind(C, name="c_prefix") :: c_prefix
-    character(len=1), bind(C, name="c_verbosity") :: c_verbosity
-    character(len=1), bind(C, name="c_interactions") :: c_interactions
+    character(kind=c_char), bind(C, name="c_calculation_type") :: c_calculation_type(50)
+    character(kind=c_char), bind(C, name="c_outdir") :: c_outdir(50)
+    character(kind=c_char), bind(C, name="c_prefix") :: c_prefix(50)
+    character(kind=c_char), bind(C, name="c_verbosity") :: c_verbosity(50)
+    character(kind=c_char), bind(C, name="c_interaction") :: c_interaction(50)
 
     integer :: ibrav, k_mesh(3), q_mesh(3), w_pts, dim
     real :: mu, U, wc, cell(3,3), brillouin_zone(3,3), max_freq
-    character(len=50) :: calculation_type, outdir, prefix, verbosity, interactions
+    character(len=50) :: calculation_type, outdir, prefix, verbosity, interaction
 
     interface
         function get_calculation_type() bind(C)
@@ -45,10 +45,10 @@ module confighub
             type(c_ptr) :: get_verbosity
         end function get_verbosity
 
-        function get_interactions() bind(C)
+        function get_interaction() bind(C)
             use iso_c_binding
-            type(c_ptr) :: get_interactions
-        end function get_interactions
+            type(c_ptr) :: get_interaction
+        end function get_interaction
 
     end interface
 
@@ -79,25 +79,25 @@ contains
         end do
     end function get_string
 
-    subroutine load_config()
+    subroutine load_f90_config()
         ibrav = c_ibrav
-        w_pts = (int)c_w_pts
-        dim = (int)c_dim
-        k_mesh = (int)c_k_mesh
-        q_mesh = (int)c_q_mesh
+        w_pts = c_w_pts
+        dim = c_dim
+        k_mesh = c_k_mesh
+        q_mesh = c_q_mesh
 
-        mu = (real)c_mu
-        U = (real)c_U
-        wc = (real)c_wc
-        cell = (real)c_cell
-        brillouin_zone = (real)c_brillouin_zone
-        max_freq = (real)c_max_freq
+        mu = c_mu
+        U = c_U
+        wc = c_wc
+        cell = c_cell
+        brillouin_zone = c_brillouin_zone
+        max_freq = c_max_freq
 
         calculation_type = get_string(get_calculation_type())
         outdir = get_string(get_outdir())
         prefix = get_string(get_prefix())
         verbosity = get_string(get_verbosity())
-        interactions = get_string(get_interactions())
-    end subroutine load_config
+        interaction = get_string(get_interaction())
+    end subroutine load_f90_config
 
 end module confighub

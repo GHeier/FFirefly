@@ -55,14 +55,14 @@ void get_dimensions() {
     }
 }
 
-void convert_to_BZ(const float cell[3][3], float brillouin_zone[3][3]);
+void cell_to_BZ(const float cell[3][3], float brillouin_zone[3][3]);
 void set_string(char *dest, const char *src) {
     int size = 50;
     strncpy(dest, src, size - 1);
     dest[size - 1] = '\0';  // Ensure null-termination
 }
 
-void load_config(FILE *file) {
+void load_c_config(FILE *file) {
     char line[256];
     char key[50];
     char value[50];
@@ -104,6 +104,6 @@ void load_config(FILE *file) {
             }
         }
     }
-    convert_to_BZ(c_cell, c_brillouin_zone);
+    cell_to_BZ(c_cell, c_brillouin_zone);
     get_dimensions();
 }

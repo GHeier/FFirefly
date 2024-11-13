@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    load_config(file);
+    load_c_config(file);
 
     fclose(file);
 
