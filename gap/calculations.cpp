@@ -22,6 +22,7 @@
 #include <boost/math/quadrature/gauss.hpp>
 
 #include "calculations.h"
+#include "potential.h"
 #include "cfg.h"
 #include "vec.h"
 #include "matrix.hpp"

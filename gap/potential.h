@@ -4,6 +4,7 @@
 
 #include <vector>
 #include "vec.h"
+#include <unordered_map>
 
 using namespace std;
 
@@ -12,6 +13,7 @@ struct indices_values {
     float value;
 };
 
+float V(const Vec k1, const Vec k2, float w, const float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube);
 /**
  * @brief Constant potential
  * 

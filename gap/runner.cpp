@@ -177,32 +177,3 @@ void find_gap_function() {
     delete [] solutions;
 }
 
-int main(int argc, char *argv[]) {
-    printf("Starting Program\n");
-    ifstream file(argv[1]);
-    if (not file.is_open()) {
-        cout << "Error: Could not open file" << endl;
-        exit(1);
-    }
-    load_config(file);
-    // Sets the number of threads used in parallelization to one less than the maximum
-    // This allows for the main thread to be used for other tasks
-    int num_procs = omp_get_num_procs();
-    omp_set_num_threads(num_procs - 1);
-
-    // Finds the gap function
-    //find_gap_function();
-    float T = 1.0 / 600.0;
-    float mu = -1.0;
-    float m_pts = 40;
-    float w_pts = 40;
-    float num_integral_pts = 3000;
-    float w_min = 0.000;
-    float w_max = 10.45;
-
-    MatCube matsubara_cube =
-        create_matsubara_cube(T, mu, m_pts, w_pts, w_min, w_max, num_integral_pts);
-    save_matsubara_cube(matsubara_cube, w_min, w_max, "matsubara_cube.dat");
-
-    return 0;
-}

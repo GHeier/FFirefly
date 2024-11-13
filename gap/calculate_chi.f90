@@ -32,24 +32,6 @@ module globals
             bz_matrix(:, 3) = 2.0 * 3.141592653589793d0 * cross_ab / volume
         end subroutine convert_to_bz_matrix
 
-        subroutine read_data()
-            real(8), dimension(3,3) :: cell
-            real(8), dimension(3) :: a, b, c
-            real(8) :: volume
-            integer :: i, j
-            call get_command_argument(1, file)
-            open(10, file)
-            do  
-                read(10, '(A)', iostat=ios) line
-                if (ios /= 0) exit
-            end do
-            close(20)
-            cell(:, 1) = a
-            cell(:, 2) = b
-            cell(:, 3) = c
-            call convert_to_bz_matrix(cell, bvec)
-        end subroutine read_data
-
         subroutine get_vals()
             bvec(1:3,1) = [3d0, 0d0, 0d0]
             bvec(1:3,2) = [0d0, 3d0, 0d0]
@@ -155,14 +137,3 @@ module mesh
         close(10)
      end subroutine save_mesh
  end module mesh
-program main
-    use globals
-    use mesh
-    implicit none
-    real(8) :: qvec(3), chi
-    real(8), allocatable :: eig1(:,:)
-    real(8), allocatable :: chi_mesh(:,:,:)
-    call get_vals()
-    chi_mesh = get_static_polarization_mesh()
-    call save_mesh(chi_mesh)
-end program main

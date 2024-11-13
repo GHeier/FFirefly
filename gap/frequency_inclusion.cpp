@@ -27,6 +27,7 @@
 
 #include "calculations.h"
 #include "cfg.h"
+#include "integration.h"
 #include "vec.h"
 #include "utilities.h"
 #include "frequency_inclusion.hpp"

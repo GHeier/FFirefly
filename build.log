@@ -1,0 +1,359 @@
+/usr/bin/ld: build/config.o: in function `get_calculation_type':
+/home/g/Research/bcs_diagonalization/gap/config.c:12: multiple definition of `get_calculation_type'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:12: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:11: multiple definition of `c_calculation_type'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:11: first defined here
+/usr/bin/ld: build/config.o: in function `get_outdir':
+/home/g/Research/bcs_diagonalization/gap/config.c:13: multiple definition of `get_outdir'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:13: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:13: multiple definition of `c_outdir'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:13: first defined here
+/usr/bin/ld: build/config.o: in function `get_prefix':
+/home/g/Research/bcs_diagonalization/gap/config.c:14: multiple definition of `get_prefix'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:14: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:14: multiple definition of `c_prefix'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:14: first defined here
+/usr/bin/ld: build/config.o: in function `get_verbosity':
+/home/g/Research/bcs_diagonalization/gap/config.c:15: multiple definition of `get_verbosity'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:15: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:15: multiple definition of `c_verbosity'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:15: first defined here
+/usr/bin/ld: build/config.o: in function `get_interaction':
+/home/g/Research/bcs_diagonalization/gap/config.c:18: multiple definition of `get_interaction'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:18: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:18: multiple definition of `c_interaction'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:18: first defined here
+/usr/bin/ld: build/config.o: in function `get_band_name':
+/home/g/Research/bcs_diagonalization/gap/config.c:43: multiple definition of `get_band_name'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:43: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:43: multiple definition of `c_band_name'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:43: first defined here
+/usr/bin/ld: build/config.o: in function `get_dimensions':
+/home/g/Research/bcs_diagonalization/gap/config.c:48: multiple definition of `get_dimensions'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:48: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:35: multiple definition of `c_cell'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:35: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:42: multiple definition of `c_dim'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:42: first defined here
+/usr/bin/ld: build/config.o: in function `set_string':
+/home/g/Research/bcs_diagonalization/gap/config.c:57: multiple definition of `set_string'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:57: first defined here
+/usr/bin/ld: build/config.o: in function `load_config':
+/home/g/Research/bcs_diagonalization/gap/config.c:63: multiple definition of `load_config'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:63: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:36: multiple definition of `c_brillouin_zone'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:36: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:24: multiple definition of `c_FS_only'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:24: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:30: multiple definition of `c_k_mesh'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:30: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:31: multiple definition of `c_q_mesh'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:31: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:32: multiple definition of `c_w_pts'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:32: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:41: multiple definition of `c_max_freq'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:41: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:27: multiple definition of `c_frequency_pts'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:27: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:26: multiple definition of `c_num_eigenvalues_to_save'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:26: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:25: multiple definition of `c_wc'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:25: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:21: multiple definition of `c_U'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:21: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:20: multiple definition of `c_mu'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:20: first defined here
+/usr/bin/ld: build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:19: multiple definition of `c_ibrav'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:19: first defined here
+/usr/bin/ld: build/main.o: in function `get_calculation_type':
+/home/g/Research/bcs_diagonalization/gap/config.c:12: multiple definition of `get_calculation_type'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:12: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:11: multiple definition of `c_calculation_type'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:11: first defined here
+/usr/bin/ld: build/main.o: in function `get_outdir':
+/home/g/Research/bcs_diagonalization/gap/config.c:13: multiple definition of `get_outdir'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:13: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:13: multiple definition of `c_outdir'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:13: first defined here
+/usr/bin/ld: build/main.o: in function `get_prefix':
+/home/g/Research/bcs_diagonalization/gap/config.c:14: multiple definition of `get_prefix'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:14: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:14: multiple definition of `c_prefix'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:14: first defined here
+/usr/bin/ld: build/main.o: in function `get_verbosity':
+/home/g/Research/bcs_diagonalization/gap/config.c:15: multiple definition of `get_verbosity'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:15: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:15: multiple definition of `c_verbosity'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:15: first defined here
+/usr/bin/ld: build/main.o: in function `get_interaction':
+/home/g/Research/bcs_diagonalization/gap/config.c:18: multiple definition of `get_interaction'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:18: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:18: multiple definition of `c_interaction'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:18: first defined here
+/usr/bin/ld: build/main.o: in function `get_band_name':
+/home/g/Research/bcs_diagonalization/gap/config.c:43: multiple definition of `get_band_name'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:43: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:43: multiple definition of `c_band_name'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:43: first defined here
+/usr/bin/ld: build/main.o: in function `get_dimensions':
+/home/g/Research/bcs_diagonalization/gap/config.c:48: multiple definition of `get_dimensions'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:48: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:35: multiple definition of `c_cell'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:35: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:42: multiple definition of `c_dim'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:42: first defined here
+/usr/bin/ld: build/main.o: in function `set_string':
+/home/g/Research/bcs_diagonalization/gap/config.c:57: multiple definition of `set_string'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:57: first defined here
+/usr/bin/ld: build/main.o: in function `load_config':
+/home/g/Research/bcs_diagonalization/gap/config.c:63: multiple definition of `load_config'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:63: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:36: multiple definition of `c_brillouin_zone'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:36: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:24: multiple definition of `c_FS_only'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:24: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:30: multiple definition of `c_k_mesh'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:30: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:31: multiple definition of `c_q_mesh'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:31: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:32: multiple definition of `c_w_pts'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:32: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:41: multiple definition of `c_max_freq'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:41: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:27: multiple definition of `c_frequency_pts'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:27: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:26: multiple definition of `c_num_eigenvalues_to_save'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:26: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:25: multiple definition of `c_wc'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:25: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:21: multiple definition of `c_U'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:21: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:20: multiple definition of `c_mu'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:20: first defined here
+/usr/bin/ld: build/main.o:/home/g/Research/bcs_diagonalization/gap/config.c:19: multiple definition of `c_ibrav'; build/config.o:/home/g/Research/bcs_diagonalization/gap/config.c:19: first defined here
+/usr/bin/ld: build/utilities.o: undefined reference to symbol 'round@@GLIBC_2.2.5'
+/usr/bin/ld: /usr/lib/libm.so.6: error adding symbols: DSO missing from command line
+collect2: error: ld returned 1 exit status
+gap/config_f.f90:65:9:
+
+   65 |         ibrav = (int)c_ibrav
+      |         1
+Error: Unclassifiable statement at (1)
+gap/config_f.f90:17:79:
+
+   17 |     character(len=50), bind(C, name="c_calculation_type") :: c_calculation_type
+      |                                                                               1
+Error: BIND(C) Variable ‘c_calculation_type’ at (1) must have length one
+gap/config_f.f90:21:71:
+
+   21 |     character(len=50), bind(C, name="c_interactions") :: c_interactions
+      |                                                                       1
+Error: BIND(C) Variable ‘c_interactions’ at (1) must have length one
+gap/config_f.f90:18:59:
+
+   18 |     character(len=50), bind(C, name="c_outdir") :: c_outdir
+      |                                                           1
+Error: BIND(C) Variable ‘c_outdir’ at (1) must have length one
+gap/config_f.f90:19:59:
+
+   19 |     character(len=50), bind(C, name="c_prefix") :: c_prefix
+      |                                                           1
+Error: BIND(C) Variable ‘c_prefix’ at (1) must have length one
+gap/config_f.f90:20:65:
+
+   20 |     character(len=50), bind(C, name="c_verbosity") :: c_verbosity
+      |                                                                 1
+Error: BIND(C) Variable ‘c_verbosity’ at (1) must have length one
+gap/config_f.f90:78:27:
+
+   78 |         calculation_type = get_string(c_calculation_type)
+      |                           1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:79:17:
+
+   79 |         outdir = get_string(c_outdir)
+      |                 1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:80:17:
+
+   80 |         prefix = get_string(c_prefix)
+      |                 1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:81:20:
+
+   81 |         verbosity = get_string(c_verbosity)
+      |                    1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:82:23:
+
+   82 |         interactions = get_string(c_interactions)
+      |                       1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:65:9:
+
+   65 |         ibrav = (int)c_ibrav
+      |         1
+Error: Unclassifiable statement at (1)
+gap/config_f.f90:17:79:
+
+   17 |     character(len=50), bind(C, name="c_calculation_type") :: c_calculation_type
+      |                                                                               1
+Error: BIND(C) Variable ‘c_calculation_type’ at (1) must have length one
+gap/config_f.f90:21:71:
+
+   21 |     character(len=50), bind(C, name="c_interactions") :: c_interactions
+      |                                                                       1
+Error: BIND(C) Variable ‘c_interactions’ at (1) must have length one
+gap/config_f.f90:18:59:
+
+   18 |     character(len=50), bind(C, name="c_outdir") :: c_outdir
+      |                                                           1
+Error: BIND(C) Variable ‘c_outdir’ at (1) must have length one
+gap/config_f.f90:19:59:
+
+   19 |     character(len=50), bind(C, name="c_prefix") :: c_prefix
+      |                                                           1
+Error: BIND(C) Variable ‘c_prefix’ at (1) must have length one
+gap/config_f.f90:20:65:
+
+   20 |     character(len=50), bind(C, name="c_verbosity") :: c_verbosity
+      |                                                                 1
+Error: BIND(C) Variable ‘c_verbosity’ at (1) must have length one
+gap/config_f.f90:78:27:
+
+   78 |         calculation_type = get_string(c_calculation_type)
+      |                           1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:79:17:
+
+   79 |         outdir = get_string(c_outdir)
+      |                 1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:80:17:
+
+   80 |         prefix = get_string(c_prefix)
+      |                 1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:81:20:
+
+   81 |         verbosity = get_string(c_verbosity)
+      |                    1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:82:23:
+
+   82 |         interactions = get_string(c_interactions)
+      |                       1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:66:9:
+
+   66 |         k_mesh = (int)c_k_mesh
+      |         1
+Error: Unclassifiable statement at (1)
+gap/config_f.f90:17:79:
+
+   17 |     character(len=50), bind(C, name="c_calculation_type") :: c_calculation_type
+      |                                                                               1
+Error: BIND(C) Variable ‘c_calculation_type’ at (1) must have length one
+gap/config_f.f90:21:71:
+
+   21 |     character(len=50), bind(C, name="c_interactions") :: c_interactions
+      |                                                                       1
+Error: BIND(C) Variable ‘c_interactions’ at (1) must have length one
+gap/config_f.f90:18:59:
+
+   18 |     character(len=50), bind(C, name="c_outdir") :: c_outdir
+      |                                                           1
+Error: BIND(C) Variable ‘c_outdir’ at (1) must have length one
+gap/config_f.f90:19:59:
+
+   19 |     character(len=50), bind(C, name="c_prefix") :: c_prefix
+      |                                                           1
+Error: BIND(C) Variable ‘c_prefix’ at (1) must have length one
+gap/config_f.f90:20:65:
+
+   20 |     character(len=50), bind(C, name="c_verbosity") :: c_verbosity
+      |                                                                 1
+Error: BIND(C) Variable ‘c_verbosity’ at (1) must have length one
+gap/config_f.f90:78:27:
+
+   78 |         calculation_type = get_string(c_calculation_type)
+      |                           1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:79:17:
+
+   79 |         outdir = get_string(c_outdir)
+      |                 1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:80:17:
+
+   80 |         prefix = get_string(c_prefix)
+      |                 1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:81:20:
+
+   81 |         verbosity = get_string(c_verbosity)
+      |                    1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:82:23:
+
+   82 |         interactions = get_string(c_interactions)
+      |                       1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:66:9:
+
+   66 |         k_mesh = (int)c_k_mesh
+      |         1
+Error: Unclassifiable statement at (1)
+gap/config_f.f90:17:79:
+
+   17 |     character(len=50), bind(C, name="c_calculation_type") :: c_calculation_type
+      |                                                                               1
+Error: BIND(C) Variable ‘c_calculation_type’ at (1) must have length one
+gap/config_f.f90:21:71:
+
+   21 |     character(len=50), bind(C, name="c_interactions") :: c_interactions
+      |                                                                       1
+Error: BIND(C) Variable ‘c_interactions’ at (1) must have length one
+gap/config_f.f90:18:59:
+
+   18 |     character(len=50), bind(C, name="c_outdir") :: c_outdir
+      |                                                           1
+Error: BIND(C) Variable ‘c_outdir’ at (1) must have length one
+gap/config_f.f90:19:59:
+
+   19 |     character(len=50), bind(C, name="c_prefix") :: c_prefix
+      |                                                           1
+Error: BIND(C) Variable ‘c_prefix’ at (1) must have length one
+gap/config_f.f90:20:65:
+
+   20 |     character(len=50), bind(C, name="c_verbosity") :: c_verbosity
+      |                                                                 1
+Error: BIND(C) Variable ‘c_verbosity’ at (1) must have length one
+gap/config_f.f90:78:27:
+
+   78 |         calculation_type = get_string(c_calculation_type)
+      |                           1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:79:17:
+
+   79 |         outdir = get_string(c_outdir)
+      |                 1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:80:17:
+
+   80 |         prefix = get_string(c_prefix)
+      |                 1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:81:20:
+
+   81 |         verbosity = get_string(c_verbosity)
+      |                    1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:82:23:
+
+   82 |         interactions = get_string(c_interactions)
+      |                       1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(50) to TYPE(c_ptr)
+gap/config_f.f90:66:9:
+
+   66 |         k_mesh = (int)c_k_mesh
+      |         1
+Error: Unclassifiable statement at (1)
+gap/config_f.f90:78:27:
+
+   78 |         calculation_type = get_string(c_calculation_type)
+      |                           1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(1) to TYPE(c_ptr)
+gap/config_f.f90:79:17:
+
+   79 |         outdir = get_string(c_outdir)
+      |                 1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(1) to TYPE(c_ptr)
+gap/config_f.f90:80:17:
+
+   80 |         prefix = get_string(c_prefix)
+      |                 1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(1) to TYPE(c_ptr)
+gap/config_f.f90:81:20:
+
+   81 |         verbosity = get_string(c_verbosity)
+      |                    1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(1) to TYPE(c_ptr)
+gap/config_f.f90:82:23:
+
+   82 |         interactions = get_string(c_interactions)
+      |                       1
+Error: Type mismatch in argument ‘c_string’ at (1); passed CHARACTER(1) to TYPE(c_ptr)
+gap/config_f.f90:84:9:
+
+   84 |         w_pts = (int)c_w_pts
+      |         1
+Error: Unclassifiable statement at (1)
+gap/config_f.f90:84:9:
+
+   84 |         w_pts = (int)c_w_pts
+      |         1
+Error: Unclassifiable statement at (1)
+gap/config_f.f90:84:9:
+
+   84 |         w_pts = (int)c_w_pts
+      |         1
+Error: Unclassifiable statement at (1)
+gap/config_f.f90:84:9:
+
+   84 |         w_pts = (int)c_w_pts
+      |         1
+Error: Unclassifiable statement at (1)
+gap/config_f.f90:84:9:
+
+   84 |         w_pts = (int)c_w_pts
+      |         1
+Error: Unclassifiable statement at (1)
+gap/config_f.f90:84:9:
+
+   84 |         w_pts = (int)c_w_pts
+      |         1
+Error: Unclassifiable statement at (1)
