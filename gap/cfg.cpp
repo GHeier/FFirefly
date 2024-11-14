@@ -16,7 +16,8 @@ using namespace std;
 
 // Global Variables are listed below, with their default values
 // Config Parameters
-string calculation_type(c_calculation_type);
+string calculation(c_calculation);
+string category(c_category);
 string outdir(c_outdir);
 string prefix(c_prefix);
 string verbosity(c_verbosity);

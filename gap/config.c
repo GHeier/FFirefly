@@ -10,8 +10,8 @@
 // Global Variables are listed below, with their default values
 
 // [CONTROL] 
-char c_calculation_type[50] = "superconductor"; 
-char* get_calculation_type() {return c_calculation_type;}
+char c_category[50] = "superconductor"; 
+char* get_category() {return c_category;}
 char c_outdir[50] = "./output"; char* get_outdir() {return c_outdir;}
 char c_prefix[50] = "sample"; char* get_prefix() {return c_prefix;}
 char c_verbosity[50] = "high"; char* get_verbosity() {return c_verbosity;}
@@ -27,6 +27,10 @@ bool c_FS_only = true;
 float c_bcs_cutoff_frequency = 0.05;
 int c_num_eigenvalues_to_save = 1;
 int c_frequency_pts = 5; // Number of BCS frequency points
+                         //
+// [RESPONSE]
+char c_calculation[50] = "polarization"; char* get_calculation() {return c_calculation;}
+bool dynamic = false;
 
 // [MESH]
 int c_k_mesh[3] = {20, 20, 20};
@@ -97,8 +101,8 @@ void load_c_config() {
             sscanf(line, "%[^=]=%s", key, value);
 
             // [CONTROL]
-            if (strstr(key, "calculation") != NULL) {
-                set_string(c_calculation_type, value);
+            if (strstr(key, "category") != NULL) {
+                set_string(c_category, value);
             } 
             else if (strstr(key, "outdir") != NULL) {
                 set_string(c_outdir, value);
@@ -141,6 +145,13 @@ void load_c_config() {
             } 
             else if (strstr(key, "FS_only") != NULL) {
                 c_FS_only = atoi(value);
+            } 
+            // [RESPONSE]
+            else if (strstr(key, "calculation") != NULL) {
+                set_string(c_calculation, value);
+            } 
+            else if (strstr(key, "dynamic") != NULL) {
+                dynamic = atoi(value);
             } 
             else {
                 printf("Invalid key: %s\n", key);

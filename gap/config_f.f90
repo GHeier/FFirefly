@@ -14,21 +14,27 @@ module confighub
     real(c_float), bind(C, name="c_brillouin_zone") :: c_brillouin_zone(3,3)
     real(c_float), bind(C, name="c_max_freq") :: c_max_freq
 
-    character(kind=c_char), bind(C, name="c_calculation_type") :: c_calculation_type(50)
+    character(kind=c_char), bind(C, name="c_category") :: c_category(50)
     character(kind=c_char), bind(C, name="c_outdir") :: c_outdir(50)
     character(kind=c_char), bind(C, name="c_prefix") :: c_prefix(50)
     character(kind=c_char), bind(C, name="c_verbosity") :: c_verbosity(50)
     character(kind=c_char), bind(C, name="c_interaction") :: c_interaction(50)
+    character(kind=c_char), bind(C, name="c_calculation") :: c_calculation(50)
 
     integer :: ibrav, k_mesh(3), q_mesh(3), w_pts, dim
     real :: fermi_energy, onsite_U, bcs_cutoff_frequency, cell(3,3), brillouin_zone(3,3), max_freq
-    character(len=50) :: calculation_type, outdir, prefix, verbosity, interaction
+    character(len=50) :: category, calculation, outdir, prefix, verbosity, interaction
 
     interface
-        function get_calculation_type() bind(C)
+        function get_calculation() bind(C)
             use iso_c_binding
-            type(c_ptr) :: get_calculation_type
-        end function get_calculation_type
+            type(c_ptr) :: get_calculation
+        end function get_calculation
+
+        function get_category() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_category
+        end function get_category
 
         function get_outdir() bind(C)
             use iso_c_binding
@@ -85,7 +91,8 @@ contains
         brillouin_zone = c_brillouin_zone
         max_freq = c_max_freq
 
-        calculation_type = get_string(get_calculation_type())
+        calculation = get_string(get_calculation())
+        category = get_string(get_category())
         outdir = get_string(get_outdir())
         prefix = get_string(get_prefix())
         verbosity = get_string(get_verbosity())

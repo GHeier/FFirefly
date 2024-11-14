@@ -129,7 +129,7 @@ module mesh
             do i2 = 0, nge(2) - 1
                 do i1 = 0, nge(1) - 1
                     qvec = get_kvec(i1, i2, i3)
-                    write(10, *) qvec, chi_mesh(i1+1, i2+1, i3+1)
+                    write(10, '(F8.6, 1X, F8.6, 1X, F8.6, 1X, F8.6)') qvec, chi_mesh(i1+1, i2+1, i3+1)
                 end do
             end do
         end do

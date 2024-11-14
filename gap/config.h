@@ -11,8 +11,8 @@
 // Global Variables are listed below, with their default values
 
 // [CONTROL]
-extern char c_calculation_type[50];
-extern char* get_calculation_type();
+extern char c_category[50];
+extern char* get_category();
 extern char c_outdir[50]; char* get_outdir();
 extern char c_prefix[50]; char* get_prefix();
 extern char c_verbosity[50]; char* get_verbosity();
@@ -28,6 +28,10 @@ extern bool c_FS_only;
 extern float c_bcs_cutoff_frequency;
 extern int c_num_eigenvalues_to_save;
 extern int c_frequency_pts;
+
+// [RESPONSE]
+extern char c_calculation[50]; char* get_calculation();
+extern bool dynamic;
 
 // [MESH]
 extern int c_k_mesh[3];
