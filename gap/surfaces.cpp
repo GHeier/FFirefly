@@ -26,13 +26,13 @@ float triangle_area_from_points(Vec k1, Vec k2, Vec k3) {
         return pow(s*(s-d1)*(s-d2)*(s-d3), 0.5);
     };
     // Define distances 
-    Vec k12 = k1 - k2; if (k12.cartesian) k12.to_spherical();
-    Vec k23 = k2 - k3; if (k23.cartesian) k23.to_spherical();
-    Vec k13 = k1 - k3; if (k13.cartesian) k13.to_spherical();
+    Vec k12 = k1 - k2; 
+    Vec k23 = k2 - k3; 
+    Vec k13 = k1 - k3; 
     // 0 index is radial distance
-    float d12 = k12.vals[0];
-    float d23 = k23.vals[0];
-    float d13 = k13.vals[0];
+    float d12 = k12.norm();
+    float d23 = k23.norm();
+    float d13 = k13.norm();
 
     // Triangle area formula given side lengths
     float A = 0;
@@ -52,14 +52,14 @@ vector<Vec> points_from_indices(function<float(Vec)> func, int i, int j, int k, 
     float z1 = 2*k_max * k / divs       - k_max; 
     float z2 = 2*k_max * (k+1) / divs   - k_max; 
 
-    Vec p1(x1, y1, z1); p1.freq = func(p1);  
-    Vec p2(x2, y1, z1); p2.freq = func(p2);
-    Vec p3(x2, y2, z1); p3.freq = func(p3);
-    Vec p4(x1, y2, z1); p4.freq = func(p4);
-    Vec p5(x1, y1, z2); p5.freq = func(p5);
-    Vec p6(x2, y1, z2); p6.freq = func(p6);
-    Vec p7(x2, y2, z2); p7.freq = func(p7);
-    Vec p8(x1, y2, z2); p8.freq = func(p8);
+    Vec p1(x1, y1, z1); p1.w = func(p1);  
+    Vec p2(x2, y1, z1); p2.w = func(p2);
+    Vec p3(x2, y2, z1); p3.w = func(p3);
+    Vec p4(x1, y2, z1); p4.w = func(p4);
+    Vec p5(x1, y1, z2); p5.w = func(p5);
+    Vec p6(x2, y1, z2); p6.w = func(p6);
+    Vec p7(x2, y2, z2); p7.w = func(p7);
+    Vec p8(x1, y2, z2); p8.w = func(p8);
 
     vector<Vec> points(8); 
     points[0] = p1;
@@ -148,13 +148,13 @@ vector<Vec> points_in_tetrahedron(function<float(Vec k)> func, float s_val, vect
 // Same sign means the surface is not inside the cube
 bool surface_inside_cube(float s_val, vector<Vec> p) {
     sort(p.begin(), p.end());
-    return (p[7].freq - s_val) / (p[0].freq - s_val) < 0;
+    return (p[7].w - s_val) / (p[0].w - s_val) < 0;
 }
 
 // Same sign means the surface is not inside the tetrahedron
 bool surface_inside_tetrahedron(float s_val, vector<Vec> ep_points) {
     sort(ep_points.begin(), ep_points.end());
-    return ((ep_points[3].freq)-s_val) / ((ep_points[0].freq) - s_val) < 0;
+    return ((ep_points[3].w)-s_val) / ((ep_points[0].w) - s_val) < 0;
 }
 
 float area_in_corners(vector<Vec> cp) {
@@ -212,7 +212,7 @@ vector<Vec> tetrahedron_method(function<float(Vec k)> func, float s_val) {
                     float A = area_in_corners(corner_points);
                     if (dim == 2) A *= n / (2*k_max);
                     Vec k_point = average; k_point.area = A;
-                    k_point.freq = s_val;
+                    k_point.w = s_val;
                     FS.push_back(k_point);
                 }
             }

@@ -33,6 +33,7 @@ float interpolate_1D(float x_val, float x_min, float x_max, vector<float> &f) {
     if (i == f.size() - 1) i--;
 
     float x_rel = (x_val - x_min) / dx - i;
+    assert(x_rel >= 0 && x_rel <= 1);
     float result = f[i] + x_rel * (f[i + 1] - f[i]);
 
     return result;
@@ -67,6 +68,8 @@ float interpolate_2D(float x_val, float y_val, float x_min, float x_max, float y
 
     float x_rel = (x_val - x_min) / dx - i;
     float y_rel = (y_val - y_min) / dy - j;
+    assert(x_rel >= 0 && x_rel <= 1);
+    assert(y_rel >= 0 && y_rel <= 1);
 
     float result = (1 - x_rel) * (1 - y_rel) * f[i][j] +
                    x_rel * (1 - y_rel) * f[i + 1][j] +
@@ -113,6 +116,9 @@ float interpolate_3D(float x_val, float y_val, float z_val, float x_min, float x
     float x_rel = (x_val - x_min) / dx - i;
     float y_rel = (y_val - y_min) / dy - j;
     float z_rel = (z_val - z_min) / dz - k;
+    assert(x_rel >= 0 && x_rel <= 1);
+    assert(y_rel >= 0 && y_rel <= 1);
+    assert(z_rel >= 0 && z_rel <= 1);
 
     float result = (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * f[i][j][k] +
                    x_rel * (1 - y_rel) * (1 - z_rel) * f[i + 1][j][k] +
@@ -174,6 +180,10 @@ float interpolate_4D(float x_val, float y_val, float z_val, float w_val,
     float y_rel = (y_val - y_min) / dy - j;
     float z_rel = (z_val - z_min) / dz - k;
     float w_rel = (w_val - w_min) / dw - l;
+    assert(x_rel >= 0 && x_rel <= 1);
+    assert(y_rel >= 0 && y_rel <= 1);
+    assert(z_rel >= 0 && z_rel <= 1);
+    assert(w_rel >= 0 && w_rel <= 1);
 
 float result =
         (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * (1 - w_rel) * f[i][j][k][l] +
@@ -214,6 +224,7 @@ complex<float> interpolate_1D_complex(float x_val, float x_min, float x_max, vec
     if (i == f.size() - 1) i--;
 
     float x_rel = (x_val - x_min) / dx - i;
+    assert(x_rel >= 0 && x_rel <= 1);
     complex<float> result = f[i] + x_rel * (f[i + 1] - f[i]);
 
     return result;
@@ -247,6 +258,8 @@ complex<float> interpolate_2D_complex(float x_val, float y_val, float x_min, flo
 
     float x_rel = (x_val - x_min) / dx - i;
     float y_rel = (y_val - y_min) / dy - j;
+    assert(x_rel >= 0 && x_rel <= 1);
+    assert(y_rel >= 0 && y_rel <= 1);
 
     complex<float> fx1 = (1 - x_rel) * f[i][j] + x_rel * f[i + 1][j];
     complex<float> fx2 = (1 - x_rel) * f[i][j + 1] + x_rel * f[i + 1][j + 1];
@@ -293,6 +306,9 @@ complex<float> interpolate_3D_complex(float x_val, float y_val, float z_val, flo
     float x_rel = (x_val - x_min) / dx - i;
     float y_rel = (y_val - y_min) / dy - j;
     float z_rel = (z_val - z_min) / dz - k;
+    assert(x_rel >= 0 && x_rel <= 1);
+    assert(y_rel >= 0 && y_rel <= 1);
+    assert(z_rel >= 0 && z_rel <= 1);
 
     complex<float> fx1 = (1 - x_rel) * f[i][j][k] + x_rel * f[i + 1][j][k];
     complex<float> fx2 = (1 - x_rel) * f[i][j+1][k] + x_rel * f[i + 1][j+1][k];
@@ -351,6 +367,10 @@ complex<float> interpolate_4D_complex(float x_val, float y_val, float z_val, flo
     float y_rel = (y_val - y_min) / dy - j;
     float z_rel = (z_val - z_min) / dz - k;
     float w_rel = (w_val - w_min) / dw - l;
+    assert(x_rel >= 0 && x_rel <= 1);
+    assert(y_rel >= 0 && y_rel <= 1);
+    assert(z_rel >= 0 && z_rel <= 1);
+    assert(w_rel >= 0 && w_rel <= 1);
 
     complex<float> fx1 = f[i][j][k][l] * (1 - x_rel) + f[i + 1][j][k][l] * x_rel;
     complex<float> fx2 = f[i][j+1][k][l] * (1 - x_rel) + f[i + 1][j+1][k][l] * x_rel;
@@ -374,3 +394,162 @@ complex<float> interpolate_4D_complex(float x_val, float y_val, float z_val, flo
 }
 
 
+float interpolate_2D(float x_val, float y_val, float x_min, float x_max, float y_min, float y_max, int nx, int ny, vector<float> &f) {
+    // Interpolates a 2D function f(x, y) given on a grid between x_min and x_max
+    // and y_min and y_max at the point (x_val, y_val) using bilinear interpolation
+    // x_val, y_val: values at which to interpolate
+    // x_min, x_max: minimum and maximum values of x
+    // y_min, y_max: minimum and maximum values of y
+    // f: vector of function values at the grid points
+    // returns: interpolated value of f(x_val, y_val)
+
+    x_val = sanitize_within_bounds(x_val, x_min, x_max);
+    y_val = sanitize_within_bounds(y_val, y_min, y_max);
+    assert(x_val >= x_min && x_val <= x_max);
+    assert(y_val >= y_min && y_val <= y_max);
+    assert(f.size() == nx * ny and f.size() > 1);
+
+    float dx = (x_max - x_min) / (nx - 1);
+    float dy = (y_max - y_min) / (ny - 1);
+
+    int i = (x_val - x_min) / dx;
+    int j = (y_val - y_min) / dy;
+    assert(i >= 0 && i <= nx - 1);
+    assert(j >= 0 && j <= ny - 1);
+    if (i == nx - 1) i--;
+    if (j == ny - 1) j--;
+
+    float x_rel = (x_val - x_min) / dx - i;
+    float y_rel = (y_val - y_min) / dy - j;
+    assert(x_rel >= 0 && x_rel <= 1);
+    assert(y_rel >= 0 && y_rel <= 1);
+
+    float result = (1 - x_rel) * (1 - y_rel) * f[i*nx+j] +
+                   x_rel * (1 - y_rel) * f[(i + 1)*nx+j] +
+                   (1 - x_rel) * y_rel * f[i*nx + j + 1] +
+                   x_rel * y_rel * f[(i + 1)*nx+j + 1];
+
+    return result;
+}
+
+float interpolate_3D(float x_val, float y_val, float z_val, float x_min, float x_max, float y_min, float y_max, float z_min, float z_max, int nx, int ny, int nz, vector<float> &f) {
+    // Interpolates a 3D function f(x, y, z) given on a grid between x_min and x_max
+    // and y_min and y_max and z_min and z_max at the point (x_val, y_val, z_val) using trilinear interpolation
+    // x_val, y_val, z_val: values at which to interpolate
+    // x_min, x_max: minimum and maximum values of x
+    // y_min, y_max: minimum and maximum values of y
+    // z_min, z_max: minimum and maximum values of z
+    // f: vector of function values at the grid points
+    // returns: interpolated value of f(x_val, y_val, z_val)
+
+    x_val = sanitize_within_bounds(x_val, x_min, x_max);
+    y_val = sanitize_within_bounds(y_val, y_min, y_max);
+    z_val = sanitize_within_bounds(z_val, z_min, z_max);
+    assert(x_val >= x_min && x_val <= x_max);
+    assert(y_val >= y_min && y_val <= y_max);
+    assert(z_val >= z_min && z_val <= z_max);
+    assert(f.size() > 1 and f.size() == nx * ny * nz);
+
+    float dx = (x_max - x_min) / (nx - 1);
+    float dy = (y_max - y_min) / (ny - 1);
+    float dz = (z_max - z_min) / (nz - 1);
+
+    int i = (x_val - x_min) / dx;
+    int j = (y_val - y_min) / dy;
+    int k = (z_val - z_min) / dz;
+    assert(i >= 0 && i <= nx - 1);
+    assert(j >= 0 && j <= ny - 1);
+    assert(k >= 0 && k <= nz - 1);
+    if (i == nx - 1) i--;
+    if (j == ny - 1) j--;
+    if (k == nz - 1) k--;
+
+    float x_rel = (x_val - x_min) / dx - i;
+    float y_rel = (y_val - y_min) / dy - j;
+    float z_rel = (z_val - z_min) / dz - k;
+    assert(x_rel >= 0 && x_rel <= 1);
+    assert(y_rel >= 0 && y_rel <= 1);
+    assert(z_rel >= 0 && z_rel <= 1);
+
+    float result = (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * f[i*nx*nx+j*ny+k] +
+                   x_rel * (1 - y_rel) * (1 - z_rel) * f[(i + 1)*nx*nx+j*ny+k] +
+                   (1 - x_rel) * y_rel * (1 - z_rel) * f[i*nx*nx + (j + 1)*ny+k] +
+                   x_rel * y_rel * (1 - z_rel) * f[(i + 1)*nx*nx+(j + 1)*ny+k] +
+                   (1 - x_rel) * (1 - y_rel) * z_rel * f[i*nx*nx+j*ny+k + 1] +
+                   x_rel * (1 - y_rel) * z_rel * f[(i + 1)*nx*nx+j*ny+k + 1] +
+                   (1 - x_rel) * y_rel * z_rel * f[i*nx*nx + (j + 1)*ny+k + 1] +
+                   x_rel * y_rel * z_rel * f[(i + 1)*nx*nx+(j + 1)*ny+k + 1];
+
+    return result;
+}
+
+float interpolate_4D(float x_val, float y_val, float z_val, float w_val, 
+        float x_min, float x_max, float y_min, float y_max, float z_min, float z_max, 
+        float w_min, float w_max, int nx, int ny, int nz, int nw, vector<float> &f) {
+    // Interpolates a 4D function f(x, y, z, w) given on a grid between x_min and x_max
+    // and y_min and y_max and z_min and z_max and w_min and w_max at the point (x_val, y_val, z_val, w_val) using trilinear interpolation
+    // x_val, y_val, z_val, w_val: values at which to interpolate
+    // x_min, x_max: minimum and maximum values of x
+    // y_min, y_max: minimum and maximum values of y
+    // z_min, z_max: minimum and maximum values of z
+    // w_min, w_max: minimum and maximum values of w
+    // f: vector of function values at the grid points
+    // returns: interpolated value of f(x_val, y_val, z_val, w_val)
+
+    x_val = sanitize_within_bounds(x_val, x_min, x_max);
+    y_val = sanitize_within_bounds(y_val, y_min, y_max);
+    z_val = sanitize_within_bounds(z_val, z_min, z_max);
+    w_val = sanitize_within_bounds(w_val, w_min, w_max);
+    assert(x_val >= x_min && x_val <= x_max);
+    assert(y_val >= y_min && y_val <= y_max);
+    assert(z_val >= z_min && z_val <= z_max);
+    assert(w_val >= w_min && w_val <= w_max);
+    int n = pow(f.size(), 0.25);
+
+    float dx = (x_max - x_min) / (nx - 1);
+    float dy = (y_max - y_min) / (ny - 1);
+    float dz = (z_max - z_min) / (nz - 1);
+    float dw = (w_max - w_min) / (nw - 1);
+
+    int i = (x_val - x_min) / dx;
+    int j = (y_val - y_min) / dy;
+    int k = (z_val - z_min) / dz;
+    int l = (w_val - w_min) / dw;
+    assert(i >= 0 && i <= nx - 1);
+    assert(j >= 0 && j <= ny - 1);
+    assert(k >= 0 && k <= nz - 1);
+    assert(l >= 0 && l <= nw - 1);
+    if (i == nx - 1) i--;
+    if (j == ny - 1) j--;
+    if (k == nz - 1) k--;
+    if (l == nw - 1) l--;
+
+    float x_rel = (x_val - x_min) / dx - i;
+    float y_rel = (y_val - y_min) / dy - j;
+    float z_rel = (z_val - z_min) / dz - k;
+    float w_rel = (w_val - w_min) / dw - l;
+    assert(x_rel >= 0 && x_rel <= 1);
+    assert(y_rel >= 0 && y_rel <= 1);
+    assert(z_rel >= 0 && z_rel <= 1);
+    assert(w_rel >= 0 && w_rel <= 1);
+
+float result = 
+        (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * (1 - w_rel) * f[i*nx*nx*nx+j*ny*ny+k*nz+l] + 
+        x_rel * (1 - y_rel) * (1 - z_rel) * (1 - w_rel) * f[(i + 1)*nx*nx*nx+j*ny*ny+k*nz+l] + 
+        (1 - x_rel) * y_rel * (1 - z_rel) * (1 - w_rel) * f[i*nx*nx*nx + (j + 1)*ny*ny+k*nz+l] +
+        x_rel * y_rel * (1 - z_rel) * (1 - w_rel) * f[(i + 1)*nx*nx*nx+(j + 1)*ny*ny+k*nz+l] +
+        (1 - x_rel) * (1 - y_rel) * z_rel * (1 - w_rel) * f[i*nx*nx*nx+j*ny*ny+k*nz+l + 1] +
+        x_rel * (1 - y_rel) * z_rel * (1 - w_rel) * f[(i + 1)*nx*nx*nx+j*ny*ny+k*nz+l + 1] +
+        (1 - x_rel) * y_rel * z_rel * (1 - w_rel) * f[i*nx*nx*nx + (j + 1)*ny*ny+k*nz+l + 1] +
+        x_rel * y_rel * z_rel * (1 - w_rel) * f[(i + 1)*nx*nx*nx+(j + 1)*ny*ny+k*nz+l + 1] +
+        (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * w_rel * f[i*nx*nx*nx+j*ny*ny+k*nz+l + 1] +
+        x_rel * (1 - y_rel) * (1 - z_rel) * w_rel * f[(i + 1)*nx*nx*nx+j*ny*ny+k*nz+l + 1] +
+        (1 - x_rel) * y_rel * (1 - z_rel) * w_rel * f[i*nx*nx*nx + (j + 1)*ny*ny+k*nz+l + 1] +
+        x_rel * y_rel * (1 - z_rel) * w_rel * f[(i + 1)*nx*nx*nx+(j + 1)*ny*ny+k*nz+l + 1] +
+        (1 - x_rel) * (1 - y_rel) * z_rel * w_rel * f[i*nx*nx*nx+j*ny*ny+k*nz+l + 1] +
+        x_rel * (1 - y_rel) * z_rel * w_rel * f[(i + 1)*nx*nx*nx+j*ny*ny+k*nz+l + 1] +
+        (1 - x_rel) * y_rel * z_rel * w_rel * f[i*nx*nx*nx + (j + 1)*ny*ny+k*nz+l + 1] +
+        x_rel * y_rel * z_rel * w_rel * f[(i + 1)*nx*nx*nx+(j + 1)*ny*ny+k*nz+l + 1];
+
+    return result;
+}

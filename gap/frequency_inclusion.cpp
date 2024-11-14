@@ -204,7 +204,7 @@ float calculate_chi_from_cube_map(const unordered_map<float, vector<vector<vecto
     Vec v = to_IBZ_2(q);
     float d = 2*k_max/(m-1);
 
-    float x = v.vals[0], y = v.vals[1], z = v.vals[2];
+    float x = v(0), y = v(1), z = v(2);
     if (dim == 2) z = 0;
 
     int i = floor(x / d);

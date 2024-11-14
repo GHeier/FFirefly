@@ -127,7 +127,7 @@ float surface_transform_integral(function<float(Vec)> integrand,
                         float A = area_in_corners(corner_points);
                         if (dim == 2) A *= s_div / (2*k_max);
                         Vec k_point = average; k_point.area = A;
-                        k_point.freq = s_val;
+                        k_point.w = s_val;
 
                         // Surfaces being summed over. Depending on whether the surface is 
                         // at the beginning of the end of the list, we weight it differently

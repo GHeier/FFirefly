@@ -2,10 +2,15 @@
 #include <omp.h>
 
 #include "config.h"
+#include "superconductor.h"
 
 extern void polarization_wrapper();
 void response() {
     polarization_wrapper();
+}
+
+void superconductor() {
+    find_gap_function();
 }
 
 int main(int argc, char *argv[]) {
@@ -19,6 +24,7 @@ int main(int argc, char *argv[]) {
     load_c_config();
 
     if (strcmp(c_category, "response") == 0) response();
+    if (strcmp(c_category, "superconductor") == 0) superconductor();
     else printf("Unknown Calculation Type\n");
 
     return 0;

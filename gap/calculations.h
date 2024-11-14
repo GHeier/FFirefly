@@ -97,7 +97,7 @@ void create_P(Matrix &P, vector<Vec> &k, float T, const unordered_map<float, vec
  * @param k The Fermi Surface points.
  * @param T The temperature.
  */
-float f(vector<Vec> k, float T);
+float f(vector<Vec> k, float T, const unordered_map<float, vector<vector<vector<float>>> > &cube_map);
 
 /**
  * @brief Calculates the critical temperature of a superconductor.
@@ -108,7 +108,7 @@ float f(vector<Vec> k, float T);
  *
  * @return The critical temperature.
  */
-float get_Tc(vector<Vec> k);
+float get_Tc(vector<Vec> k, const unordered_map<float, vector<vector<vector<float>>> > &cube_map);
 
 /**
  * @brief Modifies the eigenvectors to become the gap function.

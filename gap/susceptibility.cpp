@@ -182,7 +182,7 @@ float calculate_chi_from_cube(const vector<vector<vector<float>>> &chi_cube, Vec
     Vec v = to_IBZ_2(q);
     float d = 2*k_max/(m-1);
 
-    float x = v.vals[0], y = v.vals[1], z = v.vals[2];
+    float x = v(0), y = v(1), z = v(2);
     if (dim == 2) z = 0;
 
     int i = floor(x / d);
@@ -200,7 +200,7 @@ float calculate_chi_from_cube(const vector<vector<vector<float>>> &chi_cube, Vec
     float dx = 0, dy = 0, dz = 0, wx = 0, wy = 0, wz = 0, w0 = 0;
 
     // Make sure there's no issue with indexing
-    //cout << q << q.vals[2] << endl;
+    //cout << q << q(2) << endl;
     //int s = chi_cube.size()-1; 
     //assert( i < s and j < s and k < chi_cube[0][0].size()-1);
 
@@ -257,8 +257,7 @@ float calculate_chi_from_cube(const vector<vector<vector<float>>> &chi_cube, Vec
 
 Vec to_IBZ_2(const Vec k) {
     Vec q = k;
-    if (q.cartesian == false) q.to_cartesian();
-    float x = q.vals[0], y = q.vals[1], z = q.vals[2];
+    float x = q(0), y = q(1), z = q(2);
     x = abs(x); y = abs(y); z = abs(z);
     if (x > M_PI) x = - (x - 2*M_PI);
     if (y > M_PI) y = - (y - 2*M_PI);
@@ -381,7 +380,7 @@ float analytic_tetrahedron_linear_energy_method(Vec q, float w, int num_pts) {
                 //Vec temp(2*width * i / (num_pts-1) - lower, 2*width * j / (num_pts-1) - lower, 2*width * k / (num_pts-1) - lower);
                 Vec temp(i * (upper - lower) / (num_pts-1) + lower, j * (upper - lower) / (num_pts-1) + lower, k * (upper - lower) / (num_pts-1) + lower);
                 vector<Vec> points = points_from_indices(epsilon, i, j, k, num_pts);
-                //sum += points[0].vals[0] * Omega * 6;
+                //sum += points[0](0) * Omega * 6;
 
                 for (int c = 0; c < 6; c++) {
 
@@ -392,10 +391,10 @@ float analytic_tetrahedron_linear_energy_method(Vec q, float w, int num_pts) {
                     //if (not scattering_available(q, ep_points)) continue;
                     // Sort by e(k)
                     sort(ep_points.begin(), ep_points.end(), [](Vec a, Vec b) { 
-                            return a.freq < b.freq; 
+                            return a.w < b.w; 
                     });
                     float Theta_kq = epsilon(ep_points[3]+q) < mu ? 1 : 0;
-                    float Theta_k = ep_points[0].freq < mu ? 1 : 0;
+                    float Theta_k = ep_points[0].w < mu ? 1 : 0;
 
                     float V1 = e_diff(ep_points[3],q) - w;
                     float V2 = e_diff(ep_points[2],q) - w;
@@ -411,7 +410,7 @@ float analytic_tetrahedron_linear_energy_method(Vec q, float w, int num_pts) {
                     sum += Omega * I;
                     //sum += 1 / (q.norm() * q.norm() + 2*q*temp) * Omega;
                     //sum += Omega;
-                    //sum += temp.vals[0] * d3x;
+                    //sum += temp(0) * d3x;
                 }
             }
         }

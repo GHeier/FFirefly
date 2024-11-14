@@ -35,14 +35,14 @@ void save(string file_name, float T, vector<Vec> FS, Eigenvector* solutions) {
     file << endl;
     for (unsigned int i = 0; i < FS.size(); i++) {
         Vec q = FS[i]; 
-        if(not q.cartesian) 
-            q.to_cartesian();
         file << q; 
         for (unsigned int j = 0; j < num_eigenvalues_to_save; j++) {
             file << solutions[j].eigenvector[i] << " ";
         }
         file << endl;
     }
+    file.close();
+    printf("Saved Gap to %s\n", file_name.c_str());
 }
 
 void save_with_freq(string file_name, float T, vector<vector<Vec>> &freq_FS, Eigenvector* solutions) {
@@ -61,8 +61,6 @@ void save_with_freq(string file_name, float T, vector<vector<Vec>> &freq_FS, Eig
     for (unsigned int i = 0; i < freq_FS.size(); i++) {
         for (unsigned int j = 0; j < freq_FS[i].size(); j++) {
             Vec q = freq_FS[i][j]; 
-            if(not q.cartesian) 
-                q.to_cartesian();
             file << q; 
             for (unsigned int k = 0; k < num_eigenvalues_to_save; k++) {
                 if (ind >= size) {
@@ -74,6 +72,8 @@ void save_with_freq(string file_name, float T, vector<vector<Vec>> &freq_FS, Eig
             file << endl;
         }
     }
+    file.close();
+    printf("Saved Gap (w-dependent) to %s\n", file_name.c_str());
 }
 
 void save_FS(vector<Vec> FS) {
@@ -81,6 +81,8 @@ void save_FS(vector<Vec> FS) {
     file.open("FS.dat");
     for (Vec k : FS)
         file << k << endl;
+    file.close();
+    printf("Saved Fermi Surface to FS.dat\n");
 }
 
 void save_potential_vs_q(vector<Vec> &FS, Matrix &P, string filename) {
@@ -90,10 +92,12 @@ void save_potential_vs_q(vector<Vec> &FS, Matrix &P, string filename) {
         for (unsigned int j = 0; j < FS.size(); j++) {
             Vec k2 = FS[j];
             float V = -P(i,j) * pow(vp(k2)/k2.area,0.5) * pow(vp(k1)/k1.area,0.5);
-            Vec q = k1 - k2; if (q.cartesian == false) q.to_cartesian();
+            Vec q = k1 - k2; 
             file << q << V << endl;
         }
     }
+    file.close();
+    printf("Saved Potential to %s\n", filename.c_str());
 }
 
 void save_chi_vs_q(const vector<vector<vector<float>>> &cube, vector<Vec> &FS, string filename) {
@@ -107,6 +111,8 @@ void save_chi_vs_q(const vector<vector<vector<float>>> &cube, vector<Vec> &FS, s
             file << q << chi << endl;
         }
     }
+    file.close();
+    printf("Saved Susceptibility to %s\n", filename.c_str());
 }
 
 void save_matsubara_cube(const MatCube &cube, float wmin, float wmax, string filename) {
@@ -145,4 +151,6 @@ void save_matsubara_cube(const MatCube &cube, float wmin, float wmax, string fil
             }
         }
     }
+    file.close();
+    printf("Saved Matsubara Cube to %s\n", filename.c_str());
 }

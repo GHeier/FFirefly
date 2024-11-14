@@ -19,14 +19,12 @@ using namespace std;
  */
 class Vec {
     public:
-        float vals[3];
-        bool cartesian = false;
+        float x, y, z, w;
         float area = 0;
-        float freq = 0;
+        int dimension = 3;
 
-        Vec(float x = 0, float y = 0, float z = 0, bool is_cartesian=true, float area = 0, float freq = 0);
-        void to_cartesian();
-        void to_spherical();
+        Vec(float x = 0, float y = 0, float z = 0, float w = 0, float area = 0, int dimension = 3);
+        float& operator()(int i);
         float norm();
 
 };

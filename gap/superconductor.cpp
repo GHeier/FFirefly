@@ -1,5 +1,5 @@
 /**
- * @file main.cpp
+ * @file superconductor.cpp
  *
  * @brief Main file for the program
  *
@@ -31,13 +31,7 @@
 
 using std::string;
 
-void find_gap_function() {
-
-/* 
- * ========================================================================================
- * ======================== FERMI SURFACE CREATION AND FILE SAVING ========================
-   ========================================================================================
- */
+extern "C" void find_gap_function() {
     cout << "Calculating Fermi Surface..." << endl;
  
     vector<vector<Vec>> freq_FS;
@@ -45,27 +39,11 @@ void find_gap_function() {
     vector<Vec> FS = freq_FS[(l+1)/2 - 1];
     vector<Vec> layer = get_FS(mu);
 
-
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
     save_FS(layer);
     float DOS = get_DOS(FS);
     printf("Density of States: %.5f\n", DOS);
 
-
-
-
-
-
-
-
-
-
-
-/* 
- * ========================================================================================
- * =========================== CRITICAL TEMPERATURE CALCULATION  ==========================
-   ========================================================================================
- */
     float T = 0.25;
     cout << setprecision(10);
     //cout << coupling_calc(FS, T) << endl;
@@ -73,22 +51,6 @@ void find_gap_function() {
     //T = get_Tc(FS);
     printf("Temperature: %.5f \n", T);
 
-
-
-
-
-
-
-
-
-
-
-
-/* 
- * ========================================================================================
- * ========================== MATRIX CREATION AND DIAGONALIZATION  ========================
-   ========================================================================================
- */
     unordered_map <float, vector<vector<vector<float>>>> cube_freq_map;
     // Calculates the susceptibility matrix if it's going to be used in the potential
     // Otherwise it's passed as empty
@@ -124,33 +86,7 @@ void find_gap_function() {
     cout << "Finding Eigenspace..." << endl;
     Eigenvector *solutions = new Eigenvector[num_eigenvalues_to_save];
     lapack_hermitian_diagonalization(P, solutions);
-    //lapack_diagonalization(P, solutions);
-    //Eigenvector leading = power_iteration(P);
-    //solutions[0] = leading;
 
-    //cout << "Saving Potential and Susceptibility Functions\n";
-    //save_potential_vs_q(FS, P, "potential.dat");
-    //if (cube.size() != 0 ) 
-    //    save_chi_vs_q(cube, FS, "chi.dat");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* 
- * ========================================================================================
- * =========================== EIGENVALUE/VECTOR SORTING AND SAVING  ======================
-   ========================================================================================
- */
     // Sort solutions with highest eigenvalue/eigenvector pair first
     cout << "Sorting Eigenvectors..." << endl;
     sort(solutions, solutions + num_eigenvalues_to_save, descending_eigenvalues);
@@ -177,3 +113,51 @@ void find_gap_function() {
     delete [] solutions;
 }
 
+extern "C" void find_gap_function_FS_only() {
+    vector<Vec> FS = get_FS(mu);
+    int m_size = FS.size();
+    printf("Number of points along Fermi Surface: %d\n", m_size);
+
+    save_FS(FS);
+    float DOS = get_DOS(FS);
+
+    unordered_map <float, vector<vector<vector<float>>>> cube_freq_map;
+    // Calculates the susceptibility matrix if it's going to be used in the potential
+    // Otherwise it's passed as empty
+    if (potential_name.find("scalapino") != string::npos) {
+        auto cube = chi_cube(0, mu, 0, "Chi Cube 1 / 1");
+        cube_freq_map.insert(pair<float, vector<vector<vector<float>>>>(0, cube));
+    }
+    float T = get_Tc(FS, cube_freq_map);
+    printf("Temperature: %.5f \n", T);
+
+    Matrix P(m_size);
+    create_P(P, FS, T, cube_freq_map);
+    float f = f_singlet_integral(T);
+
+    cout << "Finding Eigenspace..." << endl;
+    Eigenvector *solutions = new Eigenvector[num_eigenvalues_to_save];
+    lapack_hermitian_diagonalization(P, solutions);
+
+    // Sort solutions with highest eigenvalue/eigenvector pair first
+    cout << "Sorting Eigenvectors..." << endl;
+    sort(solutions, solutions + num_eigenvalues_to_save, descending_eigenvalues);
+    cout << "Sorted Eigenvectors\n";
+    vector_to_wave(FS, solutions);
+    
+    // Defining file name based on cfg (config)
+    cout << "Saving Eigenvectors..." << endl;
+    string bcs = "";
+    if (FS_only) bcs = "_FS_only";
+    std::ostringstream out;
+    out.precision(1);
+    out << std::fixed << "data/" + potential_name << dim << "D" 
+        << "_mu=" << mu << "_U=" << U << "_wc=" << wc 
+        << "_n=" << n << bcs << ".dat";
+    string file_name = std::move(out).str();
+
+    // Save file in cartesian coordinates for the sake of plotting easier
+    save(file_name, T, FS, solutions);
+    cout << "Eigenvectors Saved\n";
+    delete [] solutions;
+}

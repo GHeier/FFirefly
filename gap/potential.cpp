@@ -48,14 +48,11 @@ float potential_const(Vec k1, Vec k2) {
 float potential_test(Vec k1, Vec k2) {
     Vec q1 = k1;
     Vec q2 = k2;
-    if (q1.cartesian == false) q1.to_cartesian();
-    if (q2.cartesian == false) q2.to_cartesian();
-    return -1.0*( cos(q1.vals[0]) - cos(q1.vals[1]) )*( cos(q2.vals[0]) - cos(q2.vals[1]) ) + (-0.5)*sin(q1.vals[0])*sin(q1.vals[1])*sin(q2.vals[0])*sin(q2.vals[1]);
+    return -1.0*( cos(q1(0)) - cos(q1(1)) )*( cos(q2(0)) - cos(q2(1)) ) + (-0.5)*sin(q1(0))*sin(q1(1))*sin(q2(0))*sin(q2(1));
 }
 
 float phonon_coulomb(Vec q) {
-    if (q.cartesian == false) q.to_cartesian();
-    float qx = q.vals[0];
+    float qx = q(0);
     float Vp = 1.0/3.0;
     if (q.norm() != 0) {
         Vp = 1/(1+2*qx*qx / pow(q.norm(), 2));

@@ -69,37 +69,33 @@ float vp_diff(const Vec k, const Vec q) {
 // Fermi gas
 float epsilon_sphere(const Vec k) {
     Vec q = k;
-    if (q.cartesian == false) q.to_cartesian();
-    if (dim == 2) q.vals[2] = 0;
+    if (dim == 2) q(2) = 0;
     return pow(q.norm(), 2);
 }
 
 Vec fermi_velocity_sphere(const Vec k) {
     Vec q = k;
-    if (q.cartesian == false) q.to_cartesian();
-    if (dim == 2) q.vals[2] = 0;
+    if (dim == 2) q(2) = 0;
     return 2*q;
 }
 
 // Cubic Lattice
 float epsilon_SC(const Vec k, float t, float tn) {
     Vec q = k;
-    if (q.cartesian == false) q.to_cartesian();
     float val = 0.0;
     for (int i = 0; i < dim; i++) {
-        val += -2*t*cos(q.vals[i]);
-        val += -2*tnn*cos(q.vals[i]);
+        val += -2*t*cos(q(i));
+        val += -2*tnn*cos(q(i));
     }
-    val += -4*tn*cos(q.vals[0])*cos(q.vals[1]);
+    val += -4*tn*cos(q(0))*cos(q(1));
     return val;
 }
 
 Vec fermi_velocity_SC(const Vec k) {
     Vec q = k;
-    if (q.cartesian == false) q.to_cartesian();
     Vec v;
     for (int i = 0; i < dim; i++) {
-        v.vals[i] = -sin(q.vals[i]);
+        v(i) = -sin(q(i));
     }
     v = -2*t*v;
     return v;
@@ -108,32 +104,31 @@ Vec fermi_velocity_SC(const Vec k) {
 // Cubic lattice with different hopping in z-direction
 float epsilon_SC_layered(const Vec k) {
     Vec q = k;
-    if (q.cartesian == false) q.to_cartesian();
     float val = 0.0;
     for (int i = 0; i < dim; i++) {
         if (i < 2) 
-            val += (-2*t)*(cos(q.vals[i]));
+            val += (-2*t)*(cos(q(i)));
         else
-            val += (-2*tn)*(cos(q.vals[i]));
+            val += (-2*tn)*(cos(q(i)));
     }
     return val;
 }
 
 Vec fermi_velocity_SC_layered(const Vec k) {
     Vec q = k;
-    if (q.cartesian == false) q.to_cartesian();
     Vec v;
     for (int i = 0; i < dim; i++) {
         if (i < 2) 
-            v.vals[i] = (-2*t)*(-sin(q.vals[i]));
+            v(i) = (-2*t)*(-sin(q(i)));
         else
-            v.vals[i] = (-2*tn)*(-sin(q.vals[i]));
+            v(i) = (-2*tn)*(-sin(q(i)));
     }
     return v;
 }
 
 // E indicates the chemical potential at which to find the Fermi surface
 vector<Vec> get_FS(float E) {
+    printf("Finding Fermi Surface for E = %.2f\n", E);
     return tetrahedron_method(epsilon, E);
 }
 
