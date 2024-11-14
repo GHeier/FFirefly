@@ -20,12 +20,12 @@ extern char c_verbosity[50]; char* get_verbosity();
 // [SYSTEM]
 extern char c_interaction[50]; char* get_interaction();
 extern int c_ibrav;
-extern float c_mu;
-extern float c_U;
+extern float c_fermi_energy;
+extern float c_onsite_U;
 
 // [SUPERCONDUCTOR]
 extern bool c_FS_only;
-extern float c_wc;
+extern float c_bcs_cutoff_frequency;
 extern int c_num_eigenvalues_to_save;
 extern int c_frequency_pts;
 
@@ -51,6 +51,6 @@ void get_dimensions();
 void convert_to_BZ(const float cell[3][3], float brillouin_zone[3][3]);
 void set_string(char *dest, const char *src);
 
-void load_c_config(FILE *file);
+void load_c_config();
 
 #endif // CONFIG_H

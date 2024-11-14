@@ -1,23 +1,24 @@
 module globals
     use, intrinsic :: iso_c_binding  ! Ensure C interoperability
+    use confighub
     implicit none
     real(8), parameter :: pi = 3.1415926535897932384626433832795028841971
     integer :: nb, ne, nge(3), ngw(3), nke, nkw
     real(8) :: ef, qmesh(3), bvec(3,3), VBZ
 
     contains
-        subroutine convert_to_bz_matrix(cell, bz_matrix) bind(C, name="cell_to_BZ")
+        subroutine convert_to_bz_matrix(ucell, bz_matrix) bind(C, name="cell_to_BZ")
             use, intrinsic :: iso_c_binding
             implicit none
-            real(c_float), dimension(3,3), intent(in) :: cell       
+            real(c_float), dimension(3,3), intent(in) :: ucell       
             real(c_float), dimension(3,3), intent(out) :: bz_matrix 
             real(c_float) :: volume
             real(c_float), dimension(3) :: a, b, c, cross_bc, cross_ca, cross_ab
 
             ! Extract lattice vectors
-            a = cell(:, 1)
-            b = cell(:, 2)
-            c = cell(:, 3)
+            a = ucell(:, 1)
+            b = ucell(:, 2)
+            c = ucell(:, 3)
 
             ! Calculate the volume of the unit cell using a dot product and cross product
             cross_bc = [b(2)*c(3) - b(3)*c(2), b(3)*c(1) - b(1)*c(3), b(1)*c(2) - b(2)*c(1)]
@@ -33,15 +34,12 @@ module globals
         end subroutine convert_to_bz_matrix
 
         subroutine get_vals()
-            bvec(1:3,1) = [3d0, 0d0, 0d0]
-            bvec(1:3,2) = [0d0, 3d0, 0d0]
-            bvec(1:3,3) = [0d0, 0d0, 3d0]
-            nge = [10, 10, 10]
-            ngw = [10, 10, 10]
-            ef = 0.5d0
-            ne = 10
+            bvec = brillouin_zone
+            nge = k_mesh
+            ngw = q_mesh
+            ef = fermi_energy
+            ne = w_pts
             nb = 1
-            qmesh = [10, 10, 10]
             VBZ = bvec(1,1) * bvec(2,2) * bvec(3,3) + bvec(1,2) * bvec(2,3) * bvec(3,1) &
             &   + bvec(1,3) * bvec(2,1) * bvec(3,2) - bvec(1,3) * bvec(2,2) * bvec(3,1) &
             &   + bvec(1,2) * bvec(2,1) * bvec(3,3) - bvec(1,1) * bvec(2,3) * bvec(3,2)
@@ -51,6 +49,7 @@ module globals
 end module globals
 module mesh
     use globals
+    use confighub
     use libtetrabz
     implicit none
     contains
@@ -136,5 +135,6 @@ module mesh
         end do
         close(10)
      end subroutine save_mesh
+
  end module mesh
 

@@ -29,9 +29,9 @@ int l = 5;
 int w_pts = c_w_pts;
 float max_freq = c_max_freq;
 
-float wc = c_wc;
-float mu = c_mu;
-float U = c_U;
+float wc = c_bcs_cutoff_frequency;
+float mu = c_fermi_energy;
+float U = c_onsite_U;
 
 float cell[3][3]; 
 float brillouin_zone[3][3]; 
