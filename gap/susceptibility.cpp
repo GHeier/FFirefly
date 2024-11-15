@@ -12,7 +12,6 @@
 #include <string>
 #include <algorithm>
 #include <functional>
-#include <set>
 
 #include <omp.h>
 #include <boost/functional/hash.hpp>
@@ -24,7 +23,6 @@
 #include "susceptibility.h"
 #include "integration.h"
 #include "band_structure.h"
-#include "surfaces.h"
 
 using namespace std;
 
@@ -282,139 +280,3 @@ Vec to_IBZ_2(const Vec k) {
     }
 }
 
-void sanitize_I_vals(float &V1, float &V2, float &V3, float &V4) {
-    if (fabs(V1 - V2) < 1e-3) V2 = V1;
-    if (fabs(V1 - V3) < 1e-3) V3 = V1;
-    if (fabs(V1 - V4) < 1e-3) V4 = V1;
-    if (fabs(V2 - V3) < 1e-3) V3 = V2;
-    if (fabs(V2 - V4) < 1e-3) V4 = V2;
-    if (fabs(V3 - V4) < 1e-3) V4 = V3;
-}
-
-vector<float> getUnique(float a, float b, float c, float d) {
-    // Use a set to find unique values 
-    set<float, greater<float>> uniqueValues = {a, b, c, d};
-    // Copy the sorted unique values to a vector
-    vector<float> result(uniqueValues.begin(), uniqueValues.end());
-    return result;
-}
-
-bool check_two_equal(float V1, float V2, float V3, float V4) {
-    return (V1 == V2 and V3 == V4) or (V1 == V3 and V2 == V4) or (V1 == V4 and V2 == V3);
-}
-
-// Integral value of the tetrahedron method when interpolated linearly across each small cube
-float get_I(float D1, float D2, float D3, float V1, float V2, float V3, float V4) {
-    sanitize_I_vals(V1, V2, V3, V4);
-    vector<float> V = getUnique(V1, V2, V3, V4);
-    if (find(V.begin(), V.end(), 0) != V.end()) {
-        printf("Option 0\n");
-        return 0;
-    }
-    if (V.size() == 1) {
-        printf("Option 1\n");
-        float r = 1 / V[0];
-        return r;
-    }
-    if (V.size() == 2 and check_two_equal(V1, V2, V3, V4)) {
-        printf("Option 2\n");
-        float t1 = 2 * V[0] * V[1] / pow(V[0] - V[1], 3) * log(fabs(V[1] / V[0]));
-        float t2 = (V[0] + V[1]) / (pow(V[0] - V[1], 2));
-        float r = 3 * (t1 + t2);
-        return 3 * (t1 + t2);
-    }
-    else if (V.size() == 2) {
-        printf("Option 3\n");
-        float t1 = V[1]*V[1] / (pow(V[0] - V[1],3)) * log(fabs(V[0]/V[1]));
-        float t2 = (1.5 * V[1]*V[1] + 0.5 * V[0]*V[0] - 2 * V[0]*V[1]) / pow(V[0] - V[1],3);
-        float r = 3 * (t1 + t2);
-        return r;
-    }
-    if (V.size() == 3) {
-        printf("Option 4\n");
-        float t1 = V[1] * V[1] / (pow(V[1] - V[0], 2) * (V[1] - V[2])) * log(fabs(V[1] / V[0]));
-        float t2 = V[2] * V[2] / (pow(V[2] - V[0], 2) * (V[2] - V[1])) * log(fabs(V[2] / V[0]));
-        float t3 = V[0] / ((V[1] - V[0]) * (V[2] - V[0]));
-        float r = 3 * (t1 + t2 + t3);
-        return r;
-    }
-    printf("Option 5\n");
-    float t1 = (V1*V1/D1*log(fabs(V1/V4)));
-    float t2 = (V2*V2/D2*log(fabs(V2/V4)));
-    float t3 = (V3*V3/D3*log(fabs(V3/V4)));
-    float r = 3 * (t1 + t2 + t3);
-    return r;
-}
-
-bool scattering_available(Vec q, vector<Vec> p) {
-    for (Vec v : p) {
-        if (epsilon(v) < mu and epsilon(v+q) < mu) return false;
-        if (epsilon(v) > mu and epsilon(v+q) > mu) return false;
-    }
-    return true;
-}
-
-// Computes the sum analytically, which should be quite a bit faster
-// Done at zero temperature is the only caveat
-float analytic_tetrahedron_linear_energy_method(Vec q, float w, int num_pts) {
-    vector<vector<float>> tetrahedrons {
-        {1, 2, 3, 5}, 
-        {1, 3, 4, 5},
-        {2, 5, 6, 3},
-        {4, 5, 8, 3},
-        {5, 8, 7, 3},
-        {5, 6, 7, 3}
-    };
-
-    float upper = 1.1;
-    float lower = 1.0;
-    float width = (upper - lower) / 2;
-    double sum = 0;
-    double Omega = pow(2*width,3) / (6*num_pts*num_pts*num_pts);
-    float d3x = 1 / pow(num_pts, 3);
-    if (dim == 2) Omega = pow(2*width,2) / (2*n*n);
-    //#pragma omp parallel for reduction(+:sum)
-    for (int i = 0; i < num_pts; i++) {
-        for (int j = 0; j < num_pts; j++) {
-            for (int k = 0; k < num_pts * (dim%2) + 1 * ((dim+1)%2); k++) {
-                //Vec temp(2*width * i / (num_pts-1) - lower, 2*width * j / (num_pts-1) - lower, 2*width * k / (num_pts-1) - lower);
-                Vec temp(i * (upper - lower) / (num_pts-1) + lower, j * (upper - lower) / (num_pts-1) + lower, k * (upper - lower) / (num_pts-1) + lower);
-                vector<Vec> points = points_from_indices(epsilon, i, j, k, num_pts);
-                //sum += points[0](0) * Omega * 6;
-
-                for (int c = 0; c < 6; c++) {
-
-                    vector<Vec> ep_points(4);
-                    for (int p = 0; p < 4; p++) {
-                        ep_points[p] = points[tetrahedrons[c][p]-1];
-                    }
-                    //if (not scattering_available(q, ep_points)) continue;
-                    // Sort by e(k)
-                    sort(ep_points.begin(), ep_points.end(), [](Vec a, Vec b) { 
-                            return a.w < b.w; 
-                    });
-                    float Theta_kq = epsilon(ep_points[3]+q) < mu ? 1 : 0;
-                    float Theta_k = ep_points[0].w < mu ? 1 : 0;
-
-                    float V1 = e_diff(ep_points[3],q) - w;
-                    float V2 = e_diff(ep_points[2],q) - w;
-                    float V3 = e_diff(ep_points[1],q) - w;
-                    float V4 = e_diff(ep_points[0],q) - w;
-
-                    float D1 = (V1 - V4) * (V1 - V3) * (V1 - V2);
-                    float D2 = (V2 - V4) * (V2 - V3) * (V2 - V1);
-                    float D3 = (V3 - V4) * (V3 - V2) * (V3 - V1);
-
-                    float I = get_I(D1, D2, D3, V1, V2, V3, V4);
-                    //sum += (Theta_k - Theta_kq) * Omega * I;
-                    sum += Omega * I;
-                    //sum += 1 / (q.norm() * q.norm() + 2*q*temp) * Omega;
-                    //sum += Omega;
-                    //sum += temp(0) * d3x;
-                }
-            }
-        }
-    }
-    assert(not isnan(sum));
-    return (float)sum;
-}

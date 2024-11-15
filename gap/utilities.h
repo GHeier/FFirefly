@@ -8,5 +8,6 @@ using namespace std;
 void progress_bar(float progress, string message = "");
 void progress_percent(float progress);
 float round(float number, int decimal_places);
+string get_SC_filename();
 
 #endif

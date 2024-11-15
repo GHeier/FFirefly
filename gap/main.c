@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
     load_c_config();
 
     if (strcmp(c_category, "response") == 0) response();
-    if (strcmp(c_category, "superconductor") == 0) superconductor();
+    else if (strcmp(c_category, "superconductor") == 0) superconductor();
     else printf("Unknown Calculation Type\n");
 
     return 0;

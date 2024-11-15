@@ -13,18 +13,17 @@
 #include <math.h>
 #include <memory>
 
-#include "calculations.h"
-#include "frequency_inclusion.hpp"
-#include "susceptibility.h"
 #include "vec.h"
 #include "cfg.h"
 #include "band_structure.h"
 #include "matrix.hpp"
 #include "eigenvec.hpp"
+#include "frequency_inclusion.hpp"
 
 using namespace std;
 
 void save(string file_name, float T, vector<Vec> FS, Eigenvector* solutions) {
+    cout << "Saving Eigenvectors..." << endl;
     ofstream file(file_name);
     //file.open(file_name);
     if (dim == 3) file << "x y z ";
@@ -46,6 +45,7 @@ void save(string file_name, float T, vector<Vec> FS, Eigenvector* solutions) {
 }
 
 void save_with_freq(string file_name, float T, vector<vector<Vec>> &freq_FS, Eigenvector* solutions) {
+    printf("Saving Eigenvectors with Frequency...\n");
     ofstream file(file_name);
     if (dim == 3) file << "x y z ";
     if (dim == 2) file << "x y ";
@@ -77,6 +77,7 @@ void save_with_freq(string file_name, float T, vector<vector<Vec>> &freq_FS, Eig
 }
 
 void save_FS(vector<Vec> FS) {
+    printf("Saving Fermi Surface...\n");
     ofstream file;
     file.open("FS.dat");
     for (Vec k : FS)
@@ -86,6 +87,7 @@ void save_FS(vector<Vec> FS) {
 }
 
 void save_potential_vs_q(vector<Vec> &FS, Matrix &P, string filename) {
+    printf("Saving Potential...\n");
     ofstream file(filename);
     for (unsigned int i = 0; i < FS.size(); i++) {
         Vec k1 = FS[i];
@@ -101,6 +103,7 @@ void save_potential_vs_q(vector<Vec> &FS, Matrix &P, string filename) {
 }
 
 void save_chi_vs_q(const vector<vector<vector<float>>> &cube, vector<Vec> &FS, string filename) {
+    printf("Saving Susceptibility...\n");
     ofstream file(filename);
     for (unsigned int i = 0; i < FS.size(); i++) {
         Vec k1 = FS[i];
@@ -116,6 +119,7 @@ void save_chi_vs_q(const vector<vector<vector<float>>> &cube, vector<Vec> &FS, s
 }
 
 void save_matsubara_cube(const MatCube &cube, float wmin, float wmax, string filename) {
+    printf("Saving Matsubara Cube...\n");
     ofstream file(filename);
     file << "Size of each dimension, then min&max values for each dimension\n" << 
         cube.cube.size() << " " 

@@ -20,7 +20,7 @@ TEST_SRCS = $(wildcard tests/*.cpp)
 TEST_OBJS = $(patsubst tests/%.cpp,build/tests/%.o,$(TEST_SRCS))
 
 # Default target is the main program
-all: clear_log fortran_compile_order main.exe
+all: clear_log fortran_compile_order fcode.x
 
 # Target to clear compile.log
 clear_log:
@@ -33,9 +33,9 @@ fortran_compile_order:
 	@gfortran -c gap/response.f90 -o build/response.o $(FFLAGS) -I build -J build 2>>compile.log || { echo "Compilation failed for gap/response.f90"; exit 1; }
 
 # Link all object files into the final executable
-main.exe: $(ALL_OBJS)
+fcode.x: $(ALL_OBJS)
 	@mkdir -p build
-	@gcc $(ALL_OBJS) -o main.exe $(FFLAGS) $(LIBS) 2>>compile.log || { echo "Build failed"; exit 1; }
+	@gcc $(ALL_OBJS) -o fcode.x $(FFLAGS) $(LIBS) 2>>compile.log || { echo "Build failed"; exit 1; }
 
 # The target to build the final executable for the test program
 test: test.exe
@@ -71,4 +71,4 @@ build/tests/%.o: tests/%.cpp
 # Clean rule to remove object files, executables, and .mod files
 .PHONY: clean
 clean:
-	rm -rf build/*.o main.exe build/tests/*.o test.exe build/*.mod
+	rm -rf build/*.o fcode.x build/tests/*.o test.exe build/*.mod

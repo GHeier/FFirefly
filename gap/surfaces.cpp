@@ -8,7 +8,6 @@
  * @author Griffin Heier
  */
 
-#include <iostream>
 #include <math.h>
 #include <boost/math/tools/roots.hpp>
 #include <algorithm>

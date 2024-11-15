@@ -25,7 +25,6 @@
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/quadrature/gauss.hpp>
 
-#include "calculations.h"
 #include "cfg.h"
 #include "integration.h"
 #include "vec.h"
@@ -42,13 +41,6 @@ using std::unordered_map;
 //using lambda_lanczos::LambdaLanczos;
 
 // Gets total matrix size
-int matrix_size_from_freq_FS(vector<vector<Vec>> &freq_FS) {
-    int size = 0;
-    for (int i = 0; i < freq_FS.size(); i++) {
-        size += freq_FS[i].size();
-    }
-    return size;
-}
 
 // Defines all energy surfaces around FS
 vector<vector<Vec>> freq_tetrahedron_method(float MU) {
@@ -71,46 +63,6 @@ vector<vector<Vec>> freq_tetrahedron_method(float MU) {
     return basis;
 }
 
-// Creates the P matrix based around the multiple energy surfaces calculated above
-void create_P_freq(Matrix &P, vector<vector<Vec>> &k, float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube2) {
-
-    cout << "Creating P Matrix with frequency\n";
-    for (int i = 0; i < k.size(); i++) {
-
-        int ind1 = 0;
-        for (int temp = 0; temp < i; temp++)
-            ind1 += k[temp].size();
-
-        for (int j = 0; j < k[i].size(); j++) {
-            Vec k1 = k[i][j];
-            for (int x = 0; x < k.size(); x++) {
-
-                int ind2 = 0;
-                for (int temp = 0; temp < x; temp++)
-                    ind2 += k[temp].size();
-
-                #pragma omp parallel for
-                for (int y = 0; y < k[x].size(); y++) {
-                    Vec k2 = k[x][y];
-                    float d1 = pow(k1.area/vp(k1),0.5); 
-                    float d2 = pow(k2.area/vp(k2),0.5); 
-                    // f * d_epsilon
-                    float fde1 = f_singlet(wc * points[l-1][i], T) * weights[l-1][i];
-                    float fde2 = f_singlet(wc * points[l-1][x], T) * weights[l-1][x];
-                    float w = wc * (points[l-1][x] - points[l-1][i]);
-
-                    P(ind1 + j,ind2 + y) = (float)(- d1 * d2 * pow(fde1*fde2,0.5) * V(k1, k2, w, T, chi_cube2)); 
-                }
-            }
-            string message = "Portion " + to_string(i) + " of " + to_string(k.size());
-            progress_bar(1.0 * (ind1 + j) / P.size, message);
-        }
-    }
-    cout << "P Matrix Created\n";
-
-    //return P * 2 * wc / (l * k_size);
-    P *= wc * (2 / pow(2*M_PI, dim)); 
-}
 
 // Creates a map of multiple "chi cubes" that are used to calculate the frequency dependent 
 // susceptibility

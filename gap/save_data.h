@@ -5,7 +5,6 @@
 #include <vector>
 #include <complex>
 
-#include "calculations.h"
 #include "frequency_inclusion.hpp"
 #include "vec.h"
 #include "matrix.hpp"

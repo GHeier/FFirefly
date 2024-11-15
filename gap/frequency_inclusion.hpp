@@ -4,7 +4,7 @@
 
 #include <fstream>
 #include <complex>
-#include "calculations.h"
+#include "matrix.hpp"
 #include "interpolate.h"
 #include "vec.h"
 #include "susceptibility.h"
