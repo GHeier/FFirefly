@@ -69,13 +69,15 @@ float vp_diff(const Vec k, const Vec q) {
 // Fermi gas
 float epsilon_sphere(const Vec k) {
     Vec q = k;
-    if (dim == 2) q(2) = 0;
+    if (dim < 3) q.z = 0;
+    if (dim < 4) q.w = 0;
     return pow(q.norm(), 2);
 }
 
 Vec fermi_velocity_sphere(const Vec k) {
     Vec q = k;
-    if (dim == 2) q(2) = 0;
+    if (dim < 3) q.z = 0;
+    if (dim < 4) q.w = 0;
     return 2*q;
 }
 

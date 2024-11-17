@@ -21,7 +21,7 @@ void create_P(Matrix &P, vector<Vec> &k, float T, const unordered_map<float, vec
     cout << "Creating P Matrix\n";
     for (int i = 0; i < P.size; i++) {
         Vec k1 = k[i];
-        //#pragma omp parallel for
+        #pragma omp parallel for
         for (int j = 0; j < P.size; j++) {
             Vec k2 = k[j];
             P(i,j) = (float)(-pow(k1.area/vp(k1),0.5) * V(k1, k2, 0, T, chi_cube2) * pow(k2.area/vp(k2),0.5));

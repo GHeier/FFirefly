@@ -160,8 +160,6 @@ void lapack_hermitian_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
             }
         }
     }
-    printf("Nonzero elements: %d\n", count);
-
     printf("Diagonalizing Matrix\n");
     info = LAPACKE_ssyevr(LAPACK_ROW_MAJOR, jobz, range, uplo, N,
                           A.vals, lda, 0.0f, 0.0f, il, iu, abstol, &m, w,
@@ -183,7 +181,6 @@ void lapack_hermitian_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
             }
         }
     }
-    printf("Nonzero elements: %d\n", count);
 
     count = 0;
     // Convert to Eigenvector format
@@ -197,7 +194,6 @@ void lapack_hermitian_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
             }
         }
     }
-    printf("Nonzero elements: %d\n", count);
 
     delete[] w; 
     delete[] z;

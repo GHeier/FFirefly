@@ -9,54 +9,80 @@
  * @author Griffin Heier
  */
 
+#include <iomanip>
 #include <iostream>
 #include <string>
 
 #include <algorithm>
 #include <omp.h>
+#include <cassert>
 
 
+#include "utilities.h"
 #include "cfg.h"
 #include "frequency_inclusion.hpp"
 #include "matrix_creation.h"
 #include "linear_algebra.h"
+#include "solver.h"
 #include "susceptibility.h"
 #include "save_data.h"
 #include "vec.h"
 #include "matrix.hpp"
 #include "eigenvec.hpp"
 #include "band_structure.h"
-#include "utilities.h"
 
 using std::string;
 
 extern "C" void find_gap_function() {
     cout << "Calculating Fermi Surface..." << endl;
+    load_cpp_config();
  
     vector<vector<Vec>> freq_FS;
-    freq_FS = freq_tetrahedron_method(mu);
-    vector<Vec> FS = freq_FS[(l+1)/2 - 1];
-    vector<Vec> layer = get_FS(mu);
+    vector<Vec> FS;
+    if (not FS_only) {
+        freq_FS = freq_tetrahedron_method(mu);
+        FS = freq_FS[(l+1)/2 - 1];
+    }
+    else {
+        FS = get_FS(mu);
+    }
 
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
-    save_FS(layer);
+    assert(FS.size() > 10);
+    save_FS(FS);
     float DOS = get_DOS(FS);
-    printf("Density of States: %.5f\n", DOS);
+
+    float T = 0.25;
+    cout << setprecision(10);
+    //cout << coupling_calc(FS, T) << endl;
+    //T = 0.065;
+    //T = get_Tc(FS);
+    printf("Temperature: %.5f \n", T);
 
     unordered_map <float, vector<vector<vector<float>>>> cube_freq_map;
     // Calculates the susceptibility matrix if it's going to be used in the potential
     // Otherwise it's passed as empty
     if (potential_name.find("scalapino") != string::npos) {
-        cube_freq_map = chi_cube_freq(0, mu);
+        if (not FS_only) cube_freq_map = chi_cube_freq(T, mu);
+        else {
+            auto cube = chi_cube(T, mu, 0, "Chi Cube 1 / 1");
+            cube_freq_map.insert(pair<float, vector<vector<vector<float>>>>(0, cube));
+        }
     }
 
-    float T = get_Tc(FS, cube_freq_map);
-    printf("Temperature: %.5f \n", T);
 
-    int m_size = matrix_size_from_freq_FS(freq_FS);
+    int m_size = FS.size();
+    if (not FS_only) m_size = matrix_size_from_freq_FS(freq_FS);
 
     Matrix P(m_size);
-    create_P_freq(P, freq_FS, T, cube_freq_map);
+    if (FS_only && potential_name != "save") {
+        create_P(P, FS, T, cube_freq_map);
+        float f = f_singlet_integral(T);
+        cout << "F-integral value: " << f << endl;
+    }
+    else if (potential_name != "save"){
+        create_P_freq(P, freq_FS, T, cube_freq_map);
+    }
 
     cout << "Finding Eigenspace..." << endl;
     Eigenvector *solutions = new Eigenvector[num_eigenvalues_to_save];
@@ -66,7 +92,8 @@ extern "C" void find_gap_function() {
     cout << "Sorting Eigenvectors..." << endl;
     sort(solutions, solutions + num_eigenvalues_to_save, descending_eigenvalues);
     cout << "Sorted Eigenvectors\n";
-    freq_vector_to_wave(freq_FS, solutions);
+    if(FS_only) vector_to_wave(FS, solutions);
+    else freq_vector_to_wave(freq_FS, solutions);
     
     // Defining file name based on cfg (config)
     cout << "Saving Eigenvectors..." << endl;
@@ -80,42 +107,3 @@ extern "C" void find_gap_function() {
     delete [] solutions;
 }
 
-extern "C" void find_gap_function_FS_only() {
-    vector<Vec> FS = get_FS(mu);
-    int m_size = FS.size();
-    printf("Number of points along Fermi Surface: %d\n", m_size);
-
-    save_FS(FS);
-    float DOS = get_DOS(FS);
-
-    unordered_map <float, vector<vector<vector<float>>>> cube_freq_map;
-    // Calculates the susceptibility matrix if it's going to be used in the potential
-    // Otherwise it's passed as empty
-    if (potential_name.find("scalapino") != string::npos) {
-        auto cube = chi_cube(0, mu, 0, "Chi Cube 1 / 1");
-        cube_freq_map.insert(pair<float, vector<vector<vector<float>>>>(0, cube));
-    }
-    float T = get_Tc(FS, cube_freq_map);
-    printf("Temperature: %.5f \n", T);
-
-    Matrix P(m_size);
-    create_P(P, FS, T, cube_freq_map);
-    float f = f_singlet_integral(T);
-
-    cout << "Finding Eigenspace..." << endl;
-    Eigenvector *solutions = new Eigenvector[num_eigenvalues_to_save];
-    lapack_hermitian_diagonalization(P, solutions);
-
-    // Sort solutions with highest eigenvalue/eigenvector pair first
-    cout << "Sorting Eigenvectors..." << endl;
-    sort(solutions, solutions + num_eigenvalues_to_save, descending_eigenvalues);
-    cout << "Sorted Eigenvectors\n";
-    vector_to_wave(FS, solutions);
-    
-    // Defining file name based on cfg (config)
-    string file_name = get_SC_filename();
-
-    // Save file in cartesian coordinates for the sake of plotting easier
-    save(file_name, T, FS, solutions);
-    delete [] solutions;
-}

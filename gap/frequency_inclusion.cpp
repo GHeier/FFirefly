@@ -42,7 +42,7 @@ using std::unordered_map;
 
 // Gets total matrix size
 
-// Defines all energy surfaces around FS
+// Defines all energy surfaces around_val FS
 vector<vector<Vec>> freq_tetrahedron_method(float MU) {
     assert( l % 2 != 0); // N must be odd that way frequencies are evenly spaced
     vector<vector<Vec>> basis;
@@ -73,7 +73,7 @@ unordered_map <float, vector<vector<vector<float>>>> chi_cube_freq(float T, floa
         for (int j = 0; j < l; j++) {
             float p2 = wc * points[l-1][j];
             float w = p1 - p2;
-            w = round(w, 6);
+            w = round_val(w, 6);
             if (count(des.begin(), des.end(), w) == 0)
                 des.push_back(w);
         }

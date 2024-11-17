@@ -78,7 +78,7 @@ float potential_scal(Vec k1, Vec k2, float T) {
 float potential_scalapino_cube(Vec k1, Vec k2, float w, float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_map) {
     Vec q_minus = to_IBZ_2(k1 - k2);
     Vec q_plus = to_IBZ_2(k1 + k2);
-    w = round(w,6);
+    w = round_val(w,6);
 
     auto cube = chi_map.at(w);
 

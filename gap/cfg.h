@@ -1,4 +1,3 @@
-#include <vector>
 #include <string>
 #include <unordered_map>
 #include "vec.h"
@@ -17,6 +16,9 @@ extern string calculation_type;
 extern int num_eigenvalues_to_save;
 extern bool FS_only;
 
+extern string datfile_in;
+extern string datfile_out;
+
 extern float mu;
 extern float k_max;
 
@@ -27,6 +29,6 @@ extern float U;
 extern float wc;
 
 
-void load_config(ifstream &file);
+void load_cpp_config();
 void init_config(float &mu, float &U, float &t, float &tn, float &w_D, float new_mu, float new_U, float new_t, float new_tn, float new_w_D);
 void change_global_constant(float &a, float b);

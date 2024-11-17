@@ -12,20 +12,22 @@
 #include "vec.h"
 #include "cfg.h"
 
-Vec::Vec(float x, float y, float z, float w, float area, int dimension) {
-    dimension = dimension;
-    area = area;
-    x = x;
-    y = y;
-    z = z;
-    w = w;
+Vec::Vec(float _x, float _y, float _z, float _w, float _area, int _dimension) {
+    dimension = _dimension;
+    area = _area;
+    x = _x;
+    y = _y;
+    z = _z;
+    w = _w;
 }
 
 float& Vec::operator()(int i) {
-    if (i == 1) return x;
-    if (i == 2) return y;
+    if (i == 0) return x;
+    if (i == 1) return y;
+    if (i == 2) return z;
     if (i == 3) return z;
-    return w;
+    printf("Invalid index for Vec\n");
+    exit(1);
 }
 
 
@@ -122,7 +124,7 @@ bool operator==(const Vec& k, const Vec& q) {
 }
 
 bool operator<(const Vec& left, const Vec& right) {
-    return left.area <= right.area;
+    return left.w < right.w;
 }
 
 std::ostream& operator<<(std::ostream& os, const Vec& k) {

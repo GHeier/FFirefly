@@ -34,7 +34,7 @@ void progress_percent(float progress) {
     std::cout.flush();
 }
 
-float round(float number, int decimal_places) {
+float round_val(float number, int decimal_places) {
     return round(number * pow(10, decimal_places)) / pow(10, decimal_places);
 }
 

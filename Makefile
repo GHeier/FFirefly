@@ -1,5 +1,5 @@
 # Compiler and flags
-CXXFLAGS = -std=c++20 -O3 -fopenmp -g
+CXXFLAGS = -std=c++20 -O3 -fopenmp -g -fPIC
 CFLAGS = -O3 -fopenmp -g
 FFLAGS = -O3 -fopenmp -g -L /usr/local/lib -I /usr/local/include -ltetrabz 
 LIBS = -llapacke -llapack -lblas -lgfortran -lm -lstdc++

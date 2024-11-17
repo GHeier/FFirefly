@@ -10,11 +10,13 @@
 // Global Variables are listed below, with their default values
 
 // [CONTROL] 
-char c_category[50] = "superconductor"; 
+char c_category[50] = "test"; 
 char* get_category() {return c_category;}
 char c_outdir[50] = "./output"; char* get_outdir() {return c_outdir;}
 char c_prefix[50] = "sample"; char* get_prefix() {return c_prefix;}
 char c_verbosity[50] = "high"; char* get_verbosity() {return c_verbosity;}
+char c_datfile_in[50] = "input.dat"; char* get_datfile_in() {return c_datfile_in;}
+char c_datfile_out[50] = "output.dat"; char* get_datfile_out() {return c_datfile_out;}
 
 // [SYSTEM]
 char c_interaction[50] = "scalapino"; char* get_interaction() {return c_interaction;}
@@ -27,10 +29,10 @@ bool c_FS_only = true;
 float c_bcs_cutoff_frequency = 0.05;
 int c_num_eigenvalues_to_save = 1;
 int c_frequency_pts = 5; // Number of BCS frequency points
-                         //
+
 // [RESPONSE]
 char c_calculation[50] = "polarization"; char* get_calculation() {return c_calculation;}
-bool dynamic = false;
+bool c_dynamic = false;
 
 // [MESH]
 int c_k_mesh[3] = {20, 20, 20};
@@ -113,6 +115,12 @@ void load_c_config() {
             else if (strstr(key, "verbosity") != NULL) {
                 set_string(c_verbosity, value);
             } 
+            else if (strstr(key, "datfile_in") != NULL) {
+                set_string(c_datfile_in, value);
+            } 
+            else if (strstr(key, "datfile_out") != NULL) {
+                set_string(c_datfile_out, value);
+            }
             // [SYSTEM]
             else if (strstr(key, "interaction") != NULL) {
                 set_string(c_interaction, value);
@@ -128,10 +136,10 @@ void load_c_config() {
             } 
             // [MESH]
             else if (strstr(key, "k_mesh") != NULL) {
-                sscanf(line, "%d %d %d", &c_k_mesh[0], &c_k_mesh[1], &c_k_mesh[2]);
+                sscanf(line, " k_mesh = %d %d %d", &c_k_mesh[0], &c_k_mesh[1], &c_k_mesh[2]);
             } 
             else if (strstr(key, "q_mesh") != NULL) {
-                sscanf(line, "%d %d %d", &c_q_mesh[0], &c_q_mesh[1], &c_q_mesh[2]);
+                sscanf(line, " q_mesh = %d %d %d", &c_q_mesh[0], &c_q_mesh[1], &c_q_mesh[2]);
             } 
             else if (strstr(key, "w_pts") != NULL) {
                 c_w_pts = atoi(value);
@@ -144,14 +152,24 @@ void load_c_config() {
                 c_num_eigenvalues_to_save = atoi(value);
             } 
             else if (strstr(key, "FS_only") != NULL) {
-                c_FS_only = atoi(value);
+                strip_single_quotes(value);
+                if (strcmp(value, "true") == 0) {
+                    c_FS_only = true;
+                } else {
+                    c_FS_only = false;
+                }
             } 
             // [RESPONSE]
             else if (strstr(key, "calculation") != NULL) {
                 set_string(c_calculation, value);
             } 
             else if (strstr(key, "dynamic") != NULL) {
-                dynamic = atoi(value);
+                strip_single_quotes(value);
+                if (strcmp(value, "true") == 0) {
+                    c_dynamic = true;
+                } else {
+                    c_dynamic = false;
+                }
             } 
             else {
                 printf("Invalid key: %s\n", key);

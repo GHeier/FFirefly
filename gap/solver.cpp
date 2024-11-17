@@ -86,8 +86,9 @@ float get_Tc(vector<Vec> k, const unordered_map<float, vector<vector<vector<floa
 
 float get_DOS(vector<Vec> &FS) {
     float sum = 0;
-    for (auto k : FS) 
+    for (auto k : FS) {
         sum += k.area / vp(k);
+    }
     sum /= pow(2*M_PI, dim);
     printf("Density of States: %.5f\n", sum);
     return sum;
