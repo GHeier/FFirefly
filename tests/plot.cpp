@@ -11,9 +11,7 @@
 
 #include "../gap/cfg.h"
 #include "../gap/vec.h"
-#include "../gap/analysis.h"
 #include "../gap/save_data.h"
-#include "../gap/calculations.h"
 #include "../gap/susceptibility.h"
 #include "../gap/save_data.h"
 #include "../gap/integration.h"
@@ -65,17 +63,6 @@ void plot_complex_susceptibility_integration_v_w(Vec q) {
     printf("Output written to complex_susceptibility_integration.dat\n");
 }
 
-void plot_analytic_susceptibility_integration(float w) {
-    int num_points = 212;
-    ofstream file("analytic_susceptibility_integration.dat");
-    for (int i = 1; i < 50; i++) {
-        float mag = M_PI * i / 49.0;
-        Vec q(mag, mag, mag);
-        float c = analytic_tetrahedron_linear_energy_method(q, w, num_points);
-        file << mag << " " << c << endl;
-    }
-    printf("Output written to analytic_susceptibility_integration.dat\n");
-}
 
 void plot_real_trapezoidal_susceptibility_integration(float w) {
     float T = 0.25;

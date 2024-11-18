@@ -11,9 +11,7 @@
 #include <gsl/gsl_integration.h>
 #include <omp.h>
 
-#include "../gap/analysis.h"
 #include "../gap/band_structure.h"
-#include "../gap/calculations.h"
 #include "../gap/cfg.h"
 #include "../gap/eigenvec.hpp"
 #include "../gap/frequency_inclusion.hpp"
@@ -21,6 +19,9 @@
 #include "../gap/save_data.h"
 #include "../gap/susceptibility.h"
 #include "../gap/vec.h"
+#include "../gap/matrix_creation.h"
+#include "../gap/linear_algebra.h"
+#include "../gap/solver.h"
 
 #include "integral_tests.h"
 #include "matsubara_tests.h"
@@ -106,8 +107,6 @@ int main() {
     
     int num_procs = omp_get_num_procs();
     omp_set_num_threads(num_procs - 1);
-
-    test_personal_integral();
 
     return 0;
 }

@@ -14,6 +14,7 @@ OBJS = $(patsubst gap/%.cpp,build/%.o, $(CPP_SRCS)) \
 
 # All objects including main.o, but only adding main.o once
 ALL_OBJS = $(OBJS) build/config_f.o build/response_polarization.o build/response.o build/main.o
+ALL_TEST_OBJS = $(OBJS) build/config_f.o build/response_polarization.o build/response.o
 
 # Source files and corresponding object files for test program
 TEST_SRCS = $(wildcard tests/*.cpp)
@@ -38,10 +39,10 @@ fcode.x: $(ALL_OBJS)
 	@gcc $(ALL_OBJS) -o fcode.x $(FFLAGS) $(LIBS) 2>>compile.log || { echo "Build failed"; exit 1; }
 
 # The target to build the final executable for the test program
-test: test.exe
+test: clear_log fortran_compile_order test.exe
 
-test.exe: $(TEST_OBJS) $(OBJS) build/config.o
-	@g++ $(TEST_OBJS) $(OBJS) build/config.o -o test.exe $(CXXFLAGS) $(LIBS) 2>>compile.log || { echo "Test build failed"; exit 1; }
+test.exe: $(TEST_OBJS) $(ALL_TEST_OBJS) 
+	@g++ $(TEST_OBJS) $(ALL_TEST_OBJS) -o test.exe $(FFLAGS) $(LIBS) 2>>compile.log || { echo "Test build failed"; exit 1; }
 
 # Rule to compile main.c separately
 build/main.o: gap/main.c 

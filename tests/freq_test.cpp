@@ -7,6 +7,7 @@
 #include "../gap/susceptibility.h"
 #include "../gap/band_structure.h"
 #include "../gap/vec.h"
+#include "../gap/solver.h"
 
 using namespace std;
 
@@ -22,7 +23,7 @@ float analytic_fermi_gas_chi(Vec q, float w, float mu) {
 }
 
 float numerical_fermi_gas_chi(Vec q, float w, float mu, unordered_map<float, vector<vector<vector<float>>>> &chi_map) {
-    w = round(w, 6);
+    w = round_val(w, 6);
     return calculate_chi_from_cube_map(chi_map, q, w);
 }
 
