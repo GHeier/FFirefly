@@ -7,9 +7,9 @@ module confighub
     integer(c_int), bind(C, name="c_w_pts") :: c_w_pts
     integer(c_int), bind(C, name="c_dim") :: c_dim
 
-    real(c_float), bind(C, name="c_mu") :: c_fermi_energy
-    real(c_float), bind(C, name="c_U") :: c_onsite_U
-    real(c_float), bind(C, name="c_wc") :: c_bcs_cutoff_frequency
+    real(c_float), bind(C, name="c_fermi_energy") :: c_fermi_energy
+    real(c_float), bind(C, name="c_onsite_U") :: c_onsite_U
+    real(c_float), bind(C, name="c_bcs_cutoff_frequency") :: c_bcs_cutoff_frequency
     real(c_float), bind(C, name="c_cell") :: c_cell(3,3)
     real(c_float), bind(C, name="c_brillouin_zone") :: c_brillouin_zone(3,3)
     real(c_float), bind(C, name="c_max_freq") :: c_max_freq

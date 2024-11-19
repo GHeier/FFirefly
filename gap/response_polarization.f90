@@ -57,7 +57,7 @@ module mesh
     function get_kvec(i1, i2, i3, npts) result(kvec)
         integer, intent(in) :: i1, i2, i3, npts(3)
         integer :: ivec(3)
-        real, dimension(3) :: kvec
+        real(8), dimension(3) :: kvec
         ivec(1:3) = (/i1, i2, i3/)
         ivec(1:3) = modulo(ivec(1:3) + npts(1:3) / 2, npts(1:3)) - npts(1:3) / 2
         kvec(1:3) = dble(ivec(1:3)) / dble(npts(1:3))
@@ -65,12 +65,12 @@ module mesh
 
     function get_qvec(i1, i2, i3, npts) result(qvec)
         integer, intent(in) :: i1, i2, i3, npts(3)
-        real, dimension(3) :: qvec
+        real(8), dimension(3) :: qvec
         qvec(1:3) = dble([i1, i2, i3]) / dble(npts(1:3) - 1)
     end function get_qvec
 
     function epsilon(kvec) result(eps)
-        real, dimension(3), intent(in) :: kvec
+        real(8), dimension(3), intent(in) :: kvec
         real :: eps
         eps = 0.5d0 * dot_product(kvec(1:3), kvec(1:3))
     end function epsilon
@@ -78,7 +78,7 @@ module mesh
     function fill_energy_mesh(qvec) result(eig)
         real(8), dimension(3), intent(in) :: qvec
         integer :: i1, i2, i3, ik
-        real, dimension(3) :: kvec
+        real(8), dimension(3) :: kvec
         real(8), dimension(nb,nke) :: eig
         ik = 0
         do i3 = 0, nge(3) - 1
@@ -95,55 +95,66 @@ module mesh
         end do
      end function fill_energy_mesh
 
-    function get_static_polarization(eig1, eig2, wght) result(chi)
+    function get_static_polarization(eig1, eig2, wght, wght_dos, qvec) result(chi)
         integer :: ltetra = 2
         real(8) :: eig1(:,:), qvec(3)
-        real(8) :: eig2(:,:), wght(:,:,:)
-        real(8) :: chi
+        real(8) :: eig2(:,:), wght(:,:,:), wght_dos(:,:,:)
+        real(8) :: chi, qmag, e0(nb)
 
         ltetra = 2
-
-        ! Calculate the polarization function
-        call libtetrabz_polstat(ltetra,bvec,nb,nge,eig1,eig2,ngw,wght)
-        chi = 2d0 * sum(wght(1:nb,1:nb,1:nkw)) * VBZ
+        qmag = sqrt(sum(qvec(1:3)**2))
+        if (qmag < 1d-6) then
+            e0(1) = 0d0
+            call libtetrabz_dos(ltetra, bvec, nb, nge, eig1, ngw, wght_dos, ne, e0)
+            chi = sum(wght_dos(1:ne,1:nb,1:nkw)) * VBZ
+        else
+            ! Calculate the polarization function
+            call libtetrabz_polstat(ltetra,bvec,nb,nge,eig1,eig2,ngw,wght)
+            chi = 2d0 * sum(wght(1:nb,1:nb,1:nkw)) * VBZ
+        end if
     end function get_static_polarization
 
      function get_static_polarization_mesh() result(chi_mesh)
         real(8) :: chi, chi_mesh(nge(1), nge(2), nge(3))
         integer :: i1, i2, i3
         real(8), dimension(3) :: qvec
-        real(8), allocatable :: eig1(:,:), eig2(:,:), wght(:,:,:)
-        allocate(eig1(nb,nke), eig2(nb,nke), wght(nb,nb,nkw))
+        real(8), allocatable :: eig1(:,:), eig2(:,:), wght(:,:,:), wght_dos(:,:,:)
+        allocate(eig1(nb,nke), eig2(nb,nke), wght(nb,nb,nkw), wght_dos(ne,nb,nkw))
         eig1 = fill_energy_mesh([0d0, 0d0, 0d0])
         do i3 = 0, nge(3) - 1
             do i2 = 0, nge(2) - 1
                 do i1 = 0, nge(1) - 1
                     qvec = get_qvec(i1, i2, i3, nge)
-                    print *, "Intiialization: ", qvec
+                    !print *, "Intiialization: ", qvec
                     qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
-                    print *, "Multiplication: ", qvec
+                    !print *, "Multiplication: ", qvec
                     eig2 = fill_energy_mesh(qvec)
-                    print *, "After E(k): ", qvec
-                    chi = get_static_polarization(eig1, eig2, wght)
-                    print *, "After chi(q): ", qvec
+                    !print *, "After E(k): ", qvec
+                    chi = get_static_polarization(eig1, eig2, wght, wght_dos, qvec)
+                    !print *, "After chi(q): ", qvec
                     chi_mesh(i1+1, i2+1, i3+1) = chi
+                    if (i1 == 0 .and. i2 == 0 .and. i3 == 0) then
+                        print *, qvec  
+                        print *, "chi_mesh: ", chi_mesh(i1+1, i2+1, i3+1)
+                    end if
                 end do
             end do
-        end do
-        deallocate(eig1, eig2, wght)
+        end do 
+        deallocate(eig1, eig2, wght, wght_dos)
      end function get_static_polarization_mesh
 
      subroutine save_mesh(chi_mesh)
         real(8) :: chi_mesh(nge(1), nge(2), nge(3))
         integer :: i1, i2, i3
-        real, dimension(3) :: qvec
+        real(8), dimension(3) :: qvec
         open(10, file='chi_mesh.dat', status='unknown')
         do i3 = 0, nge(3) - 1
             do i2 = 0, nge(2) - 1
                 do i1 = 0, nge(1) - 1
                     qvec = get_qvec(i1, i2, i3, nge)
                     qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
-                    write(10, '(F8.6, 1X, F8.6, 1X, F8.6, 1X, F8.6)') qvec, chi_mesh(i1+1, i2+1, i3+1)
+                    !write(10,*) qvec, chi_mesh(i1+1, i2+1, i3+1)
+                    write(10, '(1x, f10.6, 1x, f10.6, 1x, f10.6, 1x, f10.6)') qvec(1), qvec(2), qvec(3), chi_mesh(i1+1, i2+1, i3+1)
                 end do
             end do
         end do
