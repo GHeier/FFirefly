@@ -54,11 +54,20 @@ module mesh
     implicit none
     contains
 
-    function get_kvec(i1, i2, i3) result(kvec)
-        integer, intent(in) :: i1, i2, i3
+    function get_kvec(i1, i2, i3, npts) result(kvec)
+        integer, intent(in) :: i1, i2, i3, npts(3)
+        integer :: ivec(3)
         real, dimension(3) :: kvec
-        kvec(1:3) = dble([i1, i2, i3]) / dble(nge(1:3))
+        ivec(1:3) = (/i1, i2, i3/)
+        ivec(1:3) = modulo(ivec(1:3) + npts(1:3) / 2, npts(1:3)) - npts(1:3) / 2
+        kvec(1:3) = dble(ivec(1:3)) / dble(npts(1:3))
     end function get_kvec
+
+    function get_qvec(i1, i2, i3, npts) result(qvec)
+        integer, intent(in) :: i1, i2, i3, npts(3)
+        real, dimension(3) :: qvec
+        qvec(1:3) = dble([i1, i2, i3]) / dble(npts(1:3) - 1)
+    end function get_qvec
 
     function epsilon(kvec) result(eps)
         real, dimension(3), intent(in) :: kvec
@@ -76,7 +85,7 @@ module mesh
             do i2 = 0, nge(2) - 1
                 do i1 = 0, nge(1) - 1
                     ik = ik + 1
-                    kvec = get_kvec(i1, i2, i3)
+                    kvec = get_kvec(i1, i2, i3, nge)
                     kvec(1:3) = matmul(bvec(1:3,1:3), kvec(1:3))
                     kvec(1:3) = kvec(1:3) + qvec(1:3)
                     eig(1,ik) = epsilon(kvec) - ef
@@ -86,14 +95,13 @@ module mesh
         end do
      end function fill_energy_mesh
 
-    function get_static_polarization(qvec, eig1, eig2, wght) result(chi)
+    function get_static_polarization(eig1, eig2, wght) result(chi)
         integer :: ltetra = 2
         real(8) :: eig1(:,:), qvec(3)
         real(8) :: eig2(:,:), wght(:,:,:)
         real(8) :: chi
 
         ltetra = 2
-        eig2 = fill_energy_mesh(qvec)
 
         ! Calculate the polarization function
         call libtetrabz_polstat(ltetra,bvec,nb,nge,eig1,eig2,ngw,wght)
@@ -110,9 +118,14 @@ module mesh
         do i3 = 0, nge(3) - 1
             do i2 = 0, nge(2) - 1
                 do i1 = 0, nge(1) - 1
-                    qvec = get_kvec(i1, i2, i3)
+                    qvec = get_qvec(i1, i2, i3, nge)
+                    print *, "Intiialization: ", qvec
+                    qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
+                    print *, "Multiplication: ", qvec
                     eig2 = fill_energy_mesh(qvec)
-                    chi = get_static_polarization(qvec, eig1, eig2, wght)
+                    print *, "After E(k): ", qvec
+                    chi = get_static_polarization(eig1, eig2, wght)
+                    print *, "After chi(q): ", qvec
                     chi_mesh(i1+1, i2+1, i3+1) = chi
                 end do
             end do
@@ -128,7 +141,8 @@ module mesh
         do i3 = 0, nge(3) - 1
             do i2 = 0, nge(2) - 1
                 do i1 = 0, nge(1) - 1
-                    qvec = get_kvec(i1, i2, i3)
+                    qvec = get_qvec(i1, i2, i3, nge)
+                    qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
                     write(10, '(F8.6, 1X, F8.6, 1X, F8.6, 1X, F8.6)') qvec, chi_mesh(i1+1, i2+1, i3+1)
                 end do
             end do

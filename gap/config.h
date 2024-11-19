@@ -16,6 +16,8 @@ extern char* get_category();
 extern char c_outdir[50]; char* get_outdir();
 extern char c_prefix[50]; char* get_prefix();
 extern char c_verbosity[50]; char* get_verbosity();
+extern char c_datfile_in[50]; char* get_datfile_in();
+extern char c_datfile_out[50]; char* get_datfile_out();
 
 // [SYSTEM]
 extern char c_interaction[50]; char* get_interaction();

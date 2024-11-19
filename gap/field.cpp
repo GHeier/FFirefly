@@ -55,6 +55,7 @@ void ScalarField::get_values_for_interpolation() {
     ny = y_values.size();
     nz = z_values.size();
     nw = w_values.size();
+    dimension = 3;
 }
 
 void VectorField::get_values_for_interpolation() {
@@ -75,6 +76,7 @@ void VectorField::get_values_for_interpolation() {
         y_values.insert(point.y);
         z_values.insert(point.z);
         w_values.insert(point.w);
+        dimension = point.dimension;
     }
     nx = x_values.size();
     ny = y_values.size();
@@ -119,7 +121,11 @@ float ScalarField::operator() (Vec point) {
     if (dimension == 1) return interpolate_1D(point.x, xmin, xmax, values);
     if (dimension == 2) return interpolate_2D(point.x, point.y, xmin, xmax, ymin, ymax, nx, ny, values);
     if (dimension == 3) return interpolate_3D(point.x, point.y, point.z, xmin, xmax, ymin, ymax, zmin, zmax, nx, ny, nz, values);
-    return interpolate_4D(point.x, point.y, point.z, point.w, xmin, xmax, ymin, ymax, zmin, zmax, wmin, wmax, nx, ny, nz, nw, values);
+    if (dimension == 4) return interpolate_4D(point.x, point.y, point.z, point.w, xmin, xmax, ymin, ymax, zmin, zmax, wmin, wmax, nx, ny, nz, nw, values);
+    else {
+        cerr << "Invalid dimension." << endl;
+        exit(1);
+    }
 }
 
 ScalarField::ScalarField(string filename, int dimension, bool is_complex) {
@@ -137,7 +143,7 @@ ScalarField::ScalarField(string filename, int dimension, bool is_complex) {
         for (int i = 0; i < dimension; i++) {
             float temp;
             iss >> temp;
-
+            point(i) = temp;
         }
         iss >> value;
         points.push_back(point);

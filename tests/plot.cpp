@@ -17,9 +17,22 @@
 #include "../gap/integration.h"
 #include "../gap/band_structure.h"
 #include "../gap/surfaces.h"
+#include "../gap/field.h"
 #include "../gap/utilities.h"
 
 using namespace std;
+
+void plot_interpolated_chi() {
+    ScalarField chi("chi_mesh.dat");
+    ofstream file("interpolated_chi.dat");
+    for (int i = 0; i < 100; i++) {
+        float mag = M_PI * i / 99.0;
+        Vec q(mag, mag, mag);
+        float c = chi(q);
+        file << mag << " " << c << endl;
+    }
+    printf("Output written to interpolated_chi.dat\n");
+}
 
 void plot_real_susceptibility_integration(float w) {
     float T = 0.25;

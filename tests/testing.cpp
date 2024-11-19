@@ -108,5 +108,6 @@ int main() {
     int num_procs = omp_get_num_procs();
     omp_set_num_threads(num_procs - 1);
 
+    plot_interpolated_chi();
     return 0;
 }

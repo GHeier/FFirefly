@@ -6,10 +6,10 @@
 
 #include "../gap/vec.h"
 
+void plot_interpolated_chi();
 void plot_real_susceptibility_integration(float w);
 void plot_complex_susceptibility_integration(complex<float> w);
 void plot_complex_susceptibility_integration_v_w(Vec q);
-void plot_analytic_susceptibility_integration(float w);
 void plot_real_trapezoidal_susceptibility_integration(float w);
 void plot_matsubara_cube_v_q(complex<float> w);
 void plot_matsubara_cube_v_w(Vec q);
