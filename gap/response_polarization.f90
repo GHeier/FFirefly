@@ -125,18 +125,10 @@ module mesh
             do i2 = 0, nge(2) - 1
                 do i1 = 0, nge(1) - 1
                     qvec = get_qvec(i1, i2, i3, nge)
-                    !print *, "Intiialization: ", qvec
                     qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
-                    !print *, "Multiplication: ", qvec
                     eig2 = fill_energy_mesh(qvec)
-                    !print *, "After E(k): ", qvec
                     chi = get_static_polarization(eig1, eig2, wght, wght_dos, qvec)
-                    !print *, "After chi(q): ", qvec
                     chi_mesh(i1+1, i2+1, i3+1) = chi
-                    if (i1 == 0 .and. i2 == 0 .and. i3 == 0) then
-                        print *, qvec  
-                        print *, "chi_mesh: ", chi_mesh(i1+1, i2+1, i3+1)
-                    end if
                 end do
             end do
         end do 
@@ -153,7 +145,6 @@ module mesh
                 do i1 = 0, nge(1) - 1
                     qvec = get_qvec(i1, i2, i3, nge)
                     qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
-                    !write(10,*) qvec, chi_mesh(i1+1, i2+1, i3+1)
                     write(10, '(1x, f10.6, 1x, f10.6, 1x, f10.6, 1x, f10.6)') qvec(1), qvec(2), qvec(3), chi_mesh(i1+1, i2+1, i3+1)
                 end do
             end do

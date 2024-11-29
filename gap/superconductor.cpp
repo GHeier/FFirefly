@@ -50,7 +50,6 @@ extern "C" void find_gap_function() {
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
     assert(FS.size() > 10);
     save_FS(FS);
-    float DOS = get_DOS(FS);
 
     float T = 0.25;
     cout << setprecision(10);
