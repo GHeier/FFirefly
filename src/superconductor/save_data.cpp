@@ -13,11 +13,11 @@
 #include <math.h>
 #include <memory>
 
-#include "vec.h"
-#include "cfg.h"
-#include "band_structure.h"
-#include "matrix.hpp"
-#include "eigenvec.hpp"
+#include "../objects/vec.h"
+#include "../config/load/cpp_config.h"
+#include "../hamiltonian/band_structure.h"
+#include "../objects/matrix.hpp"
+#include "../objects/eigenvec.hpp"
 #include "frequency_inclusion.hpp"
 
 using namespace std;

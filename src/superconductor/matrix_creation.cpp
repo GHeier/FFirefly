@@ -6,12 +6,12 @@
 #include "solver.h"
 #include "matrix_creation.h"
 #include "utilities.h"
-#include "potential.h"
-#include "band_structure.h"
-#include "integration.h"
-#include "matrix.hpp"
-#include "vec.h"
-#include "cfg.h"
+#include "../hamiltonian/potential.h"
+#include "../hamiltonian/band_structure.h"
+#include "../algorithms/integration.h"
+#include "../objects/matrix.hpp"
+#include "../objects/vec.h"
+#include "../config/load/cpp_config.h"
 
 using namespace std;
 

@@ -3,7 +3,7 @@
 
 #include "../objects/vec.h"
 #include "../objects/surfaces.h"
-#include "../cfg.h"
+#include "../config/load/cpp_config.h"
 
 int s_div = (dim == 3) ? 40 : 300; // Number of integral surface divisions
 int s_pts = (dim == 3) ? 50 : 1000; // Number of integral surfaces

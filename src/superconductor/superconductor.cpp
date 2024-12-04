@@ -19,7 +19,7 @@
 
 
 #include "utilities.h"
-#include "../cfg.h"
+#include "../config/load/cpp_config.h"
 #include "frequency_inclusion.hpp"
 #include "matrix_creation.h"
 #include "../algorithms/linear_algebra.h"
@@ -29,7 +29,7 @@
 #include "../objects/vec.h"
 #include "../objects/matrix.hpp"
 #include "../objects/eigenvec.hpp"
-#include "../band_structure.h"
+#include "../hamiltonian/band_structure.h"
 
 using std::string;
 
@@ -94,7 +94,7 @@ extern "C" void find_gap_function() {
     if(FS_only) vector_to_wave(FS, solutions);
     else freq_vector_to_wave(freq_FS, solutions);
     
-    // Defining file name based on cfg (config)
+    // Defining file name based on config/load/cpp_config (config)
     cout << "Saving Eigenvectors..." << endl;
     string file_name = get_SC_filename();
     cout << "File Name: " << file_name << endl;

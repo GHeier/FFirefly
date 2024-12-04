@@ -11,9 +11,9 @@
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/quadrature/gauss.hpp>
 
-#include "../cfg.h"
+#include "../config/load/cpp_config.h"
 #include "../objects/vec.h"
-#include "../band_structure.h"
+#include "../hamiltonian/band_structure.h"
 #include "../objects/matrix.hpp"
 #include "../objects/eigenvec.hpp"
 #include "matrix_creation.h"

@@ -1,16 +1,16 @@
 #include <stdio.h>
 #include <omp.h>
 
-#include "config.h"
-#include "superconductor/superconductor.h"
+#include "config/load/c_config.h"
+//#include "superconductor/superconductor.h"
 
-extern void polarization_wrapper();
+//extern void polarization_wrapper();
 void response() {
-    polarization_wrapper();
+    //polarization_wrapper();
 }
 
 void superconductor() {
-    find_gap_function();
+    //find_gap_function();
 }
 
 int main(int argc, char *argv[]) {
@@ -22,10 +22,11 @@ int main(int argc, char *argv[]) {
     printf("Number of threads used in CPU parallelization: %d\n", num_procs - 1);
 
     load_c_config();
+    foo();
 
-    if (strcmp(c_category, "response") == 0) response();
-    else if (strcmp(c_category, "superconductor") == 0) superconductor();
-    else printf("Unknown Calculation Type\n");
+    //if (strcmp(c_category, "response") == 0) response();
+    //else if (strcmp(c_category, "superconductor") == 0) superconductor();
+    //else printf("Unknown Calculation Type\n");
 
     return 0;
 }

@@ -12,7 +12,7 @@
 #include <ctime>
 #include <memory>
 
-#include "../cfg.h"
+#include "../config/load/cpp_config.h"
 #include "eigenvec.hpp"
 
 using namespace std;

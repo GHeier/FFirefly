@@ -13,7 +13,7 @@
 #include <algorithm>
 #include <functional>
 
-#include "../cfg.h"
+#include "../config/load/cpp_config.h"
 #include "vec.h"
 
 using namespace std;

@@ -21,7 +21,7 @@
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/quadrature/gauss.hpp>
 
-#include "../cfg.h"
+#include "../config/load/cpp_config.h"
 #include "../objects/matrix.hpp"
 #include "../objects/eigenvec.hpp"
 

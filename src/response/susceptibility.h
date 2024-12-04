@@ -6,7 +6,7 @@
 #include <complex>
 #include <functional>
 #include "../objects/vec.h"
-#include "../potential.h"
+#include "../hamiltonian/potential.h"
 
 using namespace std;
 

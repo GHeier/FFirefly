@@ -11,7 +11,7 @@
 #include <memory>
 #include "matrix.hpp"
 #include "eigenvec.hpp"
-#include "../cfg.h"
+#include "../config/load/cpp_config.h"
 
 Matrix::Matrix() {
     this->size = 0;

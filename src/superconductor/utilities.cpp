@@ -11,7 +11,7 @@
 #include <iostream>
 #include <iomanip>
 
-#include "../cfg.h"
+#include "../config/load/cpp_config.h"
 
 using namespace std;
 

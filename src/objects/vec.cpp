@@ -10,7 +10,7 @@
 #include <string>
 #include <math.h>
 #include "vec.h"
-#include "../cfg.h"
+#include "../config/load/cpp_config.h"
 
 Vec::Vec(float _x, float _y, float _z, float _w, float _area, int _dimension) {
     dimension = _dimension;

@@ -8,7 +8,7 @@
 #include "frequency_inclusion.hpp"
 #include "../objects/vec.h"
 #include "../objects/matrix.hpp"
-#include "../cfg.h"
+#include "../config/load/cpp_config.h"
 
 using std::endl;
 using std::cout;

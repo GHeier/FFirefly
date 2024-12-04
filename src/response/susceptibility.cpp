@@ -19,10 +19,10 @@
 
 #include "../superconductor/utilities.h"
 #include "../objects/vec.h"
-#include "../cfg.h"
+#include "../config/load/cpp_config.h"
 #include "susceptibility.h"
 #include "../algorithms/integration.h"
-#include "../band_structure.h"
+#include "../hamiltonian/band_structure.h"
 
 using namespace std;
 

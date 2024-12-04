@@ -25,13 +25,13 @@
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/quadrature/gauss.hpp>
 
-#include "cfg.h"
-#include "integration.h"
-#include "vec.h"
+#include "../config/load/cpp_config.h"
+#include "../algorithms/integration.h"
+#include "../objects/vec.h"
 #include "utilities.h"
 #include "frequency_inclusion.hpp"
-#include "susceptibility.h"
-#include "band_structure.h"
+#include "../response/susceptibility.h"
+#include "../hamiltonian/band_structure.h"
 
 using std::cout;
 using std::endl;
