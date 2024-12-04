@@ -50,10 +50,6 @@ int c_dim = 3; // Number of dimensions)
 char c_band_name[50] = "sphere"; char* get_band_name() {return c_band_name;}
 
 
-void foo() {
-    printf("foo\n");
-}
-
 void get_dimensions() {
     // Check if bottom row and right column are zero
     if (c_cell[2][0] == 0.0 && c_cell[2][1] == 0.0 && c_cell[2][2] == 0.0 

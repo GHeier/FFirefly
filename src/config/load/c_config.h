@@ -58,6 +58,5 @@ void get_dimensions();
 void set_string(char *dest, const char *src);
 
 extern void load_c_config();
-void foo();
 
 #endif // CONFIG_H
