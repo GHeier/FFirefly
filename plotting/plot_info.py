@@ -21,7 +21,7 @@ def gplot(d,eig_num):
     plt.title('Eig #: ' + str(eig_num+1))
     plt.show()
 
-def plot_DOS():
+def plot_DOS(): # Plot DOS
     plt.rcParams.update({'font.size': 18})
     mpl.rcParams['lines.linewidth'] = 2
     mpl.rcParams['pdf.fonttype'] = 42

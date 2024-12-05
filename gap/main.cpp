@@ -77,7 +77,7 @@ float get_max_eigenvalue() {
  * =========================== CRITICAL TEMPERATURE CALCULATION  ==========================
    ========================================================================================
  */
-    float T = 0.25;
+    float T = 0.25000;
     cout << setprecision(10);
     //cout << coupling_calc(FS, T) << endl;
     //T = 0.065;

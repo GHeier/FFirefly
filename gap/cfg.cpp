@@ -41,14 +41,15 @@ float k_max = M_PI;
 float mu = 1.0;
 float wc = 0.5;
 float N = 1;
-float M = 15.999;
+float M = 1;//15.999;
 float C = 1;
 float Vol = 1;
 
 // Debugging DOS REMEMBER TO FIX HEADER WHEN U COMMENT OUT
 // float DOS = 1
 
-Vec c(5000, 4000, 0); // lntdal ultsonic wave velocity ([001], [110], 0)
+//Vec c(5000, 4000, 0); // lntdal ultsonic wave velocity ([001], [110], 0)
+Vec c(1, 1, 0);
 
 
 void init_config(float &mu, float &U, float &t, float &tn, float &w_D, float new_mu, float new_U, float new_t, float new_tn, float new_w_D) {

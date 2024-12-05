@@ -56,7 +56,7 @@ double phonon_coulomb(Vec q, Vec c) {
     double α = ((cy * cy) - (cx * cx)) / (cx * cx);
     double q_s_sq = (8 * M_PI * e * e) / (Vol * ε);
     double C_sq = C * C;
-    double denom_Vp = ((N * M * (cx*cx) * (1 + ((α*qx*qx)/(q.norm()*q.norm()))))/100000000);
+    double denom_Vp = ((N * M * (cx*cx) * (1 + ((α*qx*qx)/(q.norm()*q.norm())))));
 
     double Vp = 0;
     double Vc = 0;
