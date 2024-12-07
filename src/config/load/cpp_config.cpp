@@ -14,37 +14,52 @@
 
 using namespace std;
 
-// Global Variables are listed below, with their default values
-// Config Parameters
-string calculation(c_calculation);
-string category(c_category);
-string outdir(c_outdir);
-string prefix(c_prefix);
-string verbosity(c_verbosity);
-string datfile_in(c_datfile_in);
-string datfile_out(c_datfile_out);
+// Global Variables are listed below
 
-string potential_name(c_interaction);
-int ibrav = c_ibrav;
-int n = c_k_mesh[0];
-int m = c_q_mesh[0];
+//[CONTROL]
+extern string category;
+extern string calculation;
+extern string outdir;
+extern string prefix;
+extern string verbosity;
+extern string datfile_in;
+extern string datfile_out;
+
+//[SYSTEM]
+extern string interaction;
+extern int dimension;
+extern int ibrav;
+extern float fermi_energy;
+extern float onsite_U;
+
+//[MESH]
+extern int k_mesh[3];
+extern int q_mesh[3];
+extern int w_pts;
+
+//[CELL]
+extern float cell[3][3];
+extern float brillouin_zone[3][3];
+
+//[BANDS]
+extern string bands;
+extern float eff_mass;
+
+//[SUPERCONDUCTOR]
+extern bool FS_only;
+extern float bcs_cutoff_frequency;
+extern int num_eigenvalues_to_save;
+extern int frequency_pts;
+
+//[RESPONSE]
+extern bool dynamic;
+// End of Global Variables 
+int n = k_mesh[0];
+int m = q_mesh[0];
 int l = 5;
-int w_pts = c_w_pts;
-float max_freq = c_max_freq;
-
-float wc = c_bcs_cutoff_frequency;
-float mu = c_fermi_energy;
-float U = c_onsite_U;
-
-float cell[3][3]; 
-float brillouin_zone[3][3]; 
-
-
-int dim = 3; // Number of dimensions
-string band_name = "simple_cubic";
-int num_eigenvalues_to_save = 1;
-bool FS_only = true;
-               
+float wc = bcs_cutoff_frequency;
+float mu = fermi_energy;
+float U = onsite_U;
 // Constants
 float t = 1.0;
 float tn = 0.0;
@@ -52,6 +67,9 @@ float tnn = 0.0;
 float k_max = M_PI;
 
 void load_cpp_config() {
+    // Load the C++ configuration file
+
+    //[CONTROL]
     category = c_category;
     calculation = c_calculation;
     outdir = c_outdir;
@@ -60,17 +78,33 @@ void load_cpp_config() {
     datfile_in = c_datfile_in;
     datfile_out = c_datfile_out;
 
-    potential_name = c_interaction;
+    //[SYSTEM]
+    interaction = c_interaction;
+    dimension = c_dimension;
     ibrav = c_ibrav;
-    n = c_k_mesh[0];
-    m = c_q_mesh[0];
-    l = 5;
-    w_pts = c_w_pts;
-    max_freq = c_max_freq;
+    fermi_energy = c_fermi_energy;
+    onsite_U = c_onsite_U;
 
-    wc = c_bcs_cutoff_frequency;
-    mu = c_fermi_energy;
-    U = c_onsite_U;
+    //[MESH]
+    for (int i = 0; i < 3; i++) k_mesh[i] = c_k_mesh[i];
+    for (int i = 0; i < 3; i++) q_mesh[i] = c_q_mesh[i];
+    w_pts = c_w_pts;
+
+    //[CELL]
+
+    //[BANDS]
+    bands = c_bands;
+    eff_mass = c_eff_mass;
+
+    //[SUPERCONDUCTOR]
+    FS_only = c_FS_only;
+    bcs_cutoff_frequency = c_bcs_cutoff_frequency;
+    num_eigenvalues_to_save = c_num_eigenvalues_to_save;
+    frequency_pts = c_frequency_pts;
+
+    //[RESPONSE]
+    dynamic = c_dynamic;
+    // End of Global Functions 
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             cell[i][j] = c_cell[i][j];

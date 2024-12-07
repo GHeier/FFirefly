@@ -1,6 +1,7 @@
 module confighub
     use iso_c_binding
     implicit none
+    ! Global variables
     integer(c_int), bind(C, name="c_ibrav") :: c_ibrav 
     integer(c_int), bind(C, name="c_k_mesh") :: c_k_mesh(3)
     integer(c_int), bind(C, name="c_q_mesh") :: c_q_mesh(3)
@@ -24,7 +25,9 @@ module confighub
     integer :: ibrav, k_mesh(3), q_mesh(3), w_pts, dim
     real :: fermi_energy, onsite_U, bcs_cutoff_frequency, cell(3,3), brillouin_zone(3,3), max_freq
     character(len=50) :: category, calculation, outdir, prefix, verbosity, interaction
+    ! End of global variables
 
+    ! Global functions
     interface
         function get_calculation() bind(C)
             use iso_c_binding
@@ -55,6 +58,7 @@ module confighub
             use iso_c_binding
             type(c_ptr) :: get_interaction
         end function get_interaction
+        ! End of global functions
 
     end interface
 
@@ -78,6 +82,7 @@ contains
     end function get_string
 
     subroutine load_f90_config()
+        ! Load variables
         ibrav = c_ibrav
         w_pts = c_w_pts
         dim = c_dim
@@ -97,6 +102,7 @@ contains
         prefix = get_string(get_prefix())
         verbosity = get_string(get_verbosity())
         interaction = get_string(get_interaction())
+        ! End of loading variables
     end subroutine load_f90_config
 
 end module confighub
