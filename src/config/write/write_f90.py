@@ -2,7 +2,7 @@ from write_c import remove_lines_between_phrases, add_lines_between_phrases
 start_phrase = '    ! Global variables'
 end_phrase = '    ! End of global variables'
 start_func_phrase = '    ! Global functions'
-end_func_phrase = '    ! End of Global Functions'
+end_func_phrase = '    ! End of global functions'
 start_load_phrase = '        ! Load variables'
 end_load_phrase = '        ! End of loading variables'
 
@@ -29,15 +29,18 @@ def format_var_line(key, value):
         else:
             print("Error: Unsupported type in config file (list section)")
             exit(1)
+    else:
+        print("Error: Unsupported type in config file")
+        exit(1)
 
 def format_func_line(key, value):
-    return f"        function get_{key}() bind(C)\n            use iso_c_binding\n            type(c_ptr) :: get_{key}\n            end function get_{key}\n"
+    return f"        function get_{key}() bind(C)\n            use iso_c_binding\n            type(c_ptr) :: get_{key}\n        end function get_{key}\n"
 
 def format_load_line(key, value):
     if (type(value) == str):
-        return f"            {key} = get_string(get_{key}())"
+        return f"        {key} = get_string(get_{key}())"
     else:
-        return f"            {key} = c_{key}"
+        return f"        {key} = c_{key}"
 
 def get_new_func_lines(ALL):
     new_lines = []
@@ -53,7 +56,7 @@ def get_new_func_lines(ALL):
 def get_new_load_lines(ALL):
     new_lines = []
     for section in ALL:
-        new_lines.append('\n!' + '[' + section + ']\n')
+        new_lines.append('\n        !' + '[' + section + ']\n')
         for key, value in ALL[section].items():
             new_lines.append(format_load_line(key, value) + '\n')
         new_lines.append('')

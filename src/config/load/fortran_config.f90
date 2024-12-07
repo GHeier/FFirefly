@@ -73,44 +73,44 @@ module confighub
         function get_category() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_category
-            end function get_category
+        end function get_category
 
         function get_calculation() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_calculation
-            end function get_calculation
+        end function get_calculation
 
         function get_outdir() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_outdir
-            end function get_outdir
+        end function get_outdir
 
         function get_prefix() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_prefix
-            end function get_prefix
+        end function get_prefix
 
         function get_verbosity() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_verbosity
-            end function get_verbosity
+        end function get_verbosity
 
         function get_datfile_in() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_datfile_in
-            end function get_datfile_in
+        end function get_datfile_in
 
         function get_datfile_out() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_datfile_out
-            end function get_datfile_out
+        end function get_datfile_out
 
 
     ![SYSTEM]
         function get_interaction() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_interaction
-            end function get_interaction
+        end function get_interaction
 
 
     ![MESH]
@@ -121,9 +121,76 @@ module confighub
         function get_bands() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_bands
-            end function get_bands
+        end function get_bands
 
 
     ![SUPERCONDUCTOR]
 
     ![RESPONSE]
+    ! End of global functions
+
+    end interface
+
+contains
+
+    function get_string(c_string) result(fortran_string)
+        type(c_ptr), intent(in) :: c_string
+        character(len=:), allocatable :: fortran_string
+        character(kind=c_char, len=1), pointer :: c_string_ptr(:)
+        integer :: i, length
+        call c_f_pointer(c_string, c_string_ptr, [1000])  ! 1000 is a safe buffer size; adjust as needed
+        length = 0
+        do i = 1, size(c_string_ptr)
+            if (c_string_ptr(i) == c_null_char) exit
+            length = length + 1
+        end do
+        allocate(character(len=length) :: fortran_string)
+        do i = 1, length
+            fortran_string(i:i) = c_string_ptr(i)
+        end do
+    end function get_string
+
+    subroutine load_f90_config()
+        ! Load variables
+
+        ![CONTROL]
+        category = get_string(get_category())
+        calculation = get_string(get_calculation())
+        outdir = get_string(get_outdir())
+        prefix = get_string(get_prefix())
+        verbosity = get_string(get_verbosity())
+        datfile_in = get_string(get_datfile_in())
+        datfile_out = get_string(get_datfile_out())
+
+        ![SYSTEM]
+        interaction = get_string(get_interaction())
+        dimension = c_dimension
+        ibrav = c_ibrav
+        fermi_energy = c_fermi_energy
+        onsite_U = c_onsite_U
+
+        ![MESH]
+        k_mesh = c_k_mesh
+        q_mesh = c_q_mesh
+        w_pts = c_w_pts
+
+        ![CELL]
+        cell = c_cell
+        brillouin_zone = c_brillouin_zone
+
+        ![BANDS]
+        bands = get_string(get_bands())
+        eff_mass = c_eff_mass
+
+        ![SUPERCONDUCTOR]
+        FS_only = c_FS_only
+        bcs_cutoff_frequency = c_bcs_cutoff_frequency
+        num_eigenvalues_to_save = c_num_eigenvalues_to_save
+        frequency_pts = c_frequency_pts
+
+        ![RESPONSE]
+        dynamic = c_dynamic
+        ! End of loading variables
+    end subroutine load_f90_config
+
+end module confighub
