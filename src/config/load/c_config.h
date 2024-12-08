@@ -23,6 +23,7 @@ extern char c_datfile_out[50]; char* get_datfile_out();
 extern char c_interaction[50]; char* get_interaction();
 extern int c_dimension;
 extern int c_ibrav;
+extern int c_nbnd;
 extern float c_fermi_energy;
 extern float c_onsite_U;
 
@@ -36,8 +37,8 @@ extern float c_cell[3][3];
 extern float c_brillouin_zone[3][3];
 
 //[BANDS]
-extern char c_bands[50]; char* get_bands();
-extern float c_eff_mass;
+extern char c_band[50][50]; char** get_band();
+extern float c_eff_mass[50];
 
 //[SUPERCONDUCTOR]
 extern bool c_FS_only;
@@ -53,6 +54,7 @@ void get_dimensions();
 
 //extern void cell_to_BZ(const float cell[3][3], float brillouin_zone[3][3]);
 void set_string(char *dest, const char *src);
+void load_default_band_values();
 
 extern void load_c_config();
 

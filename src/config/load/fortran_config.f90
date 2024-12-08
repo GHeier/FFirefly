@@ -3,7 +3,7 @@ module confighub
     implicit none
     ! Global variables
 
-    ![CONTROL]
+![CONTROL]
     character(kind=c_char), bind(C, name="c_category") :: c_category(50)
     character(len=50) :: category
     character(kind=c_char), bind(C, name="c_calculation") :: c_calculation(50)
@@ -19,19 +19,21 @@ module confighub
     character(kind=c_char), bind(C, name="c_datfile_out") :: c_datfile_out(50)
     character(len=50) :: datfile_out
 
-    ![SYSTEM]
+![SYSTEM]
     character(kind=c_char), bind(C, name="c_interaction") :: c_interaction(50)
     character(len=50) :: interaction
     integer(c_int), bind(C, name="c_dimension") :: c_dimension
     integer :: dimension
     integer(c_int), bind(C, name="c_ibrav") :: c_ibrav
     integer :: ibrav
+    integer(c_int), bind(C, name="c_nbnd") :: c_nbnd
+    integer :: nbnd
     real(c_float), bind(C, name="c_fermi_energy") :: c_fermi_energy
     real :: fermi_energy
     real(c_float), bind(C, name="c_onsite_U") :: c_onsite_U
     real :: onsite_U
 
-    ![MESH]
+![MESH]
     integer(c_int), bind(C, name="c_k_mesh") :: c_k_mesh(3)
     integer :: k_mesh(3)
     integer(c_int), bind(C, name="c_q_mesh") :: c_q_mesh(3)
@@ -39,19 +41,19 @@ module confighub
     integer(c_int), bind(C, name="c_w_pts") :: c_w_pts
     integer :: w_pts
 
-    ![CELL]
+![CELL]
     real(c_float), bind(C, name="c_cell") :: c_cell(3,3)
     real :: cell(3,3)
     real(c_float), bind(C, name="c_brillouin_zone") :: c_brillouin_zone(3,3)
     real :: brillouin_zone(3,3)
 
-    ![BANDS]
-    character(kind=c_char), bind(C, name="c_bands") :: c_bands(50)
-    character(len=50) :: bands
-    real(c_float), bind(C, name="c_eff_mass") :: c_eff_mass
-    real :: eff_mass
+![BANDS]
+    character(kind=c_char), bind(C, name="c_band") :: c_band(50,50)
+    character(len=50) :: band(50,50)
+    real(c_float), bind(C, name="c_eff_mass") :: c_eff_mass(50)
+    real :: eff_mass(50)
 
-    ![SUPERCONDUCTOR]
+![SUPERCONDUCTOR]
     logical(c_bool), bind(C, name="c_FS_only") :: c_FS_only
     logical :: FS_only
     real(c_float), bind(C, name="c_bcs_cutoff_frequency") :: c_bcs_cutoff_frequency
@@ -61,7 +63,7 @@ module confighub
     integer(c_int), bind(C, name="c_frequency_pts") :: c_frequency_pts
     integer :: frequency_pts
 
-    ![RESPONSE]
+![RESPONSE]
     logical(c_bool), bind(C, name="c_dynamic") :: c_dynamic
     logical :: dynamic
     ! End of global variables
@@ -69,7 +71,7 @@ module confighub
     interface
     ! Global functions
 
-    ![CONTROL]
+![CONTROL]
         function get_category() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_category
@@ -106,27 +108,107 @@ module confighub
         end function get_datfile_out
 
 
-    ![SYSTEM]
+![SYSTEM]
         function get_interaction() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_interaction
         end function get_interaction
 
-
-    ![MESH]
-
-    ![CELL]
-
-    ![BANDS]
-        function get_bands() bind(C)
+        function get_dimension() bind(C)
             use iso_c_binding
-            type(c_ptr) :: get_bands
-        end function get_bands
+            type(c_ptr) :: get_dimension
+        end function get_dimension
+
+        function get_ibrav() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_ibrav
+        end function get_ibrav
+
+        function get_nbnd() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_nbnd
+        end function get_nbnd
+
+        function get_fermi_energy() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_fermi_energy
+        end function get_fermi_energy
+
+        function get_onsite_U() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_onsite_U
+        end function get_onsite_U
 
 
-    ![SUPERCONDUCTOR]
+![MESH]
+        function get_k_mesh() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_k_mesh
+        end function get_k_mesh
 
-    ![RESPONSE]
+        function get_q_mesh() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_q_mesh
+        end function get_q_mesh
+
+        function get_w_pts() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_w_pts
+        end function get_w_pts
+
+
+![CELL]
+        function get_cell() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_cell
+        end function get_cell
+
+        function get_brillouin_zone() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_brillouin_zone
+        end function get_brillouin_zone
+
+
+![BANDS]
+        function get_band() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_band
+        end function get_band
+
+        function get_eff_mass() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_eff_mass
+        end function get_eff_mass
+
+
+![SUPERCONDUCTOR]
+        function get_FS_only() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_FS_only
+        end function get_FS_only
+
+        function get_bcs_cutoff_frequency() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_bcs_cutoff_frequency
+        end function get_bcs_cutoff_frequency
+
+        function get_num_eigenvalues_to_save() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_num_eigenvalues_to_save
+        end function get_num_eigenvalues_to_save
+
+        function get_frequency_pts() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_frequency_pts
+        end function get_frequency_pts
+
+
+![RESPONSE]
+        function get_dynamic() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_dynamic
+        end function get_dynamic
+
     ! End of global functions
 
     end interface
@@ -153,7 +235,7 @@ contains
     subroutine load_f90_config()
         ! Load variables
 
-        ![CONTROL]
+![CONTROL]
         category = get_string(get_category())
         calculation = get_string(get_calculation())
         outdir = get_string(get_outdir())
@@ -162,33 +244,34 @@ contains
         datfile_in = get_string(get_datfile_in())
         datfile_out = get_string(get_datfile_out())
 
-        ![SYSTEM]
+![SYSTEM]
         interaction = get_string(get_interaction())
         dimension = c_dimension
         ibrav = c_ibrav
+        nbnd = c_nbnd
         fermi_energy = c_fermi_energy
         onsite_U = c_onsite_U
 
-        ![MESH]
+![MESH]
         k_mesh = c_k_mesh
         q_mesh = c_q_mesh
         w_pts = c_w_pts
 
-        ![CELL]
+![CELL]
         cell = c_cell
         brillouin_zone = c_brillouin_zone
 
-        ![BANDS]
-        bands = get_string(get_bands())
+![BANDS]
+        band = get_string(get_band())
         eff_mass = c_eff_mass
 
-        ![SUPERCONDUCTOR]
+![SUPERCONDUCTOR]
         FS_only = c_FS_only
         bcs_cutoff_frequency = c_bcs_cutoff_frequency
         num_eigenvalues_to_save = c_num_eigenvalues_to_save
         frequency_pts = c_frequency_pts
 
-        ![RESPONSE]
+![RESPONSE]
         dynamic = c_dynamic
         ! End of loading variables
     end subroutine load_f90_config

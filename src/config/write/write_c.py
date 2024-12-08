@@ -1,9 +1,3 @@
-start_phrase = '// Global Variables are listed below, with their default values'
-end_phrase = '// End of Global Variables'
-
-start_func_phrase = '            // Read in variable values from the config file'
-end_func_phrase = '            // End of variable reading'
-
 def remove_lines_between_phrases(lines, start, end):
     updated_lines = []
     add_lines = True
@@ -35,7 +29,7 @@ def add_lines_between_phrases(lines, new_lines, start, end):
             updated_lines.append(line)
     return updated_lines
 
-def format_var_line(key, value):
+def format_var_line(key, value, section):
     if isinstance(value, list):
         # Check if it's a 2D array
         if all(isinstance(sub, list) for sub in value):
@@ -60,65 +54,79 @@ def format_var_line(key, value):
     else:
         if isinstance(value, str):
             # Handle strings
+            if section == 'BANDS':
+                return (
+                        f"char c_{key}[50][50];\n"
+                        f"char** get_{key}() {{return (char**)c_{key};}}"
+                        )
             return (
                 f'char c_{key}[50] = "{value}";\n'
                 f'char* get_{key}() {{return c_{key};}}'
             )
         elif isinstance(value, bool):
             # Handle booleans
+            if section == 'BANDS':
+                return f"bool c_{key}[50];"
             return f"bool c_{key} = {'true' if value else 'false'};"
         else:
             # Handle other scalar values
             value_type = "float" if isinstance(value, float) else "int"
+            if section == 'BANDS':
+                return f"{value_type} c_{key}[50];"
             return f"{value_type} c_{key} = {value};"
 
-def get_new_var_lines(ALL):
-    new_lines = []
-    for section in ALL:
-        new_lines.append('\n//' + '[' + section + ']\n')
-        for key, value in ALL[section].items():
-            new_lines.append(format_var_line(key, value) + '\n')
-        new_lines.append('')
-    return new_lines
+def format_func_line(key, value, section):
+    index = ''
+    if section == 'BANDS':
+        index = '[band_index]'
+    if section == 'CELL':
+        return ''
 
-def format_func_line(key, value):
     if (type(value) == str):
+        if (key == "band"):
+            return f"            if (strstr(key, \"{key}\") != NULL) {{\n                band_index = atoi(key + 4);\n                set_string(c_{key}, value);\n            }}"
         return f"            if (strstr(key, \"{key}\") != NULL) {{\n                set_string(c_{key}, value);\n            }}"
     elif (type(value) == int):
-        return f"            if (strstr(key, \"{key}\") != NULL) {{\n                c_{key} = atoi(value);\n            }}"
+        return f"            if (strstr(key, \"{key}\") != NULL) {{\n                c_{key}{index} = atoi(value);\n            }}"
     elif (type(value) == float):
-        return f"            if (strstr(key, \"{key}\") != NULL) {{\n                c_{key} = atof(value);\n            }}"
+        return f"            if (strstr(key, \"{key}\") != NULL) {{\n                c_{key}{index} = atof(value);\n            }}"
     elif (type(value) == bool):
-        return f"            if (strstr(key, \"{key}\") != NULL) {{\n                strip_single_quotes(value);\n                if (strcmp(value, \"true\") == 0) {{\n                    c_{key} = true;\n                }} else {{\n                    c_{key} = false;\n                }}\n            }}"
+        return f"            if (strstr(key, \"{key}\") != NULL) {{\n                strip_single_quotes(value);\n                if (strcmp(value, \"true\") == 0) {{\n                    c_{key}{index} = true;\n                }} else {{\n                    c_{key}{index} = false;\n                }}\n            }}"
     elif (type(value) == list):
         if (type(value[0]) == int):
             return f"            if (strstr(key, \"{key}\") != NULL) {{\n                sscanf(line, \" {key} = %d %d %d\", &c_{key}[0], &c_{key}[1], &c_{key}[2]);\n            }}"
         else:
+            print("Key, value, section: ", key, value, section)
             print("Error: Unsupported type in config file (list section)")
             exit(1)
     else:
         print("Error: Unsupported type in config file")
         exit(1)
 
-def format_header_line(key, value):
+def format_header_line(key, value, section):
+    index = ''
+    if section == 'BANDS':
+        index = '[50]'
     if (type(value) == str):
+        if (key == "band"):
+            return f"extern char c_{key}[50][50]; char** get_{key}();"
         return f"extern char c_{key}[50]; char* get_{key}();"
     elif (type(value) == int):
-        return f"extern int c_{key};"
+        return f"extern int c_{key}{index};"
     elif (type(value) == float):
-        return f"extern float c_{key};"
+        return f"extern float c_{key}{index};"
     elif (type(value) == bool):
-        return f"extern bool c_{key};"
+        return f"extern bool c_{key}{index};"
     elif (type(value) == list):
         if (type(value[0]) == int):
-            return f"extern int c_{key}[3];"
+            return f"extern int c_{key}{index}[3];"
         elif (type(value[0]) == float):
-            return f"extern float c_{key}[3];"
+            return f"extern float c_{key}{index}[3];"
         elif (type(value[0]) == list):
             if (type(value[0][0]) == int):
-                return f"extern int c_{key}[3][3];"
+                return f"extern int c_{key}{index}[3][3];"
             elif (type(value[0][0]) == float):
-                return f"extern float c_{key}[3][3];"
+                return f"extern float c_{key}{index}[3][3];"
         else:
             print("Error: Unsupported type in config file (list section)")
             exit(1)
@@ -127,68 +135,39 @@ def format_header_line(key, value):
         exit(1)
 
 
-def get_new_func_lines(ALL):
-    new_lines = []
-    for section in ALL:
-        new_lines.append('\n            //' + '[' + section + ']\n')
-        for key, value in ALL[section].items():
-            if (section == "CELL"): 
-                continue
-            new_lines.append(format_func_line(key, value) + '\n')
-        new_lines.append('')
-    return new_lines
-
-def get_new_header_lines(ALL):
+def get_new_lines(ALL, func):
     new_lines = []
     for section in ALL:
         new_lines.append('\n//' + '[' + section + ']\n')
         for key, value in ALL[section].items():
-            new_lines.append(format_header_line(key, value) + '\n')
+            new_lines.append(func(key, value, section) + '\n')
         new_lines.append('')
     return new_lines
 
-def add_lines_to_vars(ALL, file_path):
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-    
-    lines = remove_lines_between_phrases(lines, start_phrase, end_phrase)
-    new_lines = get_new_var_lines(ALL)
-    updated_lines = add_lines_between_phrases(lines, new_lines, start_phrase, end_phrase)
-    
-    # Write the modified content back to the file
-    with open(file_path, 'w') as file:
-        file.writelines(updated_lines)
-
-def add_lines_to_funcs(ALL, file_path):
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-    lines = remove_lines_between_phrases(lines, start_func_phrase, end_func_phrase)
-    new_lines = get_new_func_lines(ALL)
-    updated_lines = add_lines_between_phrases(lines, new_lines, start_func_phrase, end_func_phrase)
-
-    # Write the modified content back to the file
-    with open(file_path, 'w') as file:
-        file.writelines(updated_lines)
-
-def add_lines_header(ALL, file_path):
+def add_lines(ALL, file_path, start_phrase, end_phrase, func):
     with open(file_path, 'r') as file:
         lines = file.readlines()
     lines = remove_lines_between_phrases(lines, start_phrase, end_phrase)
-    new_lines = get_new_header_lines(ALL)
+    new_lines = get_new_lines(ALL, func)
     updated_lines = add_lines_between_phrases(lines, new_lines, start_phrase, end_phrase)
 
     # Write the modified content back to the file
     with open(file_path, 'w') as file:
         file.writelines(updated_lines)
 
+start_phrase = '// Global Variables are listed below, with their default values'
+end_phrase = '// End of Global Variables'
+
+start_func_phrase = '            // Read in variable values from the config file'
+end_func_phrase = '            // End of variable reading'
 
 def write_c_header(ALL):
     file_path = 'load/c_config.h'
-    add_lines_header(ALL, file_path)
+    add_lines(ALL, file_path, start_phrase, end_phrase, format_header_line)
     print(f"Successfully updated the file '{file_path}'.")
 
 def write_c(ALL):
     file_path = 'load/c_config.c'
-    add_lines_to_vars(ALL, file_path)
-    add_lines_to_funcs(ALL, file_path)
+    add_lines(ALL, file_path, start_phrase, end_phrase, format_var_line)
+    add_lines(ALL, file_path, start_func_phrase, end_func_phrase, format_func_line)
     print(f"Successfully updated the file '{file_path}'.")

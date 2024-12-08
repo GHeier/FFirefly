@@ -33,6 +33,7 @@ extern string datfile_out;
 extern string interaction;
 extern int dimension;
 extern int ibrav;
+extern int nbnd;
 extern float fermi_energy;
 extern float onsite_U;
 
@@ -46,8 +47,9 @@ extern float cell[3][3];
 extern float brillouin_zone[3][3];
 
 //[BANDS]
-extern string bands;
-extern float eff_mass;
+extern string band[50];
+
+extern float eff_mass[50];
 
 //[SUPERCONDUCTOR]
 extern bool FS_only;

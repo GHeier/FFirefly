@@ -30,6 +30,7 @@ char c_interaction[50] = "none";
 char* get_interaction() {return c_interaction;}
 int c_dimension = 3;
 int c_ibrav = 0;
+int c_nbnd = 1;
 float c_fermi_energy = 0.0;
 float c_onsite_U = 0.0;
 
@@ -43,9 +44,9 @@ float c_cell[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
 float c_brillouin_zone[3][3] = {{6.283185307179586, 0.0, 0.0}, {0.0, 6.283185307179586, 0.0}, {0.0, 0.0, 6.283185307179586}};
 
 //[BANDS]
-char c_bands[50] = "fermi_gas";
-char* get_bands() {return c_bands;}
-float c_eff_mass = 1.0;
+char c_band[50][50];
+char** get_band() {return (char**)c_band;}
+float c_eff_mass[50];
 
 //[SUPERCONDUCTOR]
 bool c_FS_only = true;
@@ -68,7 +69,7 @@ void get_dimensions() {
     }
 }
 
-//void cell_to_BZ(const float cell[3][3], float brillouin_zone[3][3]);
+void cell_to_BZ(const float cell[3][3], float brillouin_zone[3][3]);
 void strip_single_quotes(char *str) {
     int i, j = 0;
     for (i = 0; str[i] != '\0'; i++) {
@@ -85,12 +86,19 @@ void set_string(char *dest, const char *src) {
     dest[size - 1] = '\0';  // Ensure null-termination
 }
 
+void load_default_band_values() {
+    strcpy(c_band[0], "fermi_gas");
+    c_eff_mass[0] = 1.0;
+}
+
+
 void load_c_config() {
     char line[256];
     char key[50];
     char value[50];
     char section[50];
     int row = 0;
+    int band_index = 0;
     while (fgets(line, sizeof(line), stdin) != NULL) {
         if (strstr(line, "[CELL]") != NULL) {
             set_string(section, "CELL");
@@ -111,7 +119,7 @@ void load_c_config() {
 
             // Read in variable values from the config file
 
-            //[CONTROL]
+//[CONTROL]
             if (strstr(key, "category") != NULL) {
                 set_string(c_category, value);
             }
@@ -134,7 +142,7 @@ void load_c_config() {
                 set_string(c_datfile_out, value);
             }
 
-            //[SYSTEM]
+//[SYSTEM]
             if (strstr(key, "interaction") != NULL) {
                 set_string(c_interaction, value);
             }
@@ -144,6 +152,9 @@ void load_c_config() {
             if (strstr(key, "ibrav") != NULL) {
                 c_ibrav = atoi(value);
             }
+            if (strstr(key, "nbnd") != NULL) {
+                c_nbnd = atoi(value);
+            }
             if (strstr(key, "fermi_energy") != NULL) {
                 c_fermi_energy = atof(value);
             }
@@ -151,7 +162,7 @@ void load_c_config() {
                 c_onsite_U = atof(value);
             }
 
-            //[MESH]
+//[MESH]
             if (strstr(key, "k_mesh") != NULL) {
                 sscanf(line, " k_mesh = %d %d %d", &c_k_mesh[0], &c_k_mesh[1], &c_k_mesh[2]);
             }
@@ -162,17 +173,20 @@ void load_c_config() {
                 c_w_pts = atoi(value);
             }
 
-            //[CELL]
+//[CELL]
 
-            //[BANDS]
-            if (strstr(key, "bands") != NULL) {
-                set_string(c_bands, value);
+
+
+//[BANDS]
+            if (strstr(key, "band") != NULL) {
+                band_index = atoi(key + 4);
+                set_string(c_band, value);
             }
             if (strstr(key, "eff_mass") != NULL) {
-                c_eff_mass = atof(value);
+                c_eff_mass[band_index] = atof(value);
             }
 
-            //[SUPERCONDUCTOR]
+//[SUPERCONDUCTOR]
             if (strstr(key, "FS_only") != NULL) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
@@ -191,7 +205,7 @@ void load_c_config() {
                 c_frequency_pts = atoi(value);
             }
 
-            //[RESPONSE]
+//[RESPONSE]
             if (strstr(key, "dynamic") != NULL) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
@@ -207,7 +221,8 @@ void load_c_config() {
             }
         }
     }
-    //cell_to_BZ(c_cell, c_brillouin_zone);
+    c_nbnd = band_index;
+    cell_to_BZ(c_cell, c_brillouin_zone);
     get_dimensions();
     printf("Loaded Config\n");
 }

@@ -25,6 +25,7 @@ ALL = {
         'interaction': 'none',
         'dimension': 3,
         'ibrav': 0,
+        'nbnd': 1,
         'fermi_energy': 0.0,
         'onsite_U': 0.0
     },
@@ -38,7 +39,7 @@ ALL = {
         'brillouin_zone': [[2 * np.pi, 0.0, 0.0], [0.0, 2 * np.pi, 0.0], [0.0, 0.0, 2 * np.pi]]
     },
     'BANDS': {
-        'bands': 'fermi_gas',
+        'band': 'fermi_gas',
         'eff_mass': 1.0
     },
     'SUPERCONDUCTOR': {
