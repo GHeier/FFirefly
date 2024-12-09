@@ -27,7 +27,7 @@ def get_file_name(potential, n, mu, dim, U, wc, FS_only):
     return file
 
 if __name__ == '__main__':
-    potential = "scalapino"
+    potential = "FLEX"
     dim = 2
     n = 20
     mu = -1.0

@@ -69,7 +69,7 @@ def plot_V_terms_3D():
         V.append( Vs1(v1) + Vs2(v2) )
 
     img = ax.scatter(chi_plus, chi_minus, V)
-    plt.title("Plotting Scalapino potential")
+    plt.title("Plotting FLEX potential")
     plt.xlabel("chi_add")
     plt.ylabel("chi_sub")
     plt.show()

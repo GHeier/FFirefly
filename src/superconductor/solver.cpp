@@ -19,6 +19,7 @@
 #include "matrix_creation.h"
 #include "../algorithms/linear_algebra.h"
 #include "frequency_inclusion.hpp"
+#include "../hamiltonian/potential.h"
 
 /*
  * f_singlet is the part of the linearized BCS gap equation:
@@ -46,7 +47,7 @@ float f_singlet_integral(float T) {
 float f(vector<Vec> k, float T, const unordered_map<float, vector<vector<vector<float>>> > &cube_map) {
     cout << "\nTemperature point: " << T << endl;
     Matrix P(k.size());
-    create_P(P, k, T, cube_map);
+    create_P(P, k);
     float f_integrated = f_singlet_integral(T);
 
     vector<Eigenvector> answers = power_iteration(P, 0.0001);
@@ -87,7 +88,7 @@ float get_Tc(vector<Vec> k, const unordered_map<float, vector<vector<vector<floa
 float get_DOS(vector<Vec> &FS) {
     float sum = 0;
     for (auto k : FS) {
-        sum += k.area / vp(k);
+        sum += k.area / vp(k.n, k);
     }
     sum /= pow(2*M_PI, dim);
     printf("Density of States: %.5f\n", sum);
@@ -98,7 +99,7 @@ float coupling_calc(vector<Vec> &FS, float T) {
     cout << "Calculating Coupling Constant...\n";
     int size = FS.size();
     float DOS = get_DOS(FS);
-    auto cube_map = chi_cube_freq(T, mu);
+    //auto cube_map = chi_cube_freq(T, mu);
     //auto cube = chi_cube(T, mu, DOS, 0);
     float f_integrated = f_singlet_integral(T);
 
@@ -110,10 +111,10 @@ float coupling_calc(vector<Vec> &FS, float T) {
         Vec k1 = FS[i];
         for (int j = 0; j < size; j++) {
             Vec k2 = FS[j];
-            //lambda += - k1.area * k2.area / vp(k1) * wave(k1) * V(k1, k2, T, cube) / vp(k2) * wave(k2);
-            lambda += V(k1, k2, 0, T, cube_map)*k1.area*k2.area;
+            //lambda += - k1.area * k2.area / vp(k1.n, k1) * wave(k1) * V(k1, k2, T, cube) / vp(k2.n, k2) * wave(k2);
+            lambda += V(k1, k2)*k1.area*k2.area;
         }
-        normalization += pow(wave(k1),2) * k1.area / vp(k1);
+        normalization += pow(wave(k1),2) * k1.area / vp(k1.n, k1);
     }
     cout << "Normalization: " << normalization << endl;
     cout << "Lambda: " << lambda << endl;

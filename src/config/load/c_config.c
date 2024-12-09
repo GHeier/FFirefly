@@ -98,7 +98,7 @@ void load_c_config() {
     char value[50];
     char section[50];
     int row = 0;
-    int band_index = 0;
+    int n = 0;
     while (fgets(line, sizeof(line), stdin) != NULL) {
         if (strstr(line, "[CELL]") != NULL) {
             set_string(section, "CELL");
@@ -179,11 +179,11 @@ void load_c_config() {
 
 //[BANDS]
             if (strstr(key, "band") != NULL) {
-                band_index = atoi(key + 4);
-                set_string(c_band, value);
+                n = atoi(key + 4);
+                set_string(c_band[n], value);
             }
             if (strstr(key, "eff_mass") != NULL) {
-                c_eff_mass[band_index] = atof(value);
+                c_eff_mass[n] = atof(value);
             }
 
 //[SUPERCONDUCTOR]
@@ -221,7 +221,7 @@ void load_c_config() {
             }
         }
     }
-    c_nbnd = band_index;
+    c_nbnd = n;
     cell_to_BZ(c_cell, c_brillouin_zone);
     get_dimensions();
     printf("Loaded Config\n");

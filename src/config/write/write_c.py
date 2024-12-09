@@ -78,13 +78,13 @@ def format_var_line(key, value, section):
 def format_func_line(key, value, section):
     index = ''
     if section == 'BANDS':
-        index = '[band_index]'
+        index = '[n]'
     if section == 'CELL':
         return ''
 
     if (type(value) == str):
         if (key == "band"):
-            return f"            if (strstr(key, \"{key}\") != NULL) {{\n                band_index = atoi(key + 4);\n                set_string(c_{key}, value);\n            }}"
+            return f"            if (strstr(key, \"{key}\") != NULL) {{\n                n = atoi(key + 4);\n                set_string(c_{key}{index}, value);\n            }}"
         return f"            if (strstr(key, \"{key}\") != NULL) {{\n                set_string(c_{key}, value);\n            }}"
     elif (type(value) == int):
         return f"            if (strstr(key, \"{key}\") != NULL) {{\n                c_{key}{index} = atoi(value);\n            }}"

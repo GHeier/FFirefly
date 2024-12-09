@@ -58,30 +58,17 @@ extern "C" void find_gap_function() {
     //T = get_Tc(FS);
     printf("Temperature: %.5f \n", T);
 
-    unordered_map <float, vector<vector<vector<float>>>> cube_freq_map;
     // Calculates the susceptibility matrix if it's going to be used in the potential
     // Otherwise it's passed as empty
-    if (potential_name.find("scalapino") != string::npos) {
-        if (not FS_only) cube_freq_map = chi_cube_freq(T, mu);
-        else {
-            auto cube = chi_cube(T, mu, 0, "Chi Cube 1 / 1");
-            cube_freq_map.insert(pair<float, vector<vector<vector<float>>>>(0, cube));
-        }
-    }
 
 
     int m_size = FS.size();
     if (not FS_only) m_size = matrix_size_from_freq_FS(freq_FS);
 
     Matrix P(m_size);
-    if (FS_only && potential_name != "save") {
-        create_P(P, FS, T, cube_freq_map);
-        float f = f_singlet_integral(T);
-        cout << "F-integral value: " << f << endl;
-    }
-    else if (potential_name != "save"){
-        create_P_freq(P, freq_FS, T, cube_freq_map);
-    }
+    create_P(P, FS);
+    float f = f_singlet_integral(T);
+    cout << "F-integral value: " << f << endl;
 
     cout << "Finding Eigenspace..." << endl;
     Eigenvector *solutions = new Eigenvector[num_eigenvalues_to_save];

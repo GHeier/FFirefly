@@ -1,6 +1,4 @@
 #pragma once
-#ifndef FREQUENCY_INCLUSION_H
-#define FREQUENCY_INCLUSION_H
 
 #include <fstream>
 #include <complex>
@@ -124,4 +122,3 @@ MatCube create_matsubara_cube(float T, float MU, int m_pts, int w_pts, float w_m
  */
 float calculate_chi_from_cube_map(const unordered_map<float, vector<vector<vector<float>>>> &chi_cube_map, Vec q, float w);
 
-#endif

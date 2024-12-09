@@ -43,7 +43,7 @@ string get_SC_filename() {
     if (FS_only) bcs = "_FS_only";
     std::ostringstream out;
     out.precision(1);
-    out << std::fixed << "data/" + potential_name << dim << "D" 
+    out << std::fixed << "data/" + interaction << dim << "D" 
         << "_mu=" << mu << "_U=" << U << "_wc=" << wc 
         << "_n=" << n << bcs << ".dat";
     string file_name = std::move(out).str();

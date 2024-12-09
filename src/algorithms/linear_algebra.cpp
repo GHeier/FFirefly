@@ -13,11 +13,9 @@
 
 #include <math.h>
 #include <vector>
-#include <unordered_map>
 #include <openblas/lapacke.h>
 #include <boost/functional/hash.hpp>
 
-//#include <lambda_lanczos/lambda_lanczos.hpp>
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/quadrature/gauss.hpp>
 

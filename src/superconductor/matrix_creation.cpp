@@ -16,15 +16,15 @@
 using namespace std;
 
 // Create V matrix
-// Picks the potential based on the global variable "potential_name"
-void create_P(Matrix &P, vector<Vec> &k, float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube2) {
+// Picks the potential based on the global variable "interaction"
+void create_P(Matrix &P, vector<Vec> &k) {
     cout << "Creating P Matrix\n";
     for (int i = 0; i < P.size; i++) {
         Vec k1 = k[i];
         #pragma omp parallel for
         for (int j = 0; j < P.size; j++) {
             Vec k2 = k[j];
-            P(i,j) = (float)(-pow(k1.area/vp(k1),0.5) * V(k1, k2, 0, T, chi_cube2) * pow(k2.area/vp(k2),0.5));
+            P(i,j) = (float)(-pow(k1.area/vp(k1.n, k1),0.5) * V(k1, k2) * pow(k2.area/vp(k2.n, k2),0.5));
             assert(isnan(P(i,j)) == false);
         }
         progress_bar(1.0 * i / P.size);
@@ -54,14 +54,14 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, float T, const unordered_m
                 #pragma omp parallel for
                 for (int y = 0; y < k[x].size(); y++) {
                     Vec k2 = k[x][y];
-                    float d1 = pow(k1.area/vp(k1),0.5); 
-                    float d2 = pow(k2.area/vp(k2),0.5); 
+                    float d1 = pow(k1.area/vp(k1.n, k1),0.5); 
+                    float d2 = pow(k2.area/vp(k2.n, k2),0.5); 
                     // f * d_epsilon
                     float fde1 = f_singlet(wc * points[l-1][i], T) * weights[l-1][i];
                     float fde2 = f_singlet(wc * points[l-1][x], T) * weights[l-1][x];
                     float w = wc * (points[l-1][x] - points[l-1][i]);
 
-                    P(ind1 + j,ind2 + y) = (float)(- d1 * d2 * pow(fde1*fde2,0.5) * V(k1, k2, w, T, chi_cube2)); 
+                    P(ind1 + j,ind2 + y) = (float)(- d1 * d2 * pow(fde1*fde2,0.5) * V(k1, k2)); 
                 }
             }
             string message = "Portion " + to_string(i) + " of " + to_string(k.size());
@@ -87,7 +87,7 @@ void vector_to_wave(vector<Vec> &FS, Eigenvector *vectors) {
     for (unsigned int i = 0; i < num_eigenvalues_to_save; i++) {
         for (unsigned int j = 0; j < vectors[i].size; j++) {
             Vec k = FS[j];
-            vectors[i][j] /= pow(k.area/vp(k),0.5);
+            vectors[i][j] /= pow(k.area/vp(k.n, k),0.5);
         }
     }
 }
@@ -99,7 +99,7 @@ void freq_vector_to_wave(vector<vector<Vec>> &freq_FS, Eigenvector *vectors) {
         for (unsigned int i = 0; i < freq_FS.size(); i++) {
             for (unsigned int j = 0; j < freq_FS[i].size(); j++) {
                 Vec k = freq_FS[i][j];
-                vectors[x][ind] /= pow(k.area/vp(k),0.5);
+                vectors[x][ind] /= pow(k.area/vp(k.n, k),0.5);
                 ind++;
             }
         }

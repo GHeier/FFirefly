@@ -7,6 +7,7 @@
 #include "../../objects/vec.h"
 
 using namespace std;
+extern int dim;
 extern int n;
 extern int m;
 extern int l;
@@ -62,7 +63,6 @@ extern bool dynamic;
 // End of Global Variables
 
 void load_cpp_config();
-void init_config(float &mu, float &U, float &t, float &tn, float &w_D, float new_mu, float new_U, float new_t, float new_tn, float new_w_D);
-void change_global_constant(float &a, float b);
+void set_global_constant(float &a, float b);
 
 #endif

@@ -12,13 +12,14 @@
 #include "vec.h"
 #include "../config/load/cpp_config.h"
 
-Vec::Vec(float _x, float _y, float _z, float _w, float _area, int _dimension) {
+Vec::Vec(float _x, float _y, float _z, float _w, float _area, int _dimension, int _n) {
     dimension = _dimension;
     area = _area;
     x = _x;
     y = _y;
     z = _z;
     w = _w;
+    n = _n;
 }
 
 float& Vec::operator()(int i) {

@@ -16,8 +16,8 @@ float weights_4th[5] = {0.236927, 0.478629, 0.568889, 0.478629, 0.236927}; float
 float *weights[5] = {w0, w1, w2, w3, w4};
 
 float points_0th[1] = {0}; float *p0 = points_0th;
-float points_1st[2] = {-1/pow(3,0.5), 1/pow(3,0.5)}; float *p1 = points_1st;
-float points_2nd[3] = {-pow(3/5,0.5), 0, pow(3/5,0.5)}; float *p2 = points_2nd;
+float points_1st[2] = {-1/(float)pow(3,0.5), 1/(float)pow(3,0.5)}; float *p1 = points_1st;
+float points_2nd[3] = {-(float)pow(3/5,0.5), 0, (float)pow(3/5,0.5)}; float *p2 = points_2nd;
 float points_3rd[4] = {-0.861136, -0.339981, 0.339981, 0.861136}; float *p3 = points_3rd;
 float points_4th[5] = {-0.90618, -0.538469, 0, 0.538469, 0.90618}; float *p4 = points_4th;
 

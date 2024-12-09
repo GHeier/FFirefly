@@ -22,8 +22,9 @@ class Vec {
         float x, y, z, w;
         float area = 0;
         int dimension = 3;
+        int n = 1;
 
-        Vec(float _x = 0, float _y = 0, float _z = 0, float _w = 0, float _area = 0, int _dimension = 3);
+        Vec(float _x = 0, float _y = 0, float _z = 0, float _w = 0, float _area = 0, int _dimension = 3, int _n = 1);
         float& operator()(int i);
         float norm();
 

@@ -93,7 +93,7 @@ void save_potential_vs_q(vector<Vec> &FS, Matrix &P, string filename) {
         Vec k1 = FS[i];
         for (unsigned int j = 0; j < FS.size(); j++) {
             Vec k2 = FS[j];
-            float V = -P(i,j) * pow(vp(k2)/k2.area,0.5) * pow(vp(k1)/k1.area,0.5);
+            float V = -P(i,j) * pow(vp(k2.n, k2)/k2.area,0.5) * pow(vp(k1.n, k1)/k1.area,0.5);
             Vec q = k1 - k2; 
             file << q << V << endl;
         }
@@ -102,21 +102,21 @@ void save_potential_vs_q(vector<Vec> &FS, Matrix &P, string filename) {
     printf("Saved Potential to %s\n", filename.c_str());
 }
 
-void save_chi_vs_q(const vector<vector<vector<float>>> &cube, vector<Vec> &FS, string filename) {
-    printf("Saving Susceptibility...\n");
-    ofstream file(filename);
-    for (unsigned int i = 0; i < FS.size(); i++) {
-        Vec k1 = FS[i];
-        for (unsigned int j = 0; j < FS.size(); j++) {
-            Vec k2 = FS[j];
-            Vec q = k1 - k2;
-            float chi = calculate_chi_from_cube(cube, q);
-            file << q << chi << endl;
-        }
-    }
-    file.close();
-    printf("Saved Susceptibility to %s\n", filename.c_str());
-}
+//void save_chi_vs_q(const vector<vector<vector<float>>> &cube, vector<Vec> &FS, string filename) {
+//    printf("Saving Susceptibility...\n");
+//    ofstream file(filename);
+//    for (unsigned int i = 0; i < FS.size(); i++) {
+//        Vec k1 = FS[i];
+//        for (unsigned int j = 0; j < FS.size(); j++) {
+//            Vec k2 = FS[j];
+//            Vec q = k1 - k2;
+//            float chi = calculate_chi_from_cube(cube, q);
+//            file << q << chi << endl;
+//        }
+//    }
+//    file.close();
+//    printf("Saved Susceptibility to %s\n", filename.c_str());
+//}
 
 void save_matsubara_cube(const MatCube &cube, float wmin, float wmax, string filename) {
     printf("Saving Matsubara Cube...\n");

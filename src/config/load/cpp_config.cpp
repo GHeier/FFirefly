@@ -56,6 +56,7 @@ int frequency_pts;
 //[RESPONSE]
 bool dynamic;
 // End of Global Variables 
+
 int n = k_mesh[0];
 int m = q_mesh[0];
 int l = 5;
@@ -67,6 +68,7 @@ float t = 1.0;
 float tn = 0.0;
 float tnn = 0.0;
 float k_max = M_PI;
+int dim = dimension;
 
 void load_cpp_config() {
     // Load the C++ configuration file
@@ -118,15 +120,7 @@ void load_cpp_config() {
     }
 }
 
-void init_config(float &mu, float &U, float &t, float &tn, float &wc, float new_mu, float new_U, float new_t, float new_tn, float new_wc) {
-    mu = new_mu;
-    U = new_U;
-    t = new_t;
-    tn = new_tn;
-    wc = new_wc;
-}
-
-void change_global_constant(float &a, float b) {
+void set_global_constant(float &a, float b) {
     a = b;
 }
 
