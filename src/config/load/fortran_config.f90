@@ -30,6 +30,8 @@ module confighub
     integer :: nbnd
     real(c_float), bind(C, name="c_fermi_energy") :: c_fermi_energy
     real :: fermi_energy
+    real(c_float), bind(C, name="c_Temperature") :: c_Temperature
+    real :: Temperature
     real(c_float), bind(C, name="c_onsite_U") :: c_onsite_U
     real :: onsite_U
 
@@ -133,6 +135,11 @@ module confighub
             use iso_c_binding
             type(c_ptr) :: get_fermi_energy
         end function get_fermi_energy
+
+        function get_Temperature() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_Temperature
+        end function get_Temperature
 
         function get_onsite_U() bind(C)
             use iso_c_binding
@@ -250,6 +257,7 @@ contains
         ibrav = c_ibrav
         nbnd = c_nbnd
         fermi_energy = c_fermi_energy
+        Temperature = c_Temperature
         onsite_U = c_onsite_U
 
 ![MESH]

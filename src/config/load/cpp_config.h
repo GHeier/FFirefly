@@ -36,6 +36,7 @@ extern int dimension;
 extern int ibrav;
 extern int nbnd;
 extern float fermi_energy;
+extern float Temperature;
 extern float onsite_U;
 
 //[MESH]

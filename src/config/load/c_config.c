@@ -32,6 +32,7 @@ int c_dimension = 3;
 int c_ibrav = 0;
 int c_nbnd = 1;
 float c_fermi_energy = 0.0;
+float c_Temperature = 0.0;
 float c_onsite_U = 0.0;
 
 //[MESH]
@@ -157,6 +158,9 @@ void load_c_config() {
             }
             if (strstr(key, "fermi_energy") != NULL) {
                 c_fermi_energy = atof(value);
+            }
+            if (strstr(key, "Temperature") != NULL) {
+                c_Temperature = atof(value);
             }
             if (strstr(key, "onsite_U") != NULL) {
                 c_onsite_U = atof(value);

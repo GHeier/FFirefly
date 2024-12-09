@@ -19,6 +19,7 @@ dimension = 0
 ibrav = 0
 nbnd = 0
 fermi_energy = 0.0
+Temperature = 0.0
 onsite_U = 0.0
 
 #[MESH]
@@ -83,6 +84,8 @@ def load_config():
     nbnd = ctypes.c_int.in_dll(lib, 'c_nbnd').value
     global fermi_energy
     fermi_energy = ctypes.c_double.in_dll(lib, 'c_fermi_energy').value
+    global Temperature
+    Temperature = ctypes.c_double.in_dll(lib, 'c_Temperature').value
     global onsite_U
     onsite_U = ctypes.c_double.in_dll(lib, 'c_onsite_U').value
 

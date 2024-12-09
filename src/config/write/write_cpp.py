@@ -1,4 +1,4 @@
-from write_c import add_lines
+from .write_c import add_lines
 def format_var_line(key, value, section):
     index = ''
     if section == 'BANDS':

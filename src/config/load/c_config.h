@@ -25,6 +25,7 @@ extern int c_dimension;
 extern int c_ibrav;
 extern int c_nbnd;
 extern float c_fermi_energy;
+extern float c_Temperature;
 extern float c_onsite_U;
 
 //[MESH]

@@ -7,8 +7,6 @@
 # Default values are the values used when the variable is not defined in the input file
 # Cannot pass strings and bools through arrays
 
-import os
-import sys
 import numpy as np
 
 ALL = {
@@ -27,6 +25,7 @@ ALL = {
         'ibrav': 0,
         'nbnd': 1,
         'fermi_energy': 0.0,
+        'Temperature': 0.0,
         'onsite_U': 0.0
     },
     'MESH': {
@@ -54,14 +53,10 @@ ALL = {
 }
 
 
-sys.path.append(os.path.join(os.path.dirname(__file__), 'write'))
-from write_c import *
-from write_cpp import *
-from write_f90 import *
-from write_py import *
-write_c(ALL)
-write_c_header(ALL)
-write_cpp(ALL)
-write_cpp_header(ALL)
-write_f90(ALL)
-write_py(ALL)
+from write import write_c, write_cpp, write_f90, write_py
+write_c.write_c(ALL)
+write_c.write_c_header(ALL)
+write_cpp.write_cpp(ALL)
+write_cpp.write_cpp_header(ALL)
+write_f90.write_f90(ALL)
+write_py.write_py(ALL)

@@ -1,4 +1,4 @@
-from write_c import add_lines
+from .write_c import add_lines
 start_phrase = '    ! Global variables'
 end_phrase = '    ! End of global variables'
 start_func_phrase = '    ! Global functions'

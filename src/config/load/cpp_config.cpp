@@ -31,6 +31,7 @@ int dimension;
 int ibrav;
 int nbnd;
 float fermi_energy;
+float Temperature;
 float onsite_U;
 
 //[MESH]
@@ -88,6 +89,7 @@ void load_cpp_config() {
     ibrav = c_ibrav;
     nbnd = c_nbnd;
     fermi_energy = c_fermi_energy;
+    Temperature = c_Temperature;
     onsite_U = c_onsite_U;
 
 //[MESH]
