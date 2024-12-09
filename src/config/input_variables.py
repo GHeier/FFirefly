@@ -58,8 +58,10 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'write'))
 from write_c import *
 from write_cpp import *
 from write_f90 import *
+from write_py import *
 write_c(ALL)
 write_c_header(ALL)
 write_cpp(ALL)
 write_cpp_header(ALL)
 write_f90(ALL)
+write_py(ALL)
