@@ -6,6 +6,9 @@
  * @author Griffin Heier
  */
 
+#include <iomanip>
+#include <sstream>
+#include <filesystem>
 #include <iostream>
 #include <fstream>
 #include <cassert>
@@ -28,6 +31,8 @@ using std::endl;
 using std::cout;
 using std::vector;
 using std::string;
+
+namespace fs = std::filesystem;
 
 void save(string file_name, float T, vector<Vec> FS, Eigenvector* solutions) {
     std::ofstream file(file_name);
@@ -81,9 +86,69 @@ void save_with_freq(string file_name, float T, vector<vector<Vec>> &freq_FS, Eig
     }
 }
 
+
+
+
+
+void save_FS(const vector<Vec>& FS, int iteration, float mu) {
+    // completely unnecessary check for existence of FS directory
+    if (!fs::exists("FS")) {
+        fs::create_directory("FS");
+    }
+
+    // cleaning out fs directory on the first iteration
+    if (iteration == 0) {
+        for (const auto& entry : fs::directory_iterator("FS")) {
+            try {
+                fs::remove(entry);
+            } catch (const fs::filesystem_error& e) {
+                cerr << "Error deleting file: " << entry.path() << " - " << e.what() << endl;
+            }
+        }
+    }
+
+    // naming file. include mu for graphing func later
+
+    int mu_prec = 5; // float precision for mu n filename
+
+    ostringstream filename;
+    filename << "FS/FS_prec_" << mu_prec << "_mu_" << fixed << setprecision(mu_prec) << mu << "_iter_" << iteration << ".dat";
+
+
+    std::ofstream file(filename.str());
+    if (!file.is_open()) {
+        std::cerr << "Error opening file: " << filename.str() << std::endl;
+        return;
+    }
+
+    // write data
+    for (Vec k : FS) {
+        file << k << endl;
+    }
+    
+    file.close();
+}
+
+
 void save_FS(vector<Vec> FS) {
+    // completely unnecessary check for existence of FS directory
+    if (!fs::exists("FS")) {
+        fs::create_directory("FS");
+    }
+
+    // cleaning out fs directory on the first iteration
+    for (const auto& entry : fs::directory_iterator("FS")) {
+            try {
+                fs::remove(entry);
+            } catch (const fs::filesystem_error& e) {
+                cerr << "Error deleting file: " << entry.path() << " - " << e.what() << endl;
+            }
+        }
+
     std::ofstream file;
-    file.open("FS.dat");
+    file.open("FS/FS.dat"); // for now manually delete the FS files on succesive iterations
+    
+    // writing file
     for (Vec k : FS)
         file << k << endl;
 }

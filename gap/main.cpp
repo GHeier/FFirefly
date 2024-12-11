@@ -58,7 +58,7 @@ float get_max_eigenvalue() {
 
 
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
-    save_FS(layer);
+    save_FS(layer, iteration, mu);
     float DOS = get_DOS(FS);
     cout << "Density of States: " << DOS << endl;
 
@@ -184,7 +184,14 @@ float get_max_eigenvalue() {
 int main() {
 	int num_iters = 20;
 	for (int i = 0; i < num_iters; i++) {
+		
+		int iteration = i; 
+		
 		float new_mu = 0 - 4.0 * i / num_iters;
+		
+		mu = new_mu;
+
+
 		change_global_constant(mu, new_mu);
 		float eig = get_max_eigenvalue();
 		printf("Iteration %i | Eigenvalue: %.4f\n", i, eig);

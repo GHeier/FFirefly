@@ -13,6 +13,9 @@ using std::endl;
 using std::cout;
 using std::vector;
 
+extern int iteration;
+extern float mu;
+
 /**
  * @brief Save the Delta(kx, ky, kz)'s and their eigenvalues to the file
  */
@@ -25,7 +28,7 @@ void save_with_freq(string file_name, float T, vector<vector<Vec>> &freq_FS, Eig
 /**
  * @brief Save the Fermi surface to the file
  */
-void save_FS(vector<Vec> FS);
+void save_FS(vector<Vec> FS, int iteration, float mu);
 /**
  * @brief Save the potential vs q to the file
  */
