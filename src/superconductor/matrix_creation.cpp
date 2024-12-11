@@ -3,15 +3,15 @@
 #include <math.h>
 #include <cassert>
 
-#include "solver.h"
-#include "matrix_creation.h"
-#include "utilities.h"
-#include "../hamiltonian/potential.h"
-#include "../hamiltonian/band_structure.h"
-#include "../algorithms/integration.h"
+#include "solver.hpp"
+#include "matrix_creation.hpp"
+#include "utilities.hpp"
+#include "../hamiltonian/potential.hpp"
+#include "../hamiltonian/band_structure.hpp"
+#include "../algorithms/integration.hpp"
 #include "../objects/matrix.hpp"
-#include "../objects/vec.h"
-#include "../config/load/cpp_config.h"
+#include "../objects/vec.hpp"
+#include "../config/load/cpp_config.hpp"
 
 using namespace std;
 

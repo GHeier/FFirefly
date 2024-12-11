@@ -1,16 +1,14 @@
 /**
- * @file vec.cpp
+ * This file contains the implementation of the Vec class
  *
- * @brief This file contains the implementation of the Vec class
- *
- * @author Griffin Heier
+ * Author: Griffin Heier
  */
 
 #include <vector>
 #include <string>
 #include <math.h>
-#include "vec.h"
-#include "../config/load/cpp_config.h"
+#include "vec.hpp"
+#include "../config/load/cpp_config.hpp"
 
 Vec::Vec(float _x, float _y, float _z, float _w, float _area, int _dimension, int _n) {
     dimension = _dimension;

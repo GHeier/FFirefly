@@ -1,9 +1,7 @@
 /**
- * @file save_data.cpp
+ * File contains different functions to save calculated data. save() is for Gap Function
  *
- * @brief File contains different functions to save calculated data. save() is for Gap Function
- *
- * @author Griffin Heier
+ * Author: Griffin Heier
  */
 
 #include <iostream>
@@ -13,9 +11,9 @@
 #include <math.h>
 #include <memory>
 
-#include "../objects/vec.h"
-#include "../config/load/cpp_config.h"
-#include "../hamiltonian/band_structure.h"
+#include "../objects/vec.hpp"
+#include "../config/load/cpp_config.hpp"
+#include "../hamiltonian/band_structure.hpp"
 #include "../objects/matrix.hpp"
 #include "../objects/eigenvec.hpp"
 #include "frequency_inclusion.hpp"

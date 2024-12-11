@@ -1,3 +1,12 @@
+/*
+ * This file contains the implementation of the classes ScalarField and VectorField.
+ * They interpolate scalar and vector fields, respectively.
+ * They have been implemented to allow for input via a file or a list of points and values.
+ * They are constructed to exist over a mesh, so it is ideal for Brillouin Zone calculations.
+ *
+ * Author: Griffin Heier
+ */
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -7,9 +16,9 @@
 #include <algorithm>
 #include <complex>
 
-#include "vec.h"
-#include "../algorithms/interpolate.h"
-#include "field.h"
+#include "vec.hpp"
+#include "../algorithms/interpolate.hpp"
+#include "field.hpp"
 
 using namespace std;
 

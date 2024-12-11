@@ -1,9 +1,7 @@
 /**
- * @file matrix.cpp
+ * Matrix class, implemented in 1D for practicality
  *
- * @brief Matrix class, implemented in 1D for practicality
- *
- * @author Griffin Heier
+ * Author: Griffin Heier
  */
 
 #include <cmath>
@@ -11,7 +9,7 @@
 #include <memory>
 #include "matrix.hpp"
 #include "eigenvec.hpp"
-#include "../config/load/cpp_config.h"
+#include "../config/load/cpp_config.hpp"
 
 Matrix::Matrix() {
     this->size = 0;

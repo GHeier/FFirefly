@@ -1,11 +1,3 @@
-/**
- * @file potential.cpp
- *
- * @brief List of all potentials available for use in code
- *
- * @author Griffin Heier
- */
-
 #include <iostream>
 #include <math.h>
 #include <vector>
@@ -14,11 +6,11 @@
 #include <boost/functional/hash.hpp>
 #include <unordered_map>
 
-#include "potential.h"
-#include "../hamiltonian/band_structure.h"
-#include "../objects/vec.h"
-#include "../config/load/cpp_config.h"
-#include "../response/susceptibility.h"
+#include "potential.hpp"
+#include "../hamiltonian/band_structure.hpp"
+#include "../objects/vec.hpp"
+#include "../config/load/cpp_config.hpp"
+#include "../response/susceptibility.hpp"
 
 using namespace std;
 

@@ -1,9 +1,7 @@
 /**
- * @file eigenvec.cpp
+ * The implementation of the Eigenvector class
  *
- * @brief The implementation of the Eigenvector class
- *
- * @author Griffin Heier
+ * Author: Griffin Heier
  */
 
 #include <math.h>
@@ -12,7 +10,7 @@
 #include <ctime>
 #include <memory>
 
-#include "../config/load/cpp_config.h"
+#include "../config/load/cpp_config.hpp"
 #include "eigenvec.hpp"
 
 using namespace std;

@@ -1,6 +1,4 @@
 #pragma once
-#ifndef matrix_class_H
-#define matrix_class_H
 
 #include <iostream>
 #include "eigenvec.hpp"
@@ -40,4 +38,3 @@ class Matrix {
 std::ostream& operator<<(std::ostream& os, const Matrix& k);
 std::istream& operator>>(std::istream& is, Matrix& k);
 
-#endif

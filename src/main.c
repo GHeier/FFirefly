@@ -2,7 +2,7 @@
 #include <omp.h>
 
 #include "config/load/c_config.h"
-#include "superconductor/superconductor.h"
+#include "superconductor/superconductor.hpp"
 
 extern void polarization_wrapper();
 void response() {

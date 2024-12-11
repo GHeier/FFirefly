@@ -1,6 +1,4 @@
 #pragma once
-#ifndef eigenvector_class_H
-#define eigenvector_class_H
 
 #include <iostream>
 #include <memory>
@@ -53,4 +51,3 @@ bool descending_eigenvalues(const Eigenvector& left, const Eigenvector& right);
 float dot(const Eigenvector& left, const Eigenvector& right);
 std::ostream& operator<<(std::ostream& os, const Eigenvector& k);
 
-#endif

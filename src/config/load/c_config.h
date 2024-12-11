@@ -1,6 +1,4 @@
 #pragma once
-#ifndef C_CONFIG_H
-#define C_CONFIG_H
 
 #include <string.h>
 #include <stdio.h>
@@ -59,4 +57,3 @@ void load_default_band_values();
 
 extern void load_c_config();
 
-#endif // CONFIG_H

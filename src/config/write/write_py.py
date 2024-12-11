@@ -106,7 +106,7 @@ def format_func_line(key, value, section):
             exit(1)
 
 def format_func2(key, value, section):
-    return f"    m.attr(\"{key}\") = &c_{key};"
+    return f"    m.attr(\"{key}\") = &{key};"
 
 def replace_comments(file_path):
     with open(file_path, 'r') as file:
@@ -133,7 +133,7 @@ def write_py(ALL):
     add_lines(ALL, file_path, start_phrase, end_phrase, format_var_line)
     add_lines(ALL, file_path, start_func_phrase, end_func_phrase, format_func_line)
     replace_comments(file_path)
-    file_path = 'load/python_config.c'
+    file_path = 'load/pybind_module.cpp'
     add_lines(ALL, file_path, start_func2_phrase, end_func2_phrase, format_func2)
     print(f"Successfully updated the file '{file_path}'.")
 

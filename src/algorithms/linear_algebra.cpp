@@ -1,12 +1,3 @@
-/*
- * @file calculations.cpp
- *
- * @brief Contains the main functions for calculating and diagonalizing the interaction matrix, 
- * critical temperature, and coupling constant
- *
- * @author Griffin Heier
- */
-
 #include <iostream>
 #include <unistd.h>
 #include <ctime>
@@ -19,7 +10,7 @@
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/quadrature/gauss.hpp>
 
-#include "../config/load/cpp_config.h"
+#include "../config/load/cpp_config.hpp"
 #include "../objects/matrix.hpp"
 #include "../objects/eigenvec.hpp"
 

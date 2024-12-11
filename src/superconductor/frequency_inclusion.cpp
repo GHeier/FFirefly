@@ -1,13 +1,11 @@
 /**
- * @file frequency_inclusion.cpp
+ * This file is used to calculate the frequency dependent susceptibility. 
  *
- * @brief This file is used to calculate the frequency dependent susceptibility. 
- *
- * @details It includes all the modifications taken to the standard BCS approach in order to allow 
+ * It includes all the modifications taken to the standard BCS approach in order to allow 
  * for frequency-dependent interactions that occur some energy away from the fermi surface, denoted 
  * by the cutoff frequency, wc
  *
- * @author Griffin Heier
+ * Author: Griffin Heier
  */
 
 #include <iostream>
@@ -25,13 +23,13 @@
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/quadrature/gauss.hpp>
 
-#include "../config/load/cpp_config.h"
-#include "../algorithms/integration.h"
-#include "../objects/vec.h"
-#include "utilities.h"
+#include "../config/load/cpp_config.hpp"
+#include "../algorithms/integration.hpp"
+#include "../objects/vec.hpp"
+#include "utilities.hpp"
 #include "frequency_inclusion.hpp"
-#include "../response/susceptibility.h"
-#include "../hamiltonian/band_structure.h"
+#include "../response/susceptibility.hpp"
+#include "../hamiltonian/band_structure.hpp"
 
 using std::cout;
 using std::endl;

@@ -11,15 +11,15 @@
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/quadrature/gauss.hpp>
 
-#include "../config/load/cpp_config.h"
-#include "../objects/vec.h"
-#include "../hamiltonian/band_structure.h"
+#include "../config/load/cpp_config.hpp"
+#include "../objects/vec.hpp"
+#include "../hamiltonian/band_structure.hpp"
 #include "../objects/matrix.hpp"
 #include "../objects/eigenvec.hpp"
-#include "matrix_creation.h"
-#include "../algorithms/linear_algebra.h"
+#include "matrix_creation.hpp"
+#include "../algorithms/linear_algebra.hpp"
 #include "frequency_inclusion.hpp"
-#include "../hamiltonian/potential.h"
+#include "../hamiltonian/potential.hpp"
 
 /*
  * f_singlet is the part of the linearized BCS gap equation:

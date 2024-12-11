@@ -3,9 +3,9 @@
 #include <fstream>
 #include <complex>
 #include "../objects/matrix.hpp"
-#include "../algorithms/interpolate.h"
-#include "../objects/vec.h"
-#include "../response/susceptibility.h"
+#include "../algorithms/interpolate.hpp"
+#include "../objects/vec.hpp"
+#include "../response/susceptibility.hpp"
 
 struct MatCube {
     vector<vector<vector<vector<complex<float>>>>> cube;

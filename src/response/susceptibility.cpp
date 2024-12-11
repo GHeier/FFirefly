@@ -1,9 +1,7 @@
 /**
- * @file susceptibility.cpp
+ * Calculates the susceptibility of the system. Slower than response and sparse_ir algorithms
  *
- * @brief Calculates the susceptibility of the system.
- *
- * @author Griffin Heier
+ * Author: Griffin Heier
  */
 
 #include <iostream>
@@ -16,10 +14,10 @@
 #include <omp.h>
 #include <boost/functional/hash.hpp>
 
-#include "../objects/vec.h"
-#include "../config/load/cpp_config.h"
-#include "susceptibility.h"
-#include "../hamiltonian/band_structure.h"
+#include "../objects/vec.hpp"
+#include "../config/load/cpp_config.hpp"
+#include "susceptibility.hpp"
+#include "../hamiltonian/band_structure.hpp"
 
 using namespace std;
 

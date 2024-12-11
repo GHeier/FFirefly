@@ -1,15 +1,7 @@
-/**
- * @file cpp_config.c
- *
- * @brief Configuration file, containing constants, relevant number of divisions, and functions
- * that can be called, pointing to the specific model required
- *
- * @author Griffin Heier
- */
-
 #include <math.h>
 #include <string>
-#include "cpp_config.h"
+#include <vector>
+#include "cpp_config.hpp"
 #include "c_config.h"
 
 using namespace std;
@@ -35,18 +27,18 @@ float Temperature;
 float onsite_U;
 
 //[MESH]
-int k_mesh[3];
-int q_mesh[3];
+vector<int> k_mesh(3);
+vector<int> q_mesh(3);
 int w_pts;
 
 //[CELL]
-float cell[3][3];
-float brillouin_zone[3][3];
+vector<vector<float>> cell(3, vector<float>(3));
+vector<vector<float>> brillouin_zone(3, vector<float>(3));
 
 //[BANDS]
-string band[50];
+vector<string> band;
 
-float eff_mass[50];
+vector<float> eff_mass;
 
 //[SUPERCONDUCTOR]
 bool FS_only;
@@ -102,8 +94,8 @@ void load_cpp_config() {
     for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) brillouin_zone[i][j] = c_brillouin_zone[i][j];
 
 //[BANDS]
-    for (int i = 0; i < nbnd; i++) band[i] = c_band[i];
-    for (int i = 0; i < nbnd; i++) eff_mass[i] = c_eff_mass[i];
+    for (int i = 0; i < nbnd; i++) band.push_back(c_band[i]);
+    for (int i = 0; i < nbnd; i++) eff_mass.push_back(c_eff_mass[i]);
 
 //[SUPERCONDUCTOR]
     FS_only = c_FS_only;

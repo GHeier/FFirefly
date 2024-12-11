@@ -1,9 +1,7 @@
 /**
- * @file utilities.cpp
+ * Simple utilities, generally for display purposes unrelated to the codebase
  *
- * @brief Simple utilities, generally for display purposes unrelated to the codebase
- *
- * @author Griffin Heier
+ * Author: Griffin Heier
  */
 
 #include <math.h>
@@ -11,7 +9,7 @@
 #include <iostream>
 #include <iomanip>
 
-#include "../config/load/cpp_config.h"
+#include "../config/load/cpp_config.hpp"
 
 using namespace std;
 

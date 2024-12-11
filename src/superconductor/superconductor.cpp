@@ -1,12 +1,10 @@
 /**
- * @file superconductor.cpp
+ * Main file for the program
  *
- * @brief Main file for the program
- *
- * @details This file finds the Fermi Surface(s), calculates the critical temperature, finds the 
+ * This file finds the Fermi Surface(s), calculates the critical temperature, finds the 
  * pairing symmetry, and saves the Gap functions to a file.
  *
- * @author Griffin Heier
+ * Author: Griffin Heier
  */
 
 #include <iomanip>
@@ -18,18 +16,18 @@
 #include <cassert>
 
 
-#include "utilities.h"
-#include "../config/load/cpp_config.h"
+#include "utilities.hpp"
+#include "../config/load/cpp_config.hpp"
 #include "frequency_inclusion.hpp"
-#include "matrix_creation.h"
-#include "../algorithms/linear_algebra.h"
-#include "solver.h"
-#include "../response/susceptibility.h"
-#include "save_data.h"
-#include "../objects/vec.h"
+#include "matrix_creation.hpp"
+#include "../algorithms/linear_algebra.hpp"
+#include "solver.hpp"
+#include "../response/susceptibility.hpp"
+#include "save_data.hpp"
+#include "../objects/vec.hpp"
 #include "../objects/matrix.hpp"
 #include "../objects/eigenvec.hpp"
-#include "../hamiltonian/band_structure.h"
+#include "../hamiltonian/band_structure.hpp"
 
 using std::string;
 

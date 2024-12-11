@@ -1,19 +1,10 @@
-/**
- * @file band_structure.cpp
- *
- * @brief Band structure functions for simple systems
- * Includes e(k), v(k), and Fermi Surface functions
- *
- * @author Griffin Heier
- */
-
 
 #include <math.h>
 
-#include "../objects/vec.h"
-#include "../config/load/cpp_config.h"
-#include "../objects/surfaces.h"
-#include "band_structure.h"
+#include "../objects/vec.hpp"
+#include "../config/load/cpp_config.hpp"
+#include "../objects/surfaces.hpp"
+#include "band_structure.hpp"
 
 using namespace std;
 

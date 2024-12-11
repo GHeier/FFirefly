@@ -1,11 +1,9 @@
 /**
- * @file surfaces.cpp
- *
- * @brief This file contains all the aspects of the tetrahedron method that go into defining a 
+ * This file contains all the aspects of the tetrahedron method that go into defining a 
  * constant energy contour surface. That function is general, but usually taken to be e(k) 
  * in this codebase
  *
- * @author Griffin Heier
+ * Author: Griffin Heier
  */
 
 #include <math.h>
@@ -13,8 +11,8 @@
 #include <algorithm>
 #include <functional>
 
-#include "../config/load/cpp_config.h"
-#include "vec.h"
+#include "../config/load/cpp_config.hpp"
+#include "vec.hpp"
 
 using namespace std;
 
