@@ -240,113 +240,17 @@ superconductor/fast:
 .PHONY : superconductor/fast
 
 #=============================================================================
-# Target rules for targets named fcode.x
+# Target rules for targets named fcode
 
 # Build rule for target.
-fcode.x: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 fcode.x
-.PHONY : fcode.x
+fcode: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 fcode
+.PHONY : fcode
 
 # fast build rule for target.
-fcode.x/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/build
-.PHONY : fcode.x/fast
-
-Unity/unity_0_c.o: Unity/unity_0_c.c.o
-.PHONY : Unity/unity_0_c.o
-
-# target to build an object file
-Unity/unity_0_c.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/Unity/unity_0_c.c.o
-.PHONY : Unity/unity_0_c.c.o
-
-Unity/unity_0_c.i: Unity/unity_0_c.c.i
-.PHONY : Unity/unity_0_c.i
-
-# target to preprocess a source file
-Unity/unity_0_c.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/Unity/unity_0_c.c.i
-.PHONY : Unity/unity_0_c.c.i
-
-Unity/unity_0_c.s: Unity/unity_0_c.c.s
-.PHONY : Unity/unity_0_c.s
-
-# target to generate assembly for a file
-Unity/unity_0_c.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/Unity/unity_0_c.c.s
-.PHONY : Unity/unity_0_c.c.s
-
-Unity/unity_0_cxx.o: Unity/unity_0_cxx.cxx.o
-.PHONY : Unity/unity_0_cxx.o
-
-# target to build an object file
-Unity/unity_0_cxx.cxx.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/Unity/unity_0_cxx.cxx.o
-.PHONY : Unity/unity_0_cxx.cxx.o
-
-Unity/unity_0_cxx.i: Unity/unity_0_cxx.cxx.i
-.PHONY : Unity/unity_0_cxx.i
-
-# target to preprocess a source file
-Unity/unity_0_cxx.cxx.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/Unity/unity_0_cxx.cxx.i
-.PHONY : Unity/unity_0_cxx.cxx.i
-
-Unity/unity_0_cxx.s: Unity/unity_0_cxx.cxx.s
-.PHONY : Unity/unity_0_cxx.s
-
-# target to generate assembly for a file
-Unity/unity_0_cxx.cxx.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/Unity/unity_0_cxx.cxx.s
-.PHONY : Unity/unity_0_cxx.cxx.s
-
-Unity/unity_1_cxx.o: Unity/unity_1_cxx.cxx.o
-.PHONY : Unity/unity_1_cxx.o
-
-# target to build an object file
-Unity/unity_1_cxx.cxx.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/Unity/unity_1_cxx.cxx.o
-.PHONY : Unity/unity_1_cxx.cxx.o
-
-Unity/unity_1_cxx.i: Unity/unity_1_cxx.cxx.i
-.PHONY : Unity/unity_1_cxx.i
-
-# target to preprocess a source file
-Unity/unity_1_cxx.cxx.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/Unity/unity_1_cxx.cxx.i
-.PHONY : Unity/unity_1_cxx.cxx.i
-
-Unity/unity_1_cxx.s: Unity/unity_1_cxx.cxx.s
-.PHONY : Unity/unity_1_cxx.s
-
-# target to generate assembly for a file
-Unity/unity_1_cxx.cxx.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/Unity/unity_1_cxx.cxx.s
-.PHONY : Unity/unity_1_cxx.cxx.s
-
-Unity/unity_2_cxx.o: Unity/unity_2_cxx.cxx.o
-.PHONY : Unity/unity_2_cxx.o
-
-# target to build an object file
-Unity/unity_2_cxx.cxx.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/Unity/unity_2_cxx.cxx.o
-.PHONY : Unity/unity_2_cxx.cxx.o
-
-Unity/unity_2_cxx.i: Unity/unity_2_cxx.cxx.i
-.PHONY : Unity/unity_2_cxx.i
-
-# target to preprocess a source file
-Unity/unity_2_cxx.cxx.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/Unity/unity_2_cxx.cxx.i
-.PHONY : Unity/unity_2_cxx.cxx.i
-
-Unity/unity_2_cxx.s: Unity/unity_2_cxx.cxx.s
-.PHONY : Unity/unity_2_cxx.s
-
-# target to generate assembly for a file
-Unity/unity_2_cxx.cxx.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/Unity/unity_2_cxx.cxx.s
-.PHONY : Unity/unity_2_cxx.cxx.s
+fcode/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.dir/build.make CMakeFiles/fcode.dir/build
+.PHONY : fcode/fast
 
 src/algorithms/integration.o: src/algorithms/integration.cpp.o
 .PHONY : src/algorithms/integration.o
@@ -498,7 +402,6 @@ src/config/load/fortran_config.o: src/config/load/fortran_config.f90.o
 # target to build an object file
 src/config/load/fortran_config.f90.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/config.dir/build.make CMakeFiles/config.dir/src/config/load/fortran_config.f90.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/src/config/load/fortran_config.f90.o
 .PHONY : src/config/load/fortran_config.f90.o
 
 src/config/load/fortran_config.i: src/config/load/fortran_config.f90.i
@@ -507,7 +410,6 @@ src/config/load/fortran_config.i: src/config/load/fortran_config.f90.i
 # target to preprocess a source file
 src/config/load/fortran_config.f90.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/config.dir/build.make CMakeFiles/config.dir/src/config/load/fortran_config.f90.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/src/config/load/fortran_config.f90.i
 .PHONY : src/config/load/fortran_config.f90.i
 
 src/config/load/fortran_config.s: src/config/load/fortran_config.f90.s
@@ -516,7 +418,6 @@ src/config/load/fortran_config.s: src/config/load/fortran_config.f90.s
 # target to generate assembly for a file
 src/config/load/fortran_config.f90.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/config.dir/build.make CMakeFiles/config.dir/src/config/load/fortran_config.f90.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/src/config/load/fortran_config.f90.s
 .PHONY : src/config/load/fortran_config.f90.s
 
 src/config/load/pybind_module.o: src/config/load/pybind_module.cpp.o
@@ -525,6 +426,7 @@ src/config/load/pybind_module.o: src/config/load/pybind_module.cpp.o
 # target to build an object file
 src/config/load/pybind_module.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/config.dir/build.make CMakeFiles/config.dir/src/config/load/pybind_module.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.dir/build.make CMakeFiles/fcode.dir/src/config/load/pybind_module.cpp.o
 .PHONY : src/config/load/pybind_module.cpp.o
 
 src/config/load/pybind_module.i: src/config/load/pybind_module.cpp.i
@@ -533,6 +435,7 @@ src/config/load/pybind_module.i: src/config/load/pybind_module.cpp.i
 # target to preprocess a source file
 src/config/load/pybind_module.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/config.dir/build.make CMakeFiles/config.dir/src/config/load/pybind_module.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.dir/build.make CMakeFiles/fcode.dir/src/config/load/pybind_module.cpp.i
 .PHONY : src/config/load/pybind_module.cpp.i
 
 src/config/load/pybind_module.s: src/config/load/pybind_module.cpp.s
@@ -541,6 +444,7 @@ src/config/load/pybind_module.s: src/config/load/pybind_module.cpp.s
 # target to generate assembly for a file
 src/config/load/pybind_module.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/config.dir/build.make CMakeFiles/config.dir/src/config/load/pybind_module.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.dir/build.make CMakeFiles/fcode.dir/src/config/load/pybind_module.cpp.s
 .PHONY : src/config/load/pybind_module.cpp.s
 
 src/hamiltonian/band_structure.o: src/hamiltonian/band_structure.cpp.o
@@ -717,7 +621,6 @@ src/response/response.o: src/response/response.f90.o
 # target to build an object file
 src/response/response.f90.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/response.dir/build.make CMakeFiles/response.dir/src/response/response.f90.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/src/response/response.f90.o
 .PHONY : src/response/response.f90.o
 
 src/response/response.i: src/response/response.f90.i
@@ -726,7 +629,6 @@ src/response/response.i: src/response/response.f90.i
 # target to preprocess a source file
 src/response/response.f90.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/response.dir/build.make CMakeFiles/response.dir/src/response/response.f90.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/src/response/response.f90.i
 .PHONY : src/response/response.f90.i
 
 src/response/response.s: src/response/response.f90.s
@@ -735,7 +637,6 @@ src/response/response.s: src/response/response.f90.s
 # target to generate assembly for a file
 src/response/response.f90.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/response.dir/build.make CMakeFiles/response.dir/src/response/response.f90.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/src/response/response.f90.s
 .PHONY : src/response/response.f90.s
 
 src/response/response_polarization.o: src/response/response_polarization.f90.o
@@ -744,7 +645,6 @@ src/response/response_polarization.o: src/response/response_polarization.f90.o
 # target to build an object file
 src/response/response_polarization.f90.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/response.dir/build.make CMakeFiles/response.dir/src/response/response_polarization.f90.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/src/response/response_polarization.f90.o
 .PHONY : src/response/response_polarization.f90.o
 
 src/response/response_polarization.i: src/response/response_polarization.f90.i
@@ -753,7 +653,6 @@ src/response/response_polarization.i: src/response/response_polarization.f90.i
 # target to preprocess a source file
 src/response/response_polarization.f90.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/response.dir/build.make CMakeFiles/response.dir/src/response/response_polarization.f90.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/src/response/response_polarization.f90.i
 .PHONY : src/response/response_polarization.f90.i
 
 src/response/response_polarization.s: src/response/response_polarization.f90.s
@@ -762,7 +661,6 @@ src/response/response_polarization.s: src/response/response_polarization.f90.s
 # target to generate assembly for a file
 src/response/response_polarization.f90.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/response.dir/build.make CMakeFiles/response.dir/src/response/response_polarization.f90.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fcode.x.dir/build.make CMakeFiles/fcode.x.dir/src/response/response_polarization.f90.s
 .PHONY : src/response/response_polarization.f90.s
 
 src/response/susceptibility.o: src/response/susceptibility.cpp.o
@@ -947,23 +845,11 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... algorithms"
 	@echo "... config"
-	@echo "... fcode.x"
+	@echo "... fcode"
 	@echo "... hamiltonian"
 	@echo "... objects"
 	@echo "... response"
 	@echo "... superconductor"
-	@echo "... Unity/unity_0_c.o"
-	@echo "... Unity/unity_0_c.i"
-	@echo "... Unity/unity_0_c.s"
-	@echo "... Unity/unity_0_cxx.o"
-	@echo "... Unity/unity_0_cxx.i"
-	@echo "... Unity/unity_0_cxx.s"
-	@echo "... Unity/unity_1_cxx.o"
-	@echo "... Unity/unity_1_cxx.i"
-	@echo "... Unity/unity_1_cxx.s"
-	@echo "... Unity/unity_2_cxx.o"
-	@echo "... Unity/unity_2_cxx.i"
-	@echo "... Unity/unity_2_cxx.s"
 	@echo "... src/algorithms/integration.o"
 	@echo "... src/algorithms/integration.i"
 	@echo "... src/algorithms/integration.s"
