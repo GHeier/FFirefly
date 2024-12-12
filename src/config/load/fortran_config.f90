@@ -42,7 +42,6 @@ module confighub
     real :: brillouin_zone(3,3)
 
 ![BANDS]
-
     character(len=50) :: band(50,50)
     real(c_float), bind(C, name="c_eff_mass") :: c_eff_mass(50)
     real :: eff_mass(50)

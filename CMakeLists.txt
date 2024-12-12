@@ -112,5 +112,8 @@ file(GLOB_RECURSE MAIN_SOURCES ${CMAKE_SOURCE_DIR}/src/*.c
                                ${CMAKE_SOURCE_DIR}/src/*.f90)
 add_executable(fcode.x ${MAIN_SOURCES})
 
+# Set the output directory explicitly for the executable
+set_target_properties(fcode.x PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
 # Link all shared libraries and Python explicitly to the main executable
 target_link_libraries(fcode.x PRIVATE fortran_modules ${Python3_LIBRARIES} ${LIBS})

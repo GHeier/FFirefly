@@ -87,8 +87,8 @@ def format_func_line(key, value, section):
 
     if (type(value) == str):
         if (key == "band"):
-            return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                n = atoi(key + 4);\n                set_string(c_{key}{index}, value);\n            }}"
-        return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                set_string(c_{key}, value);\n            }}"
+            return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                n = atoi(key + 4);\n                set_string(&c_{key}{index}, value);\n            }}"
+        return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                set_string(&c_{key}, value);\n            }}"
     elif (type(value) == int):
         return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                c_{key}{index} = atoi(value);\n            }}"
     elif (type(value) == float):
@@ -137,6 +137,13 @@ def format_header_line(key, value, section):
         print("Error: Unsupported type in config file")
         exit(1)
 
+def format_unload_line(key, value, section):
+    if type(value) == str:
+        return f'    free(c_{key});'
+    if key == 'band':
+        return f'    for (int i = 0; i < 50; i++) {{\n        free(c_{key}[i]);\n    }}'
+    return ''
+
 
 def get_new_lines(ALL, func):
     new_lines = []
@@ -164,6 +171,9 @@ end_phrase = '// End of Global Variables'
 start_func_phrase = '            // Read in variable values from the config file'
 end_func_phrase = '            // End of variable reading'
 
+start_unload_phrase = '// Unload the config file'
+end_unload_phrase = '// End of unloading the config file'
+
 def write_c_header(ALL):
     file_path = 'load/c_config.h'
     add_lines(ALL, file_path, start_phrase, end_phrase, format_header_line)
@@ -173,4 +183,5 @@ def write_c(ALL):
     file_path = 'load/c_config.c'
     add_lines(ALL, file_path, start_phrase, end_phrase, format_var_line)
     add_lines(ALL, file_path, start_func_phrase, end_func_phrase, format_func_line)
+    add_lines(ALL, file_path, start_unload_phrase, end_unload_phrase, format_unload_line)
     print(f"Successfully updated the file '{file_path}'.")

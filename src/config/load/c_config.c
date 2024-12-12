@@ -130,11 +130,19 @@ void strip_single_quotes(char *str) {
     }
     str[j] = '\0'; // Null-terminate the modified string
 }
-void set_string(char *dest, const char *src) {
+void set_string(char **dest, const char *src) {
     int size = 50;
-    strncpy(dest, src, size - 1);
-    strip_single_quotes(dest);
-    dest[size - 1] = '\0';  // Ensure null-termination
+    *dest = (char *)malloc(size * sizeof(char));  // Allocate memory for dest
+    strncpy(*dest, src, size - 1);   // Copy up to size-1 characters
+    (*dest)[size - 1] = '\0';       // Ensure null-termination
+    strip_single_quotes(*dest);     // Strip single quotes if present
+}
+
+void set_section(char *dest, const char *src) {
+    int size = 50;
+    strncpy(dest, src, size - 1);   // Copy up to size-1 characters
+    dest[size - 1] = '\0';       // Ensure null-termination
+    strip_single_quotes(dest);     // Strip single quotes if present
 }
 
 void load_default_band_values() {
@@ -152,7 +160,7 @@ void load_c_config() {
     int n = 0;
     while (fgets(line, sizeof(line), stdin) != NULL) {
         if (strstr(line, "[CELL]") != NULL) {
-            set_string(section, "CELL");
+            set_section(section, "CELL");
             continue;  // Skip to the next file line
         }
         // If we're in the [CELL] section, read matrix values
@@ -172,30 +180,30 @@ void load_c_config() {
 
 //[CONTROL]
             if (strstr(key, "category") != NULL) {
-                set_string(c_category, value);
+                set_string(&c_category, value);
             }
             else if (strstr(key, "calculation") != NULL) {
-                set_string(c_calculation, value);
+                set_string(&c_calculation, value);
             }
             else if (strstr(key, "outdir") != NULL) {
-                set_string(c_outdir, value);
+                set_string(&c_outdir, value);
             }
             else if (strstr(key, "prefix") != NULL) {
-                set_string(c_prefix, value);
+                set_string(&c_prefix, value);
             }
             else if (strstr(key, "verbosity") != NULL) {
-                set_string(c_verbosity, value);
+                set_string(&c_verbosity, value);
             }
             else if (strstr(key, "datfile_in") != NULL) {
-                set_string(c_datfile_in, value);
+                set_string(&c_datfile_in, value);
             }
             else if (strstr(key, "datfile_out") != NULL) {
-                set_string(c_datfile_out, value);
+                set_string(&c_datfile_out, value);
             }
 
 //[SYSTEM]
             else if (strstr(key, "interaction") != NULL) {
-                set_string(c_interaction, value);
+                set_string(&c_interaction, value);
             }
             else if (strstr(key, "dimension") != NULL) {
                 c_dimension = atoi(value);
@@ -234,7 +242,7 @@ void load_c_config() {
 //[BANDS]
             else if (strstr(key, "band") != NULL) {
                 n = atoi(key + 4);
-                set_string(c_band[n], value);
+                set_string(&c_band[n], value);
             }
             else if (strstr(key, "eff_mass") != NULL) {
                 c_eff_mass[n] = atof(value);
@@ -313,4 +321,60 @@ void load_c_config() {
     cell_to_BZ(c_cell, c_brillouin_zone);
     get_dimensions();
     printf("Loaded Config\n");
+}
+
+void unload_c_config() {
+    // Unload the config file
+
+//[CONTROL]
+    free(c_category);
+    free(c_calculation);
+    free(c_outdir);
+    free(c_prefix);
+    free(c_verbosity);
+    free(c_datfile_in);
+    free(c_datfile_out);
+
+//[SYSTEM]
+    free(c_interaction);
+
+
+
+
+
+
+
+//[MESH]
+
+
+
+
+//[CELL]
+
+
+
+//[BANDS]
+    free(c_band);
+
+
+
+
+
+
+
+
+
+
+
+
+
+//[SUPERCONDUCTOR]
+
+
+
+
+
+//[RESPONSE]
+
+    // End of unloading the config file
 }

@@ -63,8 +63,10 @@ extern bool c_dynamic;
 void get_dimensions();
 
 void cell_to_BZ(float ucell[3][3], float (*bz_matrix)[3]);
-void set_string(char *dest, const char *src);
+void set_string(char **dest, const char *src);
+void set_section(char *dest, const char *src);
 void load_default_band_values();
 
 extern void load_c_config();
+extern void unload_c_config();
 
