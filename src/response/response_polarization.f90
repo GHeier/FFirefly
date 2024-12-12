@@ -7,31 +7,6 @@ module globals
     real(8) :: ef, qmesh(3), bvec(3,3), VBZ
 
     contains
-        subroutine convert_to_bz_matrix(ucell, bz_matrix) bind(C, name="cell_to_BZ")
-            use, intrinsic :: iso_c_binding
-            implicit none
-            real(c_float), dimension(3,3), intent(in) :: ucell       
-            real(c_float), dimension(3,3), intent(out) :: bz_matrix 
-            real(c_float) :: volume
-            real(c_float), dimension(3) :: a, b, c, cross_bc, cross_ca, cross_ab
-
-            ! Extract lattice vectors
-            a = ucell(:, 1)
-            b = ucell(:, 2)
-            c = ucell(:, 3)
-
-            ! Calculate the volume of the unit cell using a dot product and cross product
-            cross_bc = [b(2)*c(3) - b(3)*c(2), b(3)*c(1) - b(1)*c(3), b(1)*c(2) - b(2)*c(1)]
-            volume = dot_product(a, cross_bc)
-
-            ! Calculate the reciprocal lattice vectors
-            cross_ca = [c(2)*a(3) - c(3)*a(2), c(3)*a(1) - c(1)*a(3), c(1)*a(2) - c(2)*a(1)]
-            cross_ab = [a(2)*b(3) - a(3)*b(2), a(3)*b(1) - a(1)*b(3), a(1)*b(2) - a(2)*b(1)]
-
-            bz_matrix(:, 1) = 2.0 * 3.141592653589793d0 * cross_bc / volume
-            bz_matrix(:, 2) = 2.0 * 3.141592653589793d0 * cross_ca / volume
-            bz_matrix(:, 3) = 2.0 * 3.141592653589793d0 * cross_ab / volume
-        end subroutine convert_to_bz_matrix
 
         subroutine get_vals()
             bvec = brillouin_zone

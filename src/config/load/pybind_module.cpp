@@ -58,6 +58,17 @@ PYBIND11_MODULE(fcode, m) {
 //[BANDS]
     m.attr("band") = &band;
     m.attr("eff_mass") = &eff_mass;
+    m.attr("t0") = &t0;
+    m.attr("t1") = &t1;
+    m.attr("t2") = &t2;
+    m.attr("t3") = &t3;
+    m.attr("t4") = &t4;
+    m.attr("t5") = &t5;
+    m.attr("t6") = &t6;
+    m.attr("t7") = &t7;
+    m.attr("t8") = &t8;
+    m.attr("t9") = &t9;
+    m.attr("t10") = &t10;
 
 //[SUPERCONDUCTOR]
     m.attr("FS_only") = &FS_only;

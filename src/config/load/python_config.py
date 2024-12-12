@@ -1,6 +1,8 @@
 import ctypes
 
-lib = ctypes.CDLL('c_config.so')
+install_dir = '/home/g/Research/bcs_diagonalization/'
+lib = ctypes.CDLL(install_dir+'src/config/load/c_config.so')
+#lib = ctypes.CDLL(install_dir+'build/lib/libconfig.so')
 
 # Begin Global Variables
 

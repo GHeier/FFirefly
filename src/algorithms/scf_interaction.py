@@ -3,8 +3,6 @@ import sparse_ir
 import numpy as np
 
 from ..config.load.python_config import *
-from ..hamiltonian.epsilon_module import epsilon
-from ..hamiltonian.potential import V
 
 def scf_interaction():
     beta = 1 / Temperature

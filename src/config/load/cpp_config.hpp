@@ -49,6 +49,17 @@ extern vector<vector<float>> brillouin_zone;
 extern vector<string> band;
 
 extern vector<float> eff_mass;
+extern vector<float> t0;
+extern vector<float> t1;
+extern vector<float> t2;
+extern vector<float> t3;
+extern vector<float> t4;
+extern vector<float> t5;
+extern vector<float> t6;
+extern vector<float> t7;
+extern vector<float> t8;
+extern vector<float> t9;
+extern vector<float> t10;
 
 //[SUPERCONDUCTOR]
 extern bool FS_only;

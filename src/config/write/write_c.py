@@ -76,6 +76,9 @@ def format_var_line(key, value, section):
             return f"{value_type} c_{key} = {value};"
 
 def format_func_line(key, value, section):
+    el = 'else '
+    if key == 'category':
+        el = ''
     index = ''
     if section == 'BANDS':
         index = '[n]'
@@ -84,17 +87,17 @@ def format_func_line(key, value, section):
 
     if (type(value) == str):
         if (key == "band"):
-            return f"            if (strstr(key, \"{key}\") != NULL) {{\n                n = atoi(key + 4);\n                set_string(c_{key}{index}, value);\n            }}"
-        return f"            if (strstr(key, \"{key}\") != NULL) {{\n                set_string(c_{key}, value);\n            }}"
+            return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                n = atoi(key + 4);\n                set_string(c_{key}{index}, value);\n            }}"
+        return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                set_string(c_{key}, value);\n            }}"
     elif (type(value) == int):
-        return f"            if (strstr(key, \"{key}\") != NULL) {{\n                c_{key}{index} = atoi(value);\n            }}"
+        return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                c_{key}{index} = atoi(value);\n            }}"
     elif (type(value) == float):
-        return f"            if (strstr(key, \"{key}\") != NULL) {{\n                c_{key}{index} = atof(value);\n            }}"
+        return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                c_{key}{index} = atof(value);\n            }}"
     elif (type(value) == bool):
-        return f"            if (strstr(key, \"{key}\") != NULL) {{\n                strip_single_quotes(value);\n                if (strcmp(value, \"true\") == 0) {{\n                    c_{key}{index} = true;\n                }} else {{\n                    c_{key}{index} = false;\n                }}\n            }}"
+        return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                strip_single_quotes(value);\n                if (strcmp(value, \"true\") == 0) {{\n                    c_{key}{index} = true;\n                }} else {{\n                    c_{key}{index} = false;\n                }}\n            }}"
     elif (type(value) == list):
         if (type(value[0]) == int):
-            return f"            if (strstr(key, \"{key}\") != NULL) {{\n                sscanf(line, \" {key} = %d %d %d\", &c_{key}[0], &c_{key}[1], &c_{key}[2]);\n            }}"
+            return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                sscanf(line, \" {key} = %d %d %d\", &c_{key}[0], &c_{key}[1], &c_{key}[2]);\n            }}"
         else:
             print("Key, value, section: ", key, value, section)
             print("Error: Unsupported type in config file (list section)")

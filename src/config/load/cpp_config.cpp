@@ -39,6 +39,17 @@ vector<vector<float>> brillouin_zone(3, vector<float>(3));
 vector<string> band;
 
 vector<float> eff_mass;
+vector<float> t0;
+vector<float> t1;
+vector<float> t2;
+vector<float> t3;
+vector<float> t4;
+vector<float> t5;
+vector<float> t6;
+vector<float> t7;
+vector<float> t8;
+vector<float> t9;
+vector<float> t10;
 
 //[SUPERCONDUCTOR]
 bool FS_only;
@@ -64,6 +75,7 @@ float k_max = M_PI;
 int dim = dimension;
 
 void load_cpp_config() {
+    printf("Loading C++ Configuration File\n");
     // Load the C++ configuration file
 
 //[CONTROL]
@@ -96,6 +108,17 @@ void load_cpp_config() {
 //[BANDS]
     for (int i = 0; i < nbnd; i++) band.push_back(c_band[i]);
     for (int i = 0; i < nbnd; i++) eff_mass.push_back(c_eff_mass[i]);
+    for (int i = 0; i < nbnd; i++) t0.push_back(c_t0[i]);
+    for (int i = 0; i < nbnd; i++) t1.push_back(c_t1[i]);
+    for (int i = 0; i < nbnd; i++) t2.push_back(c_t2[i]);
+    for (int i = 0; i < nbnd; i++) t3.push_back(c_t3[i]);
+    for (int i = 0; i < nbnd; i++) t4.push_back(c_t4[i]);
+    for (int i = 0; i < nbnd; i++) t5.push_back(c_t5[i]);
+    for (int i = 0; i < nbnd; i++) t6.push_back(c_t6[i]);
+    for (int i = 0; i < nbnd; i++) t7.push_back(c_t7[i]);
+    for (int i = 0; i < nbnd; i++) t8.push_back(c_t8[i]);
+    for (int i = 0; i < nbnd; i++) t9.push_back(c_t9[i]);
+    for (int i = 0; i < nbnd; i++) t10.push_back(c_t10[i]);
 
 //[SUPERCONDUCTOR]
     FS_only = c_FS_only;

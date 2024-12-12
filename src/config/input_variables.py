@@ -39,7 +39,18 @@ ALL = {
     },
     'BANDS': {
         'band': 'fermi_gas',
-        'eff_mass': 1.0
+        'eff_mass': 1.0,
+        't0': 1.0,
+        't1': 0.0,
+        't2': 0.0,
+        't3': 0.0,
+        't4': 0.0,
+        't5': 0.0,
+        't6': 0.0,
+        't7': 0.0,
+        't8': 0.0,
+        't9': 0.0,
+        't10': 0.0
     },
     'SUPERCONDUCTOR': {
         'FS_only': True,

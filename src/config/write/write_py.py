@@ -129,10 +129,11 @@ start_func2_phrase = '    // Begin PyBind Definitions'
 end_func2_phrase = '    // End PyBind Definitions'
 
 def write_py(ALL):
-    file_path = 'load/python_config.py'
-    add_lines(ALL, file_path, start_phrase, end_phrase, format_var_line)
-    add_lines(ALL, file_path, start_func_phrase, end_func_phrase, format_func_line)
-    replace_comments(file_path)
+    #file_path = 'load/python_config.py'
+    #add_lines(ALL, file_path, start_phrase, end_phrase, format_var_line)
+    #add_lines(ALL, file_path, start_func_phrase, end_func_phrase, format_func_line)
+    #replace_comments(file_path)
+    #print(f"Successfully updated the file '{file_path}'.")
     file_path = 'load/pybind_module.cpp'
     add_lines(ALL, file_path, start_func2_phrase, end_func2_phrase, format_func2)
     print(f"Successfully updated the file '{file_path}'.")

@@ -48,6 +48,17 @@ float c_brillouin_zone[3][3] = {{6.283185307179586, 0.0, 0.0}, {0.0, 6.283185307
 char c_band[50][50];
 char** get_band() {return (char**)c_band;}
 float c_eff_mass[50];
+float c_t0[50];
+float c_t1[50];
+float c_t2[50];
+float c_t3[50];
+float c_t4[50];
+float c_t5[50];
+float c_t6[50];
+float c_t7[50];
+float c_t8[50];
+float c_t9[50];
+float c_t10[50];
 
 //[SUPERCONDUCTOR]
 bool c_FS_only = true;
@@ -70,7 +81,46 @@ void get_dimensions() {
     }
 }
 
-void cell_to_BZ(const float cell[3][3], float brillouin_zone[3][3]);
+#define PI 3.141592653589793
+
+void cross_product(const float a[3], const float b[3], float result[3]) {
+    result[0] = a[1] * b[2] - a[2] * b[1];
+    result[1] = a[2] * b[0] - a[0] * b[2];
+    result[2] = a[0] * b[1] - a[1] * b[0];
+}
+
+float dot_product(const float a[3], const float b[3]) {
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+void cell_to_BZ(float ucell[3][3], float (*bz_matrix)[3]) {
+    float volume;
+    float a[3], b[3], c[3], cross_bc[3], cross_ca[3], cross_ab[3];
+    
+    // Extract lattice vectors
+    for (int i = 0; i < 3; i++) {
+        a[i] = ucell[i][0];
+        b[i] = ucell[i][1];
+        c[i] = ucell[i][2];
+    }
+    
+    // Calculate the volume of the unit cell using a dot product and cross product
+    cross_product(b, c, cross_bc);
+    volume = dot_product(a, cross_bc);
+    
+    // Calculate the reciprocal lattice vectors
+    cross_product(c, a, cross_ca);
+    cross_product(a, b, cross_ab);
+    
+    // Calculate the BZ matrix
+    for (int i = 0; i < 3; i++) {
+        bz_matrix[i][0] = 2.0f * PI * cross_bc[i] / volume;
+        bz_matrix[i][1] = 2.0f * PI * cross_ca[i] / volume;
+        bz_matrix[i][2] = 2.0f * PI * cross_ab[i] / volume;
+    }
+}
+
+//void cell_to_BZ(const float cell[3][3], float brillouin_zone[3][3]);
 void strip_single_quotes(char *str) {
     int i, j = 0;
     for (i = 0; str[i] != '\0'; i++) {
@@ -116,7 +166,7 @@ void load_c_config() {
             }
         }
         if (strstr(line, "=") != NULL) {
-            sscanf(line, "%[^=]=%s", key, value);
+            sscanf(line, " %s = %s", key, value);
 
             // Read in variable values from the config file
 
@@ -124,56 +174,56 @@ void load_c_config() {
             if (strstr(key, "category") != NULL) {
                 set_string(c_category, value);
             }
-            if (strstr(key, "calculation") != NULL) {
+            else if (strstr(key, "calculation") != NULL) {
                 set_string(c_calculation, value);
             }
-            if (strstr(key, "outdir") != NULL) {
+            else if (strstr(key, "outdir") != NULL) {
                 set_string(c_outdir, value);
             }
-            if (strstr(key, "prefix") != NULL) {
+            else if (strstr(key, "prefix") != NULL) {
                 set_string(c_prefix, value);
             }
-            if (strstr(key, "verbosity") != NULL) {
+            else if (strstr(key, "verbosity") != NULL) {
                 set_string(c_verbosity, value);
             }
-            if (strstr(key, "datfile_in") != NULL) {
+            else if (strstr(key, "datfile_in") != NULL) {
                 set_string(c_datfile_in, value);
             }
-            if (strstr(key, "datfile_out") != NULL) {
+            else if (strstr(key, "datfile_out") != NULL) {
                 set_string(c_datfile_out, value);
             }
 
 //[SYSTEM]
-            if (strstr(key, "interaction") != NULL) {
+            else if (strstr(key, "interaction") != NULL) {
                 set_string(c_interaction, value);
             }
-            if (strstr(key, "dimension") != NULL) {
+            else if (strstr(key, "dimension") != NULL) {
                 c_dimension = atoi(value);
             }
-            if (strstr(key, "ibrav") != NULL) {
+            else if (strstr(key, "ibrav") != NULL) {
                 c_ibrav = atoi(value);
             }
-            if (strstr(key, "nbnd") != NULL) {
+            else if (strstr(key, "nbnd") != NULL) {
                 c_nbnd = atoi(value);
             }
-            if (strstr(key, "fermi_energy") != NULL) {
+            else if (strstr(key, "fermi_energy") != NULL) {
                 c_fermi_energy = atof(value);
             }
-            if (strstr(key, "Temperature") != NULL) {
+            else if (strstr(key, "Temperature") != NULL) {
                 c_Temperature = atof(value);
             }
-            if (strstr(key, "onsite_U") != NULL) {
+            else if (strstr(key, "onsite_U") != NULL) {
                 c_onsite_U = atof(value);
             }
 
 //[MESH]
-            if (strstr(key, "k_mesh") != NULL) {
+            else if (strstr(key, "k_mesh") != NULL) {
                 sscanf(line, " k_mesh = %d %d %d", &c_k_mesh[0], &c_k_mesh[1], &c_k_mesh[2]);
             }
-            if (strstr(key, "q_mesh") != NULL) {
+            else if (strstr(key, "q_mesh") != NULL) {
                 sscanf(line, " q_mesh = %d %d %d", &c_q_mesh[0], &c_q_mesh[1], &c_q_mesh[2]);
             }
-            if (strstr(key, "w_pts") != NULL) {
+            else if (strstr(key, "w_pts") != NULL) {
                 c_w_pts = atoi(value);
             }
 
@@ -182,16 +232,49 @@ void load_c_config() {
 
 
 //[BANDS]
-            if (strstr(key, "band") != NULL) {
+            else if (strstr(key, "band") != NULL) {
                 n = atoi(key + 4);
                 set_string(c_band[n], value);
             }
-            if (strstr(key, "eff_mass") != NULL) {
+            else if (strstr(key, "eff_mass") != NULL) {
                 c_eff_mass[n] = atof(value);
+            }
+            else if (strstr(key, "t0") != NULL) {
+                c_t0[n] = atof(value);
+            }
+            else if (strstr(key, "t1") != NULL) {
+                c_t1[n] = atof(value);
+            }
+            else if (strstr(key, "t2") != NULL) {
+                c_t2[n] = atof(value);
+            }
+            else if (strstr(key, "t3") != NULL) {
+                c_t3[n] = atof(value);
+            }
+            else if (strstr(key, "t4") != NULL) {
+                c_t4[n] = atof(value);
+            }
+            else if (strstr(key, "t5") != NULL) {
+                c_t5[n] = atof(value);
+            }
+            else if (strstr(key, "t6") != NULL) {
+                c_t6[n] = atof(value);
+            }
+            else if (strstr(key, "t7") != NULL) {
+                c_t7[n] = atof(value);
+            }
+            else if (strstr(key, "t8") != NULL) {
+                c_t8[n] = atof(value);
+            }
+            else if (strstr(key, "t9") != NULL) {
+                c_t9[n] = atof(value);
+            }
+            else if (strstr(key, "t10") != NULL) {
+                c_t10[n] = atof(value);
             }
 
 //[SUPERCONDUCTOR]
-            if (strstr(key, "FS_only") != NULL) {
+            else if (strstr(key, "FS_only") != NULL) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
                     c_FS_only = true;
@@ -199,18 +282,18 @@ void load_c_config() {
                     c_FS_only = false;
                 }
             }
-            if (strstr(key, "bcs_cutoff_frequency") != NULL) {
+            else if (strstr(key, "bcs_cutoff_frequency") != NULL) {
                 c_bcs_cutoff_frequency = atof(value);
             }
-            if (strstr(key, "num_eigenvalues_to_save") != NULL) {
+            else if (strstr(key, "num_eigenvalues_to_save") != NULL) {
                 c_num_eigenvalues_to_save = atoi(value);
             }
-            if (strstr(key, "frequency_pts") != NULL) {
+            else if (strstr(key, "frequency_pts") != NULL) {
                 c_frequency_pts = atoi(value);
             }
 
 //[RESPONSE]
-            if (strstr(key, "dynamic") != NULL) {
+            else if (strstr(key, "dynamic") != NULL) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
                     c_dynamic = true;
@@ -220,6 +303,7 @@ void load_c_config() {
             }
             // End of variable reading
             else {
+                printf("%s = %s\n", key, value);
                 printf("Invalid key: %s\n", key);
                 exit(1);
             }

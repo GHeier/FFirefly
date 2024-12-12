@@ -54,6 +54,28 @@ module confighub
     character(len=50) :: band(50,50)
     real(c_float), bind(C, name="c_eff_mass") :: c_eff_mass(50)
     real :: eff_mass(50)
+    real(c_float), bind(C, name="c_t0") :: c_t0(50)
+    real :: t0(50)
+    real(c_float), bind(C, name="c_t1") :: c_t1(50)
+    real :: t1(50)
+    real(c_float), bind(C, name="c_t2") :: c_t2(50)
+    real :: t2(50)
+    real(c_float), bind(C, name="c_t3") :: c_t3(50)
+    real :: t3(50)
+    real(c_float), bind(C, name="c_t4") :: c_t4(50)
+    real :: t4(50)
+    real(c_float), bind(C, name="c_t5") :: c_t5(50)
+    real :: t5(50)
+    real(c_float), bind(C, name="c_t6") :: c_t6(50)
+    real :: t6(50)
+    real(c_float), bind(C, name="c_t7") :: c_t7(50)
+    real :: t7(50)
+    real(c_float), bind(C, name="c_t8") :: c_t8(50)
+    real :: t8(50)
+    real(c_float), bind(C, name="c_t9") :: c_t9(50)
+    real :: t9(50)
+    real(c_float), bind(C, name="c_t10") :: c_t10(50)
+    real :: t10(50)
 
 ![SUPERCONDUCTOR]
     logical(c_bool), bind(C, name="c_FS_only") :: c_FS_only
@@ -187,6 +209,61 @@ module confighub
             type(c_ptr) :: get_eff_mass
         end function get_eff_mass
 
+        function get_t0() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_t0
+        end function get_t0
+
+        function get_t1() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_t1
+        end function get_t1
+
+        function get_t2() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_t2
+        end function get_t2
+
+        function get_t3() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_t3
+        end function get_t3
+
+        function get_t4() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_t4
+        end function get_t4
+
+        function get_t5() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_t5
+        end function get_t5
+
+        function get_t6() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_t6
+        end function get_t6
+
+        function get_t7() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_t7
+        end function get_t7
+
+        function get_t8() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_t8
+        end function get_t8
+
+        function get_t9() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_t9
+        end function get_t9
+
+        function get_t10() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_t10
+        end function get_t10
+
 
 ![SUPERCONDUCTOR]
         function get_FS_only() bind(C)
@@ -272,6 +349,17 @@ contains
 ![BANDS]
         band = get_string(get_band())
         eff_mass = c_eff_mass
+        t0 = c_t0
+        t1 = c_t1
+        t2 = c_t2
+        t3 = c_t3
+        t4 = c_t4
+        t5 = c_t5
+        t6 = c_t6
+        t7 = c_t7
+        t8 = c_t8
+        t9 = c_t9
+        t10 = c_t10
 
 ![SUPERCONDUCTOR]
         FS_only = c_FS_only
