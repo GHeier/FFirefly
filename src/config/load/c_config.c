@@ -10,23 +10,23 @@
 // Global Variables are listed below, with their default values
 
 //[CONTROL]
-char c_category[50] = "test";
+char* c_category = "test";
 char* get_category() {return c_category;}
-char c_calculation[50] = "test";
+char* c_calculation = "test";
 char* get_calculation() {return c_calculation;}
-char c_outdir[50] = "./output";
+char* c_outdir = "./output";
 char* get_outdir() {return c_outdir;}
-char c_prefix[50] = "sample";
+char* c_prefix = "sample";
 char* get_prefix() {return c_prefix;}
-char c_verbosity[50] = "high";
+char* c_verbosity = "high";
 char* get_verbosity() {return c_verbosity;}
-char c_datfile_in[50] = "input.dat";
+char* c_datfile_in = "input.dat";
 char* get_datfile_in() {return c_datfile_in;}
-char c_datfile_out[50] = "output.dat";
+char* c_datfile_out = "output.dat";
 char* get_datfile_out() {return c_datfile_out;}
 
 //[SYSTEM]
-char c_interaction[50] = "none";
+char* c_interaction = "none";
 char* get_interaction() {return c_interaction;}
 int c_dimension = 3;
 int c_ibrav = 0;
@@ -45,7 +45,7 @@ float c_cell[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
 float c_brillouin_zone[3][3] = {{6.283185307179586, 0.0, 0.0}, {0.0, 6.283185307179586, 0.0}, {0.0, 0.0, 6.283185307179586}};
 
 //[BANDS]
-char c_band[50][50];
+char** c_band = (char*[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 char** get_band() {return (char**)c_band;}
 float c_eff_mass[50];
 float c_t0[50];

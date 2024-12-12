@@ -1,8 +1,8 @@
 import ctypes
 
 install_dir = '/home/g/Research/bcs_diagonalization/'
+lib = ctypes.CDLL(install_dir+'build/lib/libc_config.so')
 lib = ctypes.CDLL(install_dir+'src/config/load/c_config.so')
-#lib = ctypes.CDLL(install_dir+'build/lib/libconfig.so')
 
 # Begin Global Variables
 
@@ -37,6 +37,17 @@ brillouin_zone = [[0.0] * 3] * 3
 band = [''] * 50
 
 eff_mass = 0.0
+t0 = 0.0
+t1 = 0.0
+t2 = 0.0
+t3 = 0.0
+t4 = 0.0
+t5 = 0.0
+t6 = 0.0
+t7 = 0.0
+t8 = 0.0
+t9 = 0.0
+t10 = 0.0
 
 #[SUPERCONDUCTOR]
 FS_only = False
@@ -52,32 +63,24 @@ def load_config():
 # Begin Function Declarations
 
 #[CONTROL]
-    category_ptr = ctypes.cast(ctypes.addressof(lib.c_category), ctypes.POINTER(ctypes.c_char * 50))
     global category
-    category = category_ptr.contents.value.decode('utf-8')
-    calculation_ptr = ctypes.cast(ctypes.addressof(lib.c_calculation), ctypes.POINTER(ctypes.c_char * 50))
+    category = ctypes.c_char_p.in_dll(lib, 'c_category').value.decode('utf-8')
     global calculation
-    calculation = calculation_ptr.contents.value.decode('utf-8')
-    outdir_ptr = ctypes.cast(ctypes.addressof(lib.c_outdir), ctypes.POINTER(ctypes.c_char * 50))
+    calculation = ctypes.c_char_p.in_dll(lib, 'c_calculation').value.decode('utf-8')
     global outdir
-    outdir = outdir_ptr.contents.value.decode('utf-8')
-    prefix_ptr = ctypes.cast(ctypes.addressof(lib.c_prefix), ctypes.POINTER(ctypes.c_char * 50))
+    outdir = ctypes.c_char_p.in_dll(lib, 'c_outdir').value.decode('utf-8')
     global prefix
-    prefix = prefix_ptr.contents.value.decode('utf-8')
-    verbosity_ptr = ctypes.cast(ctypes.addressof(lib.c_verbosity), ctypes.POINTER(ctypes.c_char * 50))
+    prefix = ctypes.c_char_p.in_dll(lib, 'c_prefix').value.decode('utf-8')
     global verbosity
-    verbosity = verbosity_ptr.contents.value.decode('utf-8')
-    datfile_in_ptr = ctypes.cast(ctypes.addressof(lib.c_datfile_in), ctypes.POINTER(ctypes.c_char * 50))
+    verbosity = ctypes.c_char_p.in_dll(lib, 'c_verbosity').value.decode('utf-8')
     global datfile_in
-    datfile_in = datfile_in_ptr.contents.value.decode('utf-8')
-    datfile_out_ptr = ctypes.cast(ctypes.addressof(lib.c_datfile_out), ctypes.POINTER(ctypes.c_char * 50))
+    datfile_in = ctypes.c_char_p.in_dll(lib, 'c_datfile_in').value.decode('utf-8')
     global datfile_out
-    datfile_out = datfile_out_ptr.contents.value.decode('utf-8')
+    datfile_out = ctypes.c_char_p.in_dll(lib, 'c_datfile_out').value.decode('utf-8')
 
 #[SYSTEM]
-    interaction_ptr = ctypes.cast(ctypes.addressof(lib.c_interaction), ctypes.POINTER(ctypes.c_char * 50))
     global interaction
-    interaction = interaction_ptr.contents.value.decode('utf-8')
+    interaction = ctypes.c_char_p.in_dll(lib, 'c_interaction').value.decode('utf-8')
     global dimension
     dimension = ctypes.c_int.in_dll(lib, 'c_dimension').value
     global ibrav
@@ -85,11 +88,11 @@ def load_config():
     global nbnd
     nbnd = ctypes.c_int.in_dll(lib, 'c_nbnd').value
     global fermi_energy
-    fermi_energy = ctypes.c_double.in_dll(lib, 'c_fermi_energy').value
+    fermi_energy = ctypes.c_float.in_dll(lib, 'c_fermi_energy').value
     global Temperature
-    Temperature = ctypes.c_double.in_dll(lib, 'c_Temperature').value
+    Temperature = ctypes.c_float.in_dll(lib, 'c_Temperature').value
     global onsite_U
-    onsite_U = ctypes.c_double.in_dll(lib, 'c_onsite_U').value
+    onsite_U = ctypes.c_float.in_dll(lib, 'c_onsite_U').value
 
 #[MESH]
     global k_mesh
@@ -101,23 +104,43 @@ def load_config():
 
 #[CELL]
     global cell
-    cell = list(((ctypes.c_double * 3) * 3).in_dll(lib, 'c_cell'))
+    cell = [[(((ctypes.c_float * 3) * 3).in_dll(lib, 'c_cell'))[i][j] for j in range(3)] for i in range(3)]
     global brillouin_zone
-    brillouin_zone = list(((ctypes.c_double * 3) * 3).in_dll(lib, 'c_brillouin_zone'))
+    brillouin_zone = [[(((ctypes.c_float * 3) * 3).in_dll(lib, 'c_brillouin_zone'))[i][j] for j in range(3)] for i in range(3)]
 
 #[BANDS]
-    temp = ctypes.POINTER(ctypes.c_char_p)
     global band
-    band = temp.in_dll(lib, 'c_band')
-    temp = ctypes.c_double * 50
+    band = ctypes.c_char_p.in_dll(lib, 'c_band').value.decode('utf-8')
     global eff_mass
-    eff_mass = temp.in_dll(lib, 'c_eff_mass').value
+    eff_mass = ctypes.c_float.in_dll(lib, 'c_eff_mass').value
+    global t0
+    t0 = ctypes.c_float.in_dll(lib, 'c_t0').value
+    global t1
+    t1 = ctypes.c_float.in_dll(lib, 'c_t1').value
+    global t2
+    t2 = ctypes.c_float.in_dll(lib, 'c_t2').value
+    global t3
+    t3 = ctypes.c_float.in_dll(lib, 'c_t3').value
+    global t4
+    t4 = ctypes.c_float.in_dll(lib, 'c_t4').value
+    global t5
+    t5 = ctypes.c_float.in_dll(lib, 'c_t5').value
+    global t6
+    t6 = ctypes.c_float.in_dll(lib, 'c_t6').value
+    global t7
+    t7 = ctypes.c_float.in_dll(lib, 'c_t7').value
+    global t8
+    t8 = ctypes.c_float.in_dll(lib, 'c_t8').value
+    global t9
+    t9 = ctypes.c_float.in_dll(lib, 'c_t9').value
+    global t10
+    t10 = ctypes.c_float.in_dll(lib, 'c_t10').value
 
 #[SUPERCONDUCTOR]
     global FS_only
     FS_only = ctypes.c_bool.in_dll(lib, 'c_FS_only').value
     global bcs_cutoff_frequency
-    bcs_cutoff_frequency = ctypes.c_double.in_dll(lib, 'c_bcs_cutoff_frequency').value
+    bcs_cutoff_frequency = ctypes.c_float.in_dll(lib, 'c_bcs_cutoff_frequency').value
     global num_eigenvalues_to_save
     num_eigenvalues_to_save = ctypes.c_int.in_dll(lib, 'c_num_eigenvalues_to_save').value
     global frequency_pts

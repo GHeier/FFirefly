@@ -9,16 +9,16 @@
 // Global Variables are listed below, with their default values
 
 //[CONTROL]
-extern char c_category[50]; char* get_category();
-extern char c_calculation[50]; char* get_calculation();
-extern char c_outdir[50]; char* get_outdir();
-extern char c_prefix[50]; char* get_prefix();
-extern char c_verbosity[50]; char* get_verbosity();
-extern char c_datfile_in[50]; char* get_datfile_in();
-extern char c_datfile_out[50]; char* get_datfile_out();
+extern char* c_category; char* get_category();
+extern char* c_calculation; char* get_calculation();
+extern char* c_outdir; char* get_outdir();
+extern char* c_prefix; char* get_prefix();
+extern char* c_verbosity; char* get_verbosity();
+extern char* c_datfile_in; char* get_datfile_in();
+extern char* c_datfile_out; char* get_datfile_out();
 
 //[SYSTEM]
-extern char c_interaction[50]; char* get_interaction();
+extern char* c_interaction; char* get_interaction();
 extern int c_dimension;
 extern int c_ibrav;
 extern int c_nbnd;
@@ -36,7 +36,7 @@ extern float c_cell[3][3];
 extern float c_brillouin_zone[3][3];
 
 //[BANDS]
-extern char c_band[50][50]; char** get_band();
+extern char** c_band; char** get_band();
 extern float c_eff_mass[50];
 extern float c_t0[50];
 extern float c_t1[50];

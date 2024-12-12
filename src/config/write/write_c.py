@@ -56,11 +56,11 @@ def format_var_line(key, value, section):
             # Handle strings
             if section == 'BANDS':
                 return (
-                        f"char c_{key}[50][50];\n"
-                        f"char** get_{key}() {{return (char**)c_{key};}}"
+                        f'char** c_{key} = (char*[]){{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};\n'
+                        f'char** get_{key}() {{return (char**)c_{key};}}'
                         )
             return (
-                f'char c_{key}[50] = "{value}";\n'
+                f'char* c_{key} = "{value}";\n'
                 f'char* get_{key}() {{return c_{key};}}'
             )
         elif isinstance(value, bool):
@@ -112,8 +112,8 @@ def format_header_line(key, value, section):
         index = '[50]'
     if (type(value) == str):
         if (key == "band"):
-            return f"extern char c_{key}[50][50]; char** get_{key}();"
-        return f"extern char c_{key}[50]; char* get_{key}();"
+            return f"extern char** c_{key}; char** get_{key}();"
+        return f"extern char* c_{key}; char* get_{key}();"
     elif (type(value) == int):
         return f"extern int c_{key}{index};"
     elif (type(value) == float):
