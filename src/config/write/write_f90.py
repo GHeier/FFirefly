@@ -12,9 +12,9 @@ def format_var_line(key, value, section):
     if section == 'BANDS':
         index = '(50)'
         if key == 'band':
-            return f"    character(kind=c_char), bind(C, name=\"c_band\") :: c_band(50,50)\n    character(len=50) :: band(50,50)"
+            return f"    character(len=50) :: band(50,50)"
     if (type(value) == str):
-        return f"    character(kind=c_char), bind(C, name=\"c_{key}\") :: c_{key}(50)\n    character(len=50) :: {key}{index}"
+        return f"    character(len=50) :: {key}{index}"
     elif (type(value) == int):
         return f"    integer(c_int), bind(C, name=\"c_{key}\") :: c_{key}{index}\n    integer :: {key}{index}"
     elif (type(value) == float):

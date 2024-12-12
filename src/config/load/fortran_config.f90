@@ -4,23 +4,15 @@ module confighub
     ! Global variables
 
 ![CONTROL]
-    character(kind=c_char), bind(C, name="c_category") :: c_category(50)
     character(len=50) :: category
-    character(kind=c_char), bind(C, name="c_calculation") :: c_calculation(50)
     character(len=50) :: calculation
-    character(kind=c_char), bind(C, name="c_outdir") :: c_outdir(50)
     character(len=50) :: outdir
-    character(kind=c_char), bind(C, name="c_prefix") :: c_prefix(50)
     character(len=50) :: prefix
-    character(kind=c_char), bind(C, name="c_verbosity") :: c_verbosity(50)
     character(len=50) :: verbosity
-    character(kind=c_char), bind(C, name="c_datfile_in") :: c_datfile_in(50)
     character(len=50) :: datfile_in
-    character(kind=c_char), bind(C, name="c_datfile_out") :: c_datfile_out(50)
     character(len=50) :: datfile_out
 
 ![SYSTEM]
-    character(kind=c_char), bind(C, name="c_interaction") :: c_interaction(50)
     character(len=50) :: interaction
     integer(c_int), bind(C, name="c_dimension") :: c_dimension
     integer :: dimension
@@ -50,7 +42,6 @@ module confighub
     real :: brillouin_zone(3,3)
 
 ![BANDS]
-    character(kind=c_char), bind(C, name="c_band") :: c_band(50,50)
     character(len=50) :: band(50,50)
     real(c_float), bind(C, name="c_eff_mass") :: c_eff_mass(50)
     real :: eff_mass(50)
