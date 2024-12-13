@@ -1,6 +1,7 @@
 #include <iostream>
 #include <math.h>
 #include <vector>
+#include <string>
 
 #include <omp.h>
 #include <boost/functional/hash.hpp>
@@ -15,6 +16,7 @@
 using namespace std;
 
 // Potential functions
+__attribute__((visibility("default")))
 float V(const Vec k1, const Vec k2, string spin1, string spin2) {
     if (interaction == "const") 
         return potential_const();

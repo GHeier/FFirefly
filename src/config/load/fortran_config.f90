@@ -91,204 +91,82 @@ module confighub
         function get_install_dir() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_install_dir
-        end function get_install_dir
-
+    end function get_install_dir
         function get_category() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_category
-        end function get_category
-
+    end function get_category
         function get_calculation() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_calculation
-        end function get_calculation
-
+    end function get_calculation
         function get_outdir() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_outdir
-        end function get_outdir
-
+    end function get_outdir
         function get_prefix() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_prefix
-        end function get_prefix
-
+    end function get_prefix
         function get_verbosity() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_verbosity
-        end function get_verbosity
-
+    end function get_verbosity
         function get_datfile_in() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_datfile_in
-        end function get_datfile_in
-
+    end function get_datfile_in
         function get_datfile_out() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_datfile_out
-        end function get_datfile_out
-
+    end function get_datfile_out
 
 ![SYSTEM]
         function get_interaction() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_interaction
-        end function get_interaction
+    end function get_interaction
 
-        function get_dimension() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_dimension
-        end function get_dimension
 
-        function get_ibrav() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_ibrav
-        end function get_ibrav
 
-        function get_nbnd() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_nbnd
-        end function get_nbnd
 
-        function get_fermi_energy() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_fermi_energy
-        end function get_fermi_energy
 
-        function get_Temperature() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_Temperature
-        end function get_Temperature
-
-        function get_onsite_U() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_onsite_U
-        end function get_onsite_U
 
 
 ![MESH]
-        function get_k_mesh() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_k_mesh
-        end function get_k_mesh
 
-        function get_q_mesh() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_q_mesh
-        end function get_q_mesh
 
-        function get_w_pts() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_w_pts
-        end function get_w_pts
 
 
 ![CELL]
-        function get_cell() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_cell
-        end function get_cell
 
-        function get_brillouin_zone() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_brillouin_zone
-        end function get_brillouin_zone
 
 
 ![BANDS]
         function get_band() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_band
-        end function get_band
+    end function get_band
 
-        function get_eff_mass() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_eff_mass
-        end function get_eff_mass
 
-        function get_t0() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_t0
-        end function get_t0
 
-        function get_t1() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_t1
-        end function get_t1
 
-        function get_t2() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_t2
-        end function get_t2
 
-        function get_t3() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_t3
-        end function get_t3
 
-        function get_t4() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_t4
-        end function get_t4
 
-        function get_t5() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_t5
-        end function get_t5
 
-        function get_t6() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_t6
-        end function get_t6
 
-        function get_t7() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_t7
-        end function get_t7
 
-        function get_t8() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_t8
-        end function get_t8
 
-        function get_t9() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_t9
-        end function get_t9
-
-        function get_t10() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_t10
-        end function get_t10
 
 
 ![SUPERCONDUCTOR]
-        function get_FS_only() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_FS_only
-        end function get_FS_only
 
-        function get_bcs_cutoff_frequency() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_bcs_cutoff_frequency
-        end function get_bcs_cutoff_frequency
 
-        function get_num_eigenvalues_to_save() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_num_eigenvalues_to_save
-        end function get_num_eigenvalues_to_save
 
-        function get_frequency_pts() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_frequency_pts
-        end function get_frequency_pts
 
 
 ![RESPONSE]
-        function get_dynamic() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_dynamic
-        end function get_dynamic
 
     ! End of global functions
 

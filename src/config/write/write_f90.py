@@ -39,7 +39,9 @@ def format_var_line(key, value, section):
         exit(1)
 
 def format_func_line(key, value, section):
-    return f"        function get_{key}() bind(C)\n            use iso_c_binding\n            type(c_ptr) :: get_{key}\n        end function get_{key}\n"
+    if (type(value) == str):
+        return f"        function get_{key}() bind(C)\n            use iso_c_binding\n            type(c_ptr) :: get_{key}\n    end function get_{key}"
+    return ""
 
 def format_load_line(key, value, section):
     if (type(value) == str):
@@ -54,6 +56,7 @@ def replace_double_slash(file_path):
     
     # Replace all occurrences of "//" with "!"
     modified_content = content.replace("//", "!")
+    
     
     # Write the modified content to the output file
     with open(file_path, 'w') as file:

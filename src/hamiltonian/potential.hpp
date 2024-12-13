@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 #include "../objects/vec.hpp"
 #include "../response/susceptibility.hpp"
 
@@ -11,6 +12,7 @@ struct indices_values {
     float value;
 };
 
+__attribute__((visibility("default")))
 float V(const Vec k1, const Vec k2, string spin1="", string spin2="");
 
 float potential_const();
