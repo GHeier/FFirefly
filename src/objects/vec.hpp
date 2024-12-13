@@ -39,6 +39,7 @@ Vec operator*(float multiple, const Vec &input);
 Vec operator*(const Vec &input, float multiple);
 /// Dot product of two vectors.
 float operator*(const Vec& left, const Vec& right);
+float operator*(const vector<vector<float>>& left, const Vec& right);
 Vec operator/(const Vec &input, float multiple);
 bool operator==(const Vec& k, const Vec& q);
 /// Comparison operator for Vec, sorting them by area

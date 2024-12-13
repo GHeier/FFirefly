@@ -5,8 +5,8 @@
 #include "../objects/surfaces.hpp"
 #include "../config/load/cpp_config.hpp"
 
-int s_div = (dim == 3) ? 40 : 300; // Number of integral surface divisions
-int s_pts = (dim == 3) ? 50 : 1000; // Number of integral surfaces
+int s_div = (dimension == 3) ? 40 : 300; // Number of integral surface divisions
+int s_pts = (dimension == 3) ? 50 : 1000; // Number of integral surfaces
 // Gaussian integration constants
 float weights_0th[1] = {2.0}; float * w0 = weights_0th;
 float weights_1st[2] = {1.0, 1.0}; float * w1 = weights_1st;
@@ -54,17 +54,13 @@ void get_spacing_vec(vector<float> &spacing, float w, float a, float b, int pts)
 }
 
 void get_surface_transformed_bounds(float &upper, float &lower, function<float(Vec)> func) {
-    auto get_k = [] (float i, int pts) { return k_max*(2.0*i/(pts-1.0)-1.0); };
 
     upper = 0; lower = 1000;
     int pts = 100;
     for (float i = 0; i < pts; i++) {
-        float x = get_k(i, pts);
         for (float j = 0; j < pts; j++) {
-            float y = get_k(j, pts);
-            for (float k = 0; k < pts * (dim%2) + 1 * ((dim+1)%2); k++) {
-                float z = get_k(k, pts);
-                Vec k_val(x, y, z);
+            for (float k = 0; k < pts * (dimension%2) + 1 * ((dimension+1)%2); k++) {
+                Vec k_val = brillouin_zone * Vec(i / (pts-1), j / (pts-1), k / (pts-1));
                 float val = func(k_val);
                 if (val > upper) upper = val;
                 if (val < lower) lower = val;
@@ -88,11 +84,12 @@ float surface_transform_integral(function<float(Vec)> integrand,
     };
 
     double sum = 0;
+    vector<int> mesh = {s_div, s_div, s_div * (dimension%2) + 1 * ((dimension+1)%2)};
     #pragma omp parallel for reduction(+:sum)
-    for (int i = 0; i < s_div; i++) {
-        for (int j = 0; j < s_div; j++) {
-            for (int k = 0; k < s_div * (dim%2) + 1 * ((dim+1)%2); k++) {
-                vector<Vec> points = points_from_indices(func, i, j, k, s_div);
+    for (int i = 0; i < mesh[0]; i++) {
+        for (int j = 0; j < mesh[1]; j++) {
+            for (int k = 0; k < mesh[2]; k++) {
+                vector<Vec> points = points_from_indices(func, i, j, k, mesh);
                 float min = 1000, max = -1000;
                 for (Vec p : points) {
                     if (func(p) < min) min = func(p);
@@ -125,7 +122,7 @@ float surface_transform_integral(function<float(Vec)> integrand,
                         average = average / (4-b);
 
                         float A = area_in_corners(corner_points);
-                        if (dim == 2) A *= s_div / (2*k_max);
+                        if (dimension == 2) A *= s_div / 2.0;
                         Vec k_point = average; k_point.area = A;
                         k_point.w = s_val;
 
@@ -152,19 +149,19 @@ float trapezoidal_integration(const function<double(float, float, float)> &f, fl
     float dx = (x1 - x0) / (num_points - 1);
     float dy = (y1 - y0) / (num_points - 1);
     float dz = (z1 - z0) / (num_points - 1);
-    if (dim == 2) dz = 1;
+    if (dimension == 2) dz = 1;
     int counter = 0;
     #pragma omp parallel for reduction(+:sum)
     for (int i = 0; i < num_points; i++) {
         float x = x0 + i*dx;
         for (int j = 0; j < num_points; j++) {
             float y = y0 + j*dy;
-            for (float k = 0; k < num_points * (dim%2) + 1 * ((dim+1)%2); k++) {
+            for (float k = 0; k < num_points * (dimension%2) + 1 * ((dimension+1)%2); k++) {
                 float z = z0 + k*dz;
                 float weight = 1.0;
                 if (i == 0 or i == num_points - 1) weight /= 2.0;
                 if (j == 0 or j == num_points - 1) weight /= 2.0;
-                if ( (k == 0 or k == num_points - 1) and dim == 3) weight /= 2.0;
+                if ( (k == 0 or k == num_points - 1) and dimension == 3) weight /= 2.0;
 
                 sum += weight * f(x,y,z) * dx * dy * dz;
             }
@@ -180,7 +177,7 @@ complex<float> complex_trapezoidal_integration(const function<complex<float>(flo
     float dy = (y1 - y0) / (num_points - 1);
     float dz = (z1 - z0) / (num_points - 1);
     float num_z_points = num_points;
-    if (dim == 2) dz = 1;
+    if (dimension == 2) dz = 1;
 
     #pragma omp parallel for reduction(+:sum_real, sum_imag)
     for (int i = 0; i < num_points; i++) {
@@ -192,7 +189,7 @@ complex<float> complex_trapezoidal_integration(const function<complex<float>(flo
                 float weight = 1.0;
                 if (i == 0 || i == num_points - 1) weight /= 2.0;
                 if (j == 0 || j == num_points - 1) weight /= 2.0;
-                if ((k == 0 || k == num_points - 1) && dim == 3) weight /= 2.0;
+                if ((k == 0 || k == num_points - 1) && dimension == 3) weight /= 2.0;
 
                 double f_real = f(x, y, z).real();
                 double f_imag = f(x, y, z).imag();

@@ -23,6 +23,7 @@
 #include <boost/math/tools/roots.hpp>
 #include <boost/math/quadrature/gauss.hpp>
 
+#include "cfg.hpp"
 #include "../config/load/cpp_config.hpp"
 #include "../algorithms/integration.hpp"
 #include "../objects/vec.hpp"

@@ -28,6 +28,7 @@
 #include "../objects/matrix.hpp"
 #include "../objects/eigenvec.hpp"
 #include "../hamiltonian/band_structure.hpp"
+#include "cfg.hpp"
 
 using std::string;
 

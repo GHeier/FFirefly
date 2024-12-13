@@ -68,10 +68,10 @@ float potential_FLEX_singlet(Vec k1, Vec k2) {
     float Xm = chi(q_minus, w);
     float Xp = chi(q_plus, w);
 
-    float Vm = U*U * Xm / (1 - U*Xm) 
-        + pow(U,3)*Xm*Xm / (1 - U*U * Xm*Xm);
-    float Vp = U*U * Xp / (1 - U*Xp) 
-        + pow(U,3)*Xp*Xp / (1 - U*U * Xp*Xp);
+    float Vm = onsite_U*onsite_U * Xm / (1 - onsite_U*Xm) 
+        + pow(onsite_U,3)*Xm*Xm / (1 - onsite_U*onsite_U * Xm*Xm);
+    float Vp = onsite_U*onsite_U * Xp / (1 - onsite_U*Xp) 
+        + pow(onsite_U,3)*Xp*Xp / (1 - onsite_U*onsite_U * Xp*Xp);
 
     return 0.5 * (Vm + Vp);
 }
@@ -84,8 +84,8 @@ float potential_FLEX_triplet(Vec k1, Vec k2) {
     float Xm = chi(q_minus, w);
     float Xp = chi(q_plus, w);
 
-    float V_minus = -pow(U,2) * Xm / ( 1 - pow(U*Xm,2));
-    float V_plus = -pow(U,2) * Xp / ( 1 - pow(U*Xp,2));
+    float V_minus = -pow(onsite_U,2) * Xm / ( 1 - pow(onsite_U*Xm,2));
+    float V_plus = -pow(onsite_U,2) * Xp / ( 1 - pow(onsite_U*Xp,2));
 
     return 0.5 * ( V_minus - V_plus);
 }

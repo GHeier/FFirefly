@@ -9,6 +9,7 @@ using namespace std;
 // Global Variables are listed below
 
 //[CONTROL]
+string install_dir;
 string category;
 string calculation;
 string outdir;
@@ -61,24 +62,13 @@ int frequency_pts;
 bool dynamic;
 // End of Global Variables 
 
-int n = k_mesh[0];
-int m = q_mesh[0];
-int l = 5;
-float wc = bcs_cutoff_frequency;
-float mu = fermi_energy;
-float U = onsite_U;
-// Constants
-float t = 1.0;
-float tn = 0.0;
-float tnn = 0.0;
-float k_max = M_PI;
-int dim = dimension;
 
 void load_cpp_config() {
     printf("Loading C++ Configuration File\n");
     // Load the C++ configuration file
 
 //[CONTROL]
+    install_dir = c_install_dir;
     category = c_category;
     calculation = c_calculation;
     outdir = c_outdir;

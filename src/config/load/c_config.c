@@ -10,6 +10,8 @@
 // Global Variables are listed below, with their default values
 
 //[CONTROL]
+char* c_install_dir = "/home/g/Research/bcs_diagonalization/";
+char* get_install_dir() {return c_install_dir;}
 char* c_category = "test";
 char* get_category() {return c_category;}
 char* c_calculation = "test";
@@ -72,6 +74,7 @@ bool c_dynamic = false;
 
 
 void get_dimensions() {
+
     // Check if bottom row and right column are zero
     if (c_cell[2][0] == 0.0 && c_cell[2][1] == 0.0 && c_cell[2][2] == 0.0 
             && c_cell[0][2] == 0.0 && c_cell[1][2] == 0.0 && c_cell[2][2] == 0.0) {
@@ -179,7 +182,10 @@ void load_c_config() {
             // Read in variable values from the config file
 
 //[CONTROL]
-            if (strstr(key, "category") != NULL) {
+            if (strstr(key, "install_dir") != NULL) {
+                set_string(&c_install_dir, value);
+            }
+            else if (strstr(key, "category") != NULL) {
                 set_string(&c_category, value);
             }
             else if (strstr(key, "calculation") != NULL) {
@@ -327,6 +333,7 @@ void unload_c_config() {
     // Unload the config file
 
 //[CONTROL]
+    free(c_install_dir);
     free(c_category);
     free(c_calculation);
     free(c_outdir);

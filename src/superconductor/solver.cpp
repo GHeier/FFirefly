@@ -20,6 +20,7 @@
 #include "../algorithms/linear_algebra.hpp"
 #include "frequency_inclusion.hpp"
 #include "../hamiltonian/potential.hpp"
+#include "cfg.hpp"
 
 /*
  * f_singlet is the part of the linearized BCS gap equation:

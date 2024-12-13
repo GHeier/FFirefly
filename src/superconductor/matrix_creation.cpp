@@ -3,6 +3,7 @@
 #include <math.h>
 #include <cassert>
 
+#include "cfg.hpp"
 #include "solver.hpp"
 #include "matrix_creation.hpp"
 #include "utilities.hpp"

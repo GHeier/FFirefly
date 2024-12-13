@@ -1,5 +1,6 @@
-from ..config.load.python_config import *
+#from ..config.load.python_config import *
 import fcode
+from fcode.config.load.python_config import *
 
 def eliashberg():
     print("Eliashberg function")

@@ -11,6 +11,7 @@ import numpy as np
 
 ALL = {
     'CONTROL': {
+        'install_dir': '/home/g/Research/bcs_diagonalization/', # Make sure this lines ends with '/'
         'category': 'test',
         'calculation': 'test',
         'outdir': './output',

@@ -41,33 +41,26 @@ float triangle_area_from_points(Vec k1, Vec k2, Vec k3) {
     return A;
 }
 
-vector<Vec> points_from_indices(function<float(Vec)> func, int i, int j, int k, int divs) {
-    float x1 = 2*k_max * i / divs       - k_max; 
-    float x2 = 2*k_max * (i+1) / divs   - k_max; 
-    float y1 = 2*k_max * j / divs       - k_max; 
-    float y2 = 2*k_max * (j+1) / divs   - k_max; 
-    float z1 = 2*k_max * k / divs       - k_max; 
-    float z2 = 2*k_max * (k+1) / divs   - k_max; 
+vector<Vec> points_from_indices(function<float(Vec)> func, int i, int j, int k, vector<int> k_mesh) {
+    Vec p1 = brillouin_zone * Vec(2.0*i/k_mesh[0] - 1, 2.0*j/k_mesh[1] - 1, 2.0*k/k_mesh[2] - 1);
+    Vec p2 = brillouin_zone * Vec(2.0*(i+1)/k_mesh[0] - 1, 2.0*j/k_mesh[1] - 1, 2.0*k/k_mesh[2] - 1);
+    Vec p3 = brillouin_zone * Vec(2.0*(i+1)/k_mesh[0] - 1, 2.0*(j+1)/k_mesh[1] - 1, 2.0*k/k_mesh[2] - 1);
+    Vec p4 = brillouin_zone * Vec(2.0*i/k_mesh[0] - 1, 2.0*(j+1)/k_mesh[1] - 1, 2.0*k/k_mesh[2] - 1);
+    Vec p5 = brillouin_zone * Vec(2.0*i/k_mesh[0] - 1, 2.0*j/k_mesh[1] - 1, 2.0*(k+1)/k_mesh[2] - 1);
+    Vec p6 = brillouin_zone * Vec(2.0*(i+1)/k_mesh[0] - 1, 2.0*j/k_mesh[1] - 1, 2.0*(k+1)/k_mesh[2] - 1);
+    Vec p7 = brillouin_zone * Vec(2.0*(i+1)/k_mesh[0] - 1, 2.0*(j+1)/k_mesh[1] - 1, 2.0*(k+1)/k_mesh[2] - 1);
+    Vec p8 = brillouin_zone * Vec(2.0*i/k_mesh[0] - 1, 2.0*(j+1)/k_mesh[1] - 1, 2.0*(k+1)/k_mesh[2] - 1);
 
-    Vec p1(x1, y1, z1); p1.w = func(p1);  
-    Vec p2(x2, y1, z1); p2.w = func(p2);
-    Vec p3(x2, y2, z1); p3.w = func(p3);
-    Vec p4(x1, y2, z1); p4.w = func(p4);
-    Vec p5(x1, y1, z2); p5.w = func(p5);
-    Vec p6(x2, y1, z2); p6.w = func(p6);
-    Vec p7(x2, y2, z2); p7.w = func(p7);
-    Vec p8(x1, y2, z2); p8.w = func(p8);
+    p1.w = func(p1);  
+    p2.w = func(p2);
+    p3.w = func(p3);
+    p4.w = func(p4);
+    p5.w = func(p5);
+    p6.w = func(p6);
+    p7.w = func(p7);
+    p8.w = func(p8);
 
-    vector<Vec> points(8); 
-    points[0] = p1;
-    points[1] = p2;
-    points[2] = p3;
-    points[3] = p4;
-    points[4] = p5;
-    points[5] = p6;
-    points[6] = p7;
-    points[7] = p8;
-
+    vector<Vec> points = {p1, p2, p3, p4, p5, p6, p7, p8};
     return points;
 }
 
@@ -178,10 +171,10 @@ vector<Vec> tetrahedron_method(function<float(Vec k)> func, float s_val) {
     };
 
     vector<Vec> FS;
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            for (int k = 0; k < n * (dim%2) + 1 * ((dim+1)%2); k++) {
-                vector<Vec> points = points_from_indices(func, i, j, k, n);
+    for (int i = 0; i < k_mesh[0]; i++) {
+        for (int j = 0; j < k_mesh[1]; j++) {
+            for (int k = 0; k < k_mesh[2]; k++) {
+                vector<Vec> points = points_from_indices(func, i, j, k, k_mesh);
                 if (not surface_inside_cube(s_val, points)) continue;
 
                 // Finds every k-space point in all possible tetrahedra, along with its associated
@@ -207,7 +200,7 @@ vector<Vec> tetrahedron_method(function<float(Vec k)> func, float s_val) {
                     average = average / (4-b);
 
                     float A = area_in_corners(corner_points);
-                    if (dim == 2) A *= n / (2*k_max);
+                    if (dimension == 2) A *= k_mesh[2] / 2.0;
                     Vec k_point = average; k_point.area = A;
                     k_point.w = s_val;
                     FS.push_back(k_point);

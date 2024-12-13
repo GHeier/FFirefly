@@ -31,7 +31,7 @@ float triangle_area_from_points(Vec k1, Vec k2, Vec k3);
  *
  * @return A vector of Vecs 
  */
-vector<Vec> points_from_indices(function<float(Vec)> func, int i, int j, int k, int divs);
+vector<Vec> points_from_indices(function<float(Vec)> func, int i, int j, int k, vector<int> k_mesh);
 
 /**
  * @brief Picks out the points that are in each tetrahedron

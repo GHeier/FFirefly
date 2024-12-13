@@ -9,6 +9,7 @@
 #include <iostream>
 #include <iomanip>
 
+#include "cfg.hpp"
 #include "../config/load/cpp_config.hpp"
 
 using namespace std;

@@ -2,9 +2,7 @@
 
 #include <vector>
 #include "../objects/vec.hpp"
-#include "../objects/field.hpp"
 #include "../response/susceptibility.hpp"
-#include <unordered_map>
 
 using namespace std;
 

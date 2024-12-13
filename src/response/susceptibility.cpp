@@ -48,8 +48,8 @@ float fermi_dirac(float E, float T) {
 }
 
 float ratio(Vec k, Vec q, float w, float T) {
-    float e_k = epsilon(k.n, k) - mu;
-    float e_qk = epsilon(k.n, k+q) - mu;
+    float e_k = epsilon(k.n, k) - fermi_energy;
+    float e_qk = epsilon(k.n, k+q) - fermi_energy;
     float dE = e_qk - e_k;
     float f_k = fermi_dirac(e_k, T);
     float f_qk = fermi_dirac(e_qk, T);
@@ -64,10 +64,10 @@ float ratio(Vec k, Vec q, float w, float T) {
     return (f_qk - f_k) / (w - dE);
 }
 
-//float integrate_susceptibility(Vec q, float T, float mu, float w, int num_points) {
-//    //return imaginary_integration(q, T, mu, w, num_points, 0.000);
+//float integrate_susceptibility(Vec q, float T, float fermi_energy, float w, int num_points) {
+//    //return imaginary_integration(q, T, fermi_energy, w, num_points, 0.000);
 //    if (q.norm() < 0.0001) {
-//        vector<Vec> FS = get_FS(mu);
+//        vector<Vec> FS = get_FS(fermi_energy);
 //        float sum = 0; for (auto x : FS) sum += x.area / vp(x.n, x);
 //        return sum / pow(2*k_max,dim);
 //    }
@@ -92,11 +92,11 @@ float ratio(Vec k, Vec q, float w, float T) {
 //    return c / pow(2*k_max,dim);
 //}
 //
-//complex<float> complex_susceptibility_integration(Vec q, float T, float mu, complex<float> w, int num_points) {
-//    auto func = [T, q, w, mu](float x, float y, float z) -> complex<float> {
+//complex<float> complex_susceptibility_integration(Vec q, float T, float fermi_energy, complex<float> w, int num_points) {
+//    auto func = [T, q, w, fermi_energy](float x, float y, float z) -> complex<float> {
 //        Vec k(x,y,z);
-//        float e_k = epsilon(k.n, k) - mu;
-//        float e_kq = epsilon(k.n, k+q) - mu;
+//        float e_k = epsilon(k.n, k) - fermi_energy;
+//        float e_kq = epsilon(k.n, k+q) - fermi_energy;
 //        float f_kq = fermi_dirac(e_kq, T);
 //        float f_k = fermi_dirac(e_k, T);
 //        if (fabs(e_kq - e_k) < 0.0001 and fabs(w.imag()) < 0.0001 and fabs(w.real()) < 0.0001) {
@@ -105,9 +105,9 @@ float ratio(Vec k, Vec q, float w, float T) {
 //        }
 //        return (f_kq - f_k) / (w - (e_kq - e_k));
 //    };
-//    auto func_r = [T, q, w, mu](Vec k) -> float {
-//        float e_k = epsilon(k.n, k) - mu;
-//        float e_kq = epsilon(k.n, k+q) - mu;
+//    auto func_r = [T, q, w, fermi_energy](Vec k) -> float {
+//        float e_k = epsilon(k.n, k) - fermi_energy;
+//        float e_kq = epsilon(k.n, k+q) - fermi_energy;
 //        float f_kq = fermi_dirac(e_kq, T);
 //        float f_k = fermi_dirac(e_k, T);
 //        if (fabs(e_kq - e_k) < 0.0001 and fabs(w.imag()) < 0.0001 and fabs(w.real()) < 0.0001) {
@@ -117,9 +117,9 @@ float ratio(Vec k, Vec q, float w, float T) {
 //        return (f_kq - f_k)*(w.real() - (e_kq - e_k)) / 
 //            ((w.real() - (e_kq - e_k))*(w.real() - (e_kq - e_k)) + w.imag()*w.imag());
 //    };
-//    auto func_i = [T, q, w, mu](Vec k) -> float {
-//        float e_k = epsilon(k.n, k) - mu;
-//        float e_kq = epsilon(k.n, k+q) - mu;
+//    auto func_i = [T, q, w, fermi_energy](Vec k) -> float {
+//        float e_k = epsilon(k.n, k) - fermi_energy;
+//        float e_kq = epsilon(k.n, k+q) - fermi_energy;
 //        float f_kq = fermi_dirac(e_kq, T);
 //        float f_k = fermi_dirac(e_k, T);
 //        if (fabs(e_kq - e_k) < 0.0001 and fabs(w.imag()) < 0.0001 and fabs(w.real()) < 0.0001) {
@@ -147,7 +147,7 @@ float ratio(Vec k, Vec q, float w, float T) {
 //            -k_max, k_max, num_points) / d;
 //}
 //
-//vector<vector<vector<float>>> chi_cube(float T, float mu, float w, string message) {
+//vector<vector<vector<float>>> chi_cube(float T, float fermi_energy, float w, string message) {
 //    int num_points = (dim == 3) ? 50 : 1000; // Number of integral surfaces
 //    int m_z = m*(dim%2) + 3*((dim+1)%2);
 //    vector<vector<vector<float>>> cube(m, vector<vector<float>> (m, vector<float> (m_z)));
@@ -170,7 +170,7 @@ float ratio(Vec k, Vec q, float w, float T) {
 //        auto datIt = map.begin();
 //        advance(datIt, i);
 //        string key = datIt->first;
-//        map[key] = integrate_susceptibility(string_to_vec(key), T, mu, w, num_points);
+//        map[key] = integrate_susceptibility(string_to_vec(key), T, fermi_energy, w, num_points);
 //        progress_bar(1.0 * i / (map.size()-1), message);
 //    }
 //    cout << endl;
@@ -272,14 +272,14 @@ Vec to_IBZ_2(const Vec k) {
     if (x > M_PI) x = - (x - 2*M_PI);
     if (y > M_PI) y = - (y - 2*M_PI);
     if (z > M_PI) z = - (z - 2*M_PI);
-    if (dim == 3) {
+    if (dimension == 3) {
         float arr[] = {x, y, z};
         sort(arr, arr+3, greater<float>());
         auto& [a, b, c] = arr;
         Vec result(a, b, c);
         return result;
     }
-    else if (dim == 2) {
+    else if (dimension == 2) {
         float arr[] = {x, y};
         sort(arr, arr+2, greater<float>());
         auto& [a, b] = arr;

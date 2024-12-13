@@ -11,11 +11,11 @@ using namespace std;
 // Energy band functions
 float epsilon(int n, Vec k) {
     if (band[n] == "simple_cubic_layered")
-        return epsilon_SC_layered(k);
+        return epsilon_SC_layered(n, k);
     if (band[n] == "simple_cubic")
-        return epsilon_SC(k, t, tn);
+        return epsilon_SC(n, k);
     if (band[n] == "sphere")
-        return epsilon_sphere(k);
+        return epsilon_sphere(n, k);
     else {
         cout << "Unknown Band structure: " << band[n] << endl;
         exit(1);
@@ -30,12 +30,12 @@ float e_diff(int n, Vec k, Vec q) {
 // Fermi Velocity corresponds to energy band functions above
 float vp(int n, Vec k) {
     if (band[n] == "simple_cubic_layered")
-        return fermi_velocity_SC_layered(k).norm();
+        return fermi_velocity_SC_layered(n, k).norm();
     if (band[n] == "simple_cubic") {
-        return fermi_velocity_SC(k).norm();
+        return fermi_velocity_SC(n, k).norm();
     }
     if (band[n] == "sphere")
-        return fermi_velocity_sphere(k).norm();
+        return fermi_velocity_sphere(n, k).norm();
     else {
         cout << "Fermi velocity not available for band structure: " << band[n] << endl;
         exit(1);
@@ -45,11 +45,11 @@ float vp(int n, Vec k) {
 float vp_diff(int n, Vec k, Vec q) {
     Vec v;
     if (band[n] == "simple_cubic_layered")
-        v = fermi_velocity_SC_layered(k+q) - fermi_velocity_SC_layered(k);
+        v = fermi_velocity_SC_layered(n, k+q) - fermi_velocity_SC_layered(n, k);
     else if (band[n] == "simple_cubic")
-        v = fermi_velocity_SC(k+q) - fermi_velocity_SC(k);
+        v = fermi_velocity_SC(n, k+q) - fermi_velocity_SC(n, k);
     else if (band[n] == "sphere")
-        v = fermi_velocity_sphere(k+q) - fermi_velocity_sphere(k);
+        v = fermi_velocity_sphere(n, k+q) - fermi_velocity_sphere(n, k);
     else {
         cout << "No band structure specified\n";
         exit(1);
@@ -58,57 +58,57 @@ float vp_diff(int n, Vec k, Vec q) {
 }
 
 // Fermi gas
-float epsilon_sphere(Vec k) {
-    if (dim < 3) k.z = 0;
-    if (dim < 4) k.w = 0;
-    return pow(k.norm(), 2);
+float epsilon_sphere(int n, Vec k) {
+    if (dimension < 3) k.z = 0;
+    if (dimension < 4) k.w = 0;
+    return pow(k.norm(), 2) / eff_mass[n];
 }
 
-Vec fermi_velocity_sphere(Vec k) {
-    if (dim < 3) k.z = 0;
-    if (dim < 4) k.w = 0;
-    return 2*k;
+Vec fermi_velocity_sphere(int n, Vec k) {
+    if (dimension < 3) k.z = 0;
+    if (dimension < 4) k.w = 0;
+    return 2*k / eff_mass[n];
 }
 
 // Cubic Lattice
-float epsilon_SC(Vec k, float t, float tn) {
+float epsilon_SC(int n, Vec k) {
     float val = 0.0;
-    for (int i = 0; i < dim; i++) {
-        val += -2*t*cos(k(i));
-        val += -2*tnn*cos(k(i));
+    for (int i = 0; i < dimension; i++) {
+        val += -2*t0[n]*cos(k(i));
+        val += -2*t2[n]*cos(k(i));
     }
-    val += -4*tn*cos(k(0))*cos(k(1));
+    val += -4*t1[n]*cos(k(0))*cos(k(1));
     return val;
 }
 
-Vec fermi_velocity_SC(Vec k) {
+Vec fermi_velocity_SC(int n, Vec k) {
     Vec v;
-    for (int i = 0; i < dim; i++) {
+    for (int i = 0; i < dimension; i++) {
         v(i) = -sin(k(i));
     }
-    v = -2*t*v;
+    v = -2*t0[n]*v;
     return v;
 }
 
 // Cubic lattice with different hopping in z-direction
-float epsilon_SC_layered(Vec k) {
+float epsilon_SC_layered(int n, Vec k) {
     float val = 0.0;
-    for (int i = 0; i < dim; i++) {
+    for (int i = 0; i < dimension; i++) {
         if (i < 2) 
-            val += (-2*t)*(cos(k(i)));
+            val += (-2*t0[n])*(cos(k(i)));
         else
-            val += (-2*tn)*(cos(k(i)));
+            val += (-2*t1[n])*(cos(k(i)));
     }
     return val;
 }
 
-Vec fermi_velocity_SC_layered(Vec k) {
+Vec fermi_velocity_SC_layered(int n, Vec k) {
     Vec v;
-    for (int i = 0; i < dim; i++) {
+    for (int i = 0; i < dimension; i++) {
         if (i < 2) 
-            v(i) = (-2*t)*(-sin(k(i)));
+            v(i) = (-2*t0[n])*(-sin(k(i)));
         else
-            v(i) = (-2*tn)*(-sin(k(i)));
+            v(i) = (-2*t1[n])*(-sin(k(i)));
     }
     return v;
 }

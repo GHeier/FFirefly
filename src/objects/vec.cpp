@@ -106,6 +106,11 @@ float operator*(const Vec& left, const Vec& right) {
     return left_new.x * right_new.x + left_new.y * right_new.y + left_new.z * right_new.z + left_new.w * right_new.w;
 }
 
+float operator*(const vector<vector<float>>& left, const Vec& right) {
+    Vec right_new = right;
+    return left[right_new.n][0] * right_new.x + left[right_new.n][1] * right_new.y + left[right_new.n][2] * right_new.z + left[right_new.n][3] * right_new.w;
+}
+
 Vec operator/(const Vec& input, float multiple) {
     Vec result(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple);
     return result;

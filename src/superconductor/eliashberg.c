@@ -1,6 +1,10 @@
 #include <Python.h>
+#include <stdio.h>
+#include <string.h>
+#include "../config/load/c_config.h"
 
 void eliashberg() {
+    char local_path[1024] = "src/superconductor/";
     Py_Initialize();
 
     // Import sys module
@@ -8,7 +12,10 @@ void eliashberg() {
     PyObject *path = PyObject_GetAttrString(sys, "path");
 
     // Append the current directory to sys.path
-    PyObject *currentDir = PyUnicode_FromString(".");
+    char path_to_module[1024];
+    snprintf(path_to_module, sizeof(path_to_module), "%s%s", c_install_dir, local_path);
+    printf("path_to_module: %s\n", path_to_module);
+    PyObject *currentDir = PyUnicode_FromString(path_to_module);
     PyList_Append(path, currentDir);
     Py_DECREF(currentDir);
 

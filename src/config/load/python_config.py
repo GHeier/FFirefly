@@ -2,11 +2,11 @@ import ctypes
 
 install_dir = '/home/g/Research/bcs_diagonalization/'
 lib = ctypes.CDLL(install_dir+'build/lib/libc_config.so')
-lib = ctypes.CDLL(install_dir+'src/config/load/c_config.so')
 
 # Begin Global Variables
 
 #[CONTROL]
+install_dir = ''
 category = ''
 calculation = ''
 outdir = ''
@@ -63,6 +63,8 @@ def load_config():
 # Begin Function Declarations
 
 #[CONTROL]
+    global install_dir
+    install_dir = ctypes.c_char_p.in_dll(lib, 'c_install_dir').value.decode('utf-8')
     global category
     category = ctypes.c_char_p.in_dll(lib, 'c_category').value.decode('utf-8')
     global calculation

@@ -11,6 +11,7 @@
 #include <math.h>
 #include <memory>
 
+#include "cfg.hpp"
 #include "../objects/vec.hpp"
 #include "../config/load/cpp_config.hpp"
 #include "../hamiltonian/band_structure.hpp"
