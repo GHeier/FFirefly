@@ -35,5 +35,6 @@
 *.out
 *.app
 
-build/
+build/*
 fmodule.*
+__pycache__/
