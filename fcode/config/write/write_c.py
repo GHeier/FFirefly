@@ -77,7 +77,7 @@ def format_var_line(key, value, section):
 
 def format_func_line(key, value, section):
     el = 'else '
-    if key == 'install_dir':
+    if key == 'category':
         el = ''
     index = ''
     if section == 'BANDS':

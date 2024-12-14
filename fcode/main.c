@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
     else if (!strcmp(c_category, "eliashberg")) eliashberg1();
     else printf("Unknown Calculation Type\n");
 
-    unload_c_config(); // Free memory allocated for global c variables
+    //unload_c_config(); // Free memory allocated for global c variables
     printf("Program Complete\n");
     return 0;
 }

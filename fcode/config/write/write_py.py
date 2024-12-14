@@ -42,43 +42,43 @@ def format_var_line(key, value, section):
             exit(1)
 
 def format_func_line(key, value, section):
-    base_val = f"    global {key}\n"
+    base_val = f"global {key}\n"
     types_val = ""
     if type(value) == str:
         if section == 'BANDS':
-            types_val = f"    {key} = ctypes.c_char_p.in_dll(lib, 'c_{key}').value.decode('utf-8')"
-        types_val = f"    {key} = ctypes.c_char_p.in_dll(lib, 'c_{key}').value.decode('utf-8')"
+            types_val = f"{key} = ctypes.c_char_p.in_dll(lib, 'c_{key}').value.decode('utf-8')"
+        types_val = f"{key} = ctypes.c_char_p.in_dll(lib, 'c_{key}').value.decode('utf-8')"
                 
     elif type(value) == int:
         if section == 'BANDS':
-            types_val = f"    {key} = list((ctypes.c_int * 50).in_dll(lib, 'c_{key}'))"
-        types_val = f"    {key} = ctypes.c_int.in_dll(lib, 'c_{key}').value"
+            types_val = f"{key} = list((ctypes.c_int * 50).in_dll(lib, 'c_{key}'))"
+        types_val = f"{key} = ctypes.c_int.in_dll(lib, 'c_{key}').value"
     elif type(value) == float:
         if section == 'BANDS':
-            types_val = f"    {key} = list((ctypes.c_float * 50).in_dll(lib, 'c_{key}'))"
-        types_val = f"    {key} = ctypes.c_float.in_dll(lib, 'c_{key}').value"
+            types_val = f"{key} = list((ctypes.c_float * 50).in_dll(lib, 'c_{key}'))"
+        types_val = f"{key} = ctypes.c_float.in_dll(lib, 'c_{key}').value"
     elif type(value) == bool:
         if section == 'BANDS':
-            types_val = f"    {key} = list((ctypes.c_bool * 50).in_dll(lib, 'c_{key}'))"
-        types_val = f"    {key} = ctypes.c_bool.in_dll(lib, 'c_{key}').value"
+            types_val = f"{key} = list((ctypes.c_bool * 50).in_dll(lib, 'c_{key}'))"
+        types_val = f"{key} = ctypes.c_bool.in_dll(lib, 'c_{key}').value"
     elif type(value) == list:
         if type(value[0]) == int:
             if section == 'BANDS':
-                types_val = f"    {key} = list((ctypes.c_int * 50).in_dll(lib, 'c_{key}'))"
-            types_val = f"    {key} = list((ctypes.c_int * 3).in_dll(lib, 'c_{key}'))"
+                types_val = f"{key} = list((ctypes.c_int * 50).in_dll(lib, 'c_{key}'))"
+            types_val = f"{key} = list((ctypes.c_int * 3).in_dll(lib, 'c_{key}'))"
         elif type(value[0]) == float:
             if section == 'BANDS':
-                types_val = f"    {key} = list((ctypes.c_float * 50).in_dll(lib, 'c_{key}'))"
-            types_val = f"    {key} = list((ctypes.c_float * 3).in_dll(lib, 'c_{key}'))"
+                types_val = f"{key} = list((ctypes.c_float * 50).in_dll(lib, 'c_{key}'))"
+            types_val = f"{key} = list((ctypes.c_float * 3).in_dll(lib, 'c_{key}'))"
         elif type(value[0]) == list:
             if type(value[0][0]) == int:
                 if section == 'BANDS':
-                    types_val = f"    {key} = [[[((((ctypes.c_int * 3) * 3) * 50).in_dll(lib, 'c_{key}'))[i][j] for j in range(3)] for i in range(3)] for k in range(50)]"
-                types_val = f"    {key} = [[(((ctypes.c_int * 3) * 3).in_dll(lib, 'c_{key}'))[i][j] for j in range(3)] for i in range(3)]"
+                    types_val = f"{key} = [[[((((ctypes.c_int * 3) * 3) * 50).in_dll(lib, 'c_{key}'))[i][j] for j in range(3)] for i in range(3)] for k in range(50)]"
+                types_val = f"{key} = [[(((ctypes.c_int * 3) * 3).in_dll(lib, 'c_{key}'))[i][j] for j in range(3)] for i in range(3)]"
             elif type(value[0][0]) == float:
                 if section == 'BANDS':
-                    types_val = f"    {key} = [[[((((ctypes.c_float * 3) * 3) * 50).in_dll(lib, 'c_{key}'))[i][j] for j in range(3)] for i in range(3)] for k in range(50)]"
-                types_val = f"    {key} = [[(((ctypes.c_float * 3) * 3).in_dll(lib, 'c_{key}'))[i][j] for j in range(3)] for i in range(3)]"
+                    types_val = f"{key} = [[[((((ctypes.c_float * 3) * 3) * 50).in_dll(lib, 'c_{key}'))[i][j] for j in range(3)] for i in range(3)] for k in range(50)]"
+                types_val = f"{key} = [[(((ctypes.c_float * 3) * 3).in_dll(lib, 'c_{key}'))[i][j] for j in range(3)] for i in range(3)]"
         else:
             print("Error: Unsupported type in config file ")
             exit(1)
@@ -109,11 +109,7 @@ end_func2_phrase = '    // End PyBind Definitions'
 
 def write_py(ALL):
     file_path = 'load/python_config.py'
-    add_lines(ALL, file_path, start_phrase, end_phrase, format_var_line)
+    #add_lines(ALL, file_path, start_phrase, end_phrase, format_var_line)
     add_lines(ALL, file_path, start_func_phrase, end_func_phrase, format_func_line)
     replace_comments(file_path)
     print(f"Successfully updated the file '{file_path}'.")
-    file_path = 'load/pybind_module.cpp'
-    add_lines(ALL, file_path, start_func2_phrase, end_func2_phrase, format_func2)
-    print(f"Successfully updated the file '{file_path}'.")
-

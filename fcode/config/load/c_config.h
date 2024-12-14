@@ -9,7 +9,6 @@
 // Global Variables are listed below, with their default values
 
 //[CONTROL]
-extern char* c_install_dir; char* get_install_dir();
 extern char* c_category; char* get_category();
 extern char* c_calculation; char* get_calculation();
 extern char* c_outdir; char* get_outdir();

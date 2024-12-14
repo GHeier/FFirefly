@@ -4,7 +4,6 @@ module confighub
     ! Global variables
 
 ![CONTROL]
-    character(len=50) :: install_dir
     character(len=50) :: category
     character(len=50) :: calculation
     character(len=50) :: outdir
@@ -88,10 +87,6 @@ module confighub
     ! Global functions
 
 ![CONTROL]
-        function get_install_dir() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_install_dir
-    end function get_install_dir
         function get_category() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_category
@@ -195,7 +190,6 @@ contains
         ! Load variables
 
 ![CONTROL]
-        install_dir = get_string(get_install_dir())
         category = get_string(get_category())
         calculation = get_string(get_calculation())
         outdir = get_string(get_outdir())

@@ -9,7 +9,6 @@ using namespace std;
 // Global Variables are listed below
 
 //[CONTROL]
-string install_dir;
 string category;
 string calculation;
 string outdir;
@@ -68,7 +67,6 @@ void load_cpp_config() {
     // Load the C++ configuration file
 
 //[CONTROL]
-    install_dir = c_install_dir;
     category = c_category;
     calculation = c_calculation;
     outdir = c_outdir;

@@ -4,19 +4,8 @@
 #include "../config/load/c_config.h"
 
 void eliashberg() {
-    char local_path[1024] = "src/superconductor/";
     Py_Initialize();
-
-    // Import sys module
-    PyObject *sys = PyImport_ImportModule("sys");
-    PyObject *path = PyObject_GetAttrString(sys, "path");
-
-    // Append the current directory to sys.path
-    char path_to_module[1024];
-    snprintf(path_to_module, sizeof(path_to_module), "%s%s", c_install_dir, local_path);
-    PyObject *currentDir = PyUnicode_FromString(path_to_module);
-    PyList_Append(path, currentDir);
-    Py_DECREF(currentDir);
+    PyRun_SimpleString("import sys; sys.path.append('/home/g/Research/bcs_diagonalization/fcode/superconductor/')");
 
     // Try loading your custom module
     const char *moduleName = "eliashberg1";
@@ -44,7 +33,5 @@ void eliashberg() {
     // Cleanup
     Py_XDECREF(pFunc);
     Py_DECREF(pModule);
-    Py_DECREF(sys);
-    Py_DECREF(path);
     Py_Finalize();
 }

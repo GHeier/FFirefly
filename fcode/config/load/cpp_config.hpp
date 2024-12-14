@@ -7,7 +7,6 @@ using namespace std;
 // Global Variables are listed below'
 
 //[CONTROL]
-extern string install_dir;
 extern string category;
 extern string calculation;
 extern string outdir;
