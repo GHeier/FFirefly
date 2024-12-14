@@ -25,42 +25,23 @@ set(CMAKE_Fortran_FLAGS "-fopenmp -L/usr/local/lib -I/usr/local/include -ltetrab
 # Libraries to link
 set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -ltetrabz -lopenblas)
 
-# Find Python3 with required components
+# Find Python3 to include its headers and libraries
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 include_directories(${Python3_INCLUDE_DIRS})
 link_directories(${Python3_LIBRARY_DIRS})
-
-# Compile other shared libraries (if needed)
-# This step remains unchanged for other libraries
-
-# Create the Python module "fcode" with specific dependencies
-add_library(fcode MODULE
-    ${CMAKE_SOURCE_DIR}/src/config/load/pybind_module.cpp
-    ${CMAKE_SOURCE_DIR}/src/hamiltonian/potential.cpp
-    ${CMAKE_SOURCE_DIR}/src/hamiltonian/band_structure.cpp
-    ${CMAKE_SOURCE_DIR}/src/objects/vec.cpp
-)
-
-# Link required libraries to fcode
-target_link_libraries(fcode PRIVATE ${Python3_LIBRARIES} ${LIBS})
-
-# Set the output name and directory for fcode.so
-set_target_properties(fcode PROPERTIES
-    PREFIX ""
-    SUFFIX ".so"
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/src)  # Place fcode.so in src/
-
-# Install the Python module in the src/ directory
-install(TARGETS fcode DESTINATION ${CMAKE_SOURCE_DIR}/src)
 
 # Main executable "fcode.x"
 file(GLOB_RECURSE MAIN_SOURCES ${CMAKE_SOURCE_DIR}/src/*.c
                                ${CMAKE_SOURCE_DIR}/src/*.cpp
                                ${CMAKE_SOURCE_DIR}/src/*.f90)
+
+# Remove pybind_module.cpp from the source list if it exists
+list(REMOVE_ITEM MAIN_SOURCES ${CMAKE_SOURCE_DIR}/src/config/load/pybind_module.cpp)
+
 add_executable(fcode.x ${MAIN_SOURCES})
 
 # Set the output directory explicitly for the executable
 set_target_properties(fcode.x PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
-# Link all shared libraries and Python explicitly to the main executable
+# Link all shared libraries to the main executable
 target_link_libraries(fcode.x PRIVATE ${Python3_LIBRARIES} ${LIBS})
