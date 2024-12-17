@@ -52,6 +52,7 @@ vector<float> t9;
 vector<float> t10;
 
 //[SUPERCONDUCTOR]
+string method;
 bool FS_only;
 float bcs_cutoff_frequency;
 int num_eigenvalues_to_save;
@@ -109,6 +110,7 @@ void load_cpp_config() {
     for (int i = 0; i < nbnd; i++) t10.push_back(c_t10[i]);
 
 //[SUPERCONDUCTOR]
+    method = c_method;
     FS_only = c_FS_only;
     bcs_cutoff_frequency = c_bcs_cutoff_frequency;
     num_eigenvalues_to_save = c_num_eigenvalues_to_save;

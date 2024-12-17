@@ -3,7 +3,6 @@
 
 #include "config/load/c_config.h"
 #include "superconductor/superconductor.hpp"
-#include "superconductor/eliashberg.h"
 
 extern void polarization_wrapper();
 void response() {
@@ -12,13 +11,7 @@ void response() {
 
 void superconductor() {
     printf("Starting Superconductor Calculation\n");
-    find_gap_function();
-}
-
-void eliashberg1() {
-    printf("Starting Eliashberg Calculation\n");
-    eliashberg();
-    printf("Eliashberg Calculation Complete\n");
+    superconductor_wrapper();
 }
 
 int main(int argc, char *argv[]) {
@@ -33,7 +26,6 @@ int main(int argc, char *argv[]) {
 
     if (!strcmp(c_category, "response")) response();
     else if (!strcmp(c_category, "superconductor")) superconductor();
-    else if (!strcmp(c_category, "eliashberg")) eliashberg1();
     else printf("Unknown Calculation Type\n");
 
     //unload_c_config(); // Free memory allocated for global c variables

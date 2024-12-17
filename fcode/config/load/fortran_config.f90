@@ -69,6 +69,7 @@ module confighub
     real :: t10(50)
 
 ![SUPERCONDUCTOR]
+    character(len=50) :: method
     logical(c_bool), bind(C, name="c_FS_only") :: c_FS_only
     logical :: FS_only
     real(c_float), bind(C, name="c_bcs_cutoff_frequency") :: c_bcs_cutoff_frequency
@@ -156,6 +157,10 @@ module confighub
 
 
 ![SUPERCONDUCTOR]
+        function get_method() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_method
+    end function get_method
 
 
 
@@ -232,6 +237,7 @@ contains
         t10 = c_t10
 
 ![SUPERCONDUCTOR]
+        method = get_string(get_method())
         FS_only = c_FS_only
         bcs_cutoff_frequency = c_bcs_cutoff_frequency
         num_eigenvalues_to_save = c_num_eigenvalues_to_save

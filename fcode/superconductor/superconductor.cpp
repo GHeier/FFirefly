@@ -6,7 +6,9 @@
  *
  * Author: Griffin Heier
  */
+#include <Python.h>
 
+#include <stdio.h>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -16,9 +18,8 @@
 #include <cassert>
 
 
-#include "utilities.hpp"
 #include "../config/load/cpp_config.hpp"
-#include "frequency_inclusion.hpp"
+#include "utilities.hpp"
 #include "matrix_creation.hpp"
 #include "../algorithms/linear_algebra.hpp"
 #include "solver.hpp"
@@ -29,10 +30,23 @@
 #include "../objects/eigenvec.hpp"
 #include "../hamiltonian/band_structure.hpp"
 #include "cfg.hpp"
+#include "superconductor.hpp"
 
 using std::string;
 
-extern "C" void find_gap_function() {
+extern "C" void superconductor_wrapper() {
+    load_cpp_config();
+    printf("Running superconductor_wrapper\n");
+    if (method == "bcs")
+        bcs();
+    else if (method == "eliashberg")
+        eliashberg();
+    else
+        cout << "Method " << method << " not recognized" << endl;
+}
+
+
+void bcs() {
     cout << "Calculating Fermi Surface..." << endl;
     load_cpp_config();
  
@@ -92,3 +106,10 @@ extern "C" void find_gap_function() {
     delete [] solutions;
 }
 
+extern "C" void call_python_func(const char* folder, const char* filename, const char* function);
+void eliashberg() {
+    string folder = "superconductor/";
+    string filename = "eliashberg";
+    string function = "eliashberg";
+    call_python_func(folder.c_str(), filename.c_str(), function.c_str());
+}

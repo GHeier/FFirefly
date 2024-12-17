@@ -51,6 +51,7 @@ extern float c_t9[50];
 extern float c_t10[50];
 
 //[SUPERCONDUCTOR]
+extern char* c_method; char* get_method();
 extern bool c_FS_only;
 extern float c_bcs_cutoff_frequency;
 extern int c_num_eigenvalues_to_save;
@@ -71,3 +72,4 @@ void make_save_file();
 void load_c_config();
 extern void unload_c_config();
 
+void call_python_func(const char *folder, const char *filename, const char *function);

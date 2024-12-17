@@ -57,6 +57,7 @@ t10 = []
 t10.append(0.0)
 
 #[SUPERCONDUCTOR]
+method = 'none'
 FS_only = True
 bcs_cutoff_frequency = 0.05
 num_eigenvalues_to_save = 1
@@ -209,6 +210,9 @@ def load_config():
                 t10.append(float(value))
 
 #[SUPERCONDUCTOR]
+            if "method" in key:
+                global method
+                method = value
             if "FS_only" in key:
                 global FS_only
                 FS_only = bool(value)

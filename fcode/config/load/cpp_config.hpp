@@ -50,6 +50,7 @@ extern vector<float> t9;
 extern vector<float> t10;
 
 //[SUPERCONDUCTOR]
+extern string method;
 extern bool FS_only;
 extern float bcs_cutoff_frequency;
 extern int num_eigenvalues_to_save;
