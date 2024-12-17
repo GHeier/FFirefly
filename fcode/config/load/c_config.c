@@ -1,8 +1,9 @@
-#include <math.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <limits.h>
 
 #include "c_config.h"
 
@@ -151,6 +152,24 @@ void load_default_band_values() {
     c_eff_mass[0] = 1.0;
 }
 
+void make_save_file() {
+    char path[PATH_MAX]; // Buffer to hold the executable path
+
+    // Read the symbolic link for the executable
+    ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+    path[len - 7] = '\0'; // Remove the executable name
+    strcat(path, "input.cfg"); // Append the input file name
+    FILE *file = fopen(path, "w");
+    if (file == NULL) {
+        printf("Error opening file!\n");
+        exit(1);
+    }
+    char line[256];
+    while (fgets(line, sizeof(line), stdin) != NULL) {
+        fputs(line, file);
+    }
+    fclose(file);
+}
 
 void load_c_config() {
     char line[256];
@@ -159,14 +178,36 @@ void load_c_config() {
     char section[50];
     int row = 0;
     int n = 0;
-    while (fgets(line, sizeof(line), stdin) != NULL) {
+    bool got_dimension = false;
+    bool got_bz = false;
+    char path[PATH_MAX]; // Buffer to hold the executable path
+    ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+    path[len - 7] = '\0'; // Remove the executable name
+    strcat(path, "input.cfg"); // Append the input file name
+    make_save_file();
+    FILE *file = fopen(path, "r");
+    while (fgets(line, sizeof(line), file) != NULL) {
         if (strstr(line, "[CELL]") != NULL) {
             set_section(section, "CELL");
+            continue;  // Skip to the next file line
+        }
+        if (strstr(line, "[BRILLOUIN_ZONE]") != NULL) {
+            set_section(section, "BRILLOUIN_ZONE");
+            got_bz = true;
             continue;  // Skip to the next file line
         }
         // If we're in the [CELL] section, read matrix values
         if (strstr(section, "CELL") != NULL && strlen(line) > 1) {
             sscanf(line, "%f %f %f", &c_cell[row][0], &c_cell[row][1], &c_cell[row][2]);
+            row++;
+            // Stop reading after filling 3 rows
+            if (row == 3) {
+                section[0] = '\0';
+                continue;
+            }
+        }
+        if (strstr(section, "BRILLOUIN_ZONE") != NULL && strlen(line) > 1) {
+            sscanf(line, "%f %f %f", &c_brillouin_zone[row][0], &c_brillouin_zone[row][1], &c_brillouin_zone[row][2]);
             row++;
             // Stop reading after filling 3 rows
             if (row == 3) {
@@ -208,6 +249,7 @@ void load_c_config() {
             }
             else if (strstr(key, "dimension") != NULL) {
                 c_dimension = atoi(value);
+                 got_dimension = true;
             }
             else if (strstr(key, "ibrav") != NULL) {
                 c_ibrav = atoi(value);
@@ -319,8 +361,8 @@ void load_c_config() {
         }
     }
     c_nbnd = n;
-    cell_to_BZ(c_cell, c_brillouin_zone);
-    get_dimensions();
+    if (!got_bz) cell_to_BZ(c_cell, c_brillouin_zone);
+    if (!got_dimension) get_dimensions();
     printf("Loaded Config\n");
 }
 

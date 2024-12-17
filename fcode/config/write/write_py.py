@@ -1,92 +1,50 @@
 from .write_c import add_lines
+
+start_phrase = "### Variables ###"
+end_phrase = "### End Variables ###"
+
+start_set_phrase = "            # Set the variable"
+end_set_phrase = "            # Finished setting variables"
+
 def format_var_line(key, value, section):
-    if (key == "band"):
-        return f"band = [''] * 50\n"
+    if type(value) == str:
+        value = "'" + value + "'"
+    if section == 'BANDS':
+        return f"{key} = []\n{key}.append({value})"
+    return f"{key} = {value}"
 
-    if (type(value) == str):
-        if (key == "band"):
-            return f"{key} = [''] * 50"
-        return f"{key} = ''"
-    elif (type(value) == int):
-        if (key == "band"):
-            return f"{key} = [0] * 50"
-        return f"{key} = 0"
-    elif (type(value) == float):
-        if (key == "band"):
-            return f"{key} = [0.0] * 50"
-        return f"{key} = 0.0"
-    elif (type(value) == bool):
-        if (key == "band"):
-            return f"{key} = [False] * 50"
-        return f"{key} = False"
-    elif (type(value) == list):
-        if (type(value[0]) == int):
-            if (key == "band"):
-                return f"{key} = [[0] * 3] * 50"
-            return f"{key} = [0] * 3"
-        elif (type(value[0]) == float):
-            if (key == "band"):
-                return f"{key} = [[0.0] * 3] * 50"
-            return f"{key} = [0.0] * 3"
-        elif (type(value[0]) == list):
-            if (type(value[0][0]) == int):
-                if (key == "band"):
-                    return f"{key} = [[[0] * 3] * 3] * 50"
-                return f"{key} = [[0] * 3] * 3"
-            elif (type(value[0][0]) == float):
-                if (key == "band"):
-                    return f"{key} = [[[0.0] * 3] * 3] * 50"
-                return f"{key} = [[0.0] * 3] * 3"
-        else:
-            print("Error: Unsupported type in config file ")
-            exit(1)
-
-def format_func_line(key, value, section):
-    base_val = f"global {key}\n"
-    types_val = ""
+def format_set_line(key, value, section):
     if type(value) == str:
         if section == 'BANDS':
-            types_val = f"{key} = ctypes.c_char_p.in_dll(lib, 'c_{key}').value.decode('utf-8')"
-        types_val = f"{key} = ctypes.c_char_p.in_dll(lib, 'c_{key}').value.decode('utf-8')"
-                
-    elif type(value) == int:
+            return f"            if \"{key}\" in key:\n                global {key}\n                {key}.append(value)"
+        return f"            if \"{key}\" in key:\n                global {key}\n                {key} = value"
+    if type(value) == int:
         if section == 'BANDS':
-            types_val = f"{key} = list((ctypes.c_int * 50).in_dll(lib, 'c_{key}'))"
-        types_val = f"{key} = ctypes.c_int.in_dll(lib, 'c_{key}').value"
-    elif type(value) == float:
+            return f"            if \"{key}\" in key:\n                global {key}\n                {key}.append(int(value))"
+        if key == 'dimension':
+            return f"            if \"{key}\" in key:\n                global {key}\n                {key} = int(value)\n                got_dimension = True"
+        return f"            if \"{key}\" in key:\n                global {key}\n                {key} = int(value)"
+    if type(value) == float:
         if section == 'BANDS':
-            types_val = f"{key} = list((ctypes.c_float * 50).in_dll(lib, 'c_{key}'))"
-        types_val = f"{key} = ctypes.c_float.in_dll(lib, 'c_{key}').value"
-    elif type(value) == bool:
+            return f"            if \"{key}\" in key:\n                global {key}\n                {key}.append(float(value))"
+        return f"            if \"{key}\" in key:\n                global {key}\n                {key} = float(value)"
+    if type(value) == bool:
         if section == 'BANDS':
-            types_val = f"{key} = list((ctypes.c_bool * 50).in_dll(lib, 'c_{key}'))"
-        types_val = f"{key} = ctypes.c_bool.in_dll(lib, 'c_{key}').value"
-    elif type(value) == list:
+            return f"            if \"{key}\" in key:\n                global {key}\n                {key}.append(bool(value))"
+        return f"            if \"{key}\" in key:\n                global {key}\n                {key} = bool(value)"
+    if type(value) == list:
+        if type(value[0]) == str:
+            return f"            if \"{key}\" in key:\n                global {key}\n                {key} = [value.split()[i] for i in range(3)]"
         if type(value[0]) == int:
-            if section == 'BANDS':
-                types_val = f"{key} = list((ctypes.c_int * 50).in_dll(lib, 'c_{key}'))"
-            types_val = f"{key} = list((ctypes.c_int * 3).in_dll(lib, 'c_{key}'))"
-        elif type(value[0]) == float:
-            if section == 'BANDS':
-                types_val = f"{key} = list((ctypes.c_float * 50).in_dll(lib, 'c_{key}'))"
-            types_val = f"{key} = list((ctypes.c_float * 3).in_dll(lib, 'c_{key}'))"
-        elif type(value[0]) == list:
-            if type(value[0][0]) == int:
-                if section == 'BANDS':
-                    types_val = f"{key} = [[[((((ctypes.c_int * 3) * 3) * 50).in_dll(lib, 'c_{key}'))[i][j] for j in range(3)] for i in range(3)] for k in range(50)]"
-                types_val = f"{key} = [[(((ctypes.c_int * 3) * 3).in_dll(lib, 'c_{key}'))[i][j] for j in range(3)] for i in range(3)]"
-            elif type(value[0][0]) == float:
-                if section == 'BANDS':
-                    types_val = f"{key} = [[[((((ctypes.c_float * 3) * 3) * 50).in_dll(lib, 'c_{key}'))[i][j] for j in range(3)] for i in range(3)] for k in range(50)]"
-                types_val = f"{key} = [[(((ctypes.c_float * 3) * 3).in_dll(lib, 'c_{key}'))[i][j] for j in range(3)] for i in range(3)]"
-        else:
-            print("Error: Unsupported type in config file ")
-            exit(1)
-    return base_val + types_val
-
-def format_func2(key, value, section):
-    return f"    m.attr(\"{key}\") = &{key};"
-
+            return f"            if \"{key}\" in key:\n                global {key}\n                {key} = [int(value.split()[i]) for i in range(3)]"
+        if type(value[0]) == float:
+            return f"            if \"{key}\" in key:\n                global {key}\n                {key} = [float(value.split()[i]) for i in range(3)]"
+        if type(value[0]) == bool:
+            return f"            if \"{key}\" in key:\n                global {key}\n                {key} = [bool(value.split()[i]) for i in range(3)]"
+        if type(value[0]) == list:
+            return f"            if section == \"{section}\" and index < 3:\n                global {key}\n                {key}.append([float(line.split()[i]) for i in range(3)])\n                index += 1"
+    print(f"Error: {key} has an unsupported type.")
+    exit()
 def replace_comments(file_path):
     with open(file_path, 'r') as file:
         lines = file.readlines()
@@ -100,16 +58,9 @@ def replace_comment(line):
         return line.replace('//', '#', 1)
     return line
 
-start_phrase = '# Begin Global Variables'
-end_phrase = '# End Global Variables'
-start_func_phrase = '# Begin Function Declarations'
-end_func_phrase = '# End Function Declarations'
-start_func2_phrase = '    // Begin PyBind Definitions'
-end_func2_phrase = '    // End PyBind Definitions'
-
 def write_py(ALL):
-    file_path = 'load/python_config.py'
-    #add_lines(ALL, file_path, start_phrase, end_phrase, format_var_line)
-    add_lines(ALL, file_path, start_func_phrase, end_func_phrase, format_func_line)
+    file_path = 'load/config.py'
+    add_lines(ALL, file_path, start_phrase, end_phrase, format_var_line)
+    add_lines(ALL, file_path, start_set_phrase, end_set_phrase, format_set_line)
     replace_comments(file_path)
     print(f"Successfully updated the file '{file_path}'.")

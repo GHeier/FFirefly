@@ -90,6 +90,8 @@ def format_func_line(key, value, section):
             return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                n = atoi(key + 4);\n                set_string(&c_{key}{index}, value);\n            }}"
         return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                set_string(&c_{key}, value);\n            }}"
     elif (type(value) == int):
+        if key == "dimension":
+            return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                c_{key}{index} = atoi(value);\n                 got_dimension = true;\n            }}"
         return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                c_{key}{index} = atoi(value);\n            }}"
     elif (type(value) == float):
         return f"            {el}if (strstr(key, \"{key}\") != NULL) {{\n                c_{key}{index} = atof(value);\n            }}"

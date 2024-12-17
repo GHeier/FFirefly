@@ -1,5 +1,6 @@
 import fcode
+import fcode.config as cfg
 
 def eliashberg():
     print("Eliashberg accessed")
-    print("Category: ", fcode.category)
+    print("Category: ", cfg.category)
