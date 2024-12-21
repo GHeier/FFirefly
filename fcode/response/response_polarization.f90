@@ -89,14 +89,18 @@ module mesh
         end if
     end function get_static_polarization
 
-     function get_static_polarization_mesh() result(chi_mesh)
+    function get_static_polarization_mesh() result(chi_mesh)
         real(8) :: chi, chi_mesh(nge(1), nge(2), nge(3))
         integer :: i1, i2, i3
         real(8), dimension(3) :: qvec
         real(8), allocatable :: eig1(:,:), eig2(:,:), wght(:,:,:), wght_dos(:,:,:)
         allocate(eig1(nb,nke), eig2(nb,nke), wght(nb,nb,nkw), wght_dos(ne,nb,nkw))
+
+        print *, 'Calculating static polarization for ', nge(1), 'x', nge(2), 'x', nge(3), ' k-points'
         eig1 = fill_energy_mesh([0d0, 0d0, 0d0])
         do i3 = 0, nge(3) - 1
+            print *, 'Calculating chi iteration ', i3, ' of ', nge(3)
+            !$OMP PARALLEL DO PRIVATE(i1, i2, qvec, eig2, chi, wght, wght_dos)
             do i2 = 0, nge(2) - 1
                 do i1 = 0, nge(1) - 1
                     qvec = get_qvec(i1, i2, i3, nge)
@@ -108,13 +112,62 @@ module mesh
             end do
         end do 
         deallocate(eig1, eig2, wght, wght_dos)
-     end function get_static_polarization_mesh
+    end function get_static_polarization_mesh
 
-     subroutine save_mesh(chi_mesh)
+    function get_dynamic_polarization(eig1, eig2, wght) result(chi)
+        integer :: ltetra = 2
+        real(8) :: eig1(:,:), qvec(3)
+        real(8) :: eig2(:,:)
+        complex(8) :: wght(:,:,:,:)
+        complex(8) :: chi
+        complex(8) :: e0(ne)
+        integer :: i
+        real(8) :: T = 0.0001
+        real(8) :: pi = 3.1415926535897932384626433832795028841971
+
+        
+        do i = 1, ne
+            e0(i) = cmplx(0, pi * T * (2 * (i-1) + 1))
+        end do
+        ltetra = 2
+        ! Calculate the polarization function
+        call libtetrabz_polcmplx(ltetra,bvec,nb,nge,eig1,eig2,ngw,wght,ne,e0,0)
+        chi = 2d0 * sum(wght(1:ne,1:nb,1:nb,1:nkw)) * VBZ
+    end function get_dynamic_polarization
+
+    function get_dynamic_polarization_mesh() result(chi_mesh)
+        complex(8) :: chi, chi_mesh(ne, nge(1), nge(2), nge(3))
+        integer :: i1, i2, i3, i4
+        real(8), dimension(3) :: qvec
+        real(8), allocatable :: eig1(:,:), eig2(:,:)
+        complex(8), allocatable :: wght(:,:,:,:)
+        allocate(eig1(nb,nke), eig2(nb,nke), wght(ne,nb,nb,nkw))
+
+        print *, 'Calculating dynamic polarization for ', nge(1), 'x', nge(2), 'x', nge(3), ' k-points and ', ne, ' energy points'
+        eig1 = fill_energy_mesh([0d0, 0d0, 0d0])
+        do i3 = 0, nge(3) - 1
+            print *, 'Calculating chi iteration ', i3, ' of ', nge(3)
+            !$OMP PARALLEL DO PRIVATE(i1, i2, qvec, eig2, chi, wght)
+            do i2 = 0, nge(2) - 1
+                do i1 = 0, nge(1) - 1
+                    do i4 = 0, ne - 1
+                        qvec = get_qvec(i1, i2, i3, nge)
+                        qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
+                        eig2 = fill_energy_mesh(qvec)
+                        chi = get_dynamic_polarization(eig1, eig2, wght)
+                        chi_mesh(i4+1, i1+1, i2+1, i3+1) = chi
+                    end do
+                end do
+            end do
+        end do 
+        deallocate(eig1, eig2, wght)
+    end function get_dynamic_polarization_mesh
+
+     subroutine save_static_mesh(chi_mesh)
         real(8) :: chi_mesh(nge(1), nge(2), nge(3))
         integer :: i1, i2, i3
         real(8), dimension(3) :: qvec
-        open(10, file='chi_mesh.dat', status='unknown')
+        open(10, file='chi_mesh_static.dat', status='unknown')
         do i3 = 0, nge(3) - 1
             do i2 = 0, nge(2) - 1
                 do i1 = 0, nge(1) - 1
@@ -125,7 +178,28 @@ module mesh
             end do
         end do
         close(10)
-     end subroutine save_mesh
+        print *, 'Chi mesh saved to chi_mesh_static.dat'
+     end subroutine save_static_mesh
+
+     subroutine save_dynamic_mesh(chi_mesh)
+        complex(8) :: chi_mesh(ne, nge(1), nge(2), nge(3))
+        integer :: i1, i2, i3, i4
+        real(8), dimension(3) :: qvec
+        open(10, file='chi_mesh_dynamic.dat', status='unknown')
+        do i3 = 0, nge(3) - 1
+            do i2 = 0, nge(2) - 1
+                do i1 = 0, nge(1) - 1
+                    do i4 = 0, ne - 1
+                        qvec = get_qvec(i1, i2, i3, nge)
+                        qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
+                        write(10, '(1x, f10.6, 1x, f10.6, 1x, f10.6, 1x, f10.6, 1x, f10.6)') qvec(1), qvec(2), qvec(3), real(chi_mesh(i4+1, i1+1, i2+1, i3+1)), aimag(chi_mesh(i4+1, i1+1, i2+1, i3+1))
+                    end do
+                end do
+            end do
+        end do
+        close(10)
+        print *, 'Chi mesh saved to chi_mesh_dynamic.dat'
+     end subroutine save_dynamic_mesh
 
  end module mesh
 

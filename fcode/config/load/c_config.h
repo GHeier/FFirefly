@@ -33,6 +33,8 @@ extern int c_w_pts;
 
 //[CELL]
 extern float c_cell[3][3];
+
+//[BRILLOUIN_ZONE]
 extern float c_brillouin_zone[3][3];
 
 //[BANDS]

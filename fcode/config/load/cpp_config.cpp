@@ -6,6 +6,7 @@
 
 using namespace std;
 
+Config* pc = nullptr;
 // Global Variables are listed below
 
 //[CONTROL]
@@ -33,6 +34,8 @@ int w_pts;
 
 //[CELL]
 vector<vector<float>> cell(3, vector<float>(3));
+
+//[BRILLOUIN_ZONE]
 vector<vector<float>> brillouin_zone(3, vector<float>(3));
 
 //[BANDS]
@@ -92,6 +95,8 @@ void load_cpp_config() {
 
 //[CELL]
     for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) cell[i][j] = c_cell[i][j];
+
+//[BRILLOUIN_ZONE]
     for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) brillouin_zone[i][j] = c_brillouin_zone[i][j];
 
 //[BANDS]

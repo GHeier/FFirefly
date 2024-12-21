@@ -38,6 +38,8 @@ module confighub
 ![CELL]
     real(c_float), bind(C, name="c_cell") :: c_cell(3,3)
     real :: cell(3,3)
+
+![BRILLOUIN_ZONE]
     real(c_float), bind(C, name="c_brillouin_zone") :: c_brillouin_zone(3,3)
     real :: brillouin_zone(3,3)
 
@@ -137,6 +139,8 @@ module confighub
 ![CELL]
 
 
+![BRILLOUIN_ZONE]
+
 
 ![BANDS]
         function get_band() bind(C)
@@ -219,6 +223,8 @@ contains
 
 ![CELL]
         cell = c_cell
+
+![BRILLOUIN_ZONE]
         brillouin_zone = c_brillouin_zone
 
 ![BANDS]

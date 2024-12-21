@@ -36,5 +36,5 @@
 *.app
 
 build/*
-fmodule.*
 __pycache__/
+fmodule.egg-info/

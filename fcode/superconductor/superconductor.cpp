@@ -18,7 +18,7 @@
 #include <cassert>
 
 
-#include "../config/load/cpp_config.hpp"
+//#include "../config/load/cpp_config.hpp"
 #include "utilities.hpp"
 #include "matrix_creation.hpp"
 #include "../algorithms/linear_algebra.hpp"
@@ -108,6 +108,7 @@ void bcs() {
 
 extern "C" void call_python_func(const char* folder, const char* filename, const char* function);
 void eliashberg() {
+    Vec k = Vec(0.0, 0.0, 0.0);
     string folder = "superconductor/";
     string filename = "eliashberg";
     string function = "eliashberg";

@@ -82,7 +82,7 @@ def format_func_line(key, value, section):
     index = ''
     if section == 'BANDS':
         index = '[n]'
-    if section == 'CELL':
+    if section == 'CELL' or section == 'BRILLOUIN_ZONE':
         return ''
 
     if (type(value) == str):

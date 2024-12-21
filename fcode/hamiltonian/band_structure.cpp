@@ -8,14 +8,39 @@
 
 using namespace std;
 
+int nbnd_ = pc ? pc->nbnd : nbnd;
+float Temperature_ = pc ? pc->Temperature : Temperature;
+vector<string> band_ = pc ? pc->band : band;
+vector<float> eff_mass_ = pc ? pc->eff_mass : eff_mass;
+vector<float> t0_ = pc ? pc->t0 : t0;
+vector<float> t1_ = pc ? pc->t1 : t1;
+vector<float> t2_ = pc ? pc->t2 : t2;
+vector<float> t3_ = pc ? pc->t3 : t3;
+vector<float> t4_ = pc ? pc->t4 : t4;
+vector<float> t5_ = pc ? pc->t5 : t5;
+vector<float> t6_ = pc ? pc->t6 : t6;
+vector<float> t7_ = pc ? pc->t7 : t7;
+vector<float> t8_ = pc ? pc->t8 : t8;
+vector<float> t9_ = pc ? pc->t9 : t9;
+vector<float> t10_ = pc ? pc->t10 : t10;
 // Energy band functions
 float epsilon(int n, Vec k) {
+    printf("Calculating epsilon for band %d\n", n);
+    printf("nbnd: %d\n", nbnd);
+    printf("onsite_U: %f\n", onsite_U);
+    printf("FS_only: %d\n", FS_only);
+    printf("k_mesh: %d %d %d\n", k_mesh[0], k_mesh[1], k_mesh[2]);
+    printf("Band: %s\n", band[n].c_str());
+    return 1;
     if (band[n] == "simple_cubic_layered")
         return epsilon_SC_layered(n, k);
-    if (band[n] == "simple_cubic")
+    if (band[n] == "tight_binding" && ibrav == 1)
         return epsilon_SC(n, k);
-    if (band[n] == "sphere")
-        return epsilon_sphere(n, k);
+    if (band[n] == "fermi_gas") { printf("Calculating epsilon for Fermi Gas\n"); return epsilon_sphere(n, k); }
+    if (band[n] == "noband") {
+        printf("The 0 band index is empty. Counting starts at 1\n");
+        exit(1);
+    }
     else {
         cout << "Unknown Band structure: " << band[n] << endl;
         exit(1);
@@ -59,6 +84,7 @@ float vp_diff(int n, Vec k, Vec q) {
 
 // Fermi gas
 float epsilon_sphere(int n, Vec k) {
+    printf("Calculating epsilon sphere for band %d\n", n);
     if (dimension < 3) k.z = 0;
     if (dimension < 4) k.w = 0;
     return pow(k.norm(), 2) / eff_mass[n];

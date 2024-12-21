@@ -6,12 +6,24 @@ end_phrase = "### End Variables ###"
 start_set_phrase = "            # Set the variable"
 end_set_phrase = "            # Finished setting variables"
 
+start_init_phrase = "# Begin python->c++ interface"
+end_init_phrase = "# End python->c++ interface"
+
+start_module_phrase = "    // Begin the Config class"
+end_module_phrase = "    // End the Config class"
+
 def format_var_line(key, value, section):
     if type(value) == str:
         value = "'" + value + "'"
     if section == 'BANDS':
         return f"{key} = []\n{key}.append({value})"
     return f"{key} = {value}"
+
+def format_module_line(key, value, section):
+    return f"    .def_readwrite(\"{key}\", &Config::{key})"
+
+def format_init_line(key, value, section):
+    return f"placeholder.{key} = config.{key}"
 
 def format_set_line(key, value, section):
     if type(value) == str:
@@ -64,3 +76,9 @@ def write_py(ALL):
     add_lines(ALL, file_path, start_set_phrase, end_set_phrase, format_set_line)
     replace_comments(file_path)
     print(f"Successfully updated the file '{file_path}'.")
+    file_path = '../fmodule.cpp'
+    add_lines(ALL, file_path, start_module_phrase, end_module_phrase, format_module_line)
+    print(f"Successfully updated the file '{file_path}'.")
+    file_path = '../__init__.py'
+    add_lines(ALL, file_path, start_init_phrase, end_init_phrase, format_init_line)
+    replace_comments(file_path)

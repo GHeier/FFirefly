@@ -44,6 +44,8 @@ int c_w_pts = 100;
 
 //[CELL]
 float c_cell[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+
+//[BRILLOUIN_ZONE]
 float c_brillouin_zone[3][3] = {{6.283185307179586, 0.0, 0.0}, {0.0, 6.283185307179586, 0.0}, {0.0, 0.0, 6.283185307179586}};
 
 //[BANDS]
@@ -284,6 +286,8 @@ void load_c_config() {
 //[CELL]
 
 
+//[BRILLOUIN_ZONE]
+
 
 //[BANDS]
             else if (strstr(key, "band") != NULL) {
@@ -369,6 +373,7 @@ void load_c_config() {
     c_nbnd = n;
     if (!got_bz) cell_to_BZ(c_cell, c_brillouin_zone);
     if (!got_dimension) get_dimensions();
+    c_band[0] = "noband";
     printf("Loaded Config\n");
 }
 
@@ -400,6 +405,8 @@ void unload_c_config() {
 
 //[CELL]
 
+
+//[BRILLOUIN_ZONE]
 
 
 //[BANDS]

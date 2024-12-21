@@ -37,6 +37,44 @@ def format_var_line(key, value, section):
             print("Error: Unsupported type in config file ")
             exit(1)
 
+def format_config_line(key, value, section):
+    makevec = False
+    if section == 'BANDS':
+        makevec = True
+        if (key == "band"):
+            return (
+                    f"    vector<string> {key};\n"
+                    )
+    if (type(value) == str):
+        if makevec:
+            return f"    vector<string> {key};"
+        return f"    string {key};"
+    elif (type(value) == int):
+        if makevec:
+            return f"    vector<int> {key};"
+        return f"    int {key};"
+    elif (type(value) == float):
+        if makevec:
+            return f"    vector<float> {key};"
+        return f"    float {key};"
+    elif (type(value) == bool):
+        if makevec:
+            return f"    vector<bool> {key};"
+        return f"    bool {key};"
+    elif (type(value) == list):
+        if (type(value[0]) == int):
+            return f"    vector<int> {key};"
+        elif (type(value[0]) == float):
+            return f"    vector<float> {key};"
+        elif (type(value[0]) == list):
+            if (type(value[0][0]) == int):
+                return f"    vector<vector<int>> {key};"
+            elif (type(value[0][0]) == float):
+                return f"    vector<vector<float>> {key};"
+        else:
+            print("Error: Unsupported type in config file ")
+            exit(1)
+
 def format_header_line(key, value, section):
     makevec = False
     if section == 'BANDS':
@@ -90,10 +128,13 @@ end_phrase = '// End of Global Variables'
 start_func_phrase = '    // Load the C++ configuration file'
 end_func_phrase = '    // End of Global Functions'
 
+start_config_phrase = '    // Global Variables in Config struct'
+end_config_phrase = '    // End of Global Config Variables'
 
 def write_cpp_header(ALL):
     file_path = 'load/cpp_config.hpp'
     add_lines(ALL, file_path, start_phrase, end_phrase, format_header_line)
+    add_lines(ALL, file_path, start_config_phrase, end_config_phrase, format_config_line)
     print(f"Successfully updated the file '{file_path}'.")
 
 def write_cpp(ALL):

@@ -26,6 +26,8 @@ w_pts = 100
 
 #[CELL]
 cell = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+
+#[BRILLOUIN_ZONE]
 brillouin_zone = [[6.283185307179586, 0.0, 0.0], [0.0, 6.283185307179586, 0.0], [0.0, 0.0, 6.283185307179586]]
 
 #[BANDS]
@@ -163,7 +165,9 @@ def load_config():
                 global cell
                 cell.append([float(line.split()[i]) for i in range(3)])
                 index += 1
-            if section == "CELL" and index < 3:
+
+#[BRILLOUIN_ZONE]
+            if section == "BRILLOUIN_ZONE" and index < 3:
                 global brillouin_zone
                 brillouin_zone.append([float(line.split()[i]) for i in range(3)])
                 index += 1
@@ -232,6 +236,7 @@ def load_config():
                 dynamic = bool(value)
             # Finished setting variables
         if not brillouin_zone:
+            print("Error: Brillouin zone not specified.")
             brillouin_zone = BZ_from_cell(cell)
         if len(band) != nbnd and nbnd != 1:
             print("Error: Number of bands does not match number of bands specified in input.")

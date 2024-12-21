@@ -1,9 +1,6 @@
 import numpy as np
-from python_config import *
 
-nk1, nk2, nk3 = k_mesh
-nk = nk1*nk2*nk3
-T = Temperature
+t = 1
 class Mesh:
     """
     Holding class for k-mesh and sparsely sampled imaginary time 'tau' / Matsubara frequency 'iwn' grids.
@@ -15,7 +12,7 @@ class Mesh:
         # generate k-mesh and dispersion
         self.nk1, self.nk2, self.nk3, self.nk = nk1, nk2, nk3, nk1*nk2*nk3
         self.k1, self.k2, self.k3 = np.meshgrid(np.arange(self.nk1)/self.nk1, np.arange(self.nk2)/self.nk2, np.arange(self.nk3)/self.nk3)
-        self.ek = -2*t*( np.cos(2*np.pi*self.k1) + np.cos(2*np.pi*self.k2) + np.cos(2*np.pi*self.k3)).reshape(nk)
+        self.ek = -2*t*( np.cos(2*np.pi*self.k1) + np.cos(2*np.pi*self.k2) + np.cos(2*np.pi*self.k3)).reshape(self.nk)
 
         # lowest Matsubara frequency index
         self.iw0_f = np.where(self.IR_basis_set.wn_f == 1)[0][0]
@@ -24,7 +21,7 @@ class Mesh:
         ### Generate a frequency-momentum grid for iwn and ek (in preparation for calculating the Green function)
         # frequency mesh (for Green function)
         self.iwn_f = 1j * self.IR_basis_set.wn_f * np.pi * T
-        self.iwn_f_ = np.tensordot(self.iwn_f, np.ones(nk), axes=0)
+        self.iwn_f_ = np.tensordot(self.iwn_f, np.ones(self.nk), axes=0)
 
         # ek mesh
         self.ek_ = np.tensordot(np.ones(len(self.iwn_f)), self.ek, axes=0)
