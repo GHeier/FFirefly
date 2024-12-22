@@ -8,24 +8,9 @@
 
 using namespace std;
 
-int nbnd_ = pc ? pc->nbnd : nbnd;
-float Temperature_ = pc ? pc->Temperature : Temperature;
-vector<string> band_ = pc ? pc->band : band;
-vector<float> eff_mass_ = pc ? pc->eff_mass : eff_mass;
-vector<float> t0_ = pc ? pc->t0 : t0;
-vector<float> t1_ = pc ? pc->t1 : t1;
-vector<float> t2_ = pc ? pc->t2 : t2;
-vector<float> t3_ = pc ? pc->t3 : t3;
-vector<float> t4_ = pc ? pc->t4 : t4;
-vector<float> t5_ = pc ? pc->t5 : t5;
-vector<float> t6_ = pc ? pc->t6 : t6;
-vector<float> t7_ = pc ? pc->t7 : t7;
-vector<float> t8_ = pc ? pc->t8 : t8;
-vector<float> t9_ = pc ? pc->t9 : t9;
-vector<float> t10_ = pc ? pc->t10 : t10;
 // Energy band functions
 float epsilon(int n, Vec k) {
-    printf("Calculating epsilon for band %d\n", n);
+    //printf("Calculating epsilon for band %d\n", n);
     printf("nbnd: %d\n", nbnd);
     printf("onsite_U: %f\n", onsite_U);
     printf("FS_only: %d\n", FS_only);

@@ -45,7 +45,36 @@ PYBIND11_MODULE(fmodule, m) {
         .def_readwrite("dimension", &Vec::dimension)
         .def_readwrite("n", &Vec::n)
         // Norm function
-        .def("norm", &Vec::norm);
+        .def("norm", &Vec::norm)
+
+        .def("__mul__", [](const Vec &v, int m) { return v * m; }, py::arg("multiple"))
+        .def("__mul__", [](const Vec &v, float m) { return v * m; }, py::arg("multiple"))
+        .def("__rmul__", [](int m, const Vec &v) { return m * v; }, py::arg("multiple"))
+        .def("__rmul__", [](float m, const Vec &v) { return m * v; }, py::arg("multiple"))
+        // Binding __truediv__ (division) for both int and float
+        .def("__truediv__", [](const Vec &v, int d) { return v / d; }, py::arg("multiple"))
+        .def("__truediv__", [](const Vec &v, float d) { return v / d; }, py::arg("multiple"))
+        .def("__rtruediv__", [](int d, const Vec &v) { return d / v; }, py::arg("multiple"))
+        .def("__rtruediv__", [](float d, const Vec &v) { return d / v; }, py::arg("multiple"))
+
+        .def("__call__", [](Vec &self, int i) -> float& {
+                return self(i);
+            }, py::return_value_policy::reference, py::arg("i"));
+
+    py::class_<ScalarField>(m, "ScalarField")
+        .def(py::init<>())
+        .def(py::init<std::string, int, bool>(),
+             py::arg("filename"), py::arg("dimension") = 3, py::arg("is_complex") = false)
+        .def(py::init<std::vector<Vec>, std::vector<float>, int, bool>(),
+             py::arg("points"), py::arg("values"), py::arg("dimension") = 3, py::arg("is_complex") = false)
+        .def_readwrite("points", &ScalarField::points)
+        .def_readwrite("values", &ScalarField::values)
+        .def("__call__", 
+             static_cast<float (ScalarField::*)(Vec)>(&ScalarField::operator()), 
+             "Evaluate the scalar field at a Vec point")
+        .def("__call__", 
+             static_cast<float (ScalarField::*)(py::array_t<double>)>(&ScalarField::operator()), 
+             "Evaluate the scalar field at a NumPy array");        
 
     m.def("add", &add, "A function which adds two numbers");
 

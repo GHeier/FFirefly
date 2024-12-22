@@ -25,6 +25,7 @@ class Vec {
         Vec();
         Vec(float _x, float _y = 0, float _z = 0, float _w = 0, float _area = 0, int _dimension = 3, int _n = 1);
         float& operator()(int i);
+        Vec round(int precision = 4);
         float norm();
 
 };
@@ -36,11 +37,16 @@ vector<float> unpack_string(string str);
 string vec_to_string(Vec k);
 Vec operator+(const Vec& k, const Vec& q);
 Vec operator-(const Vec& k, const Vec& q);
+Vec operator*(int multiple, const Vec &input);
+Vec operator*(const Vec &input, int multiple);
 Vec operator*(float multiple, const Vec &input);
 Vec operator*(const Vec &input, float multiple);
 /// Dot product of two vectors.
 float operator*(const Vec& left, const Vec& right);
 float operator*(const vector<vector<float>>& left, const Vec& right);
+Vec operator/(int multiple, const Vec &input);
+Vec operator/(const Vec &input, int multiple);
+Vec operator/(float multiple, const Vec &input);
 Vec operator/(const Vec &input, float multiple);
 bool operator==(const Vec& k, const Vec& q);
 /// Comparison operator for Vec, sorting them by area

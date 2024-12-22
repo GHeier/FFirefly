@@ -7,6 +7,10 @@
  * Author: Griffin Heier
  */
 #pragma once
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+
+namespace py = pybind11;
 
 #include <string>
 #include <complex>
@@ -33,6 +37,7 @@ class ScalarField {
 
         void get_values_for_interpolation();
         float operator() (Vec point);
+        float operator()(py::array_t<double> array);
 };
 
 class VectorField {
@@ -56,6 +61,8 @@ class VectorField {
         Vec operator() (Vec point);
 };
 
+vector<float> matrix_multiplication(vector<Vec>& matrix, Vec& vec, int n);
+Vec vec_matrix_multiplication(vector<float>& matrix, Vec& vec, int n);
 bool domain_vec_found(float a[4], float dx, float dy, float dz, float dw);
 vector<Vec> invertMatrix(vector<Vec>& matrix, int n);
 

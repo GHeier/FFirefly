@@ -35,8 +35,18 @@ float& Vec::operator()(int i) {
     if (i == 1) return y;
     if (i == 2) return z;
     if (i == 3) return z;
-    printf("Invalid index for Vec\n");
+    printf("Invalid index of %d for Vec\n", i);
     exit(1);
+}
+
+Vec Vec::round(int precision) {
+    float r = pow(10, precision);
+    Vec result(std::round(x * r) / r, 
+            std::round(y * r) / r, 
+            std::round(z * r) / r, 
+            std::round(w * r) / r,
+        dimension, n);
+    return result;
 }
 
 
@@ -92,38 +102,51 @@ string vec_to_string(Vec k) {
 }
 
 Vec operator+(const Vec& k, const Vec& q) {
-    Vec result(k.x + q.x, k.y + q.y, k.z + q.z, k.w + q.w);
-    return result;
+    return Vec(k.x + q.x, k.y + q.y, k.z + q.z, k.w + q.w);
 }
 
 Vec operator-(const Vec& k, const Vec& q) {
-    Vec result(k.x - q.x, k.y - q.y, k.z - q.z, k.w - q.w);
-    return result;
+    return Vec(k.x - q.x, k.y - q.y, k.z - q.z, k.w - q.w);
+}
+
+Vec operator*(const Vec& input, int multiple) {
+    return Vec(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple);
+}
+
+Vec operator*(int multiple, const Vec& input) {
+    return Vec(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple);
 }
 
 Vec operator*(const Vec& input, float multiple) {
-    Vec result(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple);
-    return result;
+    return Vec(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple);
 }
 
 Vec operator*(float multiple, const Vec& input) {
-    Vec result(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple);
-    return result;
+    return Vec(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple);
 }
 
 float operator*(const Vec& left, const Vec& right) {
-    Vec left_new = left; Vec right_new = right;
-    return left_new.x * right_new.x + left_new.y * right_new.y + left_new.z * right_new.z + left_new.w * right_new.w;
+    return left.x * right.x + left.y * right.y + left.z * right.z + left.w * right.w;
 }
 
 float operator*(const vector<vector<float>>& left, const Vec& right) {
-    Vec right_new = right;
-    return left[right_new.n][0] * right_new.x + left[right_new.n][1] * right_new.y + left[right_new.n][2] * right_new.z + left[right_new.n][3] * right_new.w;
+    return left[right.n][0] * right.x + left[right.n][1] * right.y + left[right.n][2] * right.z + left[right.n][3] * right.w;
 }
 
 Vec operator/(const Vec& input, float multiple) {
-    Vec result(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple);
-    return result;
+    return Vec(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple);
+}
+
+Vec operator/(float multiple, const Vec& input) {
+    return Vec(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple);
+}
+
+Vec operator/(const Vec& input, int multiple) {
+    return Vec(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple);
+}
+
+Vec operator/(int multiple, const Vec& input) {
+    return Vec(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple);
 }
 
 float Vec::norm() {

@@ -6,7 +6,10 @@
  *
  * Author: Griffin Heier
  */
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
 
+namespace py = pybind11;
 #include <iostream>
 #include <vector>
 #include <string>
@@ -46,168 +49,163 @@ VectorField::VectorField() {
     is_complex = false;
 }
 
-bool domain_vec_found(Vec a, float dx, float dy, float dz, float dw) {
-    return a(0) == 0 and a(1) == 0 and a(2) == 0 and a(3) == 0 
-        or fabs(a(0) - dx) < 1e-4 
-        and fabs(a(1) - dy) < 1e-4 
-        and fabs(a(2) - dz) < 1e-4 
-        and fabs(a(3) - dw) < 1e-4;
-}
 // Function to invert a matrix represented as vector<Vec>
 vector<Vec> invertMatrix(vector<Vec>& matrix, int n) {
-    // Create augmented matrix
-    vector<Vec> augmented(n, Vec(2 * n));
-    for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= n; ++j) {
-            augmented[i](j) = matrix[i](j);         // Original matrix
-            augmented[i](j + n) = (i == j - 1) ? 1 : 0; // Identity matrix
+    printf("Printing matrix\n");
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            cout << matrix[i](j) << " ";
         }
+        cout << endl;
+    }
+    // Create augmented matrix [A|I]
+    vector<vector<float>> augmented(n, std::vector<float>(2 * n, 0.0f));
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = 0; j < n; ++j) {
+            augmented[i][j] = matrix[i](j);
+        }
+        augmented[i][n + i] = 1.0f; // Identity matrix
     }
 
-    // Perform Gaussian elimination
-    for (int i = 0; i < n; ++i) {
-        // Find pivot
-        double pivot = augmented[i](i + 1);
-        if (pivot == 0) {
-            throw std::runtime_error("Matrix is singular and cannot be inverted.");
+    // Gaussian Elimination
+    for (size_t i = 0; i < n; ++i) {
+        // Partial Pivoting
+        size_t maxRow = i;
+        for (size_t k = i + 1; k < n; ++k) {
+            if (std::fabs(augmented[k][i]) > std::fabs(augmented[maxRow][i])) {
+                maxRow = k;
+            }
+        }
+        std::swap(augmented[i], augmented[maxRow]);
+
+        // Check for singular matrix
+        if (std::fabs(augmented[i][i]) < 1e-6) {
+            throw std::runtime_error("vector<vector<float>> is singular and cannot be inverted.");
         }
 
-        // Normalize pivot row
-        for (int j = 1; j <= 2 * n; ++j) {
-            augmented[i](j) /= pivot;
+        // Normalize the pivot row
+        float pivot = augmented[i][i];
+        for (size_t j = 0; j < 2 * n; ++j) {
+            augmented[i][j] /= pivot;
         }
 
         // Eliminate other rows
-        for (int k = 0; k < n; ++k) {
-            if (k == i) continue;
-            double factor = augmented[k](i + 1);
-            for (int j = 1; j <= 2 * n; ++j) {
-                augmented[k](j) -= factor * augmented[i](j);
+        for (size_t k = 0; k < n; ++k) {
+            if (k != i) {
+                float factor = augmented[k][i];
+                for (size_t j = 0; j < 2 * n; ++j) {
+                    augmented[k][j] -= factor * augmented[i][j];
+                }
             }
         }
     }
 
-    // Extract the inverse matrix
-    std::vector<Vec> inverse(n, Vec(n));
-    for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= n; ++j) {
-            inverse[i](j) = augmented[i](j + n);
+    // Extract the inverted matrix
+    vector<Vec> inv(n);
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = 0; j < n; ++j) {
+            inv[i](j) = augmented[i][n + j];
         }
     }
 
-    return inverse;
+    return inv;
+}
+
+vector<float> matrix_multiplication(vector<Vec>& matrix, Vec& vec, int n) {
+    vector<float> result(n, 0.0f);
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            result[i] += matrix[i](j) * vec(j);
+        }
+    }
+    return result;
+}
+
+Vec vec_matrix_multiplication(vector<Vec>& matrix, Vec& vec, int n) {
+    Vec result;
+    for (int i = 0; i < n; i++) {
+        result(i) = 0;
+        for (int j = 0; j < n; j++) {
+            result(i) += matrix[i](j) * vec(j);
+        }
+    }
+    return result;
 }
 
 void ScalarField::get_values_for_interpolation() {
-    set<float> x_values;
-    set<float> y_values;
-    set<float> z_values;
-    set<float> w_values;
-
-    float dx, dy, dz, dw;
-    Vec a(0,0,0,0,0,dimension);
-    Vec b(0,0,0,0,0,dimension);
-    Vec c(0,0,0,0,0,dimension);
-    Vec d(0,0,0,0,0,dimension);
-    int index = 0;
-    for (Vec point : points) {
-        if (index > 0 and index < points.size()) {
-            dx = point.x - points[index-1].x;
-            dy = point.y - points[index-1].y;
-            dz = point.z - points[index-1].z;
-            dw = point.w - points[index-1].w;
-            if (domain_vec_found(a, dx, dy, dz, dw)) {
-                a(0) += dx; a(1) += dy; a(2) += dz; a(3) += dw;
-            }
-            else if (domain_vec_found(b, dx, dy, dz, dw)) {
-                b(0) += dx; b(1) += dy; b(2) += dz; b(3) += dw;
-            }
-            else if (domain_vec_found(c, dx, dy, dz, dw)) {
-                c(0) += dx; c(1) += dy; c(2) += dz; c(3) += dw;
-            }
-            else if (domain_vec_found(d, dx, dy, dz, dw)) {
-                d(0) += dx; d(1) += dy; d(2) += dz; d(3) += dw;
-            }
+    int section = 0;
+    vector<int> section_sizes = {1, 1, 1, 1};
+    vector<Vec> domain;
+    Vec first = points[0];
+    Vec lattice_vec = (points[1] - first).round();
+    int jump = 1;
+    for (int i = 1; i < points.size(); i += jump) {
+        Vec current_vec = (points[i] / section_sizes[section] - first).round();
+        if (current_vec == lattice_vec) section_sizes[section]++;
+        else {
+            domain.push_back((points[i-1] - first).round());
+            jump *= section_sizes[section];
+            section++;
+            section_sizes[section]++;
+            if (section >= dimension) break;
+            lattice_vec = (points[i] - first).round();
         }
-        if (point.x < xmin) xmin = point.x;
-        if (point.x > xmax) xmax = point.x;
-        if (point.y < ymin) ymin = point.y;
-        if (point.y > ymax) ymax = point.y;
-        if (point.z < zmin) zmin = point.z;
-        if (point.z > zmax) zmax = point.z;
-        if (point.w < wmin) wmin = point.w;
-        if (point.w > wmax) wmax = point.w;
-        x_values.insert(point.x);
-        y_values.insert(point.y);
-        z_values.insert(point.z);
-        w_values.insert(point.w);
-        index++;
     }
-    nx = x_values.size();
-    ny = y_values.size();
-    nz = z_values.size();
-    nw = w_values.size();
-    if (dimension > 0) domain.push_back(a);
-    if (dimension > 1) domain.push_back(b);
-    if (dimension > 2) domain.push_back(c);
-    if (dimension > 3) domain.push_back(d);
+    domain.push_back((points[points.size()-1] - first).round());
+    for (int i = 0; i < domain.size(); i++) {
+        for (int j = 0; j < i; j++) 
+            domain[i] = domain[i] - domain[j];
+    }
     inv_domain = invertMatrix(domain, dimension);
+    nx = section_sizes[0];
+    if (dimension > 1) ny = section_sizes[1];
+    if (dimension > 2) nz = section_sizes[2];
+    if (dimension > 3) nw = section_sizes[3];
 }
 
 void VectorField::get_values_for_interpolation() {
-    set<float> x_values;
-    set<float> y_values;
-    set<float> z_values;
-    set<float> w_values;
-
-    float dx, dy, dz, dw;
-    Vec a(0,0,0,0,0,dimension);
-    Vec b(0,0,0,0,0,dimension);
-    Vec c(0,0,0,0,0,dimension);
-    Vec d(0,0,0,0,0,dimension);
-    int index = 0;
-    for (Vec point : points) {
-        if (index > 0 and index < points.size()) {
-            dx = point.x - points[index-1].x;
-            dy = point.y - points[index-1].y;
-            dz = point.z - points[index-1].z;
-            dw = point.w - points[index-1].w;
-            if (domain_vec_found(a, dx, dy, dz, dw)) {
-                a(0) += dx; a(1) += dy; a(2) += dz; a(3) += dw;
-            }
-            else if (domain_vec_found(b, dx, dy, dz, dw)) {
-                b(0) += dx; b(1) += dy; b(2) += dz; b(3) += dw;
-            }
-            else if (domain_vec_found(c, dx, dy, dz, dw)) {
-                c(0) += dx; c(1) += dy; c(2) += dz; c(3) += dw;
-            }
-            else if (domain_vec_found(d, dx, dy, dz, dw)) {
-                d(0) += dx; d(1) += dy; d(2) += dz; d(3) += dw;
-            }
+    int section = 0;
+    vector<int> section_sizes = {1, 1, 1, 1};
+    vector<Vec> domain;
+    Vec first = points[0];
+    Vec lattice_vec = (points[1] - first).round();
+    int jump = 1;
+    for (int i = 1; i < points.size(); i += jump) {
+        Vec current_vec = (points[i] / section_sizes[section] - first).round();
+        if (current_vec == lattice_vec) section_sizes[section]++;
+        else {
+            domain.push_back((points[i-1] - first).round());
+            jump *= section_sizes[section];
+            section++;
+            section_sizes[section]++;
+            if (section >= dimension) break;
+            lattice_vec = (points[i] - first).round();
         }
-        if (point.x < xmin) xmin = point.x;
-        if (point.x > xmax) xmax = point.x;
-        if (point.y < ymin) ymin = point.y;
-        if (point.y > ymax) ymax = point.y;
-        if (point.z < zmin) zmin = point.z;
-        if (point.z > zmax) zmax = point.z;
-        if (point.w < wmin) wmin = point.w;
-        if (point.w > wmax) wmax = point.w;
-        x_values.insert(point.x);
-        y_values.insert(point.y);
-        z_values.insert(point.z);
-        w_values.insert(point.w);
-        index++;
     }
-    nx = x_values.size();
-    ny = y_values.size();
-    nz = z_values.size();
-    nw = w_values.size();
-    if (dimension > 0) domain.push_back(a);
-    if (dimension > 1) domain.push_back(b);
-    if (dimension > 2) domain.push_back(c);
-    if (dimension > 3) domain.push_back(d);
+    domain.push_back((points[points.size()-1] - first).round());
+    for (int i = 0; i < domain.size(); i++) {
+        for (int j = 0; j < i; j++) 
+            domain[i] = domain[i] - domain[j];
+    }
     inv_domain = invertMatrix(domain, dimension);
+    Vec min(0, 0, 0, 0);
+    vector<float> min_values = matrix_multiplication(inv_domain, min, dimension);
+    Vec max(1, 1, 1, 1);
+    vector<float> max_values = matrix_multiplication(inv_domain, max, dimension);
+    xmin = min_values[0]; xmax = max_values[0];
+    if (dimension > 1) {
+        ymin = min_values[1]; ymax = max_values[1];
+    }
+    if (dimension > 2) {
+        zmin = min_values[2]; zmax = max_values[2];
+    }
+    if (dimension > 3) {
+        wmin = min_values[3]; wmax = max_values[3];
+    }
+    nx = section_sizes[0];
+    if (dimension > 1) ny = section_sizes[1];
+    if (dimension > 2) nz = section_sizes[2];
+    if (dimension > 3) nw = section_sizes[3];
 }
 
 
@@ -252,14 +250,25 @@ VectorField::VectorField(vector<Vec> points, vector<Vec> values, int dimension, 
 }
 
 float ScalarField::operator() (Vec point) {
-    if (dimension == 1) return interpolate_1D(point.x, xmin, xmax, values);
-    if (dimension == 2) return interpolate_2D(point.x, point.y, xmin, xmax, ymin, ymax, nx, ny, values);
-    if (dimension == 3) return interpolate_3D(point.x, point.y, point.z, xmin, xmax, ymin, ymax, zmin, zmax, nx, ny, nz, values);
-    if (dimension == 4) return interpolate_4D(point.x, point.y, point.z, point.w, xmin, xmax, ymin, ymax, zmin, zmax, wmin, wmax, nx, ny, nz, nw, values);
+    Vec p = vec_matrix_multiplication(inv_domain, point, dimension);
+    if (dimension == 1) return interpolate_1D(point.x, 0, 1, values);
+    if (dimension == 2) return interpolate_2D(point.x, point.y, 0, 1, 0, 1, nx, ny, values);
+    if (dimension == 3) return interpolate_3D(point.x, point.y, point.z, 0, 1, 0, 1, 0, 1, nx, ny, nz, values);
+    if (dimension == 4) return interpolate_4D(point.x, point.y, point.z, point.w, 0, 1, 0, 1, 0, 1, 0, 1, nx, ny, nz, nw, values);
     else {
         cerr << "Invalid dimension." << endl;
         exit(1);
     }
+}
+
+float ScalarField::operator()(py::array_t<double> array) {
+        float dim = array.size();
+        auto buf = array.unchecked<1>();
+        Vec point; point.dimension = dim;
+        for (int i = 0; i < dim; i++) {
+            point(i) = buf(i);
+        }
+        return (*this)(point);
 }
 
 ScalarField::ScalarField(string filename, int dimension, bool is_complex) {
@@ -282,6 +291,7 @@ ScalarField::ScalarField(string filename, int dimension, bool is_complex) {
             point(i) = temp;
         }
         iss >> value;
+        point.dimension = dimension;
         points.push_back(point);
         values.push_back(value);
         if (is_complex) {
@@ -326,6 +336,7 @@ VectorField::VectorField(string filename, int dimension, bool is_complex) {
                 value(i) = temp;
             }
         }
+        point.dimension = dimension;
         points.push_back(point);
         values.push_back(value);
         if (is_complex) 
