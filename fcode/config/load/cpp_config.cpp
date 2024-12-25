@@ -8,7 +8,6 @@
 
 using namespace std;
 
-Config* pc = nullptr;
 // Global Variables are listed below
 
 //[CONTROL]

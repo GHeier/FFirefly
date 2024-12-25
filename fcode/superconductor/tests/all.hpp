@@ -1,16 +1,14 @@
 #pragma once
-#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void superconductor_wrapper();
+bool superconductor_tests();
 
 #ifdef __cplusplus
 }
-void bcs();
-void eliashberg();
 
+bool DOS_test();
 #endif
 

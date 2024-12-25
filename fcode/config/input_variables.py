@@ -15,7 +15,7 @@ ALL = {
         'calculation': 'test',
         'outdir': './output',
         'prefix': 'sample',
-        'verbosity': 'high',
+        'verbosity': 'low',
         'datfile_in': 'input.dat',
         'datfile_out': 'output.dat'
     },

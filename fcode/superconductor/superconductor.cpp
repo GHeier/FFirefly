@@ -18,7 +18,8 @@
 #include <cassert>
 
 
-//#include "../config/load/cpp_config.hpp"
+#include "../config/load/cpp_config.hpp"
+#include "../config/load/c_config.h"
 #include "utilities.hpp"
 #include "matrix_creation.hpp"
 #include "../algorithms/linear_algebra.hpp"
@@ -43,48 +44,6 @@ extern "C" void superconductor_wrapper() {
         eliashberg();
     else
         cout << "Method " << method << " not recognized" << endl;
-}
-
-extern "C" void superconductor_tests() {
-    printf("Running superconductor_tests\n");
-    load_cpp_config();
-    load_cpp_cfg();
-    int num_tests = 1;
-    bool all_tests[num_tests] = {
-        DOS_test()
-    };
-    cout << endl;
-    int tests_passed = 0;
-    for (int i = 0; i < num_tests; i++)
-        if (all_tests[i]) tests_passed++;
-    if (tests_passed == num_tests) printColored(Color::GREEN, "All tests passed!\n");
-    else printColored(Color::RED, " - %d/%d tests passed\n", tests_passed, num_tests);
-
-}
-
-bool DOS_test() {
-    // Set global variables for testing
-    set_global(nbnd, 1);
-    band.push_back("fermi_gas");
-    eff_mass.push_back(0.5);
-    set_global(fermi_energy, 1.0);
-    set_global(k_mesh, {80, 80, 80});
-
-
-    float answer = 0.02533;
-    printv("Starting Density of States Test\n");
-
-    vector<Vec> FS = get_FS(fermi_energy);
-    float DOS = get_DOS(FS);
-
-    if (fabs(answer - DOS) < 0.001) {
-        printv("Density of States Test Passed\n");
-        return true;
-    }
-    else {
-        printf("Density of States Test Failed\nCalculated: %.3f\nExpected: %.3f\n", DOS, answer);
-        return false;
-    }
 }
 
 void bcs() {
@@ -157,7 +116,6 @@ void bcs() {
     delete [] solutions;
 }
 
-extern "C" void call_python_func(const char* folder, const char* filename, const char* function);
 void eliashberg() {
     string folder = "superconductor/";
     string filename = "eliashberg";

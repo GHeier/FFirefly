@@ -74,4 +74,27 @@ void make_save_file();
 void load_c_config();
 extern void unload_c_config();
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum {
+    RESET = 0,
+    RED = 31,
+    GREEN = 32,
+    YELLOW = 33,
+    BLUE = 34,
+    MAGENTA = 35,
+    CYAN = 36,
+    WHITE = 37
+} Color;
+
+
 void call_python_func(const char *folder, const char *filename, const char *function);
+void printcolor(Color color, const char* format, ...);
+bool print_test_results(bool all_tests[], int num_tests, const char* test_name);
+
+#ifdef __cplusplus
+}
+#endif
+

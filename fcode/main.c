@@ -2,7 +2,9 @@
 #include <omp.h>
 
 #include "config/load/c_config.h"
+
 #include "superconductor/superconductor.hpp"
+#include "superconductor/tests/all.hpp"
 
 extern void polarization_wrapper();
 void response() {
@@ -16,8 +18,13 @@ void superconductor() {
 }
 
 void test() {
-    printf("Starting Test Calculation\n\n");
-    superconductor_tests();
+    printf("Starting Test Calculations\n\n");
+
+    int num_tests = 1;
+    bool all_tests[num_tests];
+    all_tests[0] = superconductor_tests();
+
+    print_test_results(all_tests, num_tests, "tests");
 }
 
 int main() {

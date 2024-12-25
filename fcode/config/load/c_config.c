@@ -20,7 +20,7 @@ char* c_outdir = "./output";
 char* get_outdir() {return c_outdir;}
 char* c_prefix = "sample";
 char* get_prefix() {return c_prefix;}
-char* c_verbosity = "high";
+char* c_verbosity = "low";
 char* get_verbosity() {return c_verbosity;}
 char* c_datfile_in = "input.dat";
 char* get_datfile_in() {return c_datfile_in;}
@@ -479,3 +479,36 @@ void call_python_func(const char *folder, const char *filename, const char *func
 }
 
 
+#include <stdio.h>
+#include <stdarg.h>
+
+
+
+// Print function with color and printf-style formatting
+void printcolor(Color color, const char* format, ...) {
+    // Print color escape code
+    printf("\033[1;%dm", color);
+    
+    // Handle variadic arguments
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+    
+    // Reset color
+    printf("\033[0m");
+}
+
+bool print_test_results(bool all_tests[], int num_tests, const char* test_name) {
+    int tests_passed = 0;
+    for (int i = 0; i < num_tests; i++)
+        if (all_tests[i]) tests_passed++;
+    if (tests_passed == num_tests) {
+        printcolor(GREEN, "All %s passed!\n", test_name);
+        return true;
+    }
+    else {
+        printcolor(RED, " - %d/%d %s passed\n", tests_passed, num_tests, test_name);
+        return false;
+    }
+}
