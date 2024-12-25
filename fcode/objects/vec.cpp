@@ -129,8 +129,16 @@ float operator*(const Vec& left, const Vec& right) {
     return left.x * right.x + left.y * right.y + left.z * right.z + left.w * right.w;
 }
 
-float operator*(const vector<vector<float>>& left, const Vec& right) {
-    return left[right.n][0] * right.x + left[right.n][1] * right.y + left[right.n][2] * right.z + left[right.n][3] * right.w;
+Vec operator*(vector<vector<float>>& left, Vec right) {
+    int dim = left.size() > right.dimension ? right.dimension : left.size();
+    Vec result; 
+    result.dimension = right.dimension; result.n = right.n; result.area = right.area;
+    for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+            result(i) += left[i][j] * right(j);
+        }
+    }
+    return result;
 }
 
 Vec operator/(const Vec& input, float multiple) {

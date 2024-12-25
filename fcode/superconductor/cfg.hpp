@@ -13,3 +13,4 @@ extern float tnn;
 extern float U;
 extern float wc;
 
+void load_cpp_cfg();

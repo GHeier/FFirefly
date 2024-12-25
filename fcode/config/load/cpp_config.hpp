@@ -125,5 +125,50 @@ extern bool dynamic;
 // End of Global Variables
 
 void load_cpp_config();
-void set_global_constant(float &a, float b);
+template <typename T>
+void set_global(T &a, T b) {
+    a = b;
+}
 
+inline void set_global(float &a, float b) {
+    a = b;
+}
+//
+//void set_global(string &a, string b);
+void set_global(string &a, const char* b);
+
+//inline void set_global(int &a, int b) {
+//    a = b;
+//}
+//
+//inline void set_global(bool &a, bool b) {
+//    a = b;
+//}
+
+template <typename... Args>
+inline void printv(const std::string& format, Args... args) {
+    if (verbosity == "high") printf(format.c_str(), args...);
+}
+
+enum class Color {
+    RESET = 0,
+    RED = 31,
+    GREEN = 32,
+    YELLOW = 33,
+    BLUE = 34,
+    MAGENTA = 35,
+    CYAN = 36,
+    WHITE = 37
+};
+
+template <typename... Args>
+inline void printColored(Color color, const std::string& format, Args... args) {
+    // Print color code
+    printf("\033[1;%dm", static_cast<int>(color));
+    
+    // Print formatted text
+    printf(format.c_str(), args...);
+    
+    // Reset color
+    printf("\033[0m");
+}

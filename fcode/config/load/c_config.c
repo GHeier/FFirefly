@@ -170,8 +170,11 @@ void make_save_file() {
         exit(1);
     }
     char line[256];
-    while (fgets(line, sizeof(line), stdin) != NULL) {
-        fputs(line, file);
+    // Check if stdin is a terminal
+    if (!isatty(fileno(stdin))) {
+        while (fgets(line, sizeof(line), stdin) != NULL) {
+            fputs(line, file);
+        }
     }
     fclose(file);
 }
@@ -373,8 +376,6 @@ void load_c_config() {
     c_nbnd = n;
     if (!got_bz) cell_to_BZ(c_cell, c_brillouin_zone);
     if (!got_dimension) get_dimensions();
-    c_band[0] = "noband";
-    printf("Loaded Config\n");
 }
 
 void unload_c_config() {

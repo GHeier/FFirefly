@@ -10,18 +10,14 @@ using namespace std;
 
 // Energy band functions
 float epsilon(int n, Vec k) {
+    n--;
     //printf("Calculating epsilon for band %d\n", n);
-    printf("nbnd: %d\n", nbnd);
-    printf("onsite_U: %f\n", onsite_U);
-    printf("FS_only: %d\n", FS_only);
-    printf("k_mesh: %d %d %d\n", k_mesh[0], k_mesh[1], k_mesh[2]);
-    printf("Band: %s\n", band[n].c_str());
-    return 1;
     if (band[n] == "simple_cubic_layered")
         return epsilon_SC_layered(n, k);
     if (band[n] == "tight_binding" && ibrav == 1)
         return epsilon_SC(n, k);
-    if (band[n] == "fermi_gas") { printf("Calculating epsilon for Fermi Gas\n"); return epsilon_sphere(n, k); }
+    if (band[n] == "fermi_gas") 
+        return epsilon_fermi_gas(n, k);
     if (band[n] == "noband") {
         printf("The 0 band index is empty. Counting starts at 1\n");
         exit(1);
@@ -39,13 +35,14 @@ float e_diff(int n, Vec k, Vec q) {
 
 // Fermi Velocity corresponds to energy band functions above
 float vp(int n, Vec k) {
+    n--;
     if (band[n] == "simple_cubic_layered")
         return fermi_velocity_SC_layered(n, k).norm();
     if (band[n] == "simple_cubic") {
         return fermi_velocity_SC(n, k).norm();
     }
-    if (band[n] == "sphere")
-        return fermi_velocity_sphere(n, k).norm();
+    if (band[n] == "fermi_gas")
+        return fermi_velocity_fermi_gas(n, k).norm();
     else {
         cout << "Fermi velocity not available for band structure: " << band[n] << endl;
         exit(1);
@@ -58,8 +55,8 @@ float vp_diff(int n, Vec k, Vec q) {
         v = fermi_velocity_SC_layered(n, k+q) - fermi_velocity_SC_layered(n, k);
     else if (band[n] == "simple_cubic")
         v = fermi_velocity_SC(n, k+q) - fermi_velocity_SC(n, k);
-    else if (band[n] == "sphere")
-        v = fermi_velocity_sphere(n, k+q) - fermi_velocity_sphere(n, k);
+    else if (band[n] == "fermi_gas")
+        v = fermi_velocity_fermi_gas(n, k+q) - fermi_velocity_fermi_gas(n, k);
     else {
         cout << "No band structure specified\n";
         exit(1);
@@ -68,17 +65,16 @@ float vp_diff(int n, Vec k, Vec q) {
 }
 
 // Fermi gas
-float epsilon_sphere(int n, Vec k) {
-    printf("Calculating epsilon sphere for band %d\n", n);
+float epsilon_fermi_gas(int n, Vec k) {
     if (dimension < 3) k.z = 0;
     if (dimension < 4) k.w = 0;
-    return pow(k.norm(), 2) / eff_mass[n];
+    return pow(k.norm(), 2) / (2*eff_mass[n]);
 }
 
-Vec fermi_velocity_sphere(int n, Vec k) {
+Vec fermi_velocity_fermi_gas(int n, Vec k) {
     if (dimension < 3) k.z = 0;
     if (dimension < 4) k.w = 0;
-    return 2*k / eff_mass[n];
+    return 2*k / (2*eff_mass[n]);
 }
 
 // Cubic Lattice
@@ -126,9 +122,9 @@ Vec fermi_velocity_SC_layered(int n, Vec k) {
 
 // E indicates the chemical potential at which to find the Fermi surface
 vector<Vec> get_FS(float E) {
-    printf("Finding Fermi Surface for E = %.2f\n", E);
+    printv("Finding Fermi Surface for E = %.2f\n", E);
     vector<Vec> FS;
-    for (int i = 0; i < nbnd; i++) {
+    for (int i = 1; i <= nbnd; i++) {
         auto func = [i](Vec k) { return epsilon(i, k); };
         vector<Vec> temp = tetrahedron_method(func, E);
         for (auto k : temp) {

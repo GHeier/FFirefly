@@ -1,3 +1,5 @@
+#include <type_traits>
+#include <iostream>
 #include <math.h>
 #include <string>
 #include <vector>
@@ -67,7 +69,7 @@ bool dynamic;
 
 
 void load_cpp_config() {
-    printf("Loading C++ Configuration File\n");
+    printv("Loading C++ Configuration File\n");
     // Load the C++ configuration file
 
 //[CONTROL]
@@ -130,9 +132,17 @@ void load_cpp_config() {
             brillouin_zone[i][j] = c_brillouin_zone[i][j];
         }
     }
+    printv("C++ Configuration File Loaded\n");
 }
 
-void set_global_constant(float &a, float b) {
+
+//void set_global(string &a, string b) {
+//    a = b;
+//}
+
+void set_global(string &a, const char* b) {
+    //printf("Setting %s to %s\n", a.c_str(), b);
     a = b;
 }
+
 

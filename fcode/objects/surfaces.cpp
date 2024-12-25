@@ -188,6 +188,10 @@ vector<Vec> tetrahedron_method(function<float(Vec k)> func, float s_val) {
 
                     if (not surface_inside_tetrahedron(s_val, ep_points)) continue;
                     vector<Vec> corner_points = points_in_tetrahedron(func, s_val, ep_points);
+                    //cout << "Corner Points: " << corner_points.size() << endl;
+                    //cout << "Corner Points: " << corner_points[0] << endl;
+                    //cout << "Corner Points: " << corner_points[1] << endl;
+                    //cout << "Corner Points: " << corner_points[2] << endl;
 
                     // Averages the corner points to find the center of the triangle
                     Vec average;
@@ -199,9 +203,12 @@ vector<Vec> tetrahedron_method(function<float(Vec k)> func, float s_val) {
                     }
                     average = average / (4-b);
 
+                    //printf("Average: %.2f %.2f %.2f\n", average(0), average(1), average(2));
                     float A = area_in_corners(corner_points);
+                    //printf("Area: %.2f\n", A);
                     if (dimension == 2) A *= k_mesh[2] / 2.0;
                     Vec k_point = average; k_point.area = A;
+                    //printf("Area: %.2f\n", A);
                     k_point.w = s_val;
                     FS.push_back(k_point);
                 }

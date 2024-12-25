@@ -43,7 +43,7 @@ Vec operator*(float multiple, const Vec &input);
 Vec operator*(const Vec &input, float multiple);
 /// Dot product of two vectors.
 float operator*(const Vec& left, const Vec& right);
-float operator*(const vector<vector<float>>& left, const Vec& right);
+Vec operator*(vector<vector<float>>& left, Vec right);
 Vec operator/(int multiple, const Vec &input);
 Vec operator/(const Vec &input, int multiple);
 Vec operator/(float multiple, const Vec &input);

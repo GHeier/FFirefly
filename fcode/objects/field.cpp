@@ -51,13 +51,6 @@ VectorField::VectorField() {
 
 // Function to invert a matrix represented as vector<Vec>
 vector<Vec> invertMatrix(vector<Vec>& matrix, int n) {
-    printf("Printing matrix\n");
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            cout << matrix[i](j) << " ";
-        }
-        cout << endl;
-    }
     // Create augmented matrix [A|I]
     vector<vector<float>> augmented(n, std::vector<float>(2 * n, 0.0f));
     for (size_t i = 0; i < n; ++i) {
@@ -251,10 +244,10 @@ VectorField::VectorField(vector<Vec> points, vector<Vec> values, int dimension, 
 
 float ScalarField::operator() (Vec point) {
     Vec p = vec_matrix_multiplication(inv_domain, point, dimension);
-    if (dimension == 1) return interpolate_1D(point.x, 0, 1, values);
-    if (dimension == 2) return interpolate_2D(point.x, point.y, 0, 1, 0, 1, nx, ny, values);
-    if (dimension == 3) return interpolate_3D(point.x, point.y, point.z, 0, 1, 0, 1, 0, 1, nx, ny, nz, values);
-    if (dimension == 4) return interpolate_4D(point.x, point.y, point.z, point.w, 0, 1, 0, 1, 0, 1, 0, 1, nx, ny, nz, nw, values);
+    if (dimension == 1) return interpolate_1D(p.x, 0, 1, values);
+    if (dimension == 2) return interpolate_2D(p.x, p.y, 0, 1, 0, 1, nx, ny, values);
+    if (dimension == 3) return interpolate_3D(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, nx, ny, nz, values);
+    if (dimension == 4) return interpolate_4D(p.x, p.y, p.z, p.w, 0, 1, 0, 1, 0, 1, 0, 1, nx, ny, nz, nw, values);
     else {
         cerr << "Invalid dimension." << endl;
         exit(1);

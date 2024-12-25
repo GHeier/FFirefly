@@ -12,7 +12,7 @@ def plot_111():
     values = field.values
     print(max(values))
     print(min(values))
-    n = 1000
+    n = 10
     print("Plotting 111 path")
     for i in range(1, n):
         q = np.array([1, 1, 1]) * i / n

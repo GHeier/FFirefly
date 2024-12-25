@@ -6,15 +6,21 @@
 
 extern void polarization_wrapper();
 void response() {
+    printf("Starting Response Calculation\n\n");
     polarization_wrapper();
 }
 
 void superconductor() {
-    printf("Starting Superconductor Calculation\n");
+    printf("Starting Superconductor Calculation\n\n");
     superconductor_wrapper();
 }
 
-int main(int argc, char *argv[]) {
+void test() {
+    printf("Starting Test Calculation\n\n");
+    superconductor_tests();
+}
+
+int main() {
     printf("Starting Program\n");
     // Set the number of threads used in parallelization to one less than the maximum
     // This allows for the last thread to be used for other tasks
@@ -26,7 +32,8 @@ int main(int argc, char *argv[]) {
 
     if (!strcmp(c_category, "response")) response();
     else if (!strcmp(c_category, "superconductor")) superconductor();
-    else printf("Unknown Calculation Type\n");
+    else if (!strcmp(c_category, "test")) test();
+    else printf("Unknown Calculation Type\n\n");
 
     //unload_c_config(); // Free memory allocated for global c variables
     printf("Program Complete\n");

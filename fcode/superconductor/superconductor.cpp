@@ -32,7 +32,7 @@
 #include "cfg.hpp"
 #include "superconductor.hpp"
 
-using std::string;
+using namespace std;
 
 extern "C" void superconductor_wrapper() {
     load_cpp_config();
@@ -45,10 +45,58 @@ extern "C" void superconductor_wrapper() {
         cout << "Method " << method << " not recognized" << endl;
 }
 
+extern "C" void superconductor_tests() {
+    printf("Running superconductor_tests\n");
+    load_cpp_config();
+    load_cpp_cfg();
+    int num_tests = 1;
+    bool all_tests[num_tests] = {
+        DOS_test()
+    };
+    cout << endl;
+    int tests_passed = 0;
+    for (int i = 0; i < num_tests; i++)
+        if (all_tests[i]) tests_passed++;
+    if (tests_passed == num_tests) printColored(Color::GREEN, "All tests passed!\n");
+    else printColored(Color::RED, " - %d/%d tests passed\n", tests_passed, num_tests);
+
+}
+
+bool DOS_test() {
+    // Set global variables for testing
+    set_global(nbnd, 1);
+    band.push_back("fermi_gas");
+    eff_mass.push_back(0.5);
+    set_global(fermi_energy, 1.0);
+    set_global(k_mesh, {80, 80, 80});
+
+
+    float answer = 0.02533;
+    printv("Starting Density of States Test\n");
+
+    vector<Vec> FS = get_FS(fermi_energy);
+    float DOS = get_DOS(FS);
+
+    if (fabs(answer - DOS) < 0.001) {
+        printv("Density of States Test Passed\n");
+        return true;
+    }
+    else {
+        printf("Density of States Test Failed\nCalculated: %.3f\nExpected: %.3f\n", DOS, answer);
+        return false;
+    }
+}
 
 void bcs() {
     cout << "Calculating Fermi Surface..." << endl;
     load_cpp_config();
+    load_cpp_cfg();
+    printf("Band0 = %s\n", band[0].c_str());
+    printf("Band1 = %s\n", band[1].c_str());
+    printf("Band2 = %s\n", band[2].c_str());
+    printf("nbnd = %d\n", nbnd);
+    printf("fermi_energy = %.2f\n", fermi_energy);
+    printf("mu = %.2f\n", mu);
  
     vector<vector<Vec>> freq_FS;
     vector<Vec> FS;
@@ -59,8 +107,11 @@ void bcs() {
     else {
         FS = get_FS(mu);
     }
+    return;
 
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
+    float DOS = get_DOS(FS);
+    printf("Density of States: %.5f \n", DOS);
     assert(FS.size() > 10);
     save_FS(FS);
 

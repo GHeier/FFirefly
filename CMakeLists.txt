@@ -18,9 +18,9 @@ include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/fcode/config/load)
 
 # Compiler flags
-set(CMAKE_CXX_FLAGS "-O3 -fopenmp -g -fPIC")
+set(CMAKE_CXX_FLAGS "-Og -fopenmp -g -fPIC")
 set(CMAKE_C_FLAGS "-fopenmp")
-set(CMAKE_Fortran_FLAGS "-O3 -fopenmp -L/usr/local/lib -I/usr/local/include -ltetrabz")
+set(CMAKE_Fortran_FLAGS "-Og -fopenmp -L/usr/local/lib -I/usr/local/include -ltetrabz")
 
 # Libraries to link
 set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -ltetrabz -lopenblas)
