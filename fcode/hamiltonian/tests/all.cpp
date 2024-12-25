@@ -1,22 +1,22 @@
 #include "all.hpp"
-#include "../cfg.hpp"
+#include "../../superconductor/cfg.hpp"
 #include "../../config/load/c_config.h"
 #include "../../config/load/cpp_config.hpp"
 #include "../../hamiltonian/band_structure.hpp"
-#include "../solver.hpp"
+#include "../../superconductor/solver.hpp"
 #include <cmath>
 
 using namespace std;
 
-extern "C" bool superconductor_tests() {
-    printf("Running superconductor_tests\n");
+extern "C" bool hamiltonian_tests() {
+    printf("Running Hamiltonian tests\n");
     load_cpp_config();
     load_cpp_cfg();
     int num_tests = 1;
     bool all_tests[num_tests] = {
         DOS_test()
     };
-    return print_test_results(all_tests, num_tests, "superconductor tests");
+    return print_test_results(all_tests, num_tests, "Hamiltonian tests");
 }
 
 bool DOS_test() {

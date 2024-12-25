@@ -8,6 +8,7 @@ int l = 5;
 float wc = bcs_cutoff_frequency;
 float mu = fermi_energy;
 float U = onsite_U;
+
 // Constants
 float t = 1.0;
 float tn = 0.0;
@@ -22,6 +23,7 @@ void load_cpp_cfg() {
     wc = bcs_cutoff_frequency;
     mu = fermi_energy;
     U = onsite_U;
+
     // Constants
     t = 1.0;
     tn = 0.0;

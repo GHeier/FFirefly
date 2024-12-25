@@ -4,7 +4,7 @@
 #include "config/load/c_config.h"
 
 #include "superconductor/superconductor.hpp"
-#include "superconductor/tests/all.hpp"
+#include "hamiltonian/tests/all.hpp"
 
 extern void polarization_wrapper();
 void response() {
@@ -21,8 +21,9 @@ void test() {
     printf("Starting Test Calculations\n\n");
 
     int num_tests = 1;
+
     bool all_tests[num_tests];
-    all_tests[0] = superconductor_tests();
+    all_tests[0] = hamiltonian_tests();
 
     print_test_results(all_tests, num_tests, "tests");
 }
@@ -30,7 +31,6 @@ void test() {
 int main() {
     printf("Starting Program\n");
     // Set the number of threads used in parallelization to one less than the maximum
-    // This allows for the last thread to be used for other tasks
     int num_procs = omp_get_num_procs();
     omp_set_num_threads(num_procs - 1);
     printf("Number of threads used in CPU parallelization: %d\n", num_procs - 1);

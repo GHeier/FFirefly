@@ -9,18 +9,21 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
 
+set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
+set(CMAKE_C_COMPILER_LAUNCHER ccache)
+
 # Output directories for binaries and libraries
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Include directories for the project
 include_directories(${CMAKE_SOURCE_DIR})
-include_directories(${CMAKE_SOURCE_DIR}/fcode/config/load)
+#include_directories(${CMAKE_SOURCE_DIR}/fcode/config/load)
 
 # Compiler flags
-set(CMAKE_CXX_FLAGS "-Og -fopenmp -g -fPIC")
+set(CMAKE_CXX_FLAGS "-O3 -fopenmp -fPIC")
 set(CMAKE_C_FLAGS "-fopenmp")
-set(CMAKE_Fortran_FLAGS "-Og -fopenmp -L/usr/local/lib -I/usr/local/include -ltetrabz")
+set(CMAKE_Fortran_FLAGS "-O3 -fopenmp -L/usr/local/lib -I/usr/local/include -ltetrabz")
 
 # Libraries to link
 set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -ltetrabz -lopenblas)

@@ -11,7 +11,6 @@ using namespace std;
 // Energy band functions
 float epsilon(int n, Vec k) {
     n--;
-    //printf("Calculating epsilon for band %d\n", n);
     if (band[n] == "simple_cubic_layered")
         return epsilon_SC_layered(n, k);
     if (band[n] == "tight_binding" && ibrav == 1)

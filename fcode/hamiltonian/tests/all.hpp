@@ -4,7 +4,7 @@
 extern "C" {
 #endif
 
-bool superconductor_tests();
+bool hamiltonian_tests();
 
 #ifdef __cplusplus
 }
