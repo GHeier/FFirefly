@@ -2,7 +2,6 @@
 
 #include <string>
 #include <vector>
-#include "c_config.h"
 
 using namespace std;
 
@@ -64,7 +63,9 @@ extern int frequency_pts;
 extern bool dynamic;
 // End of Global Variables
 
-void load_cpp_config();
+
+extern "C" void load_cpp_config();
+
 template <typename T>
 void set_global(T &a, T b) {
     a = b;
@@ -76,6 +77,14 @@ inline void set_global(float &a, float b) {
 //
 //void set_global(string &a, string b);
 void set_global(string &a, const char* b);
+
+extern "C" {
+    void set_nbnd(int nbnd_);
+    void set_band(int n, const char* band_);
+    void set_eff_mass(int n, float eff_mass_);
+    void set_t0(int n, float t0_);
+    void set_t1(int n, float t1_);
+}
 
 //inline void set_global(int &a, int b) {
 //    a = b;

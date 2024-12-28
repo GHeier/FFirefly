@@ -1,5 +1,4 @@
 module response
-    use confighub
     use globals
     use mesh
     implicit none
@@ -7,6 +6,7 @@ module response
      subroutine polarization_wrapper() bind(C)
         real(8), ALLOCATABLE :: chi_mesh_static(:,:,:)
         complex(8), ALLOCATABLE :: chi_mesh_dynamic(:,:,:,:)
+        real(8) :: k(3), e
         call load_f90_config()
         call get_vals()
         if (dynamic) then

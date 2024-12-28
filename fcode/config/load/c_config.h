@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-
 // Global Variables are listed below, with their default values
 
 //[CONTROL]
@@ -88,7 +87,6 @@ typedef enum {
     CYAN = 36,
     WHITE = 37
 } Color;
-
 
 void call_python_func(const char *folder, const char *filename, const char *function);
 void printcolor(Color color, const char* format, ...);

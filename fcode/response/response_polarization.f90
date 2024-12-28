@@ -1,6 +1,6 @@
 module globals
     use, intrinsic :: iso_c_binding  ! Ensure C interoperability
-    use confighub
+    use fcode
     implicit none
     real(8), parameter :: pi = 3.1415926535897932384626433832795028841971
     integer :: nb, ne, nge(3), ngw(3), nke, nkw
@@ -25,7 +25,6 @@ module globals
 end module globals
 module mesh
     use globals
-    use confighub
     use libtetrabz
     implicit none
     contains
@@ -45,11 +44,11 @@ module mesh
         qvec(1:3) = dble([i1, i2, i3]) / dble(npts(1:3) - 1)
     end function get_qvec
 
-    function epsilon(kvec) result(eps)
+    function epsilon_custom(kvec) result(eps)
         real(8), dimension(3), intent(in) :: kvec
         real :: eps
         eps = 0.5d0 * dot_product(kvec(1:3), kvec(1:3))
-    end function epsilon
+    end function epsilon_custom
 
     function fill_energy_mesh(qvec) result(eig)
         real(8), dimension(3), intent(in) :: qvec
@@ -64,8 +63,7 @@ module mesh
                     kvec = get_kvec(i1, i2, i3, nge)
                     kvec(1:3) = matmul(bvec(1:3,1:3), kvec(1:3))
                     kvec(1:3) = kvec(1:3) + qvec(1:3)
-                    eig(1,ik) = epsilon(kvec) - ef
-
+                    eig(1,ik) = epsilon(1, kvec) - ef
                 end do
             end do
         end do
@@ -100,7 +98,7 @@ module mesh
         print *, 'Calculating static polarization for ', nge(1), 'x', nge(2), 'x', nge(3), ' k-points'
         eig1 = fill_energy_mesh([0d0, 0d0, 0d0])
         do i3 = 0, nge(3) - 1
-            print *, 'Calculating chi iteration ', i3, ' of ', nge(3)
+            print *, 'Calculating chi iteration ', i3+1, ' of ', nge(3)
             !$OMP PARALLEL DO PRIVATE(i1, i2, qvec, eig2, chi, wght, wght_dos)
             do i2 = 0, nge(2) - 1
                 do i1 = 0, nge(1) - 1

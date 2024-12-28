@@ -167,6 +167,18 @@ def add_lines(ALL, file_path, start_phrase, end_phrase, func):
     with open(file_path, 'w') as file:
         file.writelines(updated_lines)
 
+def remove_multiple_empty_lines(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+    updated_lines = []
+    for i in range(len(lines)):
+        if i < len(lines) - 1:
+            if lines[i] == '\n' and lines[i + 1] == '\n':
+                continue
+        updated_lines.append(lines[i])
+    with open(file_path, 'w') as file:
+        file.writelines(updated_lines)
+
 start_phrase = '// Global Variables are listed below, with their default values'
 end_phrase = '// End of Global Variables'
 
@@ -179,6 +191,7 @@ end_unload_phrase = '// End of unloading the config file'
 def write_c_header(ALL):
     file_path = 'load/c_config.h'
     add_lines(ALL, file_path, start_phrase, end_phrase, format_header_line)
+    remove_multiple_empty_lines(file_path)
     print(f"Successfully updated the file '{file_path}'.")
 
 def write_c(ALL):
@@ -186,4 +199,5 @@ def write_c(ALL):
     add_lines(ALL, file_path, start_phrase, end_phrase, format_var_line)
     add_lines(ALL, file_path, start_func_phrase, end_func_phrase, format_func_line)
     add_lines(ALL, file_path, start_unload_phrase, end_unload_phrase, format_unload_line)
+    remove_multiple_empty_lines(file_path)
     print(f"Successfully updated the file '{file_path}'.")

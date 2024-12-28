@@ -8,9 +8,12 @@
 
 using namespace std;
 
+extern "C" void load_cpp_config_wrapper() {
+    load_cpp_config();
+}
+
 extern "C" bool hamiltonian_tests() {
     printf("Running Hamiltonian tests\n");
-    load_cpp_config();
     load_cpp_cfg();
     int num_tests = 1;
     bool all_tests[num_tests] = {

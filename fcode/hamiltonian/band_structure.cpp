@@ -3,6 +3,7 @@
 
 #include "../objects/vec.hpp"
 #include "../config/load/cpp_config.hpp"
+#include "../config/load/c_config.h"
 #include "../objects/surfaces.hpp"
 #include "band_structure.hpp"
 
@@ -11,6 +12,10 @@ using namespace std;
 // Energy band functions
 float epsilon(int n, Vec k) {
     n--;
+    if (n < 0) {
+        printf("\nThe band index is negative/too small. Counting starts at 1\n");
+        throw("The band index is negative/too small. Counting starts at 1\n");
+    }
     if (band[n] == "simple_cubic_layered")
         return epsilon_SC_layered(n, k);
     if (band[n] == "tight_binding" && ibrav == 1)
@@ -18,8 +23,7 @@ float epsilon(int n, Vec k) {
     if (band[n] == "fermi_gas") 
         return epsilon_fermi_gas(n, k);
     if (band[n] == "noband") {
-        printf("The 0 band index is empty. Counting starts at 1\n");
-        exit(1);
+        throw("The 0 band index is empty. Counting starts at 1\n");
     }
     else {
         cout << "Unknown Band structure: " << band[n] << endl;
@@ -62,6 +66,10 @@ float vp_diff(int n, Vec k, Vec q) {
     }
     return v.norm();
 }
+
+/* ======================================================================
+* ======================== Energy Band Functions ========================
+*/
 
 // Fermi gas
 float epsilon_fermi_gas(int n, Vec k) {
@@ -118,6 +126,23 @@ Vec fermi_velocity_SC_layered(int n, Vec k) {
     }
     return v;
 }
+
+/* ======================================================================
+* ======================== C Version of Band Structure ========================
+*/
+
+double epsilon_c(int n, double k[3]) {
+    n--;
+    Vec k_vec = Vec(k[0], k[1], k[2]);
+    n++;
+    return epsilon(n, k_vec);
+}
+
+double vp_c(int n, double k[3]) {
+    Vec k_vec = Vec(k[0], k[1], k[2]);
+    return vp(n, k_vec);
+}
+
 
 // E indicates the chemical potential at which to find the Fermi surface
 vector<Vec> get_FS(float E) {

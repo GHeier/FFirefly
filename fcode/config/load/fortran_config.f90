@@ -1,6 +1,15 @@
-module confighub
+module fcode
     use iso_c_binding
     implicit none
+    interface
+        function epsilon(n, k) bind(C, name="epsilon_c")
+            import :: C_INT, C_DOUBLE
+            implicit none
+            integer(C_INT), value :: n
+            real(C_DOUBLE), dimension(3) :: k
+            real(C_DOUBLE) :: epsilon
+        end function epsilon
+    end interface
     ! Global variables
 
 ![CONTROL]
@@ -254,4 +263,4 @@ contains
         ! End of loading variables
     end subroutine load_f90_config
 
-end module confighub
+end module fcode

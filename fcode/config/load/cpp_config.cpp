@@ -67,8 +67,8 @@ bool dynamic;
 // End of Global Variables 
 
 
-void load_cpp_config() {
-    printv("Loading C++ Configuration File\n");
+extern "C" void load_cpp_config() {
+    printf("Loading C++ Configuration File\n");
     // Load the C++ configuration file
 
 //[CONTROL]
@@ -100,6 +100,7 @@ void load_cpp_config() {
 //[BRILLOUIN_ZONE]
     for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) brillouin_zone[i][j] = c_brillouin_zone[i][j];
 
+    printf("band[0] = %s\n", c_band[0]);
 //[BANDS]
     for (int i = 0; i < nbnd; i++) band.push_back(c_band[i]);
     for (int i = 0; i < nbnd; i++) eff_mass.push_back(c_eff_mass[i]);
@@ -125,7 +126,7 @@ void load_cpp_config() {
 //[RESPONSE]
     dynamic = c_dynamic;
     // End of Global Functions 
-    printv("C++ Configuration File Loaded\n");
+    printf("C++ Configuration File Loaded\n");
 }
 
 
@@ -136,5 +137,25 @@ void load_cpp_config() {
 void set_global(string &a, const char* b) {
     //printf("Setting %s to %s\n", a.c_str(), b);
     a = b;
+}
+
+void set_nbnd(int nbnd_) {
+    nbnd = nbnd;
+}
+
+void set_band(int n, const char* band_) {
+    band[n] = band_;
+}
+
+void set_eff_mass(int n, float eff_mass_) {
+    eff_mass[n] = eff_mass_;
+}
+
+void set_t0(int n, float t0_) {
+    t0[n] = t0_;
+}
+
+void set_t1(int n, float t1_) {
+    t1[n] = t1_;
 }
 

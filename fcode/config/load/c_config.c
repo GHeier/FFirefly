@@ -8,7 +8,6 @@
 
 #include "c_config.h"
 
-
 // Global Variables are listed below, with their default values
 
 //[CONTROL]
@@ -75,7 +74,6 @@ int c_frequency_pts = 5;
 //[RESPONSE]
 bool c_dynamic = false;
 // End of Global Variables
-
 
 void get_dimensions() {
 
@@ -288,14 +286,14 @@ void load_c_config() {
 
 //[CELL]
 
-
 //[BRILLOUIN_ZONE]
-
 
 //[BANDS]
             else if (strstr(key, "band") != NULL) {
-                n = atoi(key + 4);
+                n = atoi(key + 4) - 1;
+                printf("band = %s\n", value);
                 set_string(&c_band[n], value);
+                printf("c_band[%d] = %s\n", n, c_band[n]);
             }
             else if (strstr(key, "eff_mass") != NULL) {
                 c_eff_mass[n] = atof(value);
@@ -373,7 +371,7 @@ void load_c_config() {
             }
         }
     }
-    c_nbnd = n;
+    c_nbnd = n + 1;
     if (!got_bz) cell_to_BZ(c_cell, c_brillouin_zone);
     if (!got_dimension) get_dimensions();
 }
@@ -393,44 +391,17 @@ void unload_c_config() {
 //[SYSTEM]
     free(c_interaction);
 
-
-
-
-
-
-
 //[MESH]
-
-
-
 
 //[CELL]
 
-
 //[BRILLOUIN_ZONE]
-
 
 //[BANDS]
     free(c_band);
 
-
-
-
-
-
-
-
-
-
-
-
-
 //[SUPERCONDUCTOR]
     free(c_method);
-
-
-
-
 
 //[RESPONSE]
 
@@ -478,11 +449,8 @@ void call_python_func(const char *folder, const char *filename, const char *func
 
 }
 
-
 #include <stdio.h>
 #include <stdarg.h>
-
-
 
 // Print function with color and printf-style formatting
 void printcolor(Color color, const char* format, ...) {
