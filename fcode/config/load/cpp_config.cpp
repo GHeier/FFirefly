@@ -125,12 +125,6 @@ void load_cpp_config() {
 //[RESPONSE]
     dynamic = c_dynamic;
     // End of Global Functions 
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            cell[i][j] = c_cell[i][j];
-            brillouin_zone[i][j] = c_brillouin_zone[i][j];
-        }
-    }
     printv("C++ Configuration File Loaded\n");
 }
 
@@ -143,5 +137,4 @@ void set_global(string &a, const char* b) {
     //printf("Setting %s to %s\n", a.c_str(), b);
     a = b;
 }
-
 

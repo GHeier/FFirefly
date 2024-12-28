@@ -35,7 +35,13 @@ int main() {
     omp_set_num_threads(num_procs - 1);
     printf("Number of threads used in CPU parallelization: %d\n", num_procs - 1);
 
+    printf("Brillouin_zone[0][0] = %f\n", c_brillouin_zone[0][0]);
+    printf("Brillouin_zone[1][1] = %f\n", c_brillouin_zone[1][1]);
+    printf("Brillouin_zone[2][2] = %f\n", c_brillouin_zone[2][2]);
     load_c_config(); // Read input to load global c variables
+    printf("Brillouin_zone[0][0] = %f\n", c_brillouin_zone[0][0]);
+    printf("Brillouin_zone[1][1] = %f\n", c_brillouin_zone[1][1]);
+    printf("Brillouin_zone[2][2] = %f\n", c_brillouin_zone[2][2]);
 
     if (!strcmp(c_category, "response")) response();
     else if (!strcmp(c_category, "superconductor")) superconductor();

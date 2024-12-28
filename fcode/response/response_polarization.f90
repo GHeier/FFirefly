@@ -82,11 +82,11 @@ module mesh
         if (qmag < 1d-6) then
             e0(1) = 0d0
             call libtetrabz_dos(ltetra, bvec, nb, nge, eig1, ngw, wght_dos, ne, e0)
-            chi = sum(wght_dos(1:ne,1:nb,1:nkw)) * VBZ
+            chi = sum(wght_dos(1:ne,1:nb,1:nkw)) / 2
         else
             ! Calculate the polarization function
             call libtetrabz_polstat(ltetra,bvec,nb,nge,eig1,eig2,ngw,wght)
-            chi = 2d0 * sum(wght(1:nb,1:nb,1:nkw)) * VBZ
+            chi = sum(wght(1:nb,1:nb,1:nkw))
         end if
     end function get_static_polarization
 

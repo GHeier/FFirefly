@@ -86,6 +86,6 @@ void set_global(string &a, const char* b);
 //}
 
 template <typename... Args>
-inline void printv(const std::string& format, Args... args) {
-    if (verbosity == "high") printf(format.c_str(), args...);
+void printv(const std::string& format, Args... args) {
+    if (verbosity == "high") printf("%s", format.c_str(), args...);
 }

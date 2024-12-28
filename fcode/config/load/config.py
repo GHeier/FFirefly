@@ -163,13 +163,13 @@ def load_config():
 #[CELL]
             if section == "CELL" and index < 3:
                 global cell
-                cell.append([float(line.split()[i]) for i in range(3)])
+                cell[index]=([float(line.split()[i]) for i in range(3)])
                 index += 1
 
 #[BRILLOUIN_ZONE]
             if section == "BRILLOUIN_ZONE" and index < 3:
                 global brillouin_zone
-                brillouin_zone.append([float(line.split()[i]) for i in range(3)])
+                brillouin_zone[index]=([float(line.split()[i]) for i in range(3)])
                 index += 1
 
 #[BANDS]

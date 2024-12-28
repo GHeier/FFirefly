@@ -24,16 +24,16 @@ float interpolate_1D(float x_val, float x_min, float x_max, vector<float> &f) {
     // returns: interpolated value of f(x_val)
 
     x_val = sanitize_within_bounds(x_val, x_min, x_max);
-    assert(x_val >= x_min && x_val <= x_max);
-    assert(f.size() > 1);
+    if (x_val < x_min || x_val > x_max) throw out_of_range("x_val out of bounds");
+    if (f.size() < 2) throw invalid_argument("f size too small");
 
     float dx = (x_max - x_min) / (f.size() - 1);
     int i = (x_val - x_min) / dx;
-    assert(i >= 0 && i <= f.size() - 1);
+    if (i < 0 || i >= f.size()) throw out_of_range("i out of bounds");
     if (i == f.size() - 1) i--;
 
     float x_rel = (x_val - x_min) / dx - i;
-    assert(x_rel >= 0 && x_rel <= 1);
+    if (x_rel < 0 || x_rel > 1) throw out_of_range("x_rel out of bounds");
     float result = f[i] + x_rel * (f[i + 1] - f[i]);
 
     return result;
@@ -50,26 +50,27 @@ float interpolate_2D(float x_val, float y_val, float x_min, float x_max, float y
 
     x_val = sanitize_within_bounds(x_val, x_min, x_max);
     y_val = sanitize_within_bounds(y_val, y_min, y_max);
-    assert(x_val >= x_min && x_val <= x_max);
-    assert(y_val >= y_min && y_val <= y_max);
-    assert(f.size() > 1);
-    assert(f[0].size() > 1);
+    if (x_val < x_min || x_val > x_max) throw out_of_range("x_val out of bounds");
+    if (y_val < y_min || y_val > y_max) throw out_of_range("y_val out of bounds");
+    if (f.size() < 2) throw invalid_argument("f size too small");
+    if (f[0].size() < 2) throw invalid_argument("f[0] size too small");
 
     float dx = (x_max - x_min) / (f.size() - 1);
     float dy = (y_max - y_min) / (f[0].size() - 1);
 
     int i = (x_val - x_min) / dx;
     int j = (y_val - y_min) / dy;
-    assert(i >= 0 && i <= f.size() - 1);
-    assert(j >= 0 && j <= f[0].size() - 1);
+    if (i < 0 || i >= f.size()) throw out_of_range("i out of bounds");
+    if (j < 0 || j >= f[0].size()) throw out_of_range("j out of bounds");
+
     if (i == f.size() - 1) i--;
     if (j == f[0].size() - 1) j--;
 
 
     float x_rel = (x_val - x_min) / dx - i;
     float y_rel = (y_val - y_min) / dy - j;
-    assert(x_rel >= 0 && x_rel <= 1);
-    assert(y_rel >= 0 && y_rel <= 1);
+    if (x_rel < 0 || x_rel > 1) throw out_of_range("x_rel out of bounds");
+    if (y_rel < 0 || y_rel > 1) throw out_of_range("y_rel out of bounds");
 
     float result = (1 - x_rel) * (1 - y_rel) * f[i][j] +
                    x_rel * (1 - y_rel) * f[i + 1][j] +
@@ -92,12 +93,12 @@ float interpolate_3D(float x_val, float y_val, float z_val, float x_min, float x
     x_val = sanitize_within_bounds(x_val, x_min, x_max);
     y_val = sanitize_within_bounds(y_val, y_min, y_max);
     z_val = sanitize_within_bounds(z_val, z_min, z_max);
-    assert(x_val >= x_min && x_val <= x_max);
-    assert(y_val >= y_min && y_val <= y_max);
-    assert(z_val >= z_min && z_val <= z_max);
-    assert(f.size() > 1);
-    assert(f[0].size() > 1);
-    assert(f[0][0].size() > 1);
+    if (x_val < x_min || x_val > x_max) throw out_of_range("x_val out of bounds");
+    if (y_val < y_min || y_val > y_max) throw out_of_range("y_val out of bounds");
+    if (z_val < z_min || z_val > z_max) throw out_of_range("z_val out of bounds");
+    if (f.size() < 2) throw invalid_argument("f size too small");
+    if (f[0].size() < 2) throw invalid_argument("f[0] size too small");
+    if (f[0][0].size() < 2) throw invalid_argument("f[0][0] size too small");
 
     float dx = (x_max - x_min) / (f.size() - 1);
     float dy = (y_max - y_min) / (f[0].size() - 1);
@@ -106,9 +107,10 @@ float interpolate_3D(float x_val, float y_val, float z_val, float x_min, float x
     int i = (x_val - x_min) / dx;
     int j = (y_val - y_min) / dy;
     int k = (z_val - z_min) / dz;
-    assert(i >= 0 && i <= f.size() - 1);
-    assert(j >= 0 && j <= f[0].size() - 1);
-    assert(k >= 0 && k <= f[0][0].size() - 1);
+    if (i < 0 || i >= f.size()) throw out_of_range("i out of bounds");
+    if (j < 0 || j >= f[0].size()) throw out_of_range("j out of bounds");
+    if (k < 0 || k >= f[0][0].size()) throw out_of_range("k out of bounds");
+
     if (i == f.size() - 1) i--;
     if (j == f[0].size() - 1) j--;
     if (k == f[0][0].size() - 1) k--;
@@ -116,9 +118,9 @@ float interpolate_3D(float x_val, float y_val, float z_val, float x_min, float x
     float x_rel = (x_val - x_min) / dx - i;
     float y_rel = (y_val - y_min) / dy - j;
     float z_rel = (z_val - z_min) / dz - k;
-    assert(x_rel >= 0 && x_rel <= 1);
-    assert(y_rel >= 0 && y_rel <= 1);
-    assert(z_rel >= 0 && z_rel <= 1);
+    if (x_rel < 0 || x_rel > 1) throw out_of_range("x_rel out of bounds");
+    if (y_rel < 0 || y_rel > 1) throw out_of_range("y_rel out of bounds");
+    if (z_rel < 0 || z_rel > 1) throw out_of_range("z_rel out of bounds");
 
     float result = (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * f[i][j][k] +
                    x_rel * (1 - y_rel) * (1 - z_rel) * f[i + 1][j][k] +
@@ -149,14 +151,14 @@ float interpolate_4D(float x_val, float y_val, float z_val, float w_val,
     y_val = sanitize_within_bounds(y_val, y_min, y_max);
     z_val = sanitize_within_bounds(z_val, z_min, z_max);
     w_val = sanitize_within_bounds(w_val, w_min, w_max);
-    assert(x_val >= x_min && x_val <= x_max);
-    assert(y_val >= y_min && y_val <= y_max);
-    assert(z_val >= z_min && z_val <= z_max);
-    assert(w_val >= w_min && w_val <= w_max);
-    assert(f.size() > 1);
-    assert(f[0].size() > 1);
-    assert(f[0][0].size() > 1);
-    assert(f[0][0][0].size() > 1);
+    if (x_val < x_min || x_val > x_max) throw out_of_range("x_val out of bounds");
+    if (y_val < y_min || y_val > y_max) throw out_of_range("y_val out of bounds");
+    if (z_val < z_min || z_val > z_max) throw out_of_range("z_val out of bounds");
+    if (w_val < w_min || w_val > w_max) throw out_of_range("w_val out of bounds");
+    if (f.size() < 2) throw invalid_argument("f size too small");
+    if (f[0].size() < 2) throw invalid_argument("f[0] size too small");
+    if (f[0][0].size() < 2) throw invalid_argument("f[0][0] size too small");
+    if (f[0][0][0].size() < 2) throw invalid_argument("f[0][0][0] size too small");
 
     float dx = (x_max - x_min) / (f.size() - 1);
     float dy = (y_max - y_min) / (f[0].size() - 1);
@@ -167,10 +169,11 @@ float interpolate_4D(float x_val, float y_val, float z_val, float w_val,
     int j = (y_val - y_min) / dy;
     int k = (z_val - z_min) / dz;
     int l = (w_val - w_min) / dw;
-    assert(i >= 0 && i <= f.size() - 1);
-    assert(j >= 0 && j <= f[0].size() - 1);
-    assert(k >= 0 && k <= f[0][0].size() - 1);
-    assert(l >= 0 && l <= f[0][0][0].size() - 1);
+    if (i < 0 || i >= f.size()) throw out_of_range("i out of bounds");
+    if (j < 0 || j >= f[0].size()) throw out_of_range("j out of bounds");
+    if (k < 0 || k >= f[0][0].size()) throw out_of_range("k out of bounds");
+    if (l < 0 || l >= f[0][0][0].size()) throw out_of_range("l out of bounds");
+
     if (i == f.size() - 1) i--;
     if (j == f[0].size() - 1) j--;
     if (k == f[0][0].size() - 1) k--;
@@ -180,10 +183,10 @@ float interpolate_4D(float x_val, float y_val, float z_val, float w_val,
     float y_rel = (y_val - y_min) / dy - j;
     float z_rel = (z_val - z_min) / dz - k;
     float w_rel = (w_val - w_min) / dw - l;
-    assert(x_rel >= 0 && x_rel <= 1);
-    assert(y_rel >= 0 && y_rel <= 1);
-    assert(z_rel >= 0 && z_rel <= 1);
-    assert(w_rel >= 0 && w_rel <= 1);
+    if (x_rel < 0 || x_rel > 1) throw out_of_range("x_rel out of bounds");
+    if (y_rel < 0 || y_rel > 1) throw out_of_range("y_rel out of bounds");
+    if (z_rel < 0 || z_rel > 1) throw out_of_range("z_rel out of bounds");
+    if (w_rel < 0 || w_rel > 1) throw out_of_range("w_rel out of bounds");
 
 float result =
         (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * (1 - w_rel) * f[i][j][k][l] +
@@ -215,16 +218,16 @@ complex<float> interpolate_1D_complex(float x_val, float x_min, float x_max, vec
     // returns: interpolated value of f(x_val)
 
     x_val = sanitize_within_bounds(x_val, x_min, x_max);
-    assert(x_val >= x_min && x_val <= x_max);
-    assert(f.size() > 1);
+    if (x_val < x_min || x_val > x_max) throw out_of_range("x_val out of bounds");
+    if (f.size() < 2) throw invalid_argument("f size too small");
 
     float dx = (x_max - x_min) / (f.size() - 1);
     int i = (x_val - x_min) / dx;
-    assert(i >= 0 && i <= f.size() - 1);
+    if (i < 0 || i >= f.size()) throw out_of_range("i out of bounds");
     if (i == f.size() - 1) i--;
 
     float x_rel = (x_val - x_min) / dx - i;
-    assert(x_rel >= 0 && x_rel <= 1);
+    if (x_rel < 0 || x_rel > 1) throw out_of_range("x_rel out of bounds");
     complex<float> result = f[i] + x_rel * (f[i + 1] - f[i]);
 
     return result;
@@ -241,25 +244,26 @@ complex<float> interpolate_2D_complex(float x_val, float y_val, float x_min, flo
 
     x_val = sanitize_within_bounds(x_val, x_min, x_max);
     y_val = sanitize_within_bounds(y_val, y_min, y_max);
-    assert(x_val >= x_min && x_val <= x_max);
-    assert(y_val >= y_min && y_val <= y_max);
-    assert(f.size() > 1);
-    assert(f[0].size() > 1);
+    if (x_val < x_min || x_val > x_max) throw out_of_range("x_val out of bounds");
+    if (y_val < y_min || y_val > y_max) throw out_of_range("y_val out of bounds");
+    if (f.size() < 2) throw invalid_argument("f size too small");
+    if (f[0].size() < 2) throw invalid_argument("f[0] size too small");
 
     float dx = (x_max - x_min) / (f.size() - 1);
     float dy = (y_max - y_min) / (f[0].size() - 1);
 
     int i = (x_val - x_min) / dx;
     int j = (y_val - y_min) / dy;
-    assert(i >= 0 && i <= f.size() - 1);
-    assert(j >= 0 && j <= f[0].size() - 1);
+    if (i < 0 || i >= f.size()) throw out_of_range("i out of bounds");
+    if (j < 0 || j >= f[0].size()) throw out_of_range("j out of bounds");
+
     if (i == f.size() - 1) i--;
     if (j == f[0].size() - 1) j--;
 
     float x_rel = (x_val - x_min) / dx - i;
     float y_rel = (y_val - y_min) / dy - j;
-    assert(x_rel >= 0 && x_rel <= 1);
-    assert(y_rel >= 0 && y_rel <= 1);
+    if (x_rel < 0 || x_rel > 1) throw out_of_range("x_rel out of bounds");
+    if (y_rel < 0 || y_rel > 1) throw out_of_range("y_rel out of bounds");
 
     complex<float> fx1 = (1 - x_rel) * f[i][j] + x_rel * f[i + 1][j];
     complex<float> fx2 = (1 - x_rel) * f[i][j + 1] + x_rel * f[i + 1][j + 1];
@@ -282,12 +286,12 @@ complex<float> interpolate_3D_complex(float x_val, float y_val, float z_val, flo
     x_val = sanitize_within_bounds(x_val, x_min, x_max);
     y_val = sanitize_within_bounds(y_val, y_min, y_max);
     z_val = sanitize_within_bounds(z_val, z_min, z_max);
-    assert(x_val >= x_min && x_val <= x_max);
-    assert(y_val >= y_min && y_val <= y_max);
-    assert(z_val >= z_min && z_val <= z_max);
-    assert(f.size() > 1);
-    assert(f[0].size() > 1);
-    assert(f[0][0].size() > 1);
+    if (x_val < x_min || x_val > x_max) throw out_of_range("x_val out of bounds");
+    if (y_val < y_min || y_val > y_max) throw out_of_range("y_val out of bounds");
+    if (z_val < z_min || z_val > z_max) throw out_of_range("z_val out of bounds");
+    if (f.size() < 2) throw invalid_argument("f size too small");
+    if (f[0].size() < 2) throw invalid_argument("f[0] size too small");
+    if (f[0][0].size() < 2) throw invalid_argument("f[0][0] size too small");
 
     float dx = (x_max - x_min) / (f.size() - 1);
     float dy = (y_max - y_min) / (f[0].size() - 1);
@@ -296,9 +300,10 @@ complex<float> interpolate_3D_complex(float x_val, float y_val, float z_val, flo
     int i = (x_val - x_min) / dx;
     int j = (y_val - y_min) / dy;
     int k = (z_val - z_min) / dz;
-    assert(i >= 0 && i <= f.size() - 1);
-    assert(j >= 0 && j <= f[0].size() - 1);
-    assert(k >= 0 && k <= f[0][0].size() - 1);
+    if (i < 0 || i >= f.size()) throw out_of_range("i out of bounds");
+    if (j < 0 || j >= f[0].size()) throw out_of_range("j out of bounds");
+    if (k < 0 || k >= f[0][0].size()) throw out_of_range("k out of bounds");
+
     if (i == f.size() - 1) i--;
     if (j == f[0].size() - 1) j--;
     if (k == f[0][0].size() - 1) k--;
@@ -306,9 +311,9 @@ complex<float> interpolate_3D_complex(float x_val, float y_val, float z_val, flo
     float x_rel = (x_val - x_min) / dx - i;
     float y_rel = (y_val - y_min) / dy - j;
     float z_rel = (z_val - z_min) / dz - k;
-    assert(x_rel >= 0 && x_rel <= 1);
-    assert(y_rel >= 0 && y_rel <= 1);
-    assert(z_rel >= 0 && z_rel <= 1);
+    if (x_rel < 0 || x_rel > 1) throw out_of_range("x_rel out of bounds");
+    if (y_rel < 0 || y_rel > 1) throw out_of_range("y_rel out of bounds");
+    if (z_rel < 0 || z_rel > 1) throw out_of_range("z_rel out of bounds");
 
     complex<float> fx1 = (1 - x_rel) * f[i][j][k] + x_rel * f[i + 1][j][k];
     complex<float> fx2 = (1 - x_rel) * f[i][j+1][k] + x_rel * f[i + 1][j+1][k];
@@ -336,14 +341,14 @@ complex<float> interpolate_4D_complex(float x_val, float y_val, float z_val, flo
     // f: vector of function values at the grid points
     // returns: interpolated value of f(x_val, y_val, z_val, w_val)
 
-    assert(x_val >= x_min && x_val <= x_max);
-    assert(y_val >= y_min && y_val <= y_max);
-    assert(z_val >= z_min && z_val <= z_max);
-    assert(w_val >= w_min && w_val <= w_max);
-    assert(f.size() > 1);
-    assert(f[0].size() > 1);
-    assert(f[0][0].size() > 1);
-    assert(f[0][0][0].size() > 1);
+    if (x_val < x_min || x_val > x_max) throw out_of_range("x_val out of bounds");
+    if (y_val < y_min || y_val > y_max) throw out_of_range("y_val out of bounds");
+    if (z_val < z_min || z_val > z_max) throw out_of_range("z_val out of bounds");
+    if (w_val < w_min || w_val > w_max) throw out_of_range("w_val out of bounds");
+    if (f.size() < 2) throw invalid_argument("f size too small");
+    if (f[0].size() < 2) throw invalid_argument("f[0] size too small");
+    if (f[0][0].size() < 2) throw invalid_argument("f[0][0] size too small");
+    if (f[0][0][0].size() < 2) throw invalid_argument("f[0][0][0] size too small");
 
     float dx = (x_max - x_min) / (f.size() - 1);
     float dy = (y_max - y_min) / (f[0].size() - 1);
@@ -354,10 +359,10 @@ complex<float> interpolate_4D_complex(float x_val, float y_val, float z_val, flo
     int j = (y_val - y_min) / dy;
     int k = (z_val - z_min) / dz;
     int l = (w_val - w_min) / dw;
-    assert(i >= 0 && i <= f.size() - 1);
-    assert(j >= 0 && j <= f[0].size() - 1);
-    assert(k >= 0 && k <= f[0][0].size() - 1);
-    assert(l >= 0 && l <= f[0][0][0].size() - 1);
+    if (i < 0 || i >= f.size()) throw out_of_range("i out of bounds");
+    if (j < 0 || j >= f[0].size()) throw out_of_range("j out of bounds");
+    if (k < 0 || k >= f[0][0].size()) throw out_of_range("k out of bounds");
+    if (l < 0 || l >= f[0][0][0].size()) throw out_of_range("l out of bounds");
     if (i == f.size() - 1) i--;
     if (j == f[0].size() - 1) j--;
     if (k == f[0][0].size() - 1) k--;
@@ -367,10 +372,10 @@ complex<float> interpolate_4D_complex(float x_val, float y_val, float z_val, flo
     float y_rel = (y_val - y_min) / dy - j;
     float z_rel = (z_val - z_min) / dz - k;
     float w_rel = (w_val - w_min) / dw - l;
-    assert(x_rel >= 0 && x_rel <= 1);
-    assert(y_rel >= 0 && y_rel <= 1);
-    assert(z_rel >= 0 && z_rel <= 1);
-    assert(w_rel >= 0 && w_rel <= 1);
+    if (x_rel < 0 || x_rel > 1) throw out_of_range("x_rel out of bounds");
+    if (y_rel < 0 || y_rel > 1) throw out_of_range("y_rel out of bounds");
+    if (z_rel < 0 || z_rel > 1) throw out_of_range("z_rel out of bounds");
+    if (w_rel < 0 || w_rel > 1) throw out_of_range("w_rel out of bounds");
 
     complex<float> fx1 = f[i][j][k][l] * (1 - x_rel) + f[i + 1][j][k][l] * x_rel;
     complex<float> fx2 = f[i][j+1][k][l] * (1 - x_rel) + f[i + 1][j+1][k][l] * x_rel;
@@ -405,24 +410,24 @@ float interpolate_2D(float x_val, float y_val, float x_min, float x_max, float y
 
     x_val = sanitize_within_bounds(x_val, x_min, x_max);
     y_val = sanitize_within_bounds(y_val, y_min, y_max);
-    assert(x_val >= x_min && x_val <= x_max);
-    assert(y_val >= y_min && y_val <= y_max);
-    assert(f.size() == nx * ny and f.size() > 1);
+    if (x_val < x_min || x_val > x_max) throw out_of_range("x_val out of bounds");
+    if (y_val < y_min || y_val > y_max) throw out_of_range("y_val out of bounds");
+    if (f.size() != nx * ny) throw invalid_argument("f size does not match nx and ny");
 
     float dx = (x_max - x_min) / (nx - 1);
     float dy = (y_max - y_min) / (ny - 1);
 
     int i = (x_val - x_min) / dx;
     int j = (y_val - y_min) / dy;
-    assert(i >= 0 && i <= nx - 1);
-    assert(j >= 0 && j <= ny - 1);
+    if (i < 0 || i >= nx) throw out_of_range("i out of bounds");
+    if (j < 0 || j >= ny) throw out_of_range("j out of bounds");
     if (i == nx - 1) i--;
     if (j == ny - 1) j--;
 
     float x_rel = (x_val - x_min) / dx - i;
     float y_rel = (y_val - y_min) / dy - j;
-    assert(x_rel >= 0 && x_rel <= 1);
-    assert(y_rel >= 0 && y_rel <= 1);
+    if (x_rel < 0 || x_rel > 1) throw out_of_range("x_rel out of bounds");
+    if (y_rel < 0 || y_rel > 1) throw out_of_range("y_rel out of bounds");
 
     float result = (1 - x_rel) * (1 - y_rel) * f[i*nx+j] +
                    x_rel * (1 - y_rel) * f[(i + 1)*nx+j] +
@@ -445,10 +450,9 @@ float interpolate_3D(float x_val, float y_val, float z_val, float x_min, float x
     x_val = sanitize_within_bounds(x_val, x_min, x_max);
     y_val = sanitize_within_bounds(y_val, y_min, y_max);
     z_val = sanitize_within_bounds(z_val, z_min, z_max);
-    assert(x_val >= x_min && x_val <= x_max);
-    assert(y_val >= y_min && y_val <= y_max);
-    assert(z_val >= z_min && z_val <= z_max);
-    assert(f.size() > 1 and f.size() == nx * ny * nz);
+    if (x_val < x_min || x_val > x_max) throw out_of_range("x_val out of bounds");
+    if (y_val < y_min || y_val > y_max) throw out_of_range("y_val out of bounds");
+    if (z_val < z_min || z_val > z_max) throw out_of_range("z_val out of bounds");
 
     float dx = (x_max - x_min) / (nx - 1);
     float dy = (y_max - y_min) / (ny - 1);
@@ -457,9 +461,10 @@ float interpolate_3D(float x_val, float y_val, float z_val, float x_min, float x
     int i = (x_val - x_min) / dx;
     int j = (y_val - y_min) / dy;
     int k = (z_val - z_min) / dz;
-    assert(i >= 0 && i <= nx - 1);
-    assert(j >= 0 && j <= ny - 1);
-    assert(k >= 0 && k <= nz - 1);
+    if (i < 0 || i >= nx) throw out_of_range("i out of bounds");
+    if (j < 0 || j >= ny) throw out_of_range("j out of bounds");
+    if (k < 0 || k >= nz) throw out_of_range("k out of bounds");
+
     if (i == nx - 1) i--;
     if (j == ny - 1) j--;
     if (k == nz - 1) k--;
@@ -467,9 +472,9 @@ float interpolate_3D(float x_val, float y_val, float z_val, float x_min, float x
     float x_rel = (x_val - x_min) / dx - i;
     float y_rel = (y_val - y_min) / dy - j;
     float z_rel = (z_val - z_min) / dz - k;
-    assert(x_rel >= 0 && x_rel <= 1);
-    assert(y_rel >= 0 && y_rel <= 1);
-    assert(z_rel >= 0 && z_rel <= 1);
+    if (x_rel < 0 || x_rel > 1) throw out_of_range("x_rel out of bounds");
+    if (y_rel < 0 || y_rel > 1) throw out_of_range("y_rel out of bounds");
+    if (z_rel < 0 || z_rel > 1) throw out_of_range("z_rel out of bounds");
 
     float result = (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * f[i*nx*nx+j*ny+k] +
                    x_rel * (1 - y_rel) * (1 - z_rel) * f[(i + 1)*nx*nx+j*ny+k] +
@@ -500,10 +505,10 @@ float interpolate_4D(float x_val, float y_val, float z_val, float w_val,
     y_val = sanitize_within_bounds(y_val, y_min, y_max);
     z_val = sanitize_within_bounds(z_val, z_min, z_max);
     w_val = sanitize_within_bounds(w_val, w_min, w_max);
-    assert(x_val >= x_min && x_val <= x_max);
-    assert(y_val >= y_min && y_val <= y_max);
-    assert(z_val >= z_min && z_val <= z_max);
-    assert(w_val >= w_min && w_val <= w_max);
+    if (x_val < x_min || x_val > x_max) throw out_of_range("x_val out of bounds");
+    if (y_val < y_min || y_val > y_max) throw out_of_range("y_val out of bounds");
+    if (z_val < z_min || z_val > z_max) throw out_of_range("z_val out of bounds");
+    if (w_val < w_min || w_val > w_max) throw out_of_range("w_val out of bounds");
     int n = pow(f.size(), 0.25);
 
     float dx = (x_max - x_min) / (nx - 1);
@@ -515,10 +520,10 @@ float interpolate_4D(float x_val, float y_val, float z_val, float w_val,
     int j = (y_val - y_min) / dy;
     int k = (z_val - z_min) / dz;
     int l = (w_val - w_min) / dw;
-    assert(i >= 0 && i <= nx - 1);
-    assert(j >= 0 && j <= ny - 1);
-    assert(k >= 0 && k <= nz - 1);
-    assert(l >= 0 && l <= nw - 1);
+    if (i < 0 || i >= nx) throw out_of_range("i out of bounds");
+    if (j < 0 || j >= ny) throw out_of_range("j out of bounds");
+    if (k < 0 || k >= nz) throw out_of_range("k out of bounds");
+    if (l < 0 || l >= nw) throw out_of_range("l out of bounds");
     if (i == nx - 1) i--;
     if (j == ny - 1) j--;
     if (k == nz - 1) k--;
@@ -528,10 +533,10 @@ float interpolate_4D(float x_val, float y_val, float z_val, float w_val,
     float y_rel = (y_val - y_min) / dy - j;
     float z_rel = (z_val - z_min) / dz - k;
     float w_rel = (w_val - w_min) / dw - l;
-    assert(x_rel >= 0 && x_rel <= 1);
-    assert(y_rel >= 0 && y_rel <= 1);
-    assert(z_rel >= 0 && z_rel <= 1);
-    assert(w_rel >= 0 && w_rel <= 1);
+    if (x_rel < 0 || x_rel > 1) throw out_of_range("x_rel out of bounds");
+    if (y_rel < 0 || y_rel > 1) throw out_of_range("y_rel out of bounds");
+    if (z_rel < 0 || z_rel > 1) throw out_of_range("z_rel out of bounds");
+    if (w_rel < 0 || w_rel > 1) throw out_of_range("w_rel out of bounds");
 
 float result = 
         (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * (1 - w_rel) * f[i*nx*nx*nx+j*ny*ny+k*nz+l] + 
