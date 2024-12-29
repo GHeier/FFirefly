@@ -24,6 +24,7 @@ class Mesh:
 
         # lowest Matsubara frequency index
         self.iw0_f = np.where(self.IR_basis_set.wn_f == 1)[0][0]
+        self.iw0_b = np.where(self.IR_basis_set.wn_b == 0)[0][0]
 
         self.iwn_f = 1j * self.IR_basis_set.wn_f * np.pi * T
         self.iwn_f_ = np.tensordot(self.iwn_f, np.ones(self.nk), axes=0)
@@ -236,16 +237,23 @@ class FLEXSolver:
         self.mu = sc.optimize.brentq(f, np.amax(self.mesh.ek)*3, np.amin(self.mesh.ek)*3)
 
     def save_ckio(self, filename):
-        x_real = np.real(self.ckio[self.mesh.iw0_f])
-        x_imag = np.imag(self.ckio[self.mesh.iw0_f])
-        k1, k2, k3 = np.meshgrid(np.arange(self.mesh.nk1) / self.mesh.nk1, np.arange(self.mesh.nk2) / self.mesh.nk2, np.arange(self.mesh.nk3) / self.mesh.nk3, indexing='ij')
+        print('Saving chi0(k) to file:', filename)
+        x_real = np.real(self.ckio)
+        x_imag = np.imag(self.ckio)
+        k1, k2, k3, w= np.meshgrid(np.arange(self.mesh.nk1) / self.mesh.nk1, np.arange(self.mesh.nk2) / self.mesh.nk2, np.arange(self.mesh.nk3) / self.mesh.nk3, np.imag(self.mesh.iwn_f[1:]), indexing='ij')
+        print(self.mesh.iwn_f)
+        print(w.shape)
+        print(x_real.shape)
         k1 = k1.ravel()
         k2 = k2.ravel()
         k3 = k3.ravel()
+        w = w.ravel()
         x_real = x_real.ravel()
         x_imag = x_imag.ravel()
-        data = np.stack((k1, k2, k3, x_real, x_imag), axis=-1)
-        np.savetxt(filename, data, fmt="%.8e")
+        print(w.shape)
+        print(x_real.shape)
+        data = np.stack((k1, k2, k3, w, x_real, x_imag), axis=-1)
+        np.savetxt(filename, data, fmt="%.8f")
 
 def sparse_ir_response():
     T    = cfg.Temperature
