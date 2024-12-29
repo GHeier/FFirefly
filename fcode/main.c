@@ -3,13 +3,13 @@
 
 #include "config/load/c_config.h"
 
+#include "response/response.h"
 #include "superconductor/superconductor.hpp"
 #include "hamiltonian/tests/all.hpp"
 
-extern void polarization_wrapper();
 void response() {
     printf("Starting Response Calculation\n\n");
-    polarization_wrapper();
+    response_wrapper();
 }
 
 void superconductor() {
