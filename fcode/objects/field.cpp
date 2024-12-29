@@ -269,8 +269,7 @@ ScalarField::ScalarField(string filename, int dimension, bool is_complex) {
     this->is_complex = is_complex;
     ifstream file(filename);
     if (!file.is_open()) {
-        cerr << "Failed to open the file." << endl;
-        exit(1);
+        throw runtime_error("Failed to open the file.");
     }
     string line;
     while (getline(file, line)) {

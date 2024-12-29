@@ -100,8 +100,8 @@ PYBIND11_MODULE(fmodule, m) {
     });
 
 
-    m.def("load_c_config", []() {
-        read_c_config_wrapper();
+    m.def("load_c_config", [](string path) {
+        read_c_config_wrapper(path);
         load_cpp_config();
     });
 

@@ -177,7 +177,7 @@ void make_save_file() {
     fclose(file);
 }
 
-void read_c_config() {
+void read_c_config(const char* path) {
     char line[256];
     char key[50];
     char value[50];
@@ -186,11 +186,6 @@ void read_c_config() {
     int n = 0;
     bool got_dimension = false;
     bool got_bz = false;
-    char path[PATH_MAX]; // Buffer to hold the executable path
-    ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
-    path[len - 7] = '\0'; // Remove the executable name
-    strcat(path, "input.cfg"); // Append the input file name
-
     FILE *file = fopen(path, "r");
     while (fgets(line, sizeof(line), file) != NULL) {
         if (strstr(line, "[CELL]") != NULL) {
@@ -380,7 +375,7 @@ void load_c_config() {
     path[len - 7] = '\0'; // Remove the executable name
     strcat(path, "input.cfg"); // Append the input file name
     make_save_file();
-    read_c_config();
+    read_c_config(path);
 }
 
 void unload_c_config() {

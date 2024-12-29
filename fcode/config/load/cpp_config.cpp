@@ -156,6 +156,6 @@ void set_t1(int n, float t1_) {
     t1[n] = t1_;
 }
 
-void read_c_config_wrapper() {
-    read_c_config();
+void read_c_config_wrapper(string path) {
+    read_c_config(path.c_str());
 }

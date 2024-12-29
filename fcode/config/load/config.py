@@ -242,4 +242,5 @@ def load_config():
             print("Error: Number of bands does not match number of bands specified in input.")
             sys.exit(1)
         nbnd = len(band)
+    return input_file
 
