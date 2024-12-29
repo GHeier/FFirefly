@@ -2,9 +2,9 @@ import sparse_ir_mesh
 import sparse_ir
 import numpy as np
 
-from ..config.load.python_config import *
 
 def scf_interaction():
+    Temperature = 0.0001
     beta = 1 / Temperature
     IR_tol = 1e-10
     sfc_tol = 1e-4
@@ -26,3 +26,4 @@ def get_bandwidth(nk1, nk2, nk3):
     kx, ky, kz = brillouin_zone * np.array([x, y, z])
     ep_grid = epsilon(kx, ky, kz)
     return np.max(ep_grid) - np.min(ep_grid)
+

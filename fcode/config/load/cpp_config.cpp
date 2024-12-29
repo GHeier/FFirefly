@@ -68,7 +68,6 @@ bool dynamic;
 
 
 extern "C" void load_cpp_config() {
-    printf("Loading C++ Configuration File\n");
     // Load the C++ configuration file
 
 //[CONTROL]
@@ -100,7 +99,6 @@ extern "C" void load_cpp_config() {
 //[BRILLOUIN_ZONE]
     for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) brillouin_zone[i][j] = c_brillouin_zone[i][j];
 
-    printf("band[0] = %s\n", c_band[0]);
 //[BANDS]
     for (int i = 0; i < nbnd; i++) band.push_back(c_band[i]);
     for (int i = 0; i < nbnd; i++) eff_mass.push_back(c_eff_mass[i]);
@@ -126,7 +124,6 @@ extern "C" void load_cpp_config() {
 //[RESPONSE]
     dynamic = c_dynamic;
     // End of Global Functions 
-    printf("C++ Configuration File Loaded\n");
 }
 
 
@@ -159,3 +156,6 @@ void set_t1(int n, float t1_) {
     t1[n] = t1_;
 }
 
+void read_c_config_wrapper() {
+    read_c_config();
+}

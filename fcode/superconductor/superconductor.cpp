@@ -36,8 +36,7 @@
 using namespace std;
 
 extern "C" void superconductor_wrapper() {
-    load_cpp_config();
-    printf("Running superconductor_wrapper\n");
+    printv("Running superconductor_wrapper\n");
     if (method == "bcs")
         bcs();
     else if (method == "eliashberg")
@@ -48,14 +47,7 @@ extern "C" void superconductor_wrapper() {
 
 void bcs() {
     cout << "Calculating Fermi Surface..." << endl;
-    load_cpp_config();
     load_cpp_cfg();
-    printf("Band0 = %s\n", band[0].c_str());
-    printf("Band1 = %s\n", band[1].c_str());
-    printf("Band2 = %s\n", band[2].c_str());
-    printf("nbnd = %d\n", nbnd);
-    printf("fermi_energy = %.2f\n", fermi_energy);
-    printf("mu = %.2f\n", mu);
  
     vector<vector<Vec>> freq_FS;
     vector<Vec> FS;

@@ -1,45 +1,27 @@
 import fcode
 import fcode.config as cfg
+from fcode import *
 
 import numpy as np
 import sparse_ir
 
-BZ = cfg.brillouin_zone
+BZ = np.array(cfg.brillouin_zone)
 #print("BZ:", BZ)
 
 T = cfg.Temperature
 beta = 1 / T
 nk1, nk2, nk3 = cfg.k_mesh
-#kvec = fcode.Vec(4, 2, 3)
-#print("kvec:", kvec.x, kvec.y, kvec.z)
-
-#e = fcode.e_test(kvec)
-#print(e)
-
-#print("nbnd:", cfg.nbnd)
-#print("Temperature:", cfg.Temperature) 
-
-#e = fcode.epsilon(0, kvec)
-#print("e:", e)
-
-t = 1
-def epsilon(k):
-    return -2*t*(np.cos(k.x) + np.cos(k.y) + np.cos(k.z))
 
 def get_bandwidth():
     k1, k2, k3 = np.meshgrid(np.arange(nk1)/nk1, np.arange(nk2)/nk2, np.arange(nk3)/nk3)
     emin, emax = 1000, -1000
-    for i in range(1, 2*nk1):
-        for j in range(1, 2*nk2):
-            for k in range(1, 2*nk3):
-                ivec = [i/nk1, j/nk2, k/nk3]
-                kvec = np.dot(ivec, BZ)
-                kvec = fcode.Vec(kvec[0], kvec[1], kvec[2])
-                ek = epsilon(kvec)
-                #print("kvec:", kvec.x, kvec.y, kvec.z)
-                #print("ek:", ek)
-                emin = min(emin, ek)
-                emax = max(emax, ek)
+    # Flatten the k-points into (N, 3) array
+    k_points = np.stack((k1.ravel(), k2.ravel(), k3.ravel()), axis=-1)
+    k_points = k_points @ BZ.T
+    e_pts = epsilon(1, k_points)
+    e_mesh = e_pts.reshape(nk1, nk2, nk3)
+    emin = np.min(e_mesh)
+    emax = np.max(e_mesh)
     return emax - emin
 
 
@@ -50,33 +32,6 @@ def eliashberg():
     wmax = 2*W
     IR_tol = 1e-5
     IR_basis_set = sparse_ir.FiniteTempBasisSet(beta, wmax, eps=IR_tol)
-    print("Loading C config")
-    fcode.load_c_config()
-    print("Loading C++ config")
-    fcode.load_cpp_config()
-    print("Testing vec and epsilon")
-    test_vec = fcode.Vec(1, 2, 3)
-    print("test_vec:", test_vec.x, test_vec.y, test_vec.z)
-    a = fcode.get_nbnd()
-    print("nbnd:", a)
-    fcode.set_nbnd(10)
-    a = fcode.get_nbnd()
-    print("nbnd:", a)
-    b = fcode.get_onsite_U()
-    print("onsite_U:", b)
-    fcode.set_onsite_U(2)
-    print("onsite_U:", b)
-    b = fcode.get_onsite_U()
-    print("onsite_U:", b)
-    fcode.set_FS_only(True)
-    d = fcode.get_k_mesh()
-    print("k_mesh:", d)
-    fcode.set_k_mesh([4, 4, 4])
-    print("k_mesh:", d)
-
-
-    test_epsilon = fcode.epsilon(0, test_vec)
-    print("test_epsilon:", test_epsilon)
 
 
 class Mesh:

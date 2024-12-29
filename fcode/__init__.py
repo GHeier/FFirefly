@@ -1,7 +1,8 @@
 from .fmodule import *
 
-#from .algorithms import sparse_ir_mesh
+from .objects import mesh
 from .config.load import config
 
 config.load_config()
+load_c_config()
 

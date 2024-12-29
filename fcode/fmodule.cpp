@@ -6,12 +6,14 @@
 
 
 #include "config/load/cpp_config.hpp"
+#include "config/load/c_config.h"
 #include "hamiltonian/potential.hpp"
 #include "hamiltonian/band_structure.hpp"
 #include "objects/vec.hpp"
 
 
 namespace py = pybind11;
+
 
 PYBIND11_MODULE(fmodule, m) {
     // Expose the Vec class
@@ -70,31 +72,37 @@ PYBIND11_MODULE(fmodule, m) {
 
     // Expose the epsilon function
     m.def("epsilon", &epsilon, "Calculate the energy band",
-            py::arg("n") = 0, py::arg("k"));
-    ;
+            py::arg("n") = 1, py::arg("k"));
 
-    m.def("set_nbnd", [](int nbnd_) {
-        nbnd = nbnd_;
+    m.def("epsilon", [](int n, py::array_t<double> k) -> py::object {
+        if (k.ndim() == 1 && k.size() == 3) {
+            // Single k-point case
+            auto k_unchecked = k.unchecked<1>();
+            Vec k_vec = Vec(k_unchecked(0), k_unchecked(1), k_unchecked(2));
+            return py::float_(epsilon(n, k_vec));
+        } 
+        else if (k.ndim() == 2 && k.shape(1) == 3) {
+            // Multiple k-points case
+            auto buf = k.request();
+            py::array_t<double> result(buf.shape[0]);
+            auto r = result.mutable_unchecked<1>();
+            auto k_unchecked = k.unchecked<2>();
+
+            for (ssize_t i = 0; i < buf.shape[0]; i++) {
+                Vec k_vec = Vec(k_unchecked(i, 0), k_unchecked(i, 1), k_unchecked(i, 2));
+                r(i) = epsilon(n, k_vec);
+            }
+            return result;
+        } 
+        else {
+            throw std::runtime_error("Input must have shape (3,) or (N, 3).");
+        }
     });
-    m.def("get_nbnd", []() {
-        return nbnd;
+
+
+    m.def("load_c_config", []() {
+        read_c_config_wrapper();
+        load_cpp_config();
     });
-    m.def("set_onsite_U", [](float onsite_U_) {
-        onsite_U = onsite_U_;
-    });
-    m.def("get_onsite_U", []() {
-        return onsite_U;
-    });
-    m.def("set_category", [](std::string category_) {
-        category = category_;
-    });
-    m.def("set_FS_only", [](bool FS_only_) {
-        FS_only = FS_only_;
-    });
-    m.def("set_k_mesh", [](std::vector<int> &k_mesh_) {
-        k_mesh = k_mesh_;
-    });
-    m.def("get_k_mesh", []() {
-        return k_mesh;
-    });
+
 }

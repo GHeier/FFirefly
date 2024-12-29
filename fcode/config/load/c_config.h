@@ -89,6 +89,7 @@ typedef enum {
 } Color;
 
 void call_python_func(const char *folder, const char *filename, const char *function);
+void read_c_config();
 void printcolor(Color color, const char* format, ...);
 bool print_test_results(bool all_tests[], int num_tests, const char* test_name);
 

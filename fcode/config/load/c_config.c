@@ -177,7 +177,7 @@ void make_save_file() {
     fclose(file);
 }
 
-void load_c_config() {
+void read_c_config() {
     char line[256];
     char key[50];
     char value[50];
@@ -190,7 +190,7 @@ void load_c_config() {
     ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
     path[len - 7] = '\0'; // Remove the executable name
     strcat(path, "input.cfg"); // Append the input file name
-    make_save_file();
+
     FILE *file = fopen(path, "r");
     while (fgets(line, sizeof(line), file) != NULL) {
         if (strstr(line, "[CELL]") != NULL) {
@@ -291,9 +291,7 @@ void load_c_config() {
 //[BANDS]
             else if (strstr(key, "band") != NULL) {
                 n = atoi(key + 4) - 1;
-                printf("band = %s\n", value);
                 set_string(&c_band[n], value);
-                printf("c_band[%d] = %s\n", n, c_band[n]);
             }
             else if (strstr(key, "eff_mass") != NULL) {
                 c_eff_mass[n] = atof(value);
@@ -374,6 +372,15 @@ void load_c_config() {
     c_nbnd = n + 1;
     if (!got_bz) cell_to_BZ(c_cell, c_brillouin_zone);
     if (!got_dimension) get_dimensions();
+}
+
+void load_c_config() {
+    char path[PATH_MAX]; // Buffer to hold the executable path
+    ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+    path[len - 7] = '\0'; // Remove the executable name
+    strcat(path, "input.cfg"); // Append the input file name
+    make_save_file();
+    read_c_config();
 }
 
 void unload_c_config() {
