@@ -51,6 +51,15 @@ VectorField::VectorField() {
 
 // Function to invert a matrix represented as vector<Vec>
 vector<Vec> invertMatrix(vector<Vec>& matrix, int n) {
+    //print incoming matrix
+    cout << "Incoming matrix: " << endl;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            cout << matrix[i](j) << " ";
+        }
+        cout << endl;
+    }
+
     // Create augmented matrix [A|I]
     vector<vector<float>> augmented(n, std::vector<float>(2 * n, 0.0f));
     for (size_t i = 0; i < n; ++i) {
@@ -145,6 +154,9 @@ void ScalarField::get_values_for_interpolation() {
         }
     }
     domain.push_back((points[points.size()-1] - first).round());
+    printf("Domain: \n");
+    cout << "point: " << points[points.size()-1] << endl;
+    cout << "first: " << first << endl << endl;
     for (int i = 0; i < domain.size(); i++) {
         for (int j = 0; j < i; j++) 
             domain[i] = domain[i] - domain[j];

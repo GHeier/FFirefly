@@ -169,7 +169,7 @@ module mesh
                 do i1 = 0, ngw(1) - 1
                     qvec = get_qvec(i1, i2, i3, ngw)
                     qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
-                    write(10, '(1x, f10.6, 1x, f10.6, 1x, f10.6, 1x, f10.6)') qvec(1), qvec(2), qvec(3), chi_mesh(i1+1, i2+1, i3+1)
+                    write(10, '(1x, f13.6, 1x, f13.6, 1x, f13.6, 1x, f13.6)') qvec(1), qvec(2), qvec(3), chi_mesh(i1+1, i2+1, i3+1)
                 end do
             end do
         end do
@@ -191,7 +191,7 @@ module mesh
                         qvec = get_qvec(i1, i2, i3, ngw)
                         qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
                         e0 = cmplx(0, pi * T * (2 * i4 + 1))
-                        write(10, '(1x, f10.6, 1x, f10.6, 1x, f10.6, 1x, f10.6, 1x, f10.6, 1x, f10.6)') qvec(1), qvec(2), qvec(3), aimag(e0), real(chi_mesh(i4+1, i1+1, i2+1, i3+1)), aimag(chi_mesh(i4+1, i1+1, i2+1, i3+1))
+                        write(10, '(1x, f13.6, 1x, f13.6, 1x, f13.6, 1x, f13.6, 1x, f13.6, 1x, f13.6)') qvec(1), qvec(2), qvec(3), aimag(e0), real(chi_mesh(i4+1, i1+1, i2+1, i3+1)), aimag(chi_mesh(i4+1, i1+1, i2+1, i3+1))
                     end do
                 end do
             end do
