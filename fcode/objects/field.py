@@ -42,3 +42,8 @@ def load_field_from_file(filename, dimension=3, is_complex=False, is_vector=Fals
     values = data[:, dimension]
     return Field(points, values, dimension, is_complex, is_vector)
 
+class test:
+    def __init__(self):
+        pass
+        #self.field = load_field_from_file('data.txt', dimension=3, is_complex=True, is_vector=False)
+

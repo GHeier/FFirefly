@@ -2,11 +2,17 @@
 #include <omp.h>
 
 #include "config/load/c_config.h"
+#include "config/load/py_interface.h"
 
+// Category nodes below
 #include "response/response.h"
 #include "superconductor/superconductor.hpp"
-#include "hamiltonian/tests/all.hpp"
 
+// Test nodes below
+#include "hamiltonian/tests/all.hpp"
+#include "objects/tests/all.hpp"
+
+// Global category calls
 void response() {
     printf("Starting Response Calculation\n\n");
     response_wrapper();
@@ -17,13 +23,15 @@ void superconductor() {
     superconductor_wrapper();
 }
 
+// Global test calls
 void test() {
     printf("Starting Test Calculations\n\n");
 
-    int num_tests = 1;
+    int num_tests = 2;
 
     bool all_tests[num_tests];
     all_tests[0] = hamiltonian_tests();
+    all_tests[1] = object_tests();
 
     print_test_results(all_tests, num_tests, "tests");
 }
@@ -37,6 +45,8 @@ int main() {
 
     load_c_config(); // Read input to load global c variables
     load_cpp_config_wrapper(); // Read input to load global cpp variables
+    start_python();
+
 
     if (!strcmp(c_category, "response")) response();
     else if (!strcmp(c_category, "superconductor")) superconductor();
@@ -44,6 +54,7 @@ int main() {
     else printf("Unknown Calculation Type\n\n");
 
     //unload_c_config(); // Free memory allocated for global c variables
+    end_python();
     printf("Program Complete\n");
     return 0;
 }

@@ -30,7 +30,7 @@ char* c_interaction = "none";
 char* get_interaction() {return c_interaction;}
 int c_dimension = 3;
 int c_ibrav = 0;
-int c_nbnd = 1;
+int c_nbnd = 0;
 float c_fermi_energy = 0.0;
 float c_Temperature = 0.0;
 float c_onsite_U = 0.0;
@@ -150,6 +150,7 @@ void set_section(char *dest, const char *src) {
 }
 
 void load_default_band_values() {
+    c_band[0] = (char*)malloc(50 * sizeof(char)); // Allocating space for 50 characters
     strcpy(c_band[0], "fermi_gas");
     c_eff_mass[0] = 1.0;
 }
@@ -185,6 +186,7 @@ void read_c_config(const char* path) {
     int n = 0;
     bool got_dimension = false;
     bool got_bz = false;
+    bool got_nbnd = false;
     FILE *file = fopen(path, "r");
     while (fgets(line, sizeof(line), file) != NULL) {
         if (strstr(line, "[CELL]") != NULL) {
@@ -256,6 +258,7 @@ void read_c_config(const char* path) {
             }
             else if (strstr(key, "nbnd") != NULL) {
                 c_nbnd = atoi(value);
+                 got_nbnd = true;
             }
             else if (strstr(key, "fermi_energy") != NULL) {
                 c_fermi_energy = atof(value);
@@ -284,7 +287,7 @@ void read_c_config(const char* path) {
 
 //[BANDS]
             else if (strstr(key, "band") != NULL) {
-                n = atoi(key + 4) - 1;
+                n = atoi(key + 4)-1;
                 set_string(&c_band[n], value);
             }
             else if (strstr(key, "eff_mass") != NULL) {
@@ -363,7 +366,7 @@ void read_c_config(const char* path) {
             }
         }
     }
-    c_nbnd = n + 1;
+    if (!got_nbnd && c_band[0] != 0) c_nbnd = n + 1;
     if (!got_bz) cell_to_BZ(c_cell, c_brillouin_zone);
     if (!got_dimension) get_dimensions();
 }
