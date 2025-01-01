@@ -9,6 +9,22 @@ module fcode
             real(C_DOUBLE), dimension(3) :: k
             real(C_DOUBLE) :: epsilon
         end function epsilon
+
+        function Vs(k1_c, k2_c, spin1_c, spin2_c) bind(C, name="Vs_c")
+            import :: C_FLOAT, C_DOUBLE, C_CHAR
+            real(C_DOUBLE), dimension(3), intent(in) :: k1_c
+            real(C_DOUBLE), dimension(3), intent(in) :: k2_c
+            character(C_CHAR), intent(in) :: spin1_c
+            character(C_CHAR), intent(in) :: spin2_c
+            real(C_FLOAT) :: V
+        end function V
+
+        function V(k1_c, k2_c) bind(C, name="V_c")
+            import :: C_FLOAT, C_DOUBLE
+            real(C_DOUBLE), dimension(3), intent(in) :: k1_c
+            real(C_DOUBLE), dimension(3), intent(in) :: k2_c
+            real(C_FLOAT) :: V
+        end function V
     end interface
     ! Global variables
 

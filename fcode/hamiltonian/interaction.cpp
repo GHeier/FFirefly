@@ -92,3 +92,43 @@ float potential_FLEX_triplet(Vec k1, Vec k2) {
     return 0.5 * ( V_minus - V_plus);
 }
 
+/* ======================================================================
+* ======================== C Interaction Functions ========================
+*/
+
+float Vs_c(double k1_c[3], double k2_c[3], const char* spin1_c, const char* spin2_c) {
+    Vec k1 = Vec(k1_c[0], k1_c[1], k1_c[2]);
+    Vec k2 = Vec(k2_c[0], k2_c[1], k2_c[2]);
+    string spin1(spin1_c);
+    string spin2(spin2_c);
+    if (interaction == "const") 
+        return potential_const();
+    if (interaction == "FLEX") {
+        return potential_FLEX(k1, k2, spin1, spin2);
+    }
+    if (interaction == "test") 
+        return potential_test(k1, k2, spin1, spin2);
+    else {
+        cout << "Unknown Potential Function: " << interaction << endl;
+        exit(1);
+    }
+}
+
+
+float V_c(double k1_c[3], double k2_c[3]) {
+    Vec k1 = Vec(k1_c[0], k1_c[1], k1_c[2]);
+    Vec k2 = Vec(k2_c[0], k2_c[1], k2_c[2]);
+    string spin1 = "up";
+    string spin2 = "up";
+    if (interaction == "const") 
+        return potential_const();
+    if (interaction == "FLEX") {
+        return potential_FLEX(k1, k2, spin1, spin2);
+    }
+    if (interaction == "test") 
+        return potential_test(k1, k2, spin1, spin2);
+    else {
+        cout << "Unknown Potential Function: " << interaction << endl;
+        exit(1);
+    }
+}

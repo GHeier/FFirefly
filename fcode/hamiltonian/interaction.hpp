@@ -25,4 +25,6 @@ float potential_FLEX(Vec k1, Vec k2, string spin1, string spin2);
 float potential_FLEX_singlet(Vec k1, Vec k2);  
 float potential_FLEX_triplet(Vec k1, Vec k2);
 
+float Vs_c(double k1_c[3], double k2_c[3], const char* spin1_c, const char* spin2_c);
+float V_c(double k1_c[3], double k2_c[3]);
 

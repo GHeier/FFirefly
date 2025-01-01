@@ -44,12 +44,6 @@ module mesh
         qvec(1:3) = dble([i1, i2, i3] + 1e-5) / dble(npts(1:3) - 1)
     end function get_qvec
 
-    function epsilon_custom(kvec) result(eps)
-        real(8), dimension(3), intent(in) :: kvec
-        real :: eps
-        eps = 0.5d0 * dot_product(kvec(1:3), kvec(1:3))
-    end function epsilon_custom
-
     function fill_energy_mesh(qvec) result(eig)
         real(8), dimension(3), intent(in) :: qvec
         integer :: i1, i2, i3, ik
