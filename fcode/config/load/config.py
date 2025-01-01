@@ -68,7 +68,7 @@ frequency_pts = 5
 #[RESPONSE]
 dynamic = False
 ### End Variables ###
-
+nbnd += 1
 ### Functions ###
 
 def BZ_from_cell(cell):

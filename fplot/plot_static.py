@@ -8,7 +8,7 @@ BZ = np.array(cfg.brillouin_zone)
 
 def plot_111():
     x, y = list(), list()
-    field = fcode.ScalarField("chi_mesh_static.dat")
+    field = fcode.field.load_field_from_file("chi_mesh_static.dat")
     points = field.points
     values = field.values
     n = 100

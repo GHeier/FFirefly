@@ -8,10 +8,9 @@ ext_modules = [
             "fcode/fmodule.cpp",
             "fcode/config/load/cpp_config.cpp",
             "fcode/config/load/c_config.c",
-            "fcode/algorithms/interpolate.cpp",
-            "fcode/objects/field.cpp",
             "fcode/objects/vec.cpp",
-            "fcode/hamiltonian/potential.cpp",
+            "fcode/objects/field.cpp",
+            "fcode/hamiltonian/interaction.cpp",
             "fcode/hamiltonian/band_structure.cpp",
             "fcode/response/susceptibility.cpp",
             ], # Source file

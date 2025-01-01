@@ -50,20 +50,8 @@ PYBIND11_MODULE(fmodule, m) {
                 return self(i);
             }, py::return_value_policy::reference, py::arg("i"));
 
-    py::class_<ScalarField>(m, "ScalarField")
-        .def(py::init<>())
-        .def(py::init<std::string, int, bool>(),
-             py::arg("filename"), py::arg("dimension") = 3, py::arg("is_complex") = false)
-        .def(py::init<std::vector<Vec>, std::vector<float>, int, bool>(),
-             py::arg("points"), py::arg("values"), py::arg("dimension") = 3, py::arg("is_complex") = false)
-        .def_readwrite("points", &ScalarField::points)
-        .def_readwrite("values", &ScalarField::values)
-        .def("__call__", 
-             static_cast<float (ScalarField::*)(Vec)>(&ScalarField::operator()), 
-             "Evaluate the scalar field at a Vec point")
-        .def("__call__", 
-             static_cast<float (ScalarField::*)(py::array_t<double>)>(&ScalarField::operator()), 
-             "Evaluate the scalar field at a NumPy array");        
+    py::class_<Field>(m, "C_Field")
+        .def(py::init<>());
 
     // Expose the V function
     m.def("V", &V, "Calculate the interaction potential",

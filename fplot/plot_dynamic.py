@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 BZ = np.array(cfg.brillouin_zone)
 
 def plot_111():
-    field = fcode.ScalarField("chi_mesh_dynamic.dat", 4, True)
+    field = fcode.Field("chi_mesh_dynamic.dat", 4, True)
     n = 100
     wpts = 1
     print("Plotting 111 path")
