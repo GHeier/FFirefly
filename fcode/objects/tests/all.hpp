@@ -9,6 +9,6 @@ bool object_tests();
 #ifdef __cplusplus
 }
 
-bool python_field_wrapper_test();
+bool python_field_test();
 #endif
 

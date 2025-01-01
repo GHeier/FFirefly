@@ -7,7 +7,7 @@
 #include "solver.hpp"
 #include "matrix_creation.hpp"
 #include "utilities.hpp"
-#include "../hamiltonian/potential.hpp"
+#include "../hamiltonian/interaction.hpp"
 #include "../hamiltonian/band_structure.hpp"
 #include "../algorithms/integration.hpp"
 #include "../objects/matrix.hpp"

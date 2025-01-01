@@ -38,7 +38,7 @@ struct MatCube {
 
     // Accessor
     complex<float> operator()(Vec q, complex<float> w) {
-        q = to_IBZ_2(q);
+        q = to_IBZ(q);
         return interpolate_4D_complex(q(0), q(1), q(2), w.imag(), 
                 x_min, x_max, y_min, y_max, z_min, z_max, w_min, w_max, cube);
     }

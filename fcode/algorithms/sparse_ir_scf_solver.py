@@ -130,7 +130,7 @@ class VSolver:
 
         V = 3/2*self.U**2 * self.chi_spin + 1/2*self.U**2 * self.chi_charge - self.U**2 * self.ckio
         # Constant Hartree Term V ~ U needs to be treated extra, since it cannot be modeled compactly by the IR basis.
-        # In the single-band case, the Hartree term can be absorbed into the chemical potential.
+        # In the single-band case, the Hartree term can be absorbed into the chemical interaction.
 
         # Fourier transform
         V = self.mesh.k_to_r(V)

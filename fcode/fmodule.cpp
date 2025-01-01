@@ -7,7 +7,7 @@
 
 #include "config/load/cpp_config.hpp"
 #include "config/load/c_config.h"
-#include "hamiltonian/potential.hpp"
+#include "hamiltonian/interaction.hpp"
 #include "hamiltonian/band_structure.hpp"
 #include "objects/vec.hpp"
 

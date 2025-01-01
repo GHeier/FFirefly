@@ -7,7 +7,7 @@
 #include <boost/functional/hash.hpp>
 #include <unordered_map>
 
-#include "potential.hpp"
+#include "interaction.hpp"
 #include "../hamiltonian/band_structure.hpp"
 #include "../objects/vec.hpp"
 #include "../config/load/cpp_config.hpp"
@@ -63,8 +63,8 @@ float potential_FLEX(Vec k1, Vec k2, string spin1, string spin2) {
 }
 
 float potential_FLEX_singlet(Vec k1, Vec k2) {
-    Vec q_minus = to_IBZ_2(k1 - k2);
-    Vec q_plus = to_IBZ_2(k1 + k2);
+    Vec q_minus = to_IBZ(k1 - k2);
+    Vec q_plus = to_IBZ(k1 + k2);
     float w = epsilon(k1.n, k1) - epsilon(k2.n, k2);
 
     float Xm = chi(q_minus, w);
@@ -79,8 +79,8 @@ float potential_FLEX_singlet(Vec k1, Vec k2) {
 }
 
 float potential_FLEX_triplet(Vec k1, Vec k2) {
-    Vec q_minus = to_IBZ_2(k1 - k2);
-    Vec q_plus = to_IBZ_2(k1 + k2);
+    Vec q_minus = to_IBZ(k1 - k2);
+    Vec q_plus = to_IBZ(k1 + k2);
     float w = epsilon(k1.n, k1) - epsilon(k2.n, k2);
 
     float Xm = chi(q_minus, w);

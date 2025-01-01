@@ -19,7 +19,7 @@
 #include "matrix_creation.hpp"
 #include "../algorithms/linear_algebra.hpp"
 #include "frequency_inclusion.hpp"
-#include "../hamiltonian/potential.hpp"
+#include "../hamiltonian/interaction.hpp"
 #include "cfg.hpp"
 
 /*
