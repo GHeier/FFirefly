@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Determine the project folder (default to current directory if not set)
-folder=/home/g/Research/bcs_diagonalization
+folder=/home/g/Research/fcode
 # Check if the first argument is provided and handle verbosity levels
 if [ "$1" == "-v" ]; then
     cmake -S "$folder" -B "$folder/build" -G Ninja 1>/dev/null && cmake --build "$folder/build"

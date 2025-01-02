@@ -37,4 +37,4 @@
 
 build/*
 __pycache__/
-fmodule.egg-info/
+fcode.egg-info/

@@ -17,7 +17,7 @@ module fcode
             character(C_CHAR), intent(in) :: spin1_c
             character(C_CHAR), intent(in) :: spin2_c
             real(C_FLOAT) :: V
-        end function V
+        end function Vs
 
         function V(k1_c, k2_c) bind(C, name="V_c")
             import :: C_FLOAT, C_DOUBLE

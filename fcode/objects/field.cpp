@@ -16,7 +16,7 @@ Field::Field() {
 
 Field::Field(vector<Vec> points, vector<complex<float>> values, int dimension, bool is_complex, bool is_vector) {
     py::module sys = py::module::import("sys");
-    sys.attr("path").attr("append")("/home/g/Research/bcs_diagonalization/fcode/objects");
+    sys.attr("path").attr("append")("/home/g/Research/fcode/fcode/objects");
 
     py::module field_module = py::module::import("field");
     py::object load = field_module.attr("load_field_from_data");
@@ -35,7 +35,7 @@ Field::Field(vector<Vec> points, vector<complex<float>> values, int dimension, b
 
 Field::Field(vector<Vec> points, vector<float> values, int dimension, bool is_complex, bool is_vector) {
     py::module sys = py::module::import("sys");
-    sys.attr("path").attr("append")("/home/g/Research/bcs_diagonalization/fcode/objects");
+    sys.attr("path").attr("append")("/home/g/Research/fcode/fcode/objects");
 
     py::module field_module = py::module::import("field");
     py::object load = field_module.attr("load_field_from_data");
@@ -56,7 +56,7 @@ Field::Field(const std::string &filename, int dimension, bool is_complex, bool i
     printf("filename: %s\n", filename.c_str());
 
     py::module sys = py::module::import("sys");
-    sys.attr("path").attr("append")("/home/g/Research/bcs_diagonalization/fcode/objects");
+    sys.attr("path").attr("append")("/home/g/Research/fcode/fcode/objects");
 
     py::module field_module = py::module::import("field");
     py::object load_field = field_module.attr("load_field_from_file");

@@ -41,14 +41,12 @@ file(GLOB_RECURSE MAIN_SOURCES ${CMAKE_SOURCE_DIR}/fcode/*.c
 # Remove files under any 'archive' directory
 foreach(file IN LISTS MAIN_SOURCES)
     if(file MATCHES "/archive/")
-        message(STATUS "Removing file: ${file}")
         list(REMOVE_ITEM MAIN_SOURCES ${file})
     endif()
 endforeach()
 
 # Remove fmodule.cpp from the source list if it exists
 list(REMOVE_ITEM MAIN_SOURCES ${CMAKE_SOURCE_DIR}/fcode/fmodule.cpp)
-message(STATUS "MAIN_SOURCES after removal: ${MAIN_SOURCES}")
 
 add_executable(fcode.x ${MAIN_SOURCES})
 
