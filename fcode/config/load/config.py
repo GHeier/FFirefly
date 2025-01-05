@@ -244,3 +244,9 @@ def load_config():
         nbnd = len(band)
     return input_file
 
+def printv(format_string: str, *args):
+    if verbosity == "high":
+        try:
+            print(format_string.format(*args))
+        except (IndexError, KeyError) as e:
+            print(f"Formatting error: {e}")

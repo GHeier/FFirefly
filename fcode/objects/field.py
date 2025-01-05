@@ -1,25 +1,19 @@
+import fcode.config as cfg
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
 
 class Field:
     def __init__(self, points, values, dimension=3, is_complex=False, is_vector=False):
-        print("Initializing field")
+        cfg.printv("Initializing field")
         self.points = np.asarray(points)
-        print("Points shape: ", self.points.shape)
         self.dimension = dimension
-        print("Dimension: ", self.dimension)
         self.is_complex = is_complex
-        print("Is complex: ", self.is_complex)
         self.is_vector = is_vector
-        print("Is vector: ", self.is_vector)
 
         if is_complex:
             self.values = np.asarray(values, dtype=np.complex128)
-            print("Values shape: ", self.values.shape)
             rvals = self.values.real
             ivals = self.values.imag
-            print("rvals[0]: ", rvals[0])
-            print("ivals[0]: ", ivals[0])
             
             self._setup_interpolators(rvals, ivals)
         else:
@@ -30,7 +24,7 @@ class Field:
         self.grid_maxs = np.array([axis[-1] for axis in self.interpolator_real.grid])
         self.margin = 0.01
 
-        print("Field initialized")
+        cfg.printv("Field initialized")
 
     def _is_mesh(self):
         """
@@ -47,7 +41,7 @@ class Field:
         Setup interpolators based on mesh or scattered data.
         """
         if self._is_mesh():
-            print("Dataset detected as a structured mesh. Using RegularGridInterpolator.")
+            cfg.printv("Dataset detected as a structured mesh. Using RegularGridInterpolator.")
             grid_coords = [np.unique(self.points[:, i]) for i in range(self.points.shape[1])]
             grid_shape = tuple(len(coord) for coord in grid_coords)
             reshaped_real = real_values.reshape(grid_shape)
@@ -57,7 +51,7 @@ class Field:
                 reshaped_imag = imag_values.reshape(grid_shape)
                 self.interpolator_imag = RegularGridInterpolator(grid_coords, reshaped_imag, method='linear', bounds_error=False, fill_value=None)
         else:
-            print("Dataset detected as scattered. Using LinearNDInterpolator.")
+            cfg.printv("Dataset detected as scattered. Using LinearNDInterpolator.")
             self.interpolator_real = LinearNDInterpolator(self.points, real_values)
             if imag_values is not None:
                 self.interpolator_imag = LinearNDInterpolator(self.points, imag_values)
@@ -87,7 +81,7 @@ class Field:
             query_point = self.margin_clamp(query_point)
         real_part = self.interpolator_real(query_point)
         imag_part = self.interpolator_imag(query_point)
-        return real_part + 1j * imag_part
+        return (real_part + 1j * imag_part).item()
 
     def call_real_vector(self, *coords):
         query_point = np.array(coords).reshape(1, -1)
@@ -116,11 +110,8 @@ class Field:
 # Utility Functions
 
 def load_field_from_file(filename, dimension=3, is_complex=False, is_vector=False):
-    print("Loading field from file: ", filename)
     data = np.loadtxt(filename)
-    print("Data shape: ", data.shape)
     points = data[:, :dimension]
-    print("Points shape: ", points.shape)
     if not is_complex and not is_vector:
         values = data[:, dimension]
     elif is_complex and not is_vector:
@@ -130,7 +121,6 @@ def load_field_from_file(filename, dimension=3, is_complex=False, is_vector=Fals
     else:
         values = data[:, dimension:2*dimension] + 1j * data[:, 2*dimension:]
 
-    print("Values shape: ", values.shape)
     return Field(points, values, dimension, is_complex, is_vector)
 
 
