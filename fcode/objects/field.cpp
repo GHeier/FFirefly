@@ -12,65 +12,169 @@
 namespace py = pybind11;
 
 Field::Field() {
+    this->dimension = 3;
+    this->is_complex = false;
+    this->is_vector = false;
 }
 
-Field::Field(vector<Vec> points, vector<complex<float>> values, int dimension, bool is_complex, bool is_vector) {
+Field::Field(int dimension, bool is_complex, bool is_vector) {
+    this->dimension = dimension;
+    this->is_complex = is_complex;
+    this->is_vector = is_vector;
+}
+
+py::module Field::init() {
     py::module sys = py::module::import("sys");
     sys.attr("path").attr("append")("/home/g/Research/fcode/fcode/objects");
-
     py::module field_module = py::module::import("field");
-    py::object load = field_module.attr("load_field_from_data");
+    return field_module;
+}
 
+ScalarField::ScalarField() : Field() {};
+ComplexField::ComplexField() : Field() {};
+VectorField::VectorField() : Field() {};
+ComplexVectorField::ComplexVectorField() : Field() {};
+
+vector<vector<double>> Vec_to_doubles(vector<Vec> points) {
     vector<vector<double>> points_vec;
     for (Vec point : points) {
-        vector<double> temp(dimension);
-        for (int i = 0; i < dimension; i++) {
+        vector<double> temp(3);
+        for (int i = 0; i < 3; i++) {
             temp[i] = point(i);
         }
         points_vec.push_back(temp);
     }
-    vector<complex<double>> values_vec = vector<complex<double>>(values.begin(), values.end());
-    field_obj = load(points_vec, values, dimension, is_complex, is_vector);
+    return points_vec;
 }
 
-Field::Field(vector<Vec> points, vector<float> values, int dimension, bool is_complex, bool is_vector) {
-    py::module sys = py::module::import("sys");
-    sys.attr("path").attr("append")("/home/g/Research/fcode/fcode/objects");
+vector<double> Field::Vec_to_vector(Vec point) {
+    vector<double> temp(this->dimension);
+    for (int i = 0; i < this->dimension; i++) {
+        temp[i] = point(i);
+    }
+    return temp;
+}
 
-    py::module field_module = py::module::import("field");
+ScalarField::ScalarField(vector<Vec> points, vector<float> values, int dimension) : Field() {
+    py::module field_module = init();
     py::object load = field_module.attr("load_field_from_data");
 
-    vector<vector<double>> points_vec;
-    for (Vec point : points) {
-        vector<double> temp(dimension);
-        for (int i = 0; i < dimension; i++) {
-            temp[i] = point(i);
-        }
-        points_vec.push_back(temp);
-    }
-    vector<double> values_vec = vector<double>(values.begin(), values.end());
-    field_obj = load(points_vec, values, dimension, is_complex, is_vector);
+    vector<vector<double>> points_vec = Vec_to_doubles(points);
+    this->field_obj = load(points_vec, values, dimension, false, false);
 }
 
-Field::Field(const std::string &filename, int dimension, bool is_complex, bool is_vector) {
-    printf("filename: %s\n", filename.c_str());
-
-    py::module sys = py::module::import("sys");
-    sys.attr("path").attr("append")("/home/g/Research/fcode/fcode/objects");
-
-    py::module field_module = py::module::import("field");
-    py::object load_field = field_module.attr("load_field_from_file");
-
-    field_obj = load_field(filename, dimension, is_complex, is_vector);
+ScalarField::ScalarField(vector<vector<double>> points, vector<float> values, int dimension) : Field() {
+    py::module field_module = init();
+    py::object load = field_module.attr("load_field_from_data");
+    this->field_obj = load(points, values, dimension, false, false);
 }
 
+ScalarField::ScalarField(string filename, int dimension) : Field() {
+    py::module field_module = init();
+    py::object load = field_module.attr("load_field_from_file");
+    this->field_obj = load(filename, dimension);
+}
 
-float Field::operator()(std::vector<double> coords) {
-    py::object result = field_obj.attr("__call__")(*py::cast(coords));
+float ScalarField::operator()(vector<double> coords) {
+    py::object result = this->field_obj.attr("call_real_scalar")(*py::cast(coords));
     return result.cast<float>();
 }
 
-float Field::operator()(Vec coords) {
-    py::object result = field_obj.attr("__call__")(*py::cast(coords));
+float ScalarField::operator()(Vec coords) {
+    vector<double> vcoords = Vec_to_vector(coords);
+    py::object result = this->field_obj.attr("call_real_scalar")(*py::cast(vcoords));
     return result.cast<float>();
+}
+
+ComplexField::ComplexField(vector<Vec> points, vector<complex<float>> values, int dimension) {
+    py::module field_module = init();
+    py::object load = field_module.attr("load_field_from_data");
+
+    vector<vector<double>> points_vec = Vec_to_doubles(points);
+    this->field_obj = load(points_vec, values, dimension, true, false);
+}
+
+ComplexField::ComplexField(vector<vector<double>> points, vector<complex<float>> values, int dimension) {
+    py::module field_module = init();
+    py::object load = field_module.attr("load_field_from_data");
+    this->field_obj = load(points, values, dimension, true, false);
+}
+
+ComplexField::ComplexField(string filename, int dimension) {
+    py::module field_module = init();
+    py::object load = field_module.attr("load_field_from_file");
+    this->field_obj = load(filename, dimension, true, false);
+}
+
+complex<float> ComplexField::operator()(vector<double> coords) {
+    py::object result = this->field_obj.attr("call_complex_scalar")(*py::cast(coords));
+    return result.cast<complex<float>>();
+}
+
+complex<float> ComplexField::operator()(Vec coords) {
+    vector<double> vcoords = Vec_to_vector(coords);
+    py::object result = this->field_obj.attr("call_complex_scalar")(*py::cast(vcoords));
+    return result.cast<complex<float>>();
+}
+
+VectorField::VectorField(vector<Vec> points, vector<float> values, int dimension) {
+    py::module field_module = init();
+    py::object load = field_module.attr("load_field_from_data");
+
+    vector<vector<double>> points_vec = Vec_to_doubles(points);
+    this->field_obj = load(points_vec, values, dimension, false, true);
+}
+
+VectorField::VectorField(vector<vector<double>> points, vector<float> values, int dimension) {
+    py::module field_module = init();
+    py::object load = field_module.attr("load_field_from_data");
+    this->field_obj = load(points, values, dimension, false, true);
+}
+
+VectorField::VectorField(string filename, int dimension) {
+    py::module field_module = init();
+    py::object load = field_module.attr("load_field_from_file");
+    this->field_obj = load(filename, dimension, false, true);
+}
+
+vector<float> VectorField::operator()(vector<double> coords) {
+    py::object result = this->field_obj.attr("call_real_vector")(*py::cast(coords));
+    return result.cast<vector<float>>();
+}
+
+vector<float> VectorField::operator()(Vec coords) {
+    vector<double> vcoords = Vec_to_vector(coords);
+    py::object result = this->field_obj.attr("call_real_vector")(*py::cast(vcoords));
+    return result.cast<vector<float>>();
+}
+
+ComplexVectorField::ComplexVectorField(vector<Vec> points, vector<complex<float>> values, int dimension) {
+    py::module field_module = init();
+    py::object load = field_module.attr("load_field_from_data");
+
+    vector<vector<double>> points_vec = Vec_to_doubles(points);
+    this->field_obj = load(points_vec, values, dimension, true, true);
+}
+
+ComplexVectorField::ComplexVectorField(vector<vector<double>> points, vector<complex<float>> values, int dimension) {
+    py::module field_module = init();
+    py::object load = field_module.attr("load_field_from_data");
+    this->field_obj = load(points, values, dimension, true, true);
+}
+
+ComplexVectorField::ComplexVectorField(string filename, int dimension) {
+    py::module field_module = init();
+    py::object load = field_module.attr("load_field_from_file");
+    this->field_obj = load(filename, dimension, true, true);
+}
+
+vector<complex<float>> ComplexVectorField::operator()(vector<double> coords) {
+    py::object result = this->field_obj.attr("call_complex_vector")(*py::cast(coords));
+    return result.cast<vector<complex<float>>>();
+}
+
+vector<complex<float>> ComplexVectorField::operator()(Vec coords) {
+    vector<double> vcoords = Vec_to_vector(coords);
+    py::object result = this->field_obj.attr("call_complex_vector")(*py::cast(vcoords));
+    return result.cast<vector<complex<float>>>();
 }

@@ -67,8 +67,8 @@ float potential_FLEX_singlet(Vec k1, Vec k2) {
     Vec q_plus = to_IBZ(k1 + k2);
     float w = epsilon(k1.n, k1) - epsilon(k2.n, k2);
 
-    float Xm = chi(q_minus, w);
-    float Xp = chi(q_plus, w);
+    float Xm = chi(q_minus, w).real();
+    float Xp = chi(q_plus, w).real();
 
     float Vm = onsite_U*onsite_U * Xm / (1 - onsite_U*Xm) 
         + pow(onsite_U,3)*Xm*Xm / (1 - onsite_U*onsite_U * Xm*Xm);
@@ -83,8 +83,8 @@ float potential_FLEX_triplet(Vec k1, Vec k2) {
     Vec q_plus = to_IBZ(k1 + k2);
     float w = epsilon(k1.n, k1) - epsilon(k2.n, k2);
 
-    float Xm = chi(q_minus, w);
-    float Xp = chi(q_plus, w);
+    float Xm = chi(q_minus, w).real();
+    float Xp = chi(q_plus, w).real();
 
     float V_minus = -pow(onsite_U,2) * Xm / ( 1 - pow(onsite_U*Xm,2));
     float V_plus = -pow(onsite_U,2) * Xp / ( 1 - pow(onsite_U*Xp,2));

@@ -8,15 +8,15 @@
 
 using namespace std;
 
-class Susceptibility {
+class Susceptibility : public ComplexField {
     public:
-        Field chi;
+        ComplexField chi;
 
         Susceptibility();
         Susceptibility(vector<Vec> points, vector<complex<float>> values, int dimension=3, bool is_complex=true);
         Susceptibility(string filename, int dimension=3, bool is_complex=false);
 
-        float operator() (Vec point, float w);
+        complex<float> operator() (Vec point, float w);
 };
 
 

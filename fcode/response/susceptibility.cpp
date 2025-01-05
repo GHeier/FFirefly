@@ -23,18 +23,18 @@
 using namespace std;
 
 Susceptibility::Susceptibility() {
-    chi = Field();
+    chi = ComplexField();
 }
 
 Susceptibility::Susceptibility(vector<Vec> points, vector<complex<float>> values, int dimension, bool is_complex) {
-    chi = Field(points, values, dimension, is_complex);
+    chi = ComplexField(points, values, dimension);
 }
 
 Susceptibility::Susceptibility(string filename, int dimension, bool is_complex) {
-    chi = Field(filename, dimension, is_complex);
+    chi = ComplexField(filename, dimension);
 }
 
-float Susceptibility::operator() (Vec point, float w) {
+complex<float> Susceptibility::operator() (Vec point, float w) {
     point.w = w;
     return chi(point);
 }

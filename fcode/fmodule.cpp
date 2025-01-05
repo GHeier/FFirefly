@@ -50,8 +50,33 @@ PYBIND11_MODULE(fmodule, m) {
                 return self(i);
             }, py::return_value_policy::reference, py::arg("i"));
 
-    py::class_<Field>(m, "C_Field")
-        .def(py::init<>());
+    py::class_<ScalarField>(m, "ScalarField")
+        .def(py::init<vector<Vec>, vector<float>, int>())
+        .def(py::init<vector<vector<double>>, vector<float>, int>())
+        .def(py::init<string, int>())
+        .def("__call__", py::overload_cast<vector<double>>(&ScalarField::operator()))
+        .def("__call__", py::overload_cast<Vec>(&ScalarField::operator()));
+
+    py::class_<ComplexField>(m, "ComplexField")
+        .def(py::init<vector<Vec>, vector<complex<float>>, int>())
+        .def(py::init<vector<vector<double>>, vector<complex<float>>, int>())
+        .def(py::init<string, int>())
+        .def("__call__", py::overload_cast<vector<double>>(&ComplexField::operator()))
+        .def("__call__", py::overload_cast<Vec>(&ComplexField::operator()));
+
+    py::class_<VectorField>(m, "VectorField")
+        .def(py::init<vector<Vec>, vector<float>, int>())
+        .def(py::init<vector<vector<double>>, vector<float>, int>())
+        .def(py::init<string, int>())
+        .def("__call__", py::overload_cast<vector<double>>(&VectorField::operator()))
+        .def("__call__", py::overload_cast<Vec>(&VectorField::operator()));
+
+    py::class_<ComplexVectorField>(m, "ComplexVectorField")
+        .def(py::init<vector<Vec>, vector<complex<float>>, int>())
+        .def(py::init<vector<vector<double>>, vector<complex<float>>, int>())
+        .def(py::init<string, int>())
+        .def("__call__", py::overload_cast<vector<double>>(&ComplexVectorField::operator()))
+        .def("__call__", py::overload_cast<Vec>(&ComplexVectorField::operator()));
 
     // Expose the V function
     m.def("V", &V, "Calculate the interaction potential",

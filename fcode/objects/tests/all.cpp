@@ -19,7 +19,7 @@ extern "C" bool object_tests() {
 bool python_field_test() {
     vector<Vec> points = {Vec(0.0, 0.0, 0.0), Vec(1.0, 0.0, 0.0), Vec(0.0, 1.0, 0.0), Vec(1.0, 1.0, 0.0), Vec(0.0, 0.0, 1.0), Vec(1.0, 0.0, 1.0), Vec(0.0, 1.0, 1.0), Vec(1.0, 1.0, 1.0)};
     vector<float> values = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
-    Field test_var(points, values, 3, false, false);
+    ScalarField test_var(points, values, 3);
     vector<double> coords = {0.5, 0.5, 0.5};
     double result = test_var(coords);
     return fabs(result - 4.5) < 0.0001;

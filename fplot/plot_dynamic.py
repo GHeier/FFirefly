@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 BZ = np.array(cfg.brillouin_zone)
 
 def plot_111():
-    field = fcode.Field("chi_mesh_dynamic.dat", 4, True)
+    field = fcode.ComplexField("chi_mesh_dynamic.dat", 4)
     n = 100
     wpts = 1
     print("Plotting 111 path")
@@ -17,11 +17,10 @@ def plot_111():
         for i in range(1, n):
             q = np.array([0.5, 0.5, 0.5]) * i / n
             q = np.dot(BZ, q)
-            q = Vec(q[0], q[1], q[2], 0.0032)
+            q = np.append(q, w / wpts)
             val = field(q)
-            x.append(q.x)
+            x.append(q[0])
             y.append(val)
-        print(y)
         plt.plot(x, y, label="w = " + str(w / wpts))
     plt.show()
 

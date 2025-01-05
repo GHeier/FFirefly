@@ -21,7 +21,7 @@ namespace py = pybind11;
 
 #include "vec.hpp"
 #include "../algorithms/interpolate.hpp"
-#include "field.hpp"
+#include "fastfield.hpp"
 
 using namespace std;
 
