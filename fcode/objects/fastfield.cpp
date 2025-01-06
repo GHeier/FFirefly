@@ -124,7 +124,7 @@ vector<float> matrix_multiplication(vector<Vec>& matrix, Vec& vec, int n) {
 }
 
 Vec vec_matrix_multiplication(vector<Vec>& matrix, Vec& vec, int n) {
-    Vec result;
+    Vec result; result.dimension = n;
     for (int i = 0; i < n; i++) {
         result(i) = 0;
         for (int j = 0; j < n; j++) {
@@ -142,7 +142,7 @@ void FastScalarField::get_values_for_interpolation() {
     Vec lattice_vec = (points[1] - first).round();
     int jump = 1;
     for (int i = 1; i < points.size(); i += jump) {
-        Vec current_vec = (points[i] / section_sizes[section] - first).round();
+        Vec current_vec = ((points[i] - first) / section_sizes[section]).round();
         if (current_vec == lattice_vec) section_sizes[section]++;
         else {
             domain.push_back((points[i-1] - first).round());
@@ -154,9 +154,6 @@ void FastScalarField::get_values_for_interpolation() {
         }
     }
     domain.push_back((points[points.size()-1] - first).round());
-    printf("Domain: \n");
-    cout << "point: " << points[points.size()-1] << endl;
-    cout << "first: " << first << endl << endl;
     for (int i = 0; i < domain.size(); i++) {
         for (int j = 0; j < i; j++) 
             domain[i] = domain[i] - domain[j];

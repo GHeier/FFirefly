@@ -178,10 +178,10 @@ module mesh
         real(8) :: pi = 3.1415926535897932384626433832795028841971
         complex(8) :: e0
         open(10, file='chi_mesh_dynamic.dat', status='unknown')
-        do i3 = 0, ngw(3) - 1
-            do i2 = 0, ngw(2) - 1
-                do i1 = 0, ngw(1) - 1
-                    do i4 = 0, ne - 1
+        do i4 = 0, ne - 1
+            do i3 = 0, ngw(3) - 1
+                do i2 = 0, ngw(2) - 1
+                    do i1 = 0, ngw(1) - 1
                         qvec = get_qvec(i1, i2, i3, ngw)
                         qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
                         e0 = cmplx(0, pi * T * (2 * i4 + 1))

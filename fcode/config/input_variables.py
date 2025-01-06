@@ -16,8 +16,8 @@ ALL = {
         'outdir': './output',
         'prefix': 'sample',
         'verbosity': 'low',
-        'datfile_in': 'input.dat',
-        'datfile_out': 'output.dat'
+        'input_data_file': 'input.dat',
+        'output_data_file': 'output.dat'
     },
     'SYSTEM': {
         'interaction': 'none',

@@ -100,6 +100,7 @@ void bcs() {
     // Defining file name based on config/load/cpp_config (config)
     cout << "Saving Eigenvectors..." << endl;
     string file_name = get_SC_filename();
+    file_name = 
     cout << "File Name: " << file_name << endl;
 
     // Save file in cartesian coordinates for the sake of plotting easier
