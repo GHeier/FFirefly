@@ -34,8 +34,8 @@ module fcode
     character(len=50) :: outdir
     character(len=50) :: prefix
     character(len=50) :: verbosity
-    character(len=50) :: datfile_in
-    character(len=50) :: datfile_out
+    character(len=50) :: input_data_file
+    character(len=50) :: output_data_file
 
 ![SYSTEM]
     character(len=50) :: interaction
@@ -135,14 +135,14 @@ module fcode
             use iso_c_binding
             type(c_ptr) :: get_verbosity
     end function get_verbosity
-        function get_datfile_in() bind(C)
+        function get_input_data_file() bind(C)
             use iso_c_binding
-            type(c_ptr) :: get_datfile_in
-    end function get_datfile_in
-        function get_datfile_out() bind(C)
+            type(c_ptr) :: get_input_data_file
+    end function get_input_data_file
+        function get_output_data_file() bind(C)
             use iso_c_binding
-            type(c_ptr) :: get_datfile_out
-    end function get_datfile_out
+            type(c_ptr) :: get_output_data_file
+    end function get_output_data_file
 
 ![SYSTEM]
         function get_interaction() bind(C)
@@ -229,8 +229,8 @@ contains
         outdir = get_string(get_outdir())
         prefix = get_string(get_prefix())
         verbosity = get_string(get_verbosity())
-        datfile_in = get_string(get_datfile_in())
-        datfile_out = get_string(get_datfile_out())
+        input_data_file = get_string(get_input_data_file())
+        output_data_file = get_string(get_output_data_file())
 
 ![SYSTEM]
         interaction = get_string(get_interaction())

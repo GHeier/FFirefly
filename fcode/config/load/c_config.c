@@ -20,10 +20,10 @@ char* c_prefix = "sample";
 char* get_prefix() {return c_prefix;}
 char* c_verbosity = "low";
 char* get_verbosity() {return c_verbosity;}
-char* c_datfile_in = "input.dat";
-char* get_datfile_in() {return c_datfile_in;}
-char* c_datfile_out = "output.dat";
-char* get_datfile_out() {return c_datfile_out;}
+char* c_input_data_file = "input.dat";
+char* get_input_data_file() {return c_input_data_file;}
+char* c_output_data_file = "output.dat";
+char* get_output_data_file() {return c_output_data_file;}
 
 //[SYSTEM]
 char* c_interaction = "none";
@@ -238,11 +238,11 @@ void read_c_config(const char* path) {
             else if (strstr(key, "verbosity") != NULL) {
                 set_string(&c_verbosity, value);
             }
-            else if (strstr(key, "datfile_in") != NULL) {
-                set_string(&c_datfile_in, value);
+            else if (strstr(key, "input_data_file") != NULL) {
+                set_string(&c_input_data_file, value);
             }
-            else if (strstr(key, "datfile_out") != NULL) {
-                set_string(&c_datfile_out, value);
+            else if (strstr(key, "output_data_file") != NULL) {
+                set_string(&c_output_data_file, value);
             }
 
 //[SYSTEM]
@@ -389,8 +389,8 @@ void unload_c_config() {
     free(c_outdir);
     free(c_prefix);
     free(c_verbosity);
-    free(c_datfile_in);
-    free(c_datfile_out);
+    free(c_input_data_file);
+    free(c_output_data_file);
 
 //[SYSTEM]
     free(c_interaction);

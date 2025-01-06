@@ -1,7 +1,7 @@
 module Eliashberg
 
 using LinearAlgebra, Printf, PyCall
-
+println(PyCall.python)
 fcode = pyimport("fcode")
 
 nx, ny, nz = fcode.k_mesh
@@ -18,10 +18,12 @@ function k_integral(k, w, w1, phi, Z, chi)
     phi_int = Z_int = chi_int = 0.0 + 0.0im
     n = round(Int, (imag(w) / (pi / beta) - 1.0) / 2.0)
 
+    k = fcode.Vec(k)
     for i in 1:nx, j in 1:ny, l in 1:nz
         k1 = [-pi + i * 2pi / nx, -pi + j * 2pi / ny, -pi + l * 2pi / nz]
         phi_el, Z_el, chi_el = phi[i, j, l, n], Z[i, j, l, n], chi[i, j, l, n]
-        V = (arr[i, j, l] + arr[i, j, l]) / 2
+        k1 = fcode.Vec(k1)
+        V = (fcode.V(k, k1) + fcode.V(k, -k1)) / 2
         denom = get_denominator(w1, phi_el, Z_el, chi_el, sum(abs2, k1))
         phi_int += V * phi_el / denom
         Z_int += V * w1 / w * Z_el / denom
@@ -54,7 +56,8 @@ end
 function evaluate_eliashberg()
     phi = Z = chi = ones(Complex{Float64}, nx, ny, nz, nw)
     iterations = 10
-    susceptibility = fcode.ComplexField("chi_static_mesh.dat")
+    input_data_file = "chi_mesh_dynamic.dat"
+    fcode.load_chi(input_data_file)
 
     println("Starting Eliashberg calculation")
     for i in 1:iterations

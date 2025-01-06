@@ -41,7 +41,7 @@ float vp(int n, Vec k) {
     n--;
     if (band[n] == "simple_cubic_layered")
         return fermi_velocity_SC_layered(n, k).norm();
-    if (band[n] == "simple_cubic") {
+    if (band[n] == "tight_binding" && ibrav == 1) {
         return fermi_velocity_SC(n, k).norm();
     }
     if (band[n] == "fermi_gas")
@@ -151,9 +151,7 @@ vector<Vec> get_FS(float E) {
     for (int i = 1; i <= nbnd; i++) {
         auto func = [i](Vec k) { return epsilon(i, k); };
         vector<Vec> temp = tetrahedron_method(func, E);
-        for (auto k : temp) {
-            k.n = i;
-        }
+        for (auto k : temp) k.n = i;
         FS.insert(FS.end(), temp.begin(), temp.end());
     }
     return FS;

@@ -17,6 +17,8 @@ class Susceptibility : public FastScalarField {
         Susceptibility(string filename, int dimension=3, bool is_complex=false);
 
         complex<float> operator() (Vec point, float w);
+        float operator() (Vec point);
+
 };
 
 

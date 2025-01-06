@@ -7,8 +7,8 @@ calculation = 'test'
 outdir = './output'
 prefix = 'sample'
 verbosity = 'low'
-datfile_in = 'input.dat'
-datfile_out = 'output.dat'
+input_data_file = 'input.dat'
+output_data_file = 'output.dat'
 
 #[SYSTEM]
 interaction = 'none'
@@ -118,12 +118,12 @@ def load_config():
             if "verbosity" in key:
                 global verbosity
                 verbosity = value
-            if "datfile_in" in key:
-                global datfile_in
-                datfile_in = value
-            if "datfile_out" in key:
-                global datfile_out
-                datfile_out = value
+            if "input_data_file" in key:
+                global input_data_file
+                input_data_file = value
+            if "output_data_file" in key:
+                global output_data_file
+                output_data_file = value
 
 #[SYSTEM]
             if "interaction" in key:

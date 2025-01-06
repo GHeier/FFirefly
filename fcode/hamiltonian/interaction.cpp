@@ -74,9 +74,10 @@ float potential_FLEX_singlet(Vec k1, Vec k2) {
     Vec q_minus = to_IBZ(k1 - k2);
     Vec q_plus = to_IBZ(k1 + k2);
     float w = epsilon(k1.n, k1) - epsilon(k2.n, k2);
+    if (FS_only) w = 0;
 
-    float Xm = chi(q_minus, w).real();
-    float Xp = chi(q_plus, w).real();
+    float Xm = chi(q_minus);
+    float Xp = chi(q_plus);
 
     float Vm = onsite_U*onsite_U * Xm / (1 - onsite_U*Xm) 
         + pow(onsite_U,3)*Xm*Xm / (1 - onsite_U*onsite_U * Xm*Xm);

@@ -33,7 +33,7 @@ void save(string file_name, float T, vector<Vec> FS, Eigenvector* solutions) {
     file << endl;
     for (unsigned int i = 0; i < FS.size(); i++) {
         Vec q = FS[i]; 
-        file << q; 
+        file << q << " "; 
         for (unsigned int j = 0; j < num_eigenvalues_to_save; j++) {
             file << solutions[j].eigenvector[i] << " ";
         }

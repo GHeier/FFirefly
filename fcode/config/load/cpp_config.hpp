@@ -13,8 +13,8 @@ extern string calculation;
 extern string outdir;
 extern string prefix;
 extern string verbosity;
-extern string datfile_in;
-extern string datfile_out;
+extern string input_data_file;
+extern string output_data_file;
 
 //[SYSTEM]
 extern string interaction;

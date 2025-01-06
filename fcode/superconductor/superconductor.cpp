@@ -66,7 +66,7 @@ void bcs() {
     assert(FS.size() > 10);
     save_FS(FS);
 
-    float T = 0.25;
+    float T = Temperature;
     cout << setprecision(10);
     //cout << coupling_calc(FS, T) << endl;
     //T = 0.065;
@@ -76,7 +76,7 @@ void bcs() {
     // Calculates the susceptibility matrix if it's going to be used in the potential
     // Otherwise it's passed as empty
 
-    load_chi("chi_mesh_dynamic.dat");
+    load_chi(input_data_file);
 
     int m_size = FS.size();
     if (not FS_only) m_size = matrix_size_from_freq_FS(freq_FS);
@@ -100,7 +100,7 @@ void bcs() {
     // Defining file name based on config/load/cpp_config (config)
     cout << "Saving Eigenvectors..." << endl;
     string file_name = get_SC_filename();
-    file_name = 
+    file_name = output_data_file;
     cout << "File Name: " << file_name << endl;
 
     // Save file in cartesian coordinates for the sake of plotting easier

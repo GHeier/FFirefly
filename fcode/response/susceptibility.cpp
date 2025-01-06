@@ -33,8 +33,16 @@ Susceptibility::Susceptibility(string filename, int dimension, bool is_complex) 
 }
 
 complex<float> Susceptibility::operator() (Vec point, float w) {
+    point = to_IBZ(point);
     point.dimension++;
     point.w = fabs(w);
+    return chi(point);
+}
+
+float Susceptibility::operator() (Vec point) {
+    cout << "point: " << point << endl;
+    point = to_IBZ(point);
+    cout << "point: " << point << endl;
     return chi(point);
 }
 

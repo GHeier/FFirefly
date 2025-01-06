@@ -16,8 +16,8 @@ string calculation;
 string outdir;
 string prefix;
 string verbosity;
-string datfile_in;
-string datfile_out;
+string input_data_file;
+string output_data_file;
 
 //[SYSTEM]
 string interaction;
@@ -76,8 +76,8 @@ extern "C" void load_cpp_config() {
     outdir = c_outdir;
     prefix = c_prefix;
     verbosity = c_verbosity;
-    datfile_in = c_datfile_in;
-    datfile_out = c_datfile_out;
+    input_data_file = c_input_data_file;
+    output_data_file = c_output_data_file;
 
 //[SYSTEM]
     interaction = c_interaction;

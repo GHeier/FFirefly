@@ -51,20 +51,12 @@ FastVectorField::FastVectorField() {
 
 // Function to invert a matrix represented as vector<Vec>
 vector<Vec> invertMatrix(vector<Vec>& matrix, int n) {
-    //print incoming matrix
-    cout << "Incoming matrix: " << endl;
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            cout << matrix[i](j) << " ";
-        }
-        cout << endl;
-    }
-
     // Create augmented matrix [A|I]
     vector<vector<float>> augmented(n, std::vector<float>(2 * n, 0.0f));
     for (size_t i = 0; i < n; ++i) {
         for (size_t j = 0; j < n; ++j) {
             augmented[i][j] = matrix[i](j);
+            if (fabs(augmented[i][j]) < 1e-5) augmented[i][j] = 0.0f;
         }
         augmented[i][n + i] = 1.0f; // Identity matrix
     }
@@ -143,7 +135,7 @@ void FastScalarField::get_values_for_interpolation() {
     int jump = 1;
     for (int i = 1; i < points.size(); i += jump) {
         Vec current_vec = ((points[i] - first) / section_sizes[section]).round();
-        if (current_vec == lattice_vec) section_sizes[section]++;
+        if ((current_vec - lattice_vec).norm() < 0.0001) section_sizes[section]++;
         else {
             domain.push_back((points[i-1] - first).round());
             jump *= section_sizes[section];
@@ -253,6 +245,7 @@ FastVectorField::FastVectorField(vector<Vec> points, vector<Vec> values, int dim
 
 float FastScalarField::operator() (Vec point) {
     Vec p = vec_matrix_multiplication(inv_domain, point, dimension);
+    cout << "p: " << p << endl;
     if (dimension == 1) return interpolate_1D(p.x, 0, 1, values);
     if (dimension == 2) return interpolate_2D(p.x, p.y, 0, 1, 0, 1, nx, ny, values);
     if (dimension == 3) return interpolate_3D(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, nx, ny, nz, values);
