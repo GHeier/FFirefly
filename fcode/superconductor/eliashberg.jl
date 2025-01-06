@@ -3,9 +3,11 @@ module Eliashberg
 using LinearAlgebra, Printf, PyCall
 println(PyCall.python)
 fcode = pyimport("fcode")
+cfg = fcode.config
 
-nx, ny, nz = fcode.k_mesh
-nw = fcode.w_pts
+nx, ny, nz = cfg.k_mesh
+println("nx: ", nx, " ny: ", ny, " nz: ", nz)
+nw = cfg.w_pts
 
 const beta = 1.0
 const pi = π
@@ -18,12 +20,11 @@ function k_integral(k, w, w1, phi, Z, chi)
     phi_int = Z_int = chi_int = 0.0 + 0.0im
     n = round(Int, (imag(w) / (pi / beta) - 1.0) / 2.0)
 
-    k = fcode.Vec(k)
-    for i in 1:nx, j in 1:ny, l in 1:nz
-        k1 = [-pi + i * 2pi / nx, -pi + j * 2pi / ny, -pi + l * 2pi / nz]
+    println("k: ", k)
+    for i in 0:nx, j in 0:ny, l in 0:nz
+        k1 = cfg.brillouin_zone * [i / nx, j / ny, l / nz]
         phi_el, Z_el, chi_el = phi[i, j, l, n], Z[i, j, l, n], chi[i, j, l, n]
-        k1 = fcode.Vec(k1)
-        V = (fcode.V(k, k1) + fcode.V(k, -k1)) / 2
+        V = (fcode.Vp(k, k1) + fcode.Vp(k, -k1)) / 2
         denom = get_denominator(w1, phi_el, Z_el, chi_el, sum(abs2, k1))
         phi_int += V * phi_el / denom
         Z_int += V * w1 / w * Z_el / denom
@@ -38,16 +39,18 @@ function eliashberg_sum(phi, Z, chi)
     new_Z = zeros(Complex{Float64}, size(Z))
     new_chi = zeros(Complex{Float64}, size(chi))
 
-    Threads.@threads for a in 1:nx, b in 1:ny, c in 1:nz
-        for i in 1:nw
+    #Threads.@threads for a in 0:nx, b in 0:ny, c in 0:nz
+    for a in 0:nx, b in 0:ny, c in 0:nz
+        println("a: ", a, " b: ", b, " c: ", c)
+        for i in 0:nw, j in 0:nw
             w = Complex(0.0, (2i+1)*pi / beta)
-            for j in 1:nw
-                w1 = Complex(0.0, (2j+1)*pi / beta + 0.0001)
-                phi_int, Z_int, chi_int = k_integral([a, b, c], w, w1, phi, Z, chi)
-                new_phi[a, b, c, i] += phi_int / beta
-                new_Z[a, b, c, i] += (1 + Z_int / beta)
-                new_chi[a, b, c, i] -= chi_int / beta
-            end
+            w1 = Complex(0.0, (2j+1)*pi / beta + 0.0001)
+            println("w: ", w, " w0: ", w1)
+            k = cfg.brillouin_zone * [a / nx, b / ny, c / nz]
+            phi_int, Z_int, chi_int = k_integral(k, w, w1, phi, Z, chi)
+            new_phi[a, b, c, i] += phi_int / beta
+            new_Z[a, b, c, i] += (1 + Z_int / beta)
+            new_chi[a, b, c, i] -= chi_int / beta
         end
     end
     return new_phi, new_Z, new_chi
@@ -56,11 +59,11 @@ end
 function evaluate_eliashberg()
     phi = Z = chi = ones(Complex{Float64}, nx, ny, nz, nw)
     iterations = 10
-    input_data_file = "chi_mesh_dynamic.dat"
-    fcode.load_chi(input_data_file)
+    input_data_file = "/home/g/Research/fcode/chi_mesh_dynamic.dat"
+    fcode.load_global_chi(input_data_file)
 
     println("Starting Eliashberg calculation")
-    for i in 1:iterations
+    for i in 0:iterations
         phi, Z, chi = eliashberg_sum(phi, Z, chi)
         println("(Sample) Phi: ", phi[1,1,1,1], " Z: ", Z[1,1,1,1], " Chi: ", chi[1,1,1,1])
     end
@@ -68,3 +71,5 @@ end
 
 end # module
 
+using .Eliashberg
+Eliashberg.evaluate_eliashberg()
