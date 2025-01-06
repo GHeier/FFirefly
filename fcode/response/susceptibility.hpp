@@ -4,13 +4,13 @@
 #include <complex>
 #include <functional>
 #include "../objects/vec.hpp"
-#include "../objects/field.hpp"
+#include "../objects/fastfield.hpp"
 
 using namespace std;
 
-class Susceptibility : public ComplexField {
+class Susceptibility : public FastScalarField {
     public:
-        ComplexField chi;
+        FastScalarField chi;
 
         Susceptibility();
         Susceptibility(vector<Vec> points, vector<complex<float>> values, int dimension=3, bool is_complex=true);

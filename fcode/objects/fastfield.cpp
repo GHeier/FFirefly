@@ -1,5 +1,5 @@
 /*
- * This file contains the implementation of the classes ScalarField and VectorField.
+ * This file contains the implementation of the classes FastScalarField and FastVectorField.
  * They interpolate scalar and vector fields, respectively.
  * They have been implemented to allow for input via a file or a list of points and values.
  * They are constructed to exist over a mesh, so it is ideal for Brillouin Zone calculations.
@@ -25,7 +25,7 @@ namespace py = pybind11;
 
 using namespace std;
 
-ScalarField::ScalarField() {
+FastScalarField::FastScalarField() {
     points = vector<Vec>();
     values = vector<float>();
     ivalues = vector<float>();
@@ -37,7 +37,7 @@ ScalarField::ScalarField() {
     is_complex = false;
 }
 
-VectorField::VectorField() {
+FastVectorField::FastVectorField() {
     points = vector<Vec>();
     values = vector<Vec>();
     ivalues = vector<Vec>();
@@ -134,7 +134,7 @@ Vec vec_matrix_multiplication(vector<Vec>& matrix, Vec& vec, int n) {
     return result;
 }
 
-void ScalarField::get_values_for_interpolation() {
+void FastScalarField::get_values_for_interpolation() {
     int section = 0;
     vector<int> section_sizes = {1, 1, 1, 1};
     vector<Vec> domain;
@@ -168,7 +168,7 @@ void ScalarField::get_values_for_interpolation() {
     if (dimension > 3) nw = section_sizes[3];
 }
 
-void VectorField::get_values_for_interpolation() {
+void FastVectorField::get_values_for_interpolation() {
     int section = 0;
     vector<int> section_sizes = {1, 1, 1, 1};
     vector<Vec> domain;
@@ -214,7 +214,7 @@ void VectorField::get_values_for_interpolation() {
 }
 
 
-ScalarField::ScalarField(vector<Vec> points, vector<float> values, int dimension, bool is_complex) {
+FastScalarField::FastScalarField(vector<Vec> points, vector<float> values, int dimension, bool is_complex) {
     this->points = points;
     this->values = values;
     this->dimension = dimension;
@@ -222,7 +222,7 @@ ScalarField::ScalarField(vector<Vec> points, vector<float> values, int dimension
     get_values_for_interpolation();
 }
 
-ScalarField::ScalarField(vector<Vec> points, vector<complex<float>> values, int dimension, bool is_complex) {
+FastScalarField::FastScalarField(vector<Vec> points, vector<complex<float>> values, int dimension, bool is_complex) {
     this->points = points;
     this->dimension = dimension;
     this->is_complex = is_complex;
@@ -234,7 +234,7 @@ ScalarField::ScalarField(vector<Vec> points, vector<complex<float>> values, int 
     is_complex = true;
 }
 
-VectorField::VectorField(vector<Vec> points, vector<complex<float>> values, int dimension, bool is_complex) {
+FastVectorField::FastVectorField(vector<Vec> points, vector<complex<float>> values, int dimension, bool is_complex) {
     this->points = points;;
     this->dimension = dimension;
     this->is_complex = is_complex;
@@ -246,7 +246,7 @@ VectorField::VectorField(vector<Vec> points, vector<complex<float>> values, int 
     is_complex = true;
 }
 
-VectorField::VectorField(vector<Vec> points, vector<Vec> values, int dimension, bool is_complex) {
+FastVectorField::FastVectorField(vector<Vec> points, vector<Vec> values, int dimension, bool is_complex) {
     this->points = points;
     this->values = values;
     this->dimension = dimension;
@@ -254,7 +254,7 @@ VectorField::VectorField(vector<Vec> points, vector<Vec> values, int dimension, 
     get_values_for_interpolation();
 }
 
-float ScalarField::operator() (Vec point) {
+float FastScalarField::operator() (Vec point) {
     Vec p = vec_matrix_multiplication(inv_domain, point, dimension);
     if (dimension == 1) return interpolate_1D(p.x, 0, 1, values);
     if (dimension == 2) return interpolate_2D(p.x, p.y, 0, 1, 0, 1, nx, ny, values);
@@ -266,7 +266,7 @@ float ScalarField::operator() (Vec point) {
     }
 }
 
-float ScalarField::operator()(py::array_t<double> array) {
+float FastScalarField::operator()(py::array_t<double> array) {
         float dim = array.size();
         auto buf = array.unchecked<1>();
         Vec point; point.dimension = dim;
@@ -276,7 +276,7 @@ float ScalarField::operator()(py::array_t<double> array) {
         return (*this)(point);
 }
 
-ScalarField::ScalarField(string filename, int dimension, bool is_complex) {
+FastScalarField::FastScalarField(string filename, int dimension, bool is_complex) {
     this->dimension = dimension;
     this->is_complex = is_complex;
     ifstream file(filename);
@@ -306,7 +306,7 @@ ScalarField::ScalarField(string filename, int dimension, bool is_complex) {
     get_values_for_interpolation();
 }
 
-VectorField::VectorField(string filename, int dimension, bool is_complex) {
+FastVectorField::FastVectorField(string filename, int dimension, bool is_complex) {
     this->dimension = dimension;
     this->is_complex = is_complex;
     ifstream file(filename);

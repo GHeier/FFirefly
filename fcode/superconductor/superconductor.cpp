@@ -31,6 +31,7 @@
 #include "../objects/matrix.hpp"
 #include "../objects/eigenvec.hpp"
 #include "../hamiltonian/band_structure.hpp"
+#include "../hamiltonian/interaction.hpp"
 #include "cfg.hpp"
 #include "superconductor.hpp"
 
@@ -59,11 +60,9 @@ void bcs() {
     else {
         FS = get_FS(mu);
     }
-    return;
 
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
     float DOS = get_DOS(FS);
-    printf("Density of States: %.5f \n", DOS);
     assert(FS.size() > 10);
     save_FS(FS);
 
@@ -77,6 +76,7 @@ void bcs() {
     // Calculates the susceptibility matrix if it's going to be used in the potential
     // Otherwise it's passed as empty
 
+    load_chi("chi_mesh_dynamic.dat");
 
     int m_size = FS.size();
     if (not FS_only) m_size = matrix_size_from_freq_FS(freq_FS);

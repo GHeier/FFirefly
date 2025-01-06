@@ -15,27 +15,26 @@
 #include <boost/functional/hash.hpp>
 
 #include "../objects/vec.hpp"
-#include "../objects/field.hpp"
+#include "../objects/fastfield.hpp"
 #include "../config/load/cpp_config.hpp"
 #include "susceptibility.hpp"
 #include "../hamiltonian/band_structure.hpp"
 
 using namespace std;
 
-Susceptibility::Susceptibility() {
-    chi = ComplexField();
-}
+Susceptibility::Susceptibility() {}
 
 Susceptibility::Susceptibility(vector<Vec> points, vector<complex<float>> values, int dimension, bool is_complex) {
-    chi = ComplexField(points, values, dimension);
+    chi = FastScalarField(points, values, dimension+1, is_complex);
 }
 
 Susceptibility::Susceptibility(string filename, int dimension, bool is_complex) {
-    chi = ComplexField(filename, dimension);
+    chi = FastScalarField(filename, dimension+1, is_complex);
 }
 
 complex<float> Susceptibility::operator() (Vec point, float w) {
-    point.w = w;
+    point.dimension++;
+    point.w = fabs(w);
     return chi(point);
 }
 

@@ -18,7 +18,7 @@ namespace py = pybind11;
 
 using namespace std;
 
-class ScalarField {
+class FastScalarField {
     public:
         vector<Vec> points;
         vector<float> values;
@@ -30,17 +30,17 @@ class ScalarField {
         int dimension;
         bool is_complex;
 
-        ScalarField();
-        ScalarField(vector<Vec> points, vector<float> values, int dimension=3, bool is_complex=false);
-        ScalarField(vector<Vec> points, vector<complex<float>> values, int dimension=3, bool is_complex=true);
-        ScalarField(string filename, int dimension=3, bool is_complex=false);
+        FastScalarField();
+        FastScalarField(vector<Vec> points, vector<float> values, int dimension=3, bool is_complex=false);
+        FastScalarField(vector<Vec> points, vector<complex<float>> values, int dimension=3, bool is_complex=true);
+        FastScalarField(string filename, int dimension=3, bool is_complex=false);
 
         void get_values_for_interpolation();
         float operator() (Vec point);
         float operator()(py::array_t<double> array);
 };
 
-class VectorField {
+class FastVectorField {
     public:
         vector<Vec> points;
         vector<Vec> values;
@@ -52,10 +52,10 @@ class VectorField {
         int dimension;
         bool is_complex;
 
-        VectorField();
-        VectorField(vector<Vec> points, vector<Vec> values, int dimension=3, bool is_complex=false);
-        VectorField(vector<Vec> points, vector<complex<float>> values, int dimension=3, bool is_complex=true);
-        VectorField(string filename, int dimension=3, bool is_complex=false);
+        FastVectorField();
+        FastVectorField(vector<Vec> points, vector<Vec> values, int dimension=3, bool is_complex=false);
+        FastVectorField(vector<Vec> points, vector<complex<float>> values, int dimension=3, bool is_complex=true);
+        FastVectorField(string filename, int dimension=3, bool is_complex=false);
 
         void get_values_for_interpolation();
         Vec operator() (Vec point);

@@ -19,7 +19,7 @@ public:
     Field();
     Field(int dimension, bool is_complex, bool is_vector);
     py::module init();
-    vector<double> Vec_to_vector(Vec point);
+    vector<double> Vec_to_vector(Vec &point);
 };
 
 class ScalarField : public Field {
@@ -29,7 +29,7 @@ public:
     ScalarField(vector<vector<double>> points, vector<float> values, int dimension);
     ScalarField(string filename, int dimension);
     float operator()(vector<double> coords);
-    float operator()(Vec coords);
+    float operator()(Vec &coords);
 };
 
 class ComplexField : public Field {
@@ -39,7 +39,7 @@ public:
     ComplexField(vector<vector<double>> points, vector<complex<float>> values, int dimension);
     ComplexField(string filename, int dimension);
     complex<float> operator()(vector<double> coords);
-    complex<float> operator()(Vec coords);
+    complex<float> operator()(Vec &coords);
 };
 
 class VectorField : public Field {
@@ -49,7 +49,7 @@ public:
     VectorField(vector<vector<double>> points, vector<float> values, int dimension);
     VectorField(string filename, int dimension);
     vector<float> operator()(vector<double> coords);
-    vector<float> operator()(Vec coords);
+    vector<float> operator()(Vec &coords);
 };
 
 class ComplexVectorField : public Field {
@@ -59,7 +59,7 @@ public:
     ComplexVectorField(vector<vector<double>> points, vector<complex<float>> values, int dimension);
     ComplexVectorField(string filename, int dimension);
     vector<complex<float>> operator()(vector<double> coords);
-    vector<complex<float>> operator()(Vec coords);
+    vector<complex<float>> operator()(Vec &coords);
 };
 
 vector<vector<double>> Vec_to_doubles(vector<Vec> points);

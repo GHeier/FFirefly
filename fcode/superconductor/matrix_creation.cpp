@@ -22,10 +22,10 @@ void create_P(Matrix &P, vector<Vec> &k) {
     cout << "Creating P Matrix\n";
     for (int i = 0; i < P.size; i++) {
         Vec k1 = k[i];
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (int j = 0; j < P.size; j++) {
             Vec k2 = k[j];
-            P(i,j) = (float)(-pow(k1.area/vp(k1.n, k1),0.5) * V(k1, k2) * pow(k2.area/vp(k2.n, k2),0.5));
+            P(i,j) = (float)(-pow(k1.area/vp(k1.n, k1),0.5) * V(k1, k2, "up", "down") * pow(k2.area/vp(k2.n, k2),0.5));
             assert(isnan(P(i,j)) == false);
         }
         progress_bar(1.0 * i / P.size);

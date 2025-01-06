@@ -4,7 +4,7 @@ from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
 
 class Field:
     def __init__(self, points, values, dimension=3, is_complex=False, is_vector=False):
-        cfg.printv("Initializing field")
+        print("Initializing field")
         self.points = np.asarray(points)
         self.dimension = dimension
         self.is_complex = is_complex
@@ -24,7 +24,7 @@ class Field:
         self.grid_maxs = np.array([axis[-1] for axis in self.interpolator_real.grid])
         self.margin = 0.01
 
-        cfg.printv("Field initialized")
+        print("Field initialized")
 
     def _is_mesh(self):
         """
@@ -32,6 +32,7 @@ class Field:
         """
         unique_coords = [np.unique(self.points[:, i]) for i in range(self.points.shape[1])]
         meshgrid = np.array(np.meshgrid(*unique_coords, indexing='ij')).T.reshape(-1, self.points.shape[1])
+        return True
         return len(meshgrid) == len(self.points) and np.allclose(
             np.sort(meshgrid, axis=0), np.sort(self.points, axis=0)
         )
@@ -41,7 +42,7 @@ class Field:
         Setup interpolators based on mesh or scattered data.
         """
         if self._is_mesh():
-            cfg.printv("Dataset detected as a structured mesh. Using RegularGridInterpolator.")
+            print("Dataset detected as a structured mesh. Using RegularGridInterpolator.")
             grid_coords = [np.unique(self.points[:, i]) for i in range(self.points.shape[1])]
             grid_shape = tuple(len(coord) for coord in grid_coords)
             reshaped_real = real_values.reshape(grid_shape)
@@ -51,7 +52,7 @@ class Field:
                 reshaped_imag = imag_values.reshape(grid_shape)
                 self.interpolator_imag = RegularGridInterpolator(grid_coords, reshaped_imag, method='linear', bounds_error=False, fill_value=None)
         else:
-            cfg.printv("Dataset detected as scattered. Using LinearNDInterpolator.")
+            print("Dataset detected as scattered. Using LinearNDInterpolator.")
             self.interpolator_real = LinearNDInterpolator(self.points, real_values)
             if imag_values is not None:
                 self.interpolator_imag = LinearNDInterpolator(self.points, imag_values)
@@ -76,9 +77,11 @@ class Field:
         return result.item()
 
     def call_complex_scalar(self, *coords):
-        query_point = np.array(coords).reshape(1, -1)
+        query_point = np.array(coords).reshape(1, -1)[0]
         if isinstance(self.interpolator_real, RegularGridInterpolator):
             query_point = self.margin_clamp(query_point)
+        else:
+            print("Not RegularGridInterpolator")
         real_part = self.interpolator_real(query_point)
         imag_part = self.interpolator_imag(query_point)
         return (real_part + 1j * imag_part).item()
@@ -100,7 +103,10 @@ class Field:
 
     def margin_clamp(self, query_point):
         if np.any(query_point < (self.grid_mins - self.margin)) or np.any(query_point > (self.grid_maxs + self.margin)):
-            raise ValueError("One or more query points exceed the allowed margin of 0.01.")
+            print("\nQuery point:", query_point)
+            print("Grid mins:", self.grid_mins)
+            print("Grid maxs:", self.grid_maxs)
+            raise ValueError("One or more query points exceed the allowed margin of " + str(self.margin))
         
         # Clamp query points to valid bounds with margin
         return np.clip(query_point, self.grid_mins - self.margin, self.grid_maxs + self.margin)

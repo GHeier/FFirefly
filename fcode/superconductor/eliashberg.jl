@@ -7,8 +7,6 @@ fcode = pyimport("fcode")
 nx, ny, nz = fcode.k_mesh
 nw = fcode.w_pts
 
-const pts_k = 10
-const pts_matsubara = 10
 const beta = 1.0
 const pi = π
 
@@ -21,7 +19,7 @@ function k_integral(k, w, w1, phi, Z, chi)
     n = round(Int, (imag(w) / (pi / beta) - 1.0) / 2.0)
 
     for i in 1:nx, j in 1:ny, l in 1:nz
-        k1 = [-pi + i * 2pi / pts_k, -pi + j * 2pi / pts_k, -pi + l * 2pi / pts_k]
+        k1 = [-pi + i * 2pi / nx, -pi + j * 2pi / ny, -pi + l * 2pi / nz]
         phi_el, Z_el, chi_el = phi[i, j, l, n], Z[i, j, l, n], chi[i, j, l, n]
         V = (arr[i, j, l] + arr[i, j, l]) / 2
         denom = get_denominator(w1, phi_el, Z_el, chi_el, sum(abs2, k1))
@@ -39,7 +37,6 @@ function eliashberg_sum(phi, Z, chi)
     new_chi = zeros(Complex{Float64}, size(chi))
 
     Threads.@threads for a in 1:nx, b in 1:ny, c in 1:nz
-        @printf("%d/%d\n", a, pts_k)
         for i in 1:nw
             w = Complex(0.0, (2i+1)*pi / beta)
             for j in 1:nw
@@ -57,6 +54,7 @@ end
 function evaluate_eliashberg()
     phi = Z = chi = ones(Complex{Float64}, nx, ny, nz, nw)
     iterations = 10
+    susceptibility = fcode.ComplexField("chi_static_mesh.dat")
 
     println("Starting Eliashberg calculation")
     for i in 1:iterations
