@@ -91,9 +91,9 @@ PYBIND11_MODULE(fmodule, m) {
     m.attr("chi") = py::cast(&chi);  // Pass chi by pointer to allow modification
 
     // Expose the load_chi function
-    m.def("load_chi", 
-      static_cast<void(*)(std::string)>(&load_chi), 
-      "Load chi from a file");
+    m.def("load_global_chi", [](string filename) {
+        load_chi(filename);
+    });
 
     // Expose the epsilon function
     m.def("epsilon", &epsilon, "Calculate the energy band",
