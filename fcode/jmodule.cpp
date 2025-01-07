@@ -1,4 +1,4 @@
-#include <jlcxx.hpp>
+#include <jlcxx/jlcxx.hpp>
 
 int add(int a, int b) {
     return a + b;

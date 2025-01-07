@@ -10,7 +10,6 @@ cfg = fcode.config
 nx, ny, nz = cfg.k_mesh
 println("nx: ", nx, " ny: ", ny, " nz: ", nz)
 nw = cfg.w_pts
-nw = 1
 U = cfg.onsite_U
 
 const beta = 1.0
@@ -83,7 +82,7 @@ function evaluate_eliashberg()
     iterations = 10
 
     input_data_file = "/home/g/Research/fcode/chi_mesh_dynamic.dat"
-    global chi = Fields.create_interpolation(input_data_file, dims=cfg.dimension, field_type=:scalar)
+    global chi = Fields.create_interpolation(input_data_file, dims=4, field_type=:scalar, value_type=ComplexF64)
     #fcode.load_global_chi(input_data_file)
 
     println("Starting Eliashberg calculation")
