@@ -53,12 +53,17 @@ float phonon_coulomb(Vec q) {
 }
 
 Susceptibility chi;
-void load_chi(string filename) {
-    chi = Susceptibility(filename, dimension, true);
+void load_chi(string filename, int dimension_) {
+    chi = Susceptibility(filename, dimension_, true);
 }
 
-void load_chi(vector<Vec> points, vector<complex<float>> values) {
-    chi = Susceptibility(points, values, dimension);
+void load_chi(vector<Vec> points, vector<complex<float>> values, int dimension_) {
+    chi = Susceptibility(points, values, dimension_);
+}
+
+void get_chi(double q_c[3]) {
+    Vec q = Vec(q_c[0], q_c[1], q_c[2]);
+    cout << chi(q) << endl;
 }
 
 float potential_FLEX(Vec k1, Vec k2, string spin1, string spin2) {

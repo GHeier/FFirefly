@@ -8,7 +8,6 @@
 #include <string>
 #include <math.h>
 #include "vec.hpp"
-#include "../config/load/cpp_config.hpp"
 
 Vec::Vec() {
     dimension = 0;

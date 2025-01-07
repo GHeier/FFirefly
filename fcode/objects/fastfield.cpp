@@ -6,10 +6,6 @@
  *
  * Author: Griffin Heier
  */
-#include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-
-namespace py = pybind11;
 #include <iostream>
 #include <vector>
 #include <string>
@@ -254,16 +250,6 @@ float FastScalarField::operator() (Vec point) {
         cerr << "Invalid dimension." << endl;
         exit(1);
     }
-}
-
-float FastScalarField::operator()(py::array_t<double> array) {
-        float dim = array.size();
-        auto buf = array.unchecked<1>();
-        Vec point; point.dimension = dim;
-        for (int i = 0; i < dim; i++) {
-            point(i) = buf(i);
-        }
-        return (*this)(point);
 }
 
 FastScalarField::FastScalarField(string filename, int dimension, bool is_complex) {

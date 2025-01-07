@@ -21,8 +21,9 @@ float potential_test(Vec k1, Vec k2, string spin1, string spin2);
 float phonon_coulomb(Vec q);
 
 extern Susceptibility chi;
-void load_chi(string filename);
-void load_chi(vector<Vec> points, vector<complex<float>> values);
+void load_chi(string filename, int dimension_);
+void load_chi(vector<Vec> points, vector<complex<float>> values, int dimension_);
+void get_chi(double q_c[3]);
 
 float potential_FLEX(Vec k1, Vec k2, string spin1, string spin2);
 float potential_FLEX_singlet(Vec k1, Vec k2);  

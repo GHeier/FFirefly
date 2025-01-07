@@ -7,10 +7,6 @@
  * Author: Griffin Heier
  */
 #pragma once
-#include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-
-namespace py = pybind11;
 
 #include <string>
 #include <complex>
@@ -37,7 +33,6 @@ class FastScalarField {
 
         void get_values_for_interpolation();
         float operator() (Vec point);
-        float operator()(py::array_t<double> array);
 };
 
 class FastVectorField {

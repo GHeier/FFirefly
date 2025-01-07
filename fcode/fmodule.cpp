@@ -1,4 +1,5 @@
 #include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>  // Required for py::array_t
 #include <pybind11/stl.h>  // For STL containers like std::string
                            //
 #include <vector>
@@ -82,26 +83,6 @@ PYBIND11_MODULE(fmodule, m) {
     // Expose the V function
     m.def("V", &V, "Calculate the interaction potential",
           py::arg("k1"), py::arg("k2"), py::arg("spin1") = "up", py::arg("spin2") = "up");
-
-    m.def("V", [](py::array_t<double> k1, py::array_t<double> k2, std::string spin1, std::string spin2) -> py::float_ {
-        // Ensure the input arrays have the correct shape
-        if (k1.ndim() != 1 || k1.shape(0) != 3) {
-            throw std::runtime_error("k1 must be a 1D array of length 3.");
-        }
-        if (k2.ndim() != 1 || k2.shape(0) != 3) {
-            throw std::runtime_error("k2 must be a 1D array of length 3.");
-        }
-
-        // Convert numpy arrays to Vec
-        auto k1_unchecked = k1.unchecked<1>();
-        auto k2_unchecked = k2.unchecked<1>();
-        Vec k1_vec = Vec(k1_unchecked(0), k1_unchecked(1), k1_unchecked(2));
-        Vec k2_vec = Vec(k2_unchecked(0), k2_unchecked(1), k2_unchecked(2));
-
-        // Call the existing function V
-        return V(k1_vec, k2_vec, spin1, spin2);
-    }, "Compute the potential V based on interaction type", 
-       py::arg("k1"), py::arg("k2"), py::arg("spin1"), py::arg("spin2"));
 
     // Bind the Susceptibility struct
     py::class_<Susceptibility>(m, "Susceptibility")
