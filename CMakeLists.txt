@@ -47,6 +47,7 @@ endforeach()
 
 # Remove fmodule.cpp from the source list if it exists
 list(REMOVE_ITEM MAIN_SOURCES ${CMAKE_SOURCE_DIR}/fcode/fmodule.cpp)
+list(REMOVE_ITEM MAIN_SOURCES ${CMAKE_SOURCE_DIR}/fcode/jmodule.cpp)
 
 add_executable(fcode.x ${MAIN_SOURCES})
 

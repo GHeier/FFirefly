@@ -58,48 +58,18 @@ class Field:
                 self.interpolator_imag = LinearNDInterpolator(self.points, imag_values)
 
     def __call__(self, *coords):
+        query_point = np.array(coords).reshape(1, -1)
+        if isinstance(self.interpolator_real, RegularGridInterpolator):
+            query_point = self.margin_clamp(query_point)
+        
+        real_part = self.interpolator_real(query_point)
         if self.is_complex:
-            if self.is_vector:
-                return self.call_complex_vector(*coords)
-            else:
-                return self.call_complex_scalar(*coords)
+            imag_part = self.interpolator_imag(query_point)
+            result = (real_part + 1j * imag_part) if not self.is_vector else np.concatenate((real_part, imag_part), axis=None)
         else:
-            if self.is_vector:
-                return self.call_real_vector(*coords)
-            else:
-                return self.call_real_scalar(*coords)
-
-    def call_real_scalar(self, *coords):
-        query_point = np.array(coords).reshape(1, -1)
-        if isinstance(self.interpolator_real, RegularGridInterpolator):
-            query_point = self.margin_clamp(query_point)
-        result = self.interpolator_real(query_point)
-        return result.item()
-
-    def call_complex_scalar(self, *coords):
-        query_point = np.array(coords).reshape(1, -1)[0]
-        if isinstance(self.interpolator_real, RegularGridInterpolator):
-            query_point = self.margin_clamp(query_point)
-        else:
-            print("Not RegularGridInterpolator")
-        real_part = self.interpolator_real(query_point)
-        imag_part = self.interpolator_imag(query_point)
-        return (real_part + 1j * imag_part).item()
-
-    def call_real_vector(self, *coords):
-        query_point = np.array(coords).reshape(1, -1)
-        if isinstance(self.interpolator_real, RegularGridInterpolator):
-            query_point = self.margin_clamp(query_point)
-        result = self.interpolator_real(query_point)
-        return result.reshape(-1)
-
-    def call_complex_vector(self, *coords):
-        query_point = np.array(coords).reshape(1, -1)
-        if isinstance(self.interpolator_real, RegularGridInterpolator):
-            query_point = self.margin_clamp(query_point)
-        real_part = self.interpolator_real(query_point)
-        imag_part = self.interpolator_imag(query_point)
-        return np.concatenate((real_part, imag_part), axis=None)
+            result = real_part.reshape(-1) if self.is_vector else real_part.item()
+        
+        return result
 
     def margin_clamp(self, query_point):
         if np.any(query_point < (self.grid_mins - self.margin)) or np.any(query_point > (self.grid_maxs + self.margin)):

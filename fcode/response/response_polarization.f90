@@ -18,6 +18,11 @@ module globals
             VBZ = bvec(1,1) * bvec(2,2) * bvec(3,3) + bvec(1,2) * bvec(2,3) * bvec(3,1) &
             &   + bvec(1,3) * bvec(2,1) * bvec(3,2) - bvec(1,3) * bvec(2,2) * bvec(3,1) &
             &   + bvec(1,2) * bvec(2,1) * bvec(3,3) - bvec(1,1) * bvec(2,3) * bvec(3,2)
+            if (dimension == 2) then
+                VBZ = bvec(1,1) * bvec(2,2) - bvec(1,2) * bvec(2,1)
+                nge(3) = 2
+                ngw(3) = 2
+            end if
             nke = product(nge)
             nkw = product(ngw)
             T = Temperature
@@ -40,8 +45,12 @@ module mesh
 
     function get_qvec(i1, i2, i3, npts) result(qvec)
         integer, intent(in) :: i1, i2, i3, npts(3)
-        real(8), dimension(3) :: qvec
-        qvec(1:3) = dble([i1, i2, i3] + 1e-5) / dble(npts(1:3) - 1)
+        real(8), dimension(3) :: qvec, temp_pts
+        if (dimension == 2) then
+            temp_pts = npts
+            temp_pts(3) = 2
+        end if
+        qvec(1:3) = dble([i1, i2, i3] + 1e-5) / dble(temp_pts(1:3) - 1)
     end function get_qvec
 
     function fill_energy_mesh(qvec) result(eig)
@@ -67,11 +76,12 @@ module mesh
         integer :: ltetra = 1
         real(8) :: eig1(:,:), qvec(3)
         real(8) :: eig2(:,:), wght(:,:,:), wght_dos(:,:,:)
-        real(8) :: chi, qmag, e0(nb)
+        real(8) :: chi, qmag, qtmag, e0(nb)
 
         ltetra = 1
         qmag = sqrt(sum(qvec(1:3)**2))
-        if (qmag < 1d-6) then
+        qtmag = sqrt(sum(qvec(1:2)**2))
+        if (qmag < 1d-6 .OR. dimension == 2 .AND. qtmag < 1d-6) then
             e0(1) = 0d0
             call libtetrabz_dos(ltetra, bvec, nb, nge, eig1, ngw, wght_dos, ne, e0)
             chi = sum(wght_dos(1:ne,1:nb,1:nkw)) / 2

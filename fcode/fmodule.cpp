@@ -12,6 +12,7 @@
 #include "hamiltonian/interaction.hpp"
 #include "hamiltonian/band_structure.hpp"
 #include "objects/vec.hpp"
+#include "objects/fastfield.hpp"
 
 
 namespace py = pybind11;
@@ -84,16 +85,24 @@ PYBIND11_MODULE(fmodule, m) {
     m.def("V", &V, "Calculate the interaction potential",
           py::arg("k1"), py::arg("k2"), py::arg("spin1") = "up", py::arg("spin2") = "up");
 
+    py::class_<FastScalarField>(m, "FastScalarField")
+        .def(py::init<>())
+        .def(py::init<string, int, bool>(), py::arg("filename"), py::arg("dimension") = 3, py::arg("is_complex") = false)
+        .def("__call__", py::overload_cast<Vec>(&FastScalarField::operator()), py::arg("point"));
+
     // Bind the Susceptibility struct
-    py::class_<Susceptibility>(m, "Susceptibility")
-        .def(py::init<>());
+    py::class_<Susceptibility, FastScalarField>(m, "Susceptibility")
+        .def(py::init<>())
+        .def(py::init<std::string, int, bool>(), py::arg("filename"), py::arg("dimension") = 3, py::arg("is_complex") = false)
+        .def("__call__", py::overload_cast<Vec, float>(&Susceptibility::operator()), py::arg("point"), py::arg("w"))
+        .def("__call__", py::overload_cast<Vec>(&Susceptibility::operator()), py::arg("point"));
 
     // Expose the global variable chi
     m.attr("chi") = py::cast(&chi);  // Pass chi by pointer to allow modification
 
     // Expose the load_chi function
-    m.def("load_global_chi", [](string filename) {
-        load_chi(filename);
+    m.def("load_global_chi", [](string filename, int dimension_) {
+        load_chi(filename, dimension_);
     });
 
     // Expose the epsilon function

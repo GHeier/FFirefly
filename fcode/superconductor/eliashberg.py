@@ -6,12 +6,13 @@ import numpy as np
 import sparse_ir
 
 BZ = np.array(cfg.brillouin_zone)
-#print("BZ:", BZ)
+U = cfg.onsite_U
 
 T = cfg.Temperature
 beta = 1 / T
 nk1, nk2, nk3 = cfg.k_mesh
 nk = nk1 * nk2 * nk3
+
 
 def get_bandwidth():
     k1, k2, k3 = np.meshgrid(np.arange(nk1)/nk1, np.arange(nk2)/nk2, np.arange(nk3)/nk3)
@@ -19,25 +20,60 @@ def get_bandwidth():
     # Flatten the k-points into (N, 3) array
     k_points = np.stack((k1.ravel(), k2.ravel(), k3.ravel()), axis=-1)
     k_points = k_points @ BZ.T
-    e_pts = epsilon(1, k_points)
+    e_pts = fcode.epsilon(1, k_points)
     e_mesh = e_pts.reshape(nk1, nk2, nk3)
     emin = np.min(e_mesh)
     emax = np.max(e_mesh)
     return emax - emin
 
-
 def eliashberg():
     W = get_bandwidth()
     W = round(W, 6)
     print("Bandwidth:", W)
-    ek = mesh.energy_mesh([nk1, nk2, nk3])
+
     wmax = 2*W
     IR_tol = 1e-5
     IR_basis_set = sparse_ir.FiniteTempBasisSet(beta, wmax, eps=IR_tol)
-    iw0_f = np.where(IR_basis_set.wn_f == 1)[0][0]
-    iwn_f = 1j * IR_basis_set.wn_f * np.pi * T
-    iwn_f_ = np.tensordot(iwn_f, np.ones(nk), axes=0)
-    ek_ = np.tensordot(np.ones(len(iwn_f)), ek, axes=0)
+
+    result = EliashbergSolver(IR_basis_set, nk1, nk2, nk3)
+    result.solve()
+
+class EliashbergSolver:
+    def __init__(self, IR_basis_set, nk1, nk2, nk3):
+        self.maxiters = 10
+
+        self.mesh = Mesh(IR_basis_set, nk1, nk2, nk3)
+        self.phi = np.ones(self.mesh.iwn_f.shape)
+        self.Z = np.ones(self.mesh.iwn_f.shape)
+
+        self.file = "/home/g/Research/fcode/" + cfg.input_data_file[1:-1]
+        print("Reading susceptibility from", self.file)
+        #self.chi0 = Susceptibility(file, 3)
+        self.chi = field.load_field_from_file(self.file, 3, False, False)
+
+        print(len(self.mesh.pts))
+        print(self.mesh.pts.shape)
+        self.e_flat = self.mesh.ek.ravel()
+
+        self.coords = self.mesh.pts[:, None, :] - self.mesh.pts[None, :, :]
+        self.chi_vals = self.chi(self.coords)
+        print(type(self.chi_vals))
+        self.V_mesh = U**2 * self.chi_vals / (1 - U * self.chi_vals) + U**3 * self.chi_vals**2 / (1 - U * self.chi_vals)**2
+
+    def solve(self):
+        for i in range(self.maxiters):
+            self.denom = (self.w_flat * self.Z)**2 + self.e_flat**2 + self.phi**2
+            self.phi = (1 / beta) * np.dot(self.V_mesh, self.phi) / self.denom
+            self.Z = 1 + (1 / beta) * np.dot(self.V_mesh, self.Z) / self.denom * (self.w_flat[:, None] / self.w_flat).T
+
+    def save_results(self):
+        self.phi = self.phi.reshape(self.mesh.iwn_f.shape)
+        self.Z = self.Z.reshape(self.mesh.iwn_f.shape)
+        self.phi_tau = self.mesh.wn_to_tau('F', self.phi)
+        self.Z_tau = self.mesh.wn_to_tau('F', self.Z)
+        self.phi_r = self.mesh.k_to_r(self.phi)
+        self.Z_r = self.mesh.k_to_r(self.Z)
+        np.savez("results.npz", phi=self.phi, Z=self.Z, phi_tau=self.phi_tau, Z_tau=self.Z_tau, phi_r=self.phi_r, Z_r=self.Z_r)
 
 
 class Mesh:
@@ -59,6 +95,8 @@ class Mesh:
 
         # ek mesh
         self.ek_ = np.tensordot(np.ones(len(self.iwn_f)), self.ek, axes=0)
+        self.pts = np.meshgrid(np.arange(self.nk1), np.arange(self.nk2), np.arange(self.nk3), self.iwn_f)
+        self.pts = np.vstack([x.ravel() for x in self.pts]).T
 
     def smpl_obj(self, statistics):
         smpl_tau = {'F': self.IR_basis_set.smpl_tau_f, 'B': self.IR_basis_set.smpl_tau_b}[statistics]
@@ -94,3 +132,4 @@ class Mesh:
         obj_k = np.fft.ifftn(obj_r,axes=(1,2))/self.nk
         obj_k = obj_k.reshape(-1, self.nk)
         return obj_k
+eliashberg()

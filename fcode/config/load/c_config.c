@@ -368,6 +368,22 @@ void read_c_config(const char* path) {
     }
     if (!got_nbnd && c_band[0] != 0) c_nbnd = n + 1;
     if (!got_bz) cell_to_BZ(c_cell, c_brillouin_zone);
+    if (c_dimension == 2) {
+        //c_cell[2][0] = 0.0;
+        //c_cell[2][1] = 0.0;
+        //c_cell[2][2] = 0.0;
+        //c_cell[0][2] = 0.0;
+        //c_cell[1][2] = 0.0;
+        //c_cell[2][2] = 0.0;
+        //c_brillouin_zone[2][0] = 0.0;
+        //c_brillouin_zone[2][1] = 0.0;
+        //c_brillouin_zone[2][2] = 0.0;
+        //c_brillouin_zone[0][2] = 0.0;
+        //c_brillouin_zone[1][2] = 0.0;
+        //c_brillouin_zone[2][2] = 0.0;
+        c_k_mesh[2] = 1;
+        c_q_mesh[2] = 1;
+    }
     if (!got_dimension) get_dimensions();
 }
 

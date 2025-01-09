@@ -29,6 +29,11 @@ function create_interpolation(file_path::String; dims::Int=3, field_type::Symbol
     # Extract coordinates and values
     points = eachcol(data[:, 1:dims])  # First `dims` columns are coordinates
     values = data[:, dims+1:end]       # Remaining columns are values
+    println("Min & Max x: ", minimum(points[1]), " ", maximum(points[1]))
+    println("Min & Max y: ", minimum(points[2]), " ", maximum(points[2]))
+    println("Min & Max z: ", minimum(points[3]), " ", maximum(points[3]))
+    println("Min & Max w: ", minimum(points[4]), " ", maximum(points[4]))
+
     
     # Ensure enough columns for specified type
     num_value_cols = size(values, 2)
