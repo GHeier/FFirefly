@@ -1,6 +1,8 @@
 # Large data files
 *.dat
 *.txt
+*.jld
+*.npy
 
 # Prerequisites
 *.d

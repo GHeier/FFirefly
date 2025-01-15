@@ -147,11 +147,11 @@ module mesh
 
         print *, 'Calculating dynamic polarization for ', ngw(1), 'x', ngw(2), 'x', ngw(3), ' k-points and ', ne, ' energy points'
         eig1 = fill_energy_mesh([0d0, 0d0, 0d0])
-        do i3 = 0, ngw(3) - 1
-            print *, 'Calculating chi iteration ', i3, ' of ', ngw(3)
+        do i1 = 0, ngw(1) - 1
+            print *, 'Calculating chi iteration ', i1+1, ' of ', ngw(1)
             !$OMP PARALLEL DO PRIVATE(i1, i2, qvec, eig2, chi, wght)
             do i2 = 0, ngw(2) - 1
-                do i1 = 0, ngw(1) - 1
+                do i3 = 0, ngw(3) - 1
                     qvec = get_qvec(i1, i2, i3, ngw)
                     qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
                     eig2 = fill_energy_mesh(qvec)

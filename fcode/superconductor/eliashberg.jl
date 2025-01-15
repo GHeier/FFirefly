@@ -2,6 +2,8 @@ module Eliashberg
 
 include("../objects/fields.jl")
 using .Fields
+include("../objects/mesh.jl")
+using .Mesh
 
 using Base.Threads, JLD
 using LinearAlgebra, Printf, PyCall
@@ -15,7 +17,7 @@ if dim == 2
     nz = 1
 end
 println("nx: ", nx, " ny: ", ny, " nz: ", nz)
-nw = cfg.w_pts
+nw = cfg.w_pts 
 println("nw: ", nw)
 U = cfg.onsite_U
 BZ = cfg.brillouin_zone
@@ -58,24 +60,26 @@ end
 
 
 function k_integral(k, w, w1, phi, Z)
-    phi_int = Z_int = chi_int = 0.0 + 0.0im
+    phi_int = Z_int = 0.0 + 0.0im
     n = trunc(Int, (imag(w) * beta / pi - 1) / 2 + 1)
+    temp = 0
 
     for i in 1:nx 
         for j in 1:ny 
             for l in 1:nz
                 k1 = BZ * [i / nx, j / ny, l / nz]
-                phi_el, Z_el, chi_el = phi[i, j, l, n], Z[i, j, l, n], chi[i, j, l, n]
+                phi_el, Z_el= phi[i, j, l, n], Z[i, j, l, n]
                 V_val = (V(k, k1, w) + V(k, -k1, w)) / 2.0
-                denom = get_denominator(w1, phi_el, Z_el, chi_el, sum(abs2, k1))
+                denom = get_denominator(w1, phi_el, Z_el, epsilon(k1))
+                temp = max(temp, denom)
                 phi_int += V_val * phi_el / denom
                 Z_int += V_val * w1 / w * Z_el / denom
-                chi_int += V_val * (sum(abs2, k1) + chi_el) / denom
             end
         end
     end
 
-    return phi_int / (2pi)^3, Z_int / (2pi)^3, chi_int / (2pi)^3
+    #println(w.im, " ", w1.im, " ", Z_int.re, " ", temp)
+    return phi_int / (nx * ny * nz), Z_int / (nx * ny * nz)
 end
 
 function eliashberg_sum(phi, Z)
@@ -86,15 +90,19 @@ function eliashberg_sum(phi, Z)
         print("Iteration ", (a-1)*nx^(dim-1) + (b-1)*ny^(dim-2) + c-1, " out of ", nx*ny*nz, "      \r")
         flush(stdout)
         @threads for i in 1:nw 
+            phi_sum = Z_sum = 0.0 + 0.0im
             for j in 1:nw
                 w = Complex(0.0, pi*(2*(i-1) + 1) / beta)
                 w1 = Complex(0.0, pi*(2*(j-1) + 1) / beta)
                 k = BZ * [a / nx, b / ny, c / nz]
                 phi_int, Z_int = k_integral(k, w, w1, phi, Z)
-                @inbounds begin
-                    new_phi[a, b, c, i] += phi_int / beta
-                    new_Z[a, b, c, i] += (1 + Z_int / beta)
-                end
+                phi_sum += phi_int
+                Z_sum += Z_int
+            end
+            @inbounds begin
+                new_phi[a, b, c, i] -= phi_sum / beta
+                new_Z[a, b, c, i] += (1 - Z_sum / beta)
+                #println("phi_sum: ", phi_sum, " Z_sum: ", Z_sum)
             end
         end
     end
@@ -103,7 +111,7 @@ end
 
 function evaluate_eliashberg()
     phi = Z = ones(Complex{Float64}, nx, ny, nz, nw)
-    iterations = 10
+    iterations = 100
 
     println(Threads.nthreads(), " threads available")
     input_data_file = "/home/g/Research/fcode/chi_mesh_dynamic.dat"
@@ -113,10 +121,20 @@ function evaluate_eliashberg()
     #fcode.load_global_chi(input_data_file)
 
     println("Starting Eliashberg calculation")
+    prev_phi = prev_Z = 0.0
     for i in 0:iterations
         phi, Z = eliashberg_sum(phi, Z)
-        println("Max phi: ", maximum(abs.(phi)))
-        println("Max Z: ", maximum(abs.(Z)))
+        max_phi = maximum(abs.(phi))
+        max_Z = maximum(abs.(Z))
+        println("\nMax phi: ", max_phi)
+        println("Max Z: ", max_Z)
+        error = abs(prev_phi - max_phi) + abs(prev_Z - max_Z)
+        println("Error: ", maximum(error))
+        if maximum(error) < 1e-4
+            println("Converged after ", i, " iterations")
+            break
+        end
+        prev_phi, prev_Z = max_phi, max_Z
     end
     save("phi.jld", "phi", phi)
     save("Z.jld", "Z", Z)
