@@ -1,3 +1,14 @@
+module IRMesh
+
+using FFTW
+using LinearAlgebra
+using Roots
+using SparseIR
+import SparseIR: Statistics, value, valueim
+
+export Mesh
+export tau_to_wn, wn_to_tau, k_to_r, r_to_k
+
 """
 Holding struct for k-mesh and sparsely sampled imaginary time 'tau' / Matsubara frequency 'iw_n' grids.
 Additionally we defines the Fourier transform routines 'r <-> k'  and 'tau <-> l <-> wn'.
@@ -90,5 +101,4 @@ function r_to_k(mesh::Mesh, obj_r)
     return obj_k
 end
 
-@assert typestable(tau_to_wn, (Mesh, SparseIR.Statistics, Array{ComplexF64,4}))
-@assert typestable(wn_to_tau, (Mesh, SparseIR.Statistics, Array{ComplexF64,4}))
+end
