@@ -7,6 +7,7 @@
  * Author: Griffin Heier
  */
 #include <Python.h>
+#include <julia.h>
 
 #include <stdio.h>
 #include <iomanip>
@@ -20,6 +21,7 @@
 
 #include "../config/load/cpp_config.hpp"
 #include "../config/load/py_interface.h"
+#include "../config/load/jl_interface.h"
 #include "../config/load/c_config.h"
 #include "utilities.hpp"
 #include "matrix_creation.hpp"
@@ -113,6 +115,8 @@ void bcs() {
 void eliashberg() {
     string folder = "superconductor/";
     string filename = "eliashberg";
-    string function = "eliashberg";
-    call_python_func(folder.c_str(), filename.c_str(), function.c_str());
+    string module = "Eliashberg";
+    string function = "restart";
+    //call_python_func(folder.c_str(), filename.c_str(), function.c_str());
+    call_julia_func(folder.c_str(), filename.c_str(), module.c_str(), function.c_str());
 }

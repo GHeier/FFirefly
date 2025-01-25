@@ -72,6 +72,24 @@ module mesh
         end do
      end function fill_energy_mesh
 
+     function get_full_DOS_spectrum(emax, emin) result(dos_list)
+        real(8) :: dos_list(nkw)
+        integer :: i, ltetra
+        real(8) :: emax, emin, e0(ne)
+        real(8), allocatable :: eig1(:,:), wght_dos(:,:,:)
+        allocate(eig1(nb,nke), wght_dos(ne, nb, nkw))
+
+        eig1 = fill_energy_mesh([0d0, 0d0, 0d0])
+        emax = maxval(eig1)
+        emin = minval(eig1)
+        ltetra = 2
+        do i = 0, w_pts - 1
+            e0(1) = emin + dble(i) * (emax - emin) / dble(w_pts - 1)
+            call libtetrabz_dos(ltetra, bvec, nb, nge, eig1, ngw, wght_dos, ne, e0)
+            dos_list(i+1) = sum(wght_dos(1:ne,1:nb,1:nkw)) / 2
+        end do
+    end function get_full_DOS_spectrum
+
     function get_static_polarization(eig1, eig2, wght, wght_dos, qvec) result(chi)
         integer :: ltetra = 1
         real(8) :: eig1(:,:), qvec(3)
@@ -203,6 +221,17 @@ module mesh
         close(10)
         print *, 'Chi mesh saved to chi_mesh_dynamic.dat'
      end subroutine save_dynamic_mesh
+
+     subroutine save_DOS_spectrum(dos_list, emax, emin)
+        real(8) :: dos_list(ne), emax, emin
+        integer :: i
+        open(10, file='DOS.dat', status='unknown')
+        do i = 0, w_pts - 1
+            write(10, '(1x, f13.6, 1x, f13.6)') emin + dble(i) * (emax - emin) / dble(w_pts - 1), dos_list(i+1)
+        end do
+        close(10)
+        print *, 'DOS spectrum saved to DOS_spectrum.dat'
+     end subroutine save_DOS_spectrum
 
  end module mesh
 

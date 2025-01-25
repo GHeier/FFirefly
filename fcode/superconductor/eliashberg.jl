@@ -6,6 +6,7 @@ using .Fields
 include("../objects/mesh.jl")
 using .IRMesh
 
+using Plots
 using SparseIR
 import SparseIR: Statistics, value, valueim
 using Base.Threads, JLD
@@ -21,6 +22,7 @@ end
 nw = cfg.w_pts 
 U = cfg.onsite_U
 BZ = cfg.brillouin_zone
+mu = cfg.fermi_energy
 
 const beta = 1/cfg.Temperature
 println("Beta: ", beta)
@@ -65,61 +67,90 @@ function get_bandwidth()
     return maxval - minval
 end
 
-function fill_V_arr!(V_arr)
+function paper_V(w)
+    lambda = 2.0
+    return lambda * 0.01 / (imag(w)^2 + 0.01)
+end
+
+function fill_V_arr!(V_arr, iw)
     Vw_arr = Array{Complex{Float64}}(undef, bnw, nx, ny)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:bnw
         kvec = BZ * [i / nx, j / ny, k / nz]
-        w1 = Complex(0.0, pi*(2*l) / beta)
-        Vw_arr[l, i, j] = V(kvec, [0,0,0], w1)
+        w1 = iw[l]
+        #Vw_arr[l, i, j] = V(kvec, [0,0,0], w1)
+        Vw_arr[l, i, j] = paper_V(w1)
     end
-    temp = k_to_r(mesh, Vw_arr)
-    V_arr .= wn_to_tau(mesh, Bosonic(), temp)
-    for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:bntau
-        V_arr[l, i, j] = V_arr[bntau - l + 1, i, j]
-    end
+    #temp = k_to_r(mesh, Vw_arr)
+    V_arr .= wn_to_tau(mesh, Bosonic(), Vw_arr)
     println("Filled V_arr")
 end
 
-function initialize_phi_Z!(phi_arr, Z_arr)
-    for i in 1:inw, j in 1:nx, k in 1:ny
-        w = pi*(2*(i-1) + 1) / beta
+function initialize_phi_Z!(phi_arr, Z_arr, iw)
+    for i in 1:fnw, j in 1:nx, k in 1:ny
+        w = iw[i]
         kvec = BZ * [j / nx, k / ny, 0 / nz]
         dwave = (cos(kvec[1]) - cos(kvec[2])) / 2
-        phi_arr[i, j, k] = 1 / (w + 1) * dwave
-        Z_arr[i, j, k] = 1.0
+        phi_arr[i, j, k] = 1 / abs(w + 1)# * dwave
+        Z_arr[i, j, k] = 1.0 / abs(w + 1)
     end
     println("Initialized phi and Z")
 end
 
-function condense_to_F!(phi, Z, F_arr, Fz_arr)
-    for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:inw
-        w = Complex(0.0, pi*(2*(l-1) + 1) / beta)
+function condense_to_F!(phi, Z, F_arr, Fz_arr, iw)
+    for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:fnw
+        w = iw[l]
         kvec = BZ * [i / nx, j / ny, k / nz]
-        denom = get_denominator(w, phi[l, i, j], Z[l, i, j], epsilon(kvec))
+        denom = get_denominator(w, phi[l, i, j], Z[l, i, j], 2 - mu)
         F_arr[l, i, j] = phi[l, i, j] / denom
-        Fz_arr[l, i, j] = Z[l, i, j] * w / denom
+        Fz_arr[l, i, j] = Z[l, i, j] * w / denom / 1.0im
     end
 end
 
-function update_phi_Z!(F_arr, Fz_arr, V_arr, phi_arr, Z_arr)
-    temp = k_to_r(mesh, F_arr)
-    F_arr .= wn_to_tau(mesh, Fermionic(), temp)
-    temp = k_to_r(mesh, Fz_arr)
-    Fz_arr .= wn_to_tau(mesh, Fermionic(), temp)
+function update_phi_Z!(F_arr, Fz_arr, V_arr, phi_arr, Z_arr, iw)
+    #temp = k_to_r(mesh, F_arr)
+    F_rt = wn_to_tau(mesh, Fermionic(), F_arr)
+    #temp = k_to_r(mesh, Fz_arr)
+    Fz_rt = wn_to_tau(mesh, Fermionic(), Fz_arr)
 
-    phit = V_arr .* F_arr
-    Zt = V_arr .* Fz_arr
+    phit = V_arr .* F_rt
+    Zt = V_arr .* Fz_rt
 
-    temp = r_to_k(mesh, phit)
-    phi_arr .= tau_to_wn(mesh, Fermionic(), temp)
-    temp = r_to_k(mesh, Z_arr)
-    Z_arr .= tau_to_wn(mesh, Fermionic(), temp)
+    #temp = r_to_k(mesh, phit)
+    phi_arr .= tau_to_wn(mesh, Fermionic(), phit)
+    #temp = r_to_k(mesh, Zt)
+    Z_arr .= tau_to_wn(mesh, Fermionic(), Zt)
 
-    for i in 1:inw
-        w = Complex(0.0, pi*(2*(i-1) + 1) / beta)
-        Z_arr[i, :, :] .= 1 .- 1.0 / (w*beta) .* Z_arr[i, :, :]
+    for i in 1:fnw
+        w = iw[i]
+        Z_arr[i, :, :] .= 1 .- 1.0 / imag(w) .* Z_arr[i, :, :]
     end
-    phi_arr .= phi_arr .* (-1.0 / beta)
+    phi_arr .= phi_arr .* (-1.0 )
+end
+
+function test_update_phi_Z(F_arr, Fz_arr, iw)
+    phi_new = Array{Complex{Float64}}(undef, fnw, nx, ny)
+    Z_new = Array{Complex{Float64}}(undef, fnw, nx, ny)
+    @threads for i in 1:fnw
+        for j in 1:nx, k in 1:ny
+            sum_phi = 0.0 + 0.0im
+            sum_Z = 0.0 + 0.0im
+            k1 = BZ * [j / nx, k / ny, 0 / nz]
+            w1 = iw[i]
+            for l in 1:fnw, m in 1:nx, n in 1:ny
+                k2 = BZ * [m / nx, n / ny, 0 / nz]
+                w2 = iw[l]
+                F = F_arr[l, m, n]
+                Fz = Fz_arr[l, m, n]
+                #V_val = V(k1, k2, w1)
+                V_val = paper_V(w1 - w2)
+                sum_phi += V_val * F
+                sum_Z += V_val * Fz
+            end
+            phi_new[i, j, k] = sum_phi / beta
+            Z_new[i, j, k] = 1 - sum_Z / (beta * w1)
+        end
+    end
+    return phi_new, Z_new
 end
 
 function newfunc()
@@ -129,54 +160,114 @@ function newfunc()
     IR_tol = 1e-10
     scf_tol = 1e-4
     IR_basis_set = FiniteTempBasisSet(beta, Float64(wmax), IR_tol)
-    global mesh = Mesh(nx, ny, IR_basis_set)
-    global inw = mesh.fnw
+    global mesh = Mesh(IR_basis_set, nx, ny)
+    global fnw = mesh.fnw
+    global fntau = mesh.fntau
     global bnw = mesh.bnw
     global bntau = mesh.bntau
+    println(fnw, " ", fntau, " ", bnw, " ", bntau)
     println("IRMesh created")
+    iw = Array{ComplexF64}(undef, fnw)
+    iv = Array{ComplexF64}(undef, bnw)
+    for i in 1:fnw iw[i] = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta) end
+    for i in 1:bnw iv[i] = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[i], beta) end
+    println("Filled iw and iv")
+    println("Min & Max iw: ", minimum(imag.(iw)), " ", maximum(imag.(iw)))
     input_data_file = "/home/g/Research/fcode/chi_mesh_dynamic.dat"
     global Susceptibility = Fields.create_interpolation(input_data_file, dims=4, field_type=:scalar, value_type=ComplexF64)
 
-    phi_arr = Array{ComplexF64}(undef, inw, nx, ny)
-    Z_arr = Array{ComplexF64}(undef, inw, nx, ny)
-    initialize_phi_Z!(phi_arr, Z_arr)
+    phi_arr = Array{ComplexF64}(undef, fnw, nx, ny)
+    Z_arr = Array{ComplexF64}(undef, fnw, nx, ny)
+    initialize_phi_Z!(phi_arr, Z_arr, iw)
 
     println("maxphi: ", maximum(abs.(phi_arr)))
     println("maxZ: ", maximum(abs.(Z_arr)))
 
-    V_arr = Array{ComplexF64}(undef, mesh.bntau, mesh.nk1, mesh.nk2)
-    fill_V_arr!(V_arr)
+    V_arr = Array{ComplexF64}(undef, bntau, nx, ny)
+    fill_V_arr!(V_arr, iv)
     println("maxV: ", V_arr[argmax(abs.(V_arr))])
     println("maxV: ", maximum(abs.(V_arr)))
 
-    F_arr = Array{ComplexF64}(undef, inw, nx, ny)
-    Fz_arr = Array{ComplexF64}(undef, inw, nx, ny)
-    condense_to_F!(phi_arr, Z_arr, F_arr, Fz_arr)
+    F_arr = Array{ComplexF64}(undef, fnw, nx, ny)
+    Fz_arr = Array{ComplexF64}(undef, fnw, nx, ny)
+    condense_to_F!(phi_arr, Z_arr, F_arr, Fz_arr, iw)
     println("maxF: ", F_arr[argmax(abs.(F_arr))])
     println("maxFz: ", Fz_arr[argmax(abs.(Fz_arr))])
 
 
-    max_phi = max_Z = 0.0
-    prev_phi = prev_Z = 1.0
+    phierr = 0.0
+    prev_phi_arr = copy(phi_arr)
+    #phi_test, Z_test = Array{ComplexF64}(undef, fnw, nx, ny), Array{ComplexF64}(undef, fnw, nx, ny)
     println("Starting Convergence Loop")
-    for i in 1:100
-        update_phi_Z!(F_arr, Fz_arr, V_arr, phi_arr, Z_arr)
+    for i in 1:300
+        print("Iteration ", i, " out of 300\r")
+        #F_test = copy(F_arr)
+        #Fz_test = copy(Fz_arr)
+        update_phi_Z!(F_arr, Fz_arr, V_arr, phi_arr, Z_arr, iw)
+        #phi_test, Z_test = test_update_phi_Z(F_test, Fz_test, iw)
 
-        max_phi = maximum(abs.(phi_arr))
-        max_Z = maximum(abs.(Z_arr))
+        phierr = maximum(abs.(phi_arr) - abs.(prev_phi_arr))
 
-        println("\n $i) Max phi: ", max_phi)
-        println(" $i) Max Z: ", max_Z)
-        error = abs(max_phi / prev_phi) - abs(max_Z / prev_Z)
-        println(" $i) Error: ", error)
-        if abs(error) < scf_tol
+        if abs(phierr) < scf_tol || maximum(abs.(phi_arr)) < 1e-10
             println("Converged after ", i, " iterations")
             break
         end
-        prev_phi, prev_Z = max_phi, max_Z
-        condense_to_F!(phi_arr, Z_arr, F_arr, Fz_arr)
+        prev_phi_arr = copy(phi_arr)
+        condense_to_F!(phi_arr, Z_arr, F_arr, Fz_arr, iw)
+        #condense_to_F!(phi_test, Z_test, F_test, Fz_test, iw)
     end
+
+    #phi_w, Z_w = test_update_phi_Z(F_arr, Fz_arr, iw)
+    max_phi = maximum(abs.(phi_arr))
+    max_Z = maximum(abs.(Z_arr))
+
+    println("Error: ", phierr)
+    println("Max phi: ", max_phi)
+    println("Max Z: ", max_Z)
+    gap = phi_arr ./ Z_arr
+    gap_w = phi_FS_average(gap)
+    p = plot(imag.(iw), gap_w)
+    display(p)
+    readline()
+    gap = phi_arr 
+    gap_w = phi_FS_average(gap)
+    p = plot(imag.(iw), gap_w)
+    display(p)
+    readline()
+    gap_w = phi_FS_average(Z_arr)
+    p = plot(imag.(iw), gap_w)
+    display(p)
+    readline()
+    #gap = phi_test ./ Z_test
+    #gap_w = phi_FS_average(gap)
+    #p = plot(imag.(iw), gap_w)
+    #display(p)
+    #readline()
+    #gap_w = phi_FS_average(phi_test)
+    #p = plot(imag.(iw), gap_w)
+    #display(p)
+    #readline()
+    #gap_w = phi_FS_average(phi_w)
+    #p = plot(imag.(iw), gap_w)
+    #display(p)
+    #readline()
+    #gap_w = phi_FS_average(Z_w)
+    #p = plot(imag.(iw), gap_w)
+    #display(p)
+    #readline()
 end 
+
+function phi_FS_average(phi)
+    phi_avg = Array{Float64}(undef, fnw)
+    for i in 1:fnw
+        phi_avg[i] = 0.0 + 0.0im
+        for j in 1:nx, k in 1:ny
+            phi_avg[i] += phi[i, j, k].re^2
+        end
+        phi_avg[i] /= nx * ny
+    end
+    return phi_avg
+end
 
 function get_denominator(w1, phi_el, Z_el, eps)
     return abs2(w1 * Z_el) + abs2(eps) + abs2(phi_el)
@@ -194,7 +285,7 @@ function k_integral(k, w, w1, phi, Z)
                 k1 = BZ * [i / nx, j / ny, l / nz]
                 phi_el, Z_el= phi[i, j, l, n], Z[i, j, l, n]
                 V_val = (V(k, k1, w) + V(k, -k1, w)) / 2.0
-                denom = get_denominator(w1, phi_el, Z_el, epsilon(k1))
+                denom = get_denominator(w1, phi_el, Z_el, epsilon(k1) - mu)
                 temp = max(temp, denom)
                 phi_int += V_val * phi_el / denom
                 Z_int += V_val * w1 / w * Z_el / denom
@@ -261,9 +352,240 @@ function evaluate_eliashberg()
     save("Z.jld", "Z", Z)
 end
 
+function multiply_slow(V, f)
+    result = Array{ComplexF64}(undef, size(f))
+    fnw = length(f)
+    for i in 1:fnw
+        result[i] = 0.0 + 0.0im
+        for j in 1:fnw
+            result[i] += V[i, j] * f[j]
+        end
+    end
+    return result / beta
+end
+
+function multiply(f, V, mesh)
+    fntau = mesh.fntau        
+    #fntau = 100
+
+    ft = wn_to_tau(mesh, Fermionic(), f)
+    Vt = wn_to_tau(mesh, Bosonic(), V)
+    #revF = Array{ComplexF64}(undef, fntau)
+    #for i in 1:fntau
+    #    revF[i] = f[fntau - i + 1]
+    #end
+    resultt = Vt .* ft
+    result = tau_to_wn(mesh, Fermionic(), resultt)
+
+    #temp = k_to_r(mesh, f)
+    #t_result = temp .* temp
+    #result = tau_to_wn(mesh, r_result)
+
+    return result
+end
+
+function test_iw()
+    IR_basis_set = FiniteTempBasisSet(beta, Float64(10), 1e-10)
+    basis = Mesh(IR_basis_set, 10)
+    fnw = basis.fnw
+    fntau = basis.fntau
+    bnw = basis.bnw
+    bntau = basis.bntau
+    iw = Array{ComplexF64}(undef, fnw)
+    iv = Array{ComplexF64}(undef, bnw)
+    for i in 1:fnw
+        iw[i] = valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[i], beta)
+        if i <= bnw iv[i] = valueim(basis.IR_basis_set.smpl_wn_b.sampling_points[i], beta) end
+    end
+    println("fnw: ", fnw)
+    func(x) = 1 / (abs(x) - 1)
+    f = Array{ComplexF64}(undef, fnw)
+    V = Array{ComplexF64}(undef, bnw)
+    for i in 1:fnw
+        w = iw[i]
+        f[i] = func(w)
+        if i<=bnw V[i] = paper_V(iv[i]) end
+    end
+    V_arr = Array{ComplexF64}(undef, bnw, bnw)
+    for i in 1:bnw, j in 1:bnw
+        w1 = iv[i]
+        w2 = iv[j]
+        V_arr[i, j] = paper_V(w1 - w2)
+    end
+    result = multiply(f, V, basis)
+    slow_result = multiply_slow(V_arr, f)
+
+    p = plot(imag.(iw), real.(result))
+    plot!(imag.(iw), imag.(result))
+    plot!(imag.(iw), real.(slow_result))
+    plot!(imag.(iw), imag.(slow_result))
+    display(p)
+    readline()
+end
+
+function f1(x)
+    return exp(-x^2)
+    return 1 / (sin(x) + 1)
+    return sin(x)
+end
+
+function test_multiply()
+    pts = 1000
+    IR_basis_set = FiniteTempBasisSet(beta, Float64(20), 1e-10)
+    amesh = Mesh(IR_basis_set, pts)
+    bnw = amesh.bnw
+    bntau = amesh.bntau
+    wpts = 100
+    println("iw size: ", wpts)
+    Vw = Array{ComplexF64}(undef, wpts, pts)
+    phiw = Array{ComplexF64}(undef, wpts, pts)
+    for i in 1:pts
+        x = 2π * i / (pts-1)
+        for j in 1:wpts
+            w = (pi*(2*(j-1) + 1) / beta)^2im
+            Vw[j, i] = f1(x)
+            phiw[j, i] = f1(x)
+        end
+    end
+    V = k_to_r(amesh, Vw)
+    #V = wn_to_tau(amesh, Bosonic(), temp)
+    phi = k_to_r(amesh, phiw)
+    #phi = wn_to_tau(amesh, Bosonic(), temp)
+
+    println("size of V: ", size(V))
+    println("size of phi: ", size(phi))
+    flipV = Array{ComplexF64}(undef, wpts, pts)
+    for i in 1:pts, j in 1:wpts
+        flipV[j, i] = V[wpts + 1 - j, i]
+    end
+
+    result = V .* phi
+
+    newphi = r_to_k(amesh, result)
+    #newphi = tau_to_wn(amesh, Bosonic(), temp)
+    println("Completed multiplication")
+    println(newphi[1, 1])
+    p = plot(0:1/(pts-1):1, real.(newphi[1,:]))
+    plot!(0:1/(pts-1):1, imag.(newphi[1,:]))
+    display(p)
+    readline()
+    #p = plot(0:1/(wpts-1):1, real.(newphi[:,1]))
+    #plot!(0:1/(wpts-1):1, imag.(newphi[:,1]))
+    #display(p)
+    #readline()
+end
+
+function test_multiply2()
+    pts = 1000
+    #IR_basis_set = FiniteTempBasisSet(beta, Float64(20), 1e-10)
+    #amesh = Mesh(IR_basis_set, pts)
+    #bnw = amesh.bnw
+    wpts = 1
+    println("iw size: ", wpts)
+    W = Array{ComplexF64}(undef, wpts, pts)
+    f = Array{ComplexF64}(undef, wpts, pts, wpts, pts)
+    g = Array{ComplexF64}(undef, wpts, pts)
+    for i in 1:pts, j in 1:pts, k in 1:wpts, l in 1:wpts
+        x = 2π * i / (pts-1)
+        y = 2π * j / (pts-1)
+        w1 = (pi*(2*(j-1) + 1) / beta)^2im
+        w2 = (pi*(2*(l-1) + 1) / beta)^2im
+        f[k, i, l, j] = f1(x - y)
+    end
+    println("Filled f")
+    for i in 1:pts, j in 1:wpts
+        x = 2π * i / (pts-1)
+        w = (pi*(2*(j-1) + 1) / beta)^2im
+        g[j, i] = f1(x)
+    end
+    for i in 1:pts, j in 1:wpts
+        sum = 0.0
+        for k in 1:pts, l in 1:wpts
+            sum += f[j, i, l, k] * g[l, k]
+        end
+        W[j, i] = sum / (pts*wpts)
+    end
+    p = plot(0:1/(pts-1):1, real.(W[1,:]))
+    plot!(0:1/(pts-1):1, imag.(W[1,:]))
+    display(p)
+    println(W[1,1])
+    readline()
+    #p = plot(0:1/(wpts-1):1, real.(W[:,1]))
+    #plot!(0:1/(wpts-1):1, imag.(W[:,1]))
+    #display(p)
+    #readline()
+end
+
+function restart()
+    println("Restarting Eliashberg")
+    println(Threads.nthreads(), " threads available")
+    IR_tol = 1e-10
+    scf_tol = 1e-4
+    IR_basis_set = FiniteTempBasisSet(beta, Float64(8), IR_tol)
+    basis = Mesh(IR_basis_set, nx, ny)
+    fnw = basis.fnw
+    fnw = 1000
+
+    phi = Array{ComplexF64}(undef, fnw)
+    Z = Array{ComplexF64}(undef, fnw)
+    npts = Array{Integer}(undef, fnw)
+    iw = Array{ComplexF64}(undef, fnw)
+
+    for i in 1:fnw
+        npts[i] = -fnw/2 + i - 1
+        #npts[i] = i - 1
+        #iw[i] = valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[i], beta) 
+        iw[i] = Complex(0.0, (2*pi*(2*(npts[i]) + 1) / beta))
+        phi[i] = 1 / abs(iw[i] + 1)
+        Z[i] = 1 / abs(iw[i] + 1)
+    end
+
+    #V(x) = 2 * (beta * 1.5 / (2*pi))^2 / (x^2 + (beta * 1.5 / (2*pi))^2)
+    w0 = 1e-1
+    V(x) = abs(x) < w0 ? -1.0 : 0.0
+
+    for iters in 1:100
+        print("Iteration $iters \r")
+        new_phi = zeros(Complex{Float64}, fnw)
+        new_Z = ones(Complex{Float64}, fnw)
+        @threads for i in 1:fnw
+            for j in 1:fnw, k in 1:nx, l in 1:ny
+                kvec = BZ * [k / nx, l / ny, 0 / nz]
+                denom = get_denominator(iw[j], phi[j], Z[j], epsilon(kvec) - 0)
+                n = npts[i] - npts[j]
+                #nn = npts[i] + npts[j] + 1
+                new_phi[i] -= 1 / beta * V(n)* phi[j] / denom
+                new_Z[i] -= 1 / beta * V(n) * (iw[j] / iw[i]) * Z[j] / denom
+            end
+        end
+        if maximum(abs.(new_phi - phi)) < scf_tol
+            println("Converged after ", iters, " iterations")
+            break
+        end
+        phi = new_phi
+        Z = new_Z
+    end
+    println("Max phi: ", maximum(abs.(phi)))
+    println("Max Z: ", maximum(abs.(Z)))
+    p = plot(npts, real.(phi))
+    display(p)
+    readline()
+    p = plot(npts, real.(Z))
+    display(p)
+    readline()
+end
+
+
 end # module
 
-using .Eliashberg
-println(Threads.nthreads(), " threads available")
+
+#using .Eliashberg
+#println(Threads.nthreads(), " threads available")
 #Eliashberg.evaluate_eliashberg()
-Eliashberg.newfunc()
+#Eliashberg.newfunc()
+#Eliashberg.restart()
+
+#Eliashberg.test_iw()
+#Eliashberg.test_multiply()
+#Eliashberg.test_multiply2()
+

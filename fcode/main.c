@@ -5,6 +5,7 @@
 #include "config/load/py_interface.h"
 
 // Category nodes below
+#include "response/DOS.h"
 #include "response/response.h"
 #include "superconductor/superconductor.hpp"
 
@@ -13,6 +14,11 @@
 #include "objects/tests/all.hpp"
 
 // Global category calls
+void DOS() {
+    printf("Starting DOS Calculation\n\n");
+    DOS_spectrum();
+}
+
 void response() {
     printf("Starting Response Calculation\n\n");
     response_wrapper();
@@ -48,7 +54,8 @@ int main() {
     start_python();
 
 
-    if (!strcmp(c_category, "response")) response();
+    if (!strcmp(c_category, "DOS")) DOS();
+    else if (!strcmp(c_category, "response")) response();
     else if (!strcmp(c_category, "superconductor")) superconductor();
     else if (!strcmp(c_category, "test")) test();
     else printf("Unknown Calculation Type\n\n");

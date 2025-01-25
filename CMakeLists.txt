@@ -21,17 +21,27 @@ include_directories(${CMAKE_SOURCE_DIR})
 #include_directories(${CMAKE_SOURCE_DIR}/fcode/config/load)
 
 # Compiler flags
-set(CMAKE_CXX_FLAGS "-O3 -fopenmp -fPIC -I/home/g/.julia/packages/CxxWrap/eWADG/src/../deps/usr/include/jlcxx")
+set(CMAKE_CXX_FLAGS "-O3 -fopenmp -fPIC")
 set(CMAKE_C_FLAGS "-fopenmp")
 set(CMAKE_Fortran_FLAGS "-O3 -fopenmp -L/usr/local/lib -I/usr/local/include -ltetrabz")
 
 # Libraries to link
-set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -ltetrabz -lopenblas)
+set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -ltetrabz -lopenblas -ljulia)
 
 # Find Python3 to include its headers and libraries
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 include_directories(${Python3_INCLUDE_DIRS})
 link_directories(${Python3_LIBRARY_DIRS})
+
+# Set Julia include and lib paths
+set(JULIA_INCLUDE_DIR "/home/g/.julia/juliaup/julia-1.11.3+0.x64.linux.gnu/include/julia")
+set(JULIA_LIB_DIR "/home/g/.julia/juliaup/julia-1.11.3+0.x64.linux.gnu/lib")
+
+# Add the Julia include path to the compiler
+include_directories(${JULIA_INCLUDE_DIR})
+
+# Link against the Julia library
+link_directories(${JULIA_LIB_DIR})
 
 # Main executable "fcode.x"
 file(GLOB_RECURSE MAIN_SOURCES ${CMAKE_SOURCE_DIR}/fcode/*.c

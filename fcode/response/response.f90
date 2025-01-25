@@ -1,4 +1,5 @@
 module response
+    use iso_c_binding
     use globals
     use mesh
     implicit none
@@ -21,4 +22,15 @@ module response
             deallocate(chi_mesh_static)
         end if
      end subroutine polarization_wrapper
+
+     subroutine dos_wrapper() bind(C)
+        real(8), ALLOCATABLE :: dos_mesh(:)
+        real(8) :: emax, emin
+        call load_f90_config()
+        call get_vals()
+        allocate(dos_mesh(w_pts))
+        dos_mesh = get_full_DOS_spectrum(emax, emin)
+        call save_DOS_spectrum(dos_mesh, emax, emin)
+        deallocate(dos_mesh)
+     end subroutine DOS_wrapper
  end module response
