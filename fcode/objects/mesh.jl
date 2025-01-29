@@ -5,9 +5,16 @@ using LinearAlgebra
 using Roots
 using SparseIR
 import SparseIR: Statistics, value, valueim
+using PyCall
+
+fcode = pyimport("fcode")
+cfg = fcode.config
+
+BZ = cfg.brillouin_zone
+dim = cfg.dimension
 
 export Mesh
-export tau_to_wn, wn_to_tau, k_to_r, r_to_k, tau_to_wn_c, wn_to_tau_c
+export tau_to_wn, wn_to_tau, k_to_r, r_to_k, tau_to_wn_c, wn_to_tau_c, IR_Mesh
 
 """
 Holding struct for k-mesh and sparsely sampled imaginary time 'tau' / Matsubara frequency 'iw_n' grids.
@@ -36,6 +43,7 @@ function Mesh(
         )::Mesh
 
     nk::Int64 = nk1 * nk2 * nk3
+    dimension = 3
     if nk3 == 0
         dimension = 2
         nk = nk1 * nk2
@@ -48,7 +56,7 @@ function Mesh(
         dimension = 0
         nk = 0
     end
-    println("dimension = ", dimension)
+    println("Mesh dimension = ", dimension)
 
     # lowest Matsubara frequency index
     iw0_f = findall(x->x==FermionicFreq(1), IR_basis_set.smpl_wn_f.sampling_points)[1]
@@ -129,6 +137,36 @@ function r_to_k(mesh::Mesh, obj_r)
     end
     #return obj_k
     return obj_k / mesh.nk
+end
+
+function get_bandwidth()
+    maxval = -1000
+    minval = 1000
+    for i in 1:200, j in 1:200, k in 1:200
+        kvec = BZ * [i / 200, j / 200, k / 200]
+        eps = epsilon(kvec)
+        maxval = max(maxval, eps)
+        minval = min(minval, eps)
+    end
+    return maxval - minval
+end
+
+function epsilon(k)
+    if dim == 2
+        return -2 * (cos(k[1]) + cos(k[2]))
+    end
+    return -2 * (cos(k[1]) + cos(k[2]) + cos(k[3]))
+end
+
+function IR_Mesh()
+    """ Test function """
+    beta = 1 / cfg.Temperature
+    nx, ny, nz = cfg.k_mesh
+    IR_tol = 1e-10
+    wmax = get_bandwidth()
+    IR_basis_set = FiniteTempBasisSet(beta, Float64(wmax), IR_tol)
+    mesh = Mesh(IR_basis_set, nx, ny, nz)
+    return mesh
 end
 
 end

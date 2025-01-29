@@ -72,23 +72,42 @@ module mesh
         end do
      end function fill_energy_mesh
 
-     function get_full_DOS_spectrum(emax, emin) result(dos_list)
+    function epsilon_mesh() result(eig)
+        integer :: i1, i2, i3, ik
+        real(8), dimension(3) :: kvec
+        real(8), dimension(nb,nke) :: eig
+        ik = 0
+        do i3 = 0, nge(3) - 1
+            do i2 = 0, nge(2) - 1
+                do i1 = 0, nge(1) - 1
+                    ik = ik + 1
+                    kvec = get_kvec(i1, i2, i3, nge)
+                    kvec(1:3) = matmul(bvec(1:3,1:3), kvec(1:3))
+                    eig(1,ik) = epsilon(1, kvec) 
+                end do
+            end do
+        end do
+     end function epsilon_mesh
+
+     subroutine get_full_DOS_spectrum(emax, emin, dos_list)
         real(8) :: dos_list(nkw)
         integer :: i, ltetra
         real(8) :: emax, emin, e0(ne)
         real(8), allocatable :: eig1(:,:), wght_dos(:,:,:)
         allocate(eig1(nb,nke), wght_dos(ne, nb, nkw))
 
-        eig1 = fill_energy_mesh([0d0, 0d0, 0d0])
+        eig1 = epsilon_mesh()
         emax = maxval(eig1)
         emin = minval(eig1)
         ltetra = 2
-        do i = 0, w_pts - 1
-            e0(1) = emin + dble(i) * (emax - emin) / dble(w_pts - 1)
-            call libtetrabz_dos(ltetra, bvec, nb, nge, eig1, ngw, wght_dos, ne, e0)
-            dos_list(i+1) = sum(wght_dos(1:ne,1:nb,1:nkw)) / 2
+        do i = 1, w_pts
+            e0(i) = emin + dble(i-1) * (emax - emin) / dble(w_pts - 1)
         end do
-    end function get_full_DOS_spectrum
+        call libtetrabz_dos(ltetra, bvec, nb, nge, eig1, ngw, wght_dos, ne, e0)
+        do i = 1, w_pts
+            dos_list(i) = sum(wght_dos(i,1:nb,1:nkw)) / 2
+        end do
+    end subroutine get_full_DOS_spectrum
 
     function get_static_polarization(eig1, eig2, wght, wght_dos, qvec) result(chi)
         integer :: ltetra = 1
@@ -156,13 +175,15 @@ module mesh
     end function get_dynamic_polarization
 
     function get_dynamic_polarization_mesh() result(chi_mesh)
-        complex(8) :: chi(ne), chi_mesh(ne, ngw(1), ngw(2), ngw(3))
+        complex(8) :: chi(ne), chi_mesh(ne, ngw(1), ngw(2), ngw(3)), max_w
         integer :: i1, i2, i3, i4
         real(8), dimension(3) :: qvec
         real(8), allocatable :: eig1(:,:), eig2(:,:)
         complex(8), allocatable :: wght(:,:,:,:)
         allocate(eig1(nb,nke), eig2(nb,nke), wght(ne,nb,nb,nkw))
 
+        max_w = cmplx(0, pi * T * (2 * (ne-1) + 1))
+        print *, 'Max w = ', max_w
         print *, 'Calculating dynamic polarization for ', ngw(1), 'x', ngw(2), 'x', ngw(3), ' k-points and ', ne, ' energy points'
         eig1 = fill_energy_mesh([0d0, 0d0, 0d0])
         do i1 = 0, ngw(1) - 1
@@ -230,7 +251,7 @@ module mesh
             write(10, '(1x, f13.6, 1x, f13.6)') emin + dble(i) * (emax - emin) / dble(w_pts - 1), dos_list(i+1)
         end do
         close(10)
-        print *, 'DOS spectrum saved to DOS_spectrum.dat'
+        print *, 'DOS spectrum saved to DOS.dat'
      end subroutine save_DOS_spectrum
 
  end module mesh

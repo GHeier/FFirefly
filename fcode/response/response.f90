@@ -29,7 +29,7 @@ module response
         call load_f90_config()
         call get_vals()
         allocate(dos_mesh(w_pts))
-        dos_mesh = get_full_DOS_spectrum(emax, emin)
+        call get_full_DOS_spectrum(emax, emin, dos_mesh)
         call save_DOS_spectrum(dos_mesh, emax, emin)
         deallocate(dos_mesh)
      end subroutine DOS_wrapper

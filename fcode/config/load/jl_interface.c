@@ -24,12 +24,29 @@ void call_julia_func(const char *folder, const char *filename, const char* modul
     sprintf(include_command, "include(\"%s.jl\")", path);
 
     jl_eval_string(include_command);
+    jl_value_t *ret = jl_eval_string(include_command);
+    if (jl_exception_occurred()) {
+        printf("Error at include\n");
+        jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), jl_exception_occurred());
+        fprintf(stderr, "\n");
+        jl_atexit_hook(0);
+        return;
+    }
 
     char using_command[256] = "";
     strcat(using_command, "using ");
     strcat(using_command, module);
 
+    printf("Using command: %s\n", using_command);
     jl_eval_string(using_command);
+    ret = jl_eval_string(using_command);
+    //if (jl_exception_occurred()) {
+    //    printf("Error at module load\n");
+    //    jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), jl_exception_occurred());
+    //    fprintf(stderr, "\n");
+    //    jl_atexit_hook(0);
+    //    return;
+    //}
 
 
     char command[256] = "";
@@ -39,6 +56,14 @@ void call_julia_func(const char *folder, const char *filename, const char* modul
     strcat(command, "()");
 
     jl_eval_string(command);
+    ret = jl_eval_string(command);
+    if (jl_exception_occurred()) {
+        printf("Error at function call\n");
+        jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), jl_exception_occurred());
+        fprintf(stderr, "\n");
+        jl_atexit_hook(0);
+        return;
+    }
 
     // Cleanup
     jl_atexit_hook(0);
