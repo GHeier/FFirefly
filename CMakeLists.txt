@@ -50,7 +50,7 @@ file(GLOB_RECURSE MAIN_SOURCES ${CMAKE_SOURCE_DIR}/fcode/*.c
 
 # Remove files under any 'archive' directory
 foreach(file IN LISTS MAIN_SOURCES)
-    if(file MATCHES "/archive/")
+    if(file MATCHES "/archive/" OR file MATCHES "/spline/")
         list(REMOVE_ITEM MAIN_SOURCES ${file})
     endif()
 endforeach()

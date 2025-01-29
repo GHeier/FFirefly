@@ -273,11 +273,11 @@ function newfunc()
         #update_phi_Z!(F_arr, Fz_arr, V_arr, phi_arr, Z_arr, iw)
         #phi_test, Z_test = test_update_phi_Z(F_test, Fz_test, iw)
 
-        phierr = sum(abs.(prev_phi_arr - phi_arr)) / (fnw * nx * ny)
+        phierr = round(sum(abs.(prev_phi_arr - phi_arr)) / (fnw * nx * ny),digits=8)
         print("Iteration $i: Error = $phierr           \r")
 
         if abs(phierr) < scf_tol || maximum(abs.(phi_arr)) < 1e-10
-            println("Converged after ", i, " iterations")
+            println("Converged after ", i, " iterations              ")
             break
         end
         prev_phi_arr = copy(phi_arr)
@@ -310,6 +310,10 @@ function newfunc()
     p = plot(npts, sigma_w, xlimits=(-500, 500))
     display(p)
     readline()
+    p = plot(imag.(iw), ylimits=(-5, 5))
+    display(p)
+    readline()
+    println(imag.(iw))
 end 
 
 function phi_FS_average(phi)

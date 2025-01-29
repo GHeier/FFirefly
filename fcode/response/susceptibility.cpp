@@ -46,6 +46,11 @@ float Susceptibility::operator() (Vec point) {
     return chi(point);
 }
 
+Susceptibility Susceptibility::operator= (Susceptibility other) {
+    chi = other.chi;
+    return *this;
+}
+
 //Fermi-Dirac distribution function
 float fermi_dirac(float E, float T) {
     if (T == 0) {

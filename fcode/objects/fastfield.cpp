@@ -18,16 +18,23 @@
 #include "vec.hpp"
 #include "../algorithms/interpolate.hpp"
 #include "fastfield.hpp"
+#include "../algorithms/spline/src/spline.h"
 
 using namespace std;
 
-FastScalarField::FastScalarField() {
+struct FastScalarField::Fit {
+    std::shared_ptr<tk::spline> w_func;
+    // Add other spline-related members here if needed
+};
+
+FastScalarField::~FastScalarField() = default;
+
+FastScalarField::FastScalarField() : w_func(std::make_unique<Fit>()) {
     points = vector<Vec>();
     values = vector<float>();
     ivalues = vector<float>();
     domain = vector<Vec>();
     inv_domain = vector<Vec>();
-    xmin = 0, xmax = 0, ymin = 0, ymax = 0, zmin = 0, zmax = 0, wmin = 0, wmax = 0;
     nx = 0, ny = 0, nz = 0, nw = 0;
     dimension = 0;
     is_complex = false;
@@ -122,9 +129,24 @@ Vec vec_matrix_multiplication(vector<Vec>& matrix, Vec& vec, int n) {
     return result;
 }
 
+void FastScalarField::spline_axis4() {
+    vector<double> base_axis;
+    vector<double> dim4_pts;
+    for (int i = 0; i < points.size(); i++) {
+        if (find(dim4_pts.begin(), dim4_pts.end(), points[i].w) != dim4_pts.end())
+            break;
+        base_axis.push_back((double)i);
+        dim4_pts.push_back(points[i].w);
+    }
+
+    w_func->w_func = std::make_shared<tk::spline>(); 
+    w_func->w_func->set_points(dim4_pts, base_axis);
+    nw = dim4_pts.size();
+}
+
 void FastScalarField::get_values_for_interpolation() {
     int section = 0;
-    vector<int> section_sizes = {1, 1, 1, 1};
+    vector<int> section_sizes = {1, 1, 1};
     vector<Vec> domain;
     Vec first = points[0];
     Vec lattice_vec = (points[1] - first).round();
@@ -151,6 +173,8 @@ void FastScalarField::get_values_for_interpolation() {
     if (dimension > 1) ny = section_sizes[1];
     if (dimension > 2) nz = section_sizes[2];
     if (dimension > 3) nw = section_sizes[3];
+    
+    spline_axis4();
 }
 
 void FastVectorField::get_values_for_interpolation() {
@@ -241,11 +265,11 @@ FastVectorField::FastVectorField(vector<Vec> points, vector<Vec> values, int dim
 
 float FastScalarField::operator() (Vec point) {
     Vec p = vec_matrix_multiplication(inv_domain, point, dimension);
-    cout << "p: " << p << endl;
+    float w_val = static_cast<float>((*w_func->w_func)(p.w));
     if (dimension == 1) return interpolate_1D(p.x, 0, 1, values);
     if (dimension == 2) return interpolate_2D(p.x, p.y, 0, 1, 0, 1, nx, ny, values);
     if (dimension == 3) return interpolate_3D(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, nx, ny, nz, values);
-    if (dimension == 4) return interpolate_4D(p.x, p.y, p.z, p.w, 0, 1, 0, 1, 0, 1, 0, 1, nx, ny, nz, nw, values);
+    if (dimension == 4) return interpolate_4D(p.x, p.y, p.z, w_val, 0, 1, 0, 1, 0, 1, 0, nw-1, nx, ny, nz, nw, values);
     else {
         cerr << "Invalid dimension." << endl;
         exit(1);

@@ -18,7 +18,7 @@ class Susceptibility : public FastScalarField {
 
         complex<float> operator() (Vec point, float w);
         float operator() (Vec point);
-
+        float operator= (Susceptibility other);
 };
 
 

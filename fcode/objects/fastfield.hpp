@@ -8,8 +8,10 @@
  */
 #pragma once
 
+#include <memory>
 #include <string>
 #include <complex>
+#include "vec.hpp"
 #include "vec.hpp"
 
 using namespace std;
@@ -27,12 +29,17 @@ class FastScalarField {
         bool is_complex;
 
         FastScalarField();
+        ~FastScalarField();
         FastScalarField(vector<Vec> points, vector<float> values, int dimension=3, bool is_complex=false);
         FastScalarField(vector<Vec> points, vector<complex<float>> values, int dimension=3, bool is_complex=true);
         FastScalarField(string filename, int dimension=3, bool is_complex=false);
 
         void get_values_for_interpolation();
+        void spline_axis4();
         float operator() (Vec point);
+private:
+    struct Fit;
+    unique_ptr<Fit> w_func;
 };
 
 class FastVectorField {
