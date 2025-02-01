@@ -78,7 +78,7 @@ void bcs() {
     // Calculates the susceptibility matrix if it's going to be used in the potential
     // Otherwise it's passed as empty
 
-    load_chi(input_data_file, dimension);
+    load_chi0();
 
     int m_size = FS.size();
     if (not FS_only) m_size = matrix_size_from_freq_FS(freq_FS);

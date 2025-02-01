@@ -22,14 +22,7 @@
 
 using namespace std;
 
-struct FastScalarField::Fit {
-    std::shared_ptr<tk::spline> w_func;
-    // Add other spline-related members here if needed
-};
-
-FastScalarField::~FastScalarField() = default;
-
-FastScalarField::FastScalarField() : w_func(std::make_unique<Fit>()) {
+FastScalarField::FastScalarField() {
     points = vector<Vec>();
     values = vector<float>();
     ivalues = vector<float>();
@@ -38,6 +31,7 @@ FastScalarField::FastScalarField() : w_func(std::make_unique<Fit>()) {
     nx = 0, ny = 0, nz = 0, nw = 0;
     dimension = 0;
     is_complex = false;
+    filled = false;
 }
 
 FastVectorField::FastVectorField() {
@@ -139,8 +133,7 @@ void FastScalarField::spline_axis4() {
         dim4_pts.push_back(points[i].w);
     }
 
-    w_func->w_func = std::make_shared<tk::spline>(); 
-    w_func->w_func->set_points(dim4_pts, base_axis);
+    w_func.set_points(base_axis, dim4_pts);
     nw = dim4_pts.size();
 }
 
@@ -175,6 +168,7 @@ void FastScalarField::get_values_for_interpolation() {
     if (dimension > 3) nw = section_sizes[3];
     
     spline_axis4();
+    filled = true;
 }
 
 void FastVectorField::get_values_for_interpolation() {
@@ -265,7 +259,7 @@ FastVectorField::FastVectorField(vector<Vec> points, vector<Vec> values, int dim
 
 float FastScalarField::operator() (Vec point) {
     Vec p = vec_matrix_multiplication(inv_domain, point, dimension);
-    float w_val = static_cast<float>((*w_func->w_func)(p.w));
+    float w_val = w_func(p.w);
     if (dimension == 1) return interpolate_1D(p.x, 0, 1, values);
     if (dimension == 2) return interpolate_2D(p.x, p.y, 0, 1, 0, 1, nx, ny, values);
     if (dimension == 3) return interpolate_3D(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, nx, ny, nz, values);

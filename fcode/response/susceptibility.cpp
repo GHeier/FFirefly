@@ -24,12 +24,12 @@ using namespace std;
 
 Susceptibility::Susceptibility() {}
 
-Susceptibility::Susceptibility(vector<Vec> points, vector<complex<float>> values, int dimension, bool is_complex) {
-    chi = FastScalarField(points, values, dimension+1, is_complex);
+Susceptibility::Susceptibility(std::vector<Vec> points, std::vector<std::complex<float>> values, int dimension, bool is_complex)
+    : FastScalarField(points, values, dimension + 1, is_complex) {
 }
 
-Susceptibility::Susceptibility(string filename, int dimension, bool is_complex) {
-    chi = FastScalarField(filename, dimension+1, is_complex);
+Susceptibility::Susceptibility(std::string filename, int dimension, bool is_complex)
+    : FastScalarField(filename, dimension + 1, is_complex) {
 }
 
 complex<float> Susceptibility::operator() (Vec point, float w) {
@@ -46,8 +46,12 @@ float Susceptibility::operator() (Vec point) {
     return chi(point);
 }
 
-Susceptibility Susceptibility::operator= (Susceptibility other) {
-    chi = other.chi;
+Susceptibility& Susceptibility::operator=(const Susceptibility& other) {
+    if (this != &other) {
+        // Call the base class assignment operator
+        FastScalarField::operator=(other);
+        // Copy other members if needed
+    }
     return *this;
 }
 

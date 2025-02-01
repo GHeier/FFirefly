@@ -52,21 +52,18 @@ float phonon_coulomb(Vec q) {
     return Vp + Vc;
 }
 
-Susceptibility chi;
-void load_chi(string filename, int dimension_) {
-    chi = Susceptibility(filename, dimension_, true);
+void load_chi0() {
+    chi = FastScalarField(prefix+"_chi0.dat", dimension, true);
 }
 
-void load_chi(vector<Vec> points, vector<complex<float>> values, int dimension_) {
-    chi = Susceptibility(points, values, dimension_);
-}
-
-void get_chi(double q_c[3]) {
-    Vec q = Vec(q_c[0], q_c[1], q_c[2]);
-    cout << chi(q) << endl;
+void load_chi() {
+    chi = FastScalarField(prefix+"_chi.dat", dimension, true);
 }
 
 float potential_FLEX(Vec k1, Vec k2, string spin1, string spin2) {
+    if (chi.filled == false) {
+        throw runtime_error("Chi not loaded. Make sure the file exists.");
+    }
     if (spin1 != spin2) {
         return potential_FLEX_singlet(k1, k2);
     }
@@ -97,8 +94,8 @@ float potential_FLEX_triplet(Vec k1, Vec k2) {
     Vec q_plus = to_IBZ(k1 + k2);
     float w = epsilon(k1.n, k1) - epsilon(k2.n, k2);
 
-    float Xm = chi(q_minus, w).real();
-    float Xp = chi(q_plus, w).real();
+    float Xm = chi(q_minus);
+    float Xp = chi(q_plus);
 
     float V_minus = -pow(onsite_U,2) * Xm / ( 1 - pow(onsite_U*Xm,2));
     float V_plus = -pow(onsite_U,2) * Xp / ( 1 - pow(onsite_U*Xp,2));

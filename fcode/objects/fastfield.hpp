@@ -13,6 +13,7 @@
 #include <complex>
 #include "vec.hpp"
 #include "vec.hpp"
+#include "../algorithms/spline/src/spline.h"
 
 using namespace std;
 
@@ -23,13 +24,14 @@ class FastScalarField {
         vector<float> ivalues;
         vector<Vec> domain;
         vector<Vec> inv_domain;
+        tk::spline w_func;
         float xmin, xmax, ymin, ymax, zmin, zmax, wmin, wmax;
         int nx, ny, nz, nw;
         int dimension;
         bool is_complex;
+        bool filled;
 
         FastScalarField();
-        ~FastScalarField();
         FastScalarField(vector<Vec> points, vector<float> values, int dimension=3, bool is_complex=false);
         FastScalarField(vector<Vec> points, vector<complex<float>> values, int dimension=3, bool is_complex=true);
         FastScalarField(string filename, int dimension=3, bool is_complex=false);
@@ -37,9 +39,6 @@ class FastScalarField {
         void get_values_for_interpolation();
         void spline_axis4();
         float operator() (Vec point);
-private:
-    struct Fit;
-    unique_ptr<Fit> w_func;
 };
 
 class FastVectorField {
