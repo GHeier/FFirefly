@@ -15,45 +15,45 @@
 #include <boost/functional/hash.hpp>
 
 #include "../objects/vec.hpp"
-#include "../objects/fastfield.hpp"
+//#include "../objects/fastfield.hpp"
 #include "../config/load/cpp_config.hpp"
 #include "susceptibility.hpp"
 #include "../hamiltonian/band_structure.hpp"
 
 using namespace std;
 
-Susceptibility::Susceptibility() {}
-
-Susceptibility::Susceptibility(std::vector<Vec> points, std::vector<std::complex<float>> values, int dimension, bool is_complex)
-    : FastScalarField(points, values, dimension + 1, is_complex) {
-}
-
-Susceptibility::Susceptibility(std::string filename, int dimension, bool is_complex)
-    : FastScalarField(filename, dimension + 1, is_complex) {
-}
-
-complex<float> Susceptibility::operator() (Vec point, float w) {
-    point = to_IBZ(point);
-    point.dimension++;
-    point.w = fabs(w);
-    return chi(point);
-}
-
-float Susceptibility::operator() (Vec point) {
-    cout << "point: " << point << endl;
-    point = to_IBZ(point);
-    cout << "point: " << point << endl;
-    return chi(point);
-}
-
-Susceptibility& Susceptibility::operator=(const Susceptibility& other) {
-    if (this != &other) {
-        // Call the base class assignment operator
-        FastScalarField::operator=(other);
-        // Copy other members if needed
-    }
-    return *this;
-}
+//Susceptibility::Susceptibility() {}
+//
+//Susceptibility::Susceptibility(std::vector<Vec> points, std::vector<std::complex<float>> values, int dimension, bool is_complex)
+//    : FastScalarField(points, values, dimension + 1, is_complex) {
+//}
+//
+//Susceptibility::Susceptibility(std::string filename, int dimension, bool is_complex)
+//    : FastScalarField(filename, dimension + 1, is_complex) {
+//}
+//
+//complex<float> Susceptibility::operator() (Vec point, float w) {
+//    point = to_IBZ(point);
+//    point.dimension++;
+//    point.w = fabs(w);
+//    return chi(point);
+//}
+//
+//float Susceptibility::operator() (Vec point) {
+//    cout << "point: " << point << endl;
+//    point = to_IBZ(point);
+//    cout << "point: " << point << endl;
+//    return chi(point);
+//}
+//
+//Susceptibility& Susceptibility::operator=(const Susceptibility& other) {
+//    if (this != &other) {
+//        // Call the base class assignment operator
+//        FastScalarField::operator=(other);
+//        // Copy other members if needed
+//    }
+//    return *this;
+//}
 
 //Fermi-Dirac distribution function
 float fermi_dirac(float E, float T) {

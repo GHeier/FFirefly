@@ -10,5 +10,6 @@ bool object_tests();
 }
 
 bool python_field_test();
+bool field_tests();
 #endif
 

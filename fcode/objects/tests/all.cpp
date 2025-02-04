@@ -1,8 +1,9 @@
+#include <string>
 #include <vector>
 
 #include "all.hpp"
 #include "../../config/load/c_config.h"
-#include "../field.hpp"
+#include "../../config/load/jl_interface.h"
 
 using namespace std;
 
@@ -10,17 +11,21 @@ extern "C" bool object_tests() {
     printf("Running Object tests\n");
     int num_tests = 1;
     bool all_tests[num_tests] = {
-        python_field_test()
+        field_tests()
     };
     return print_test_results(all_tests, num_tests, "Object tests");
 }
 
-
-bool python_field_test() {
-    vector<Vec> points = {Vec(0.0, 0.0, 0.0), Vec(1.0, 0.0, 0.0), Vec(0.0, 1.0, 0.0), Vec(1.0, 1.0, 0.0), Vec(0.0, 0.0, 1.0), Vec(1.0, 0.0, 1.0), Vec(0.0, 1.0, 1.0), Vec(1.0, 1.0, 1.0)};
-    vector<float> values = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0};
-    ScalarField test_var(points, values, 3);
-    vector<double> coords = {0.5, 0.5, 0.5};
-    double result = test_var(coords);
-    return fabs(result - 4.5) < 0.0001;
+bool field_tests() {
+    string folder = "objects/";
+    string file = "field";
+    string module = "CondensedMatterField";
+    string function = "test_2dim_real_scalar_field";
+    call_julia_func(folder.c_str(), file.c_str(), module.c_str(), function.c_str());
+    function = "test_2dim_complex_scalar_field";
+    call_julia_func(folder.c_str(), file.c_str(), module.c_str(), function.c_str());
+    function = "test_2dim_complex_scalar_field_with_w";
+    call_julia_func(folder.c_str(), file.c_str(), module.c_str(), function.c_str());
+    return false;
 }
+

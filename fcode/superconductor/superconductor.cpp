@@ -18,7 +18,6 @@
 #include <omp.h>
 #include <cassert>
 
-
 #include "../config/load/cpp_config.hpp"
 #include "../config/load/py_interface.h"
 #include "../config/load/jl_interface.h"
@@ -78,7 +77,6 @@ void bcs() {
     // Calculates the susceptibility matrix if it's going to be used in the potential
     // Otherwise it's passed as empty
 
-    load_chi0();
 
     int m_size = FS.size();
     if (not FS_only) m_size = matrix_size_from_freq_FS(freq_FS);

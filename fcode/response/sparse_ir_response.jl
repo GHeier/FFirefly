@@ -69,7 +69,17 @@ end
 function save_ckio_ir(basis, ckio::Array{ComplexF64,4})
     println("Saving IR response")
     open("ckio_ir.dat", "w") do f
-        for iy in 1:ny, ix in 1:nx, iz in 1:nz, iw in 1:basis.fnw
+        if dim == 3
+            @printf(f, "# x y z Im(w) Re(f) Im(f)\n")
+        elseif dim == 2
+            @printf(f, "# x y Im(w) Re(f) Im(f)\n")
+        elseif dim == 1
+            @printf(f, "# x Im(w) Re(f) Im(f)\n")
+        else
+            println("Invalid dimension")
+            exit(1)
+        end
+        for ix in 1:nx, iy in 1:ny, iz in 1:nz, iw in 1:basis.fnw
             kvec = [ix / nx, iy / ny, iz / nz]
             kvec = BZ * kvec
             iv = valueim(basis.IR_basis_set.smpl_wn_b.sampling_points[iw], beta)
@@ -89,5 +99,3 @@ end
 
 end
 
-using .response_ir
-response_ir.get_ckio_ir()

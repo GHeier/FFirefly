@@ -1,6 +1,6 @@
 #include "response.h"
 #include "../config/load/c_config.h"
-#include "../config/load/py_interface.h"
+#include "../config/load/jl_interface.h"
 
 extern void polarization_wrapper();
 
@@ -16,6 +16,7 @@ void response_wrapper() {
 void ir_wrapper() {
     char* folder = "response/";
     char* filename = "sparse_ir_response";
-    char* function = "sparse_ir_response";
-    call_python_func(folder, filename, function);
+    char *module = "response_ir";
+    char* function = "get_ckio_ir";
+    call_julia_func(folder, filename, module, function);
 }

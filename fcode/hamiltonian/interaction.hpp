@@ -20,10 +20,6 @@ float potential_test(Vec k1, Vec k2, string spin1, string spin2);
 
 float phonon_coulomb(Vec q);
 
-extern FastScalarField chi;
-void load_chi0();
-void load_chi();
-
 float potential_FLEX(Vec k1, Vec k2, string spin1, string spin2);
 float potential_FLEX_singlet(Vec k1, Vec k2);  
 float potential_FLEX_triplet(Vec k1, Vec k2);

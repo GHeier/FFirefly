@@ -1,10 +1,11 @@
 #include <julia.h>
 #include <linux/limits.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 
-void call_julia_func(const char *folder, const char *filename, const char* module, const char *func_name) {
+bool call_julia_func(const char *folder, const char *filename, const char* module, const char *func_name) {
     // Initialize Julia
     jl_init();
 
@@ -21,7 +22,7 @@ void call_julia_func(const char *folder, const char *filename, const char* modul
 
     // Add .jl to path
     char include_command[256];
-    sprintf(include_command, "include(\"%s.jl\")", path);
+    sprintf(include_command, "Base.include(Main, \"%s.jl\")", path);
 
     jl_eval_string(include_command);
     jl_value_t *ret = jl_eval_string(include_command);
@@ -30,23 +31,14 @@ void call_julia_func(const char *folder, const char *filename, const char* modul
         jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), jl_exception_occurred());
         fprintf(stderr, "\n");
         jl_atexit_hook(0);
-        return;
+        return false;
     }
 
     char using_command[256] = "";
     strcat(using_command, "using ");
     strcat(using_command, module);
 
-    printf("Using command: %s\n", using_command);
-    jl_eval_string(using_command);
     ret = jl_eval_string(using_command);
-    //if (jl_exception_occurred()) {
-    //    printf("Error at module load\n");
-    //    jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), jl_exception_occurred());
-    //    fprintf(stderr, "\n");
-    //    jl_atexit_hook(0);
-    //    return;
-    //}
 
 
     char command[256] = "";
@@ -55,15 +47,17 @@ void call_julia_func(const char *folder, const char *filename, const char* modul
     strcat(command, func_name);
     strcat(command, "()");
 
-    jl_eval_string(command);
     ret = jl_eval_string(command);
     if (jl_exception_occurred()) {
         printf("Error at function call\n");
         jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), jl_exception_occurred());
         fprintf(stderr, "\n");
         jl_atexit_hook(0);
-        return;
+        return false;
     }
+    //if (ret == jl_nothing) return true;
+    return true;
+    //return jl_unbox_bool(ret);
 
     // Cleanup
     jl_atexit_hook(0);

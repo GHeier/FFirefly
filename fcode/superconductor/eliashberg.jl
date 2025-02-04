@@ -1,8 +1,8 @@
 module Eliashberg
 
 t1 = time()
-include("../objects/fields.jl")
-using .Fields
+include("../objects/field.jl")
+using .CondensedMatterField
 include("../objects/mesh.jl")
 using .IRMesh
 
@@ -26,6 +26,7 @@ np_BZ = np.array(cfg.brillouin_zone)
 
 nx, ny, nz = cfg.k_mesh
 dim = cfg.dimension
+println("Dimension: ", dim)
 if dim == 2
     nz = 1
 end
@@ -36,9 +37,7 @@ mu = cfg.fermi_energy
 t4 = time()
 println("Time to load config: ", t4 - t3)
 
-#const beta = 1/cfg.Temperature
-const beta = 1000.0
-println("Beta: ", beta)
+const beta = 1/cfg.Temperature
 const pi = π
 
 
@@ -65,7 +64,7 @@ function V(k1, k2, w)
     qm = to_IBZ(qm)
     qm .= round.(qm, digits=6)
     iw = round(imag(w), digits=6)
-    Xm = Susceptibility(qm[1], qm[2], qm[3], iw)
+    Xm = Susceptibility(qm, iw)
     Vm = U^2 * Xm / (1 - U*Xm) + U^3 * Xm^2 / (1 - U^2 * Xm^2)
     return Vm
 end
@@ -97,10 +96,10 @@ end
 function fill_V_arr!(V_arr, iw)
     Vw_arr = Array{Complex{Float64}}(undef, bnw, nx, ny)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:bnw
-        kvec = BZ * [i / nx, j / ny, k / nz]
+        kvec = get_kvec(i, j, k)
         w1 = iw[l]
-        #Vw_arr[l, i, j] = V(kvec, [0,0,0], w1)
-        Vw_arr[l, i, j] = paper2_V(w1)
+        Vw_arr[l, i, j] = V(kvec, zeros(dim), w1)
+        #Vw_arr[l, i, j] = paper2_V(w1)
     end
     temp = k_to_r(mesh, Vw_arr)
     V_arr .= wn_to_tau(mesh, Bosonic(), temp)
@@ -108,9 +107,9 @@ function fill_V_arr!(V_arr, iw)
 end
 
 function initialize_phi_Z_chi!(phi_arr, Z_arr, chi_arr, iw)
-    for i in 1:fnw, j in 1:nx, k in 1:ny
+    for i in 1:fnw, j in 1:nx, k in 1:ny, l in 1:nz
         w = iw[i]
-        kvec = BZ * [j / nx, k / ny, 0 / nz]
+        kvec = get_kvec(j, k, l)
         dwave = (cos(kvec[1]) - cos(kvec[2])) / 2
         phi_arr[i, j, k] = 1 / abs(imag(w)^2 + 1)# * dwave
         Z_arr[i, j, k] = 1.0 
@@ -119,20 +118,15 @@ function initialize_phi_Z_chi!(phi_arr, Z_arr, chi_arr, iw)
     println("Initialized phi and Z")
 end
 
-function condense_to_F!(phi, Z, F_arr, Fz_arr, iw)
-    for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:fnw
-        w = iw[l]
-        kvec = BZ * [i / nx, j / ny, k / nz]
-        denom = get_denominator(w, phi[l, i, j], Z[l, i, j], 2 - mu)
-        F_arr[l, i, j] = phi[l, i, j] / denom
-        Fz_arr[l, i, j] = Z[l, i, j] * w / denom / 1.0im
-    end
+function get_kvec(i, j, k)
+    temp = BZ * [i / nx - 0.5, j / ny - 0.5, k / nz - 0.5]
+    return temp[1:dim]
 end
 
 function condense_to_F_and_G!(phi, Z, chi, F_arr, G_arr, iw)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:fnw
         w = iw[l]
-        kvec = BZ * [i / nx, j / ny, k / nz]
+        kvec = get_kvec(i, j, k)
         denom = get_denominator(w, phi[l, i, j], Z[l, i, j], chi[l, i, j] + epsilon(kvec) - mu)
         F_arr[l, i, j] = -phi[l, i, j] / denom
         G_arr[l, i, j] = -(w * Z[l, i, j] + epsilon(kvec) - mu + chi[l, i, j]) / denom
@@ -214,6 +208,7 @@ function newfunc()
     println("Bandwidth: ", wmax)
     IR_tol = 1e-15
     scf_tol = 1e-4
+    println("Creating IRMesh")
     IR_basis_set = FiniteTempBasisSet(beta, Float64(wmax), IR_tol)
     global mesh = Mesh(IR_basis_set, nx, ny)
     global fnw = mesh.fnw
@@ -232,8 +227,9 @@ function newfunc()
     println("Filled iw and iv")
     println("Min & Max iw: ", minimum(imag.(iw)), " ", maximum(imag.(iw)))
     input_data_file = "/home/g/Research/fcode/chi_mesh_dynamic.dat"
-    #input_data_file = "/home/g/Research/fcode/ckio_ir.dat"
-    global Susceptibility = Fields.create_interpolation(input_data_file, dims=4, field_type=:scalar, value_type=ComplexF64)
+    input_data_file = "/home/g/Research/fcode/ckio_ir.dat"
+    #global Susceptibility = Fields.create_interpolation(input_data_file, dims=4, field_type=:scalar, value_type=ComplexF64)
+    global Susceptibility = CondensedMatterField.CMF(input_data_file)
 
     phi_arr = Array{ComplexF64}(undef, fnw, nx, ny)
     Z_arr = Array{ComplexF64}(undef, fnw, nx, ny)
@@ -241,37 +237,21 @@ function newfunc()
     println("Initializing phi, Z, and chi")
     initialize_phi_Z_chi!(phi_arr, Z_arr, chi_arr, iw)
 
-    println("maxphi: ", maximum(abs.(phi_arr)))
-    println("maxZ: ", maximum(abs.(Z_arr)))
-    println("maxchi: ", maximum(abs.(chi_arr)))
-
     sigma = Array{ComplexF64}(undef, fnw, nx, ny)
     V_arr = Array{ComplexF64}(undef, bntau, nx, ny)
     fill_V_arr!(V_arr, iv)
-    println("maxV: ", V_arr[argmax(abs.(V_arr))])
-    println("maxV: ", maximum(abs.(V_arr)))
 
     F_arr = Array{ComplexF64}(undef, fnw, nx, ny)
     G_arr = Array{ComplexF64}(undef, fnw, nx, ny)
-    #Fz_arr = Array{ComplexF64}(undef, fnw, nx, ny)
-    #condense_to_F!(phi_arr, Z_arr, F_arr, Fz_arr, iw)
     condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw)
-    println("maxF: ", F_arr[argmax(abs.(F_arr))])
-    println("maxG: ", G_arr[argmax(abs.(G_arr))])
-    #println("maxFz: ", Fz_arr[argmax(abs.(Fz_arr))])
 
 
     phierr = 0.0
     prev_phi_arr = copy(phi_arr)
-    #phi_test, Z_test = Array{ComplexF64}(undef, fnw, nx, ny), Array{ComplexF64}(undef, fnw, nx, ny)
     println("Starting Convergence Loop")
     iterations = 300
     for i in 1:iterations
         update!(F_arr, G_arr, V_arr, phi_arr, Z_arr, chi_arr, iw, sigma)
-        #F_test = copy(F_arr)
-        #Fz_test = copy(Fz_arr)
-        #update_phi_Z!(F_arr, Fz_arr, V_arr, phi_arr, Z_arr, iw)
-        #phi_test, Z_test = test_update_phi_Z(F_test, Fz_test, iw)
 
         phierr = round(sum(abs.(prev_phi_arr - phi_arr)) / (fnw * nx * ny),digits=8)
         print("Iteration $i: Error = $phierr           \r")
@@ -282,22 +262,14 @@ function newfunc()
         end
         prev_phi_arr = copy(phi_arr)
         condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw)
-        #condense_to_F!(phi_arr, Z_arr, F_arr, Fz_arr, iw)
-        #condense_to_F!(phi_test, Z_test, F_test, Fz_test, iw)
     end
 
-    #phi_w, Z_w = test_update_phi_Z(F_arr, Fz_arr, iw)
     max_phi = maximum(abs.(phi_arr))
     max_Z = maximum(abs.(Z_arr))
 
     println("Error: ", phierr)
     println("Max phi: ", max_phi)
     println("Max Z: ", max_Z)
-    #gap = phi_arr ./ Z_arr
-    #gap_w = phi_FS_average(gap)
-    #p = plot(imag.(iw), gap_w)
-    #display(p)
-    #readline()
     phi_w = phi_FS_average(phi_arr)
     p = plot(npts, phi_w, xlimits=(-500, 500))
     display(p)
@@ -310,10 +282,6 @@ function newfunc()
     p = plot(npts, sigma_w, xlimits=(-500, 500))
     display(p)
     readline()
-    p = plot(imag.(iw), ylimits=(-5, 5))
-    display(p)
-    readline()
-    println(imag.(iw))
 end 
 
 function phi_FS_average(phi)
