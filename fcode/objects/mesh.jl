@@ -34,7 +34,7 @@ struct Mesh
     dimension   ::Int64
 end
 
-"""Initiarize function"""
+"""Initialize function"""
 function Mesh(
         IR_basis_set::FiniteTempBasisSet,
         nk1         ::Int64 = 0,
@@ -56,6 +56,11 @@ function Mesh(
         dimension = 0
         nk = 0
     end
+    println("nk = ", nk)
+    println("dimension = ", dimension)
+    println("nk1 = ", nk1)
+    println("nk2 = ", nk2)
+    println("nk3 = ", nk3)
 
     # lowest Matsubara frequency index
     iw0_f = findall(x->x==FermionicFreq(1), IR_basis_set.smpl_wn_f.sampling_points)[1]
@@ -122,7 +127,7 @@ function k_to_r(mesh::Mesh, obj_k)
     elseif mesh.dimension == 3
         obj_r = fft(obj_k,[2,3,4])
     end
-    return obj_r
+    return obj_r #* mesh.nk^(-0.5)
 end
 
 function r_to_k(mesh::Mesh, obj_r)
@@ -134,8 +139,8 @@ function r_to_k(mesh::Mesh, obj_r)
     elseif mesh.dimension == 3
         obj_k = ifft(obj_r,[2,3,4])
     end
-    #return obj_k
-    return obj_k / mesh.nk
+    return obj_k #/ mesh.nk
+    #return obj_k * mesh.nk^(-0.5)
 end
 
 function get_bandwidth()

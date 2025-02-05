@@ -6,7 +6,7 @@ using .CondensedMatterField
 include("../objects/mesh.jl")
 using .IRMesh
 
-using CUDA
+using CUDA, FFTW
 using Plots
 using SparseIR
 import SparseIR: Statistics, value, valueim
@@ -97,8 +97,8 @@ function fill_V_arr!(V_arr, iw)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:bnw
         kvec = get_kvec(i, j, k)
         w1 = iw[l]
-        Vw_arr[l, i, j] = V(kvec, zeros(dim), w1)
-        #Vw_arr[l, i, j] = paper2_V(w1)
+        #Vw_arr[l, i, j] = V(kvec, zeros(dim), w1)
+        Vw_arr[l, i, j] = paper2_V(w1)
     end
     temp = k_to_r(mesh, Vw_arr)
     V_arr .= wn_to_tau(mesh, Bosonic(), temp)
@@ -137,8 +137,8 @@ function update!(F, G, V_arr, phi, Z, chi, iw, sigma)
     temp = k_to_r(mesh, G)
     G_rt = wn_to_tau(mesh, Fermionic(), temp)
 
-    phit = V_arr .* F_rt
-    sigmat = -V_arr .* G_rt
+    phit = V_arr .* F_rt / mesh.nk
+    sigmat = -V_arr .* G_rt / mesh.nk
 
     temp = r_to_k(mesh, phit)
     phi .= tau_to_wn(mesh, Fermionic(), temp)
@@ -708,17 +708,51 @@ function kernel_summation!(
     return nothing
 end
 
+function transform_test()
+    mesh = IR_Mesh()
+    fnw = mesh.fnw
+    sin_arr = Array{ComplexF64}(undef, fnw, nx, ny)
+    r = Array{Float64}(undef, fnw, nx, ny)
+    iw = Array{ComplexF64}(undef, fnw)
+    for i in 1:fnw
+        iw[i] = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta)
+    end
+    for i in 1:nx, j in 1:ny, k in 1:fnw
+        r[k, i, j] = 2 * pi * j / ny
+        #sin_arr[k, i, j] = sin(2 * pi * i / nx) + sin(2 * pi * j / ny) + sin(2 * pi * iw[k].im)
+        sin_arr[k, i, j] = 1 / (iw[k]^2 - 1)
+    end
+    ft = wn_to_tau(mesh, Fermionic(), sin_arr)
+    fr = tau_to_wn(mesh, Fermionic(), ft)
+    r_plot = r[1, 1, :]
+    fr_plot = fr[:, 1, 1]
+    p = plot(imag.(iw), real.(fr_plot))
+    plot!(imag.(iw), imag.(fr_plot))
+    plot!(imag.(iw), real.(sin_arr[:, 1, 1]))
+    display(p)
+    readline()
+end
+
+function multiply_test()
+    pnts = 1000
+    sin_arr = Array{ComplexF64}(undef, pnts)
+    r = Array{Float64}(undef, pnts)
+    result_arr = Array{Float64}(undef, pnts)
+    for i in 1:pnts
+        r[i] = 2 * pi * i / pnts
+        sin_arr[i] = sin(r[i]) 
+        result_arr[i] = -cos(r[i]) / 2 - sin(r[i]) / (8 * pi)
+    end
+    ft = fft(sin_arr)
+    product = ft .* ft / pnts
+    result = ifft(product)
+    p = plot(r, real.(result))
+    plot!(r, result_arr)
+    display(p)
+    readline()
+end
+
 end # module
 
-
 #using .Eliashberg
-#println(Threads.nthreads(), " threads available")
-#Eliashberg.evaluate_eliashberg()
-#Eliashberg.newfunc()
-#Eliashberg.restart()
-#Eliashberg.gpu_sum()
-
-#Eliashberg.test_iw()
-#Eliashberg.test_multiply()
-#Eliashberg.test_multiply2()
-
+#Eliashberg.multiply_test()
