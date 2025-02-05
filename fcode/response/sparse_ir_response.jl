@@ -21,16 +21,35 @@ mu = cfg.fermi_energy
 BZ = cfg.brillouin_zone
 
 function epsilon(kvec)
-    return -2.0*(cos(kvec[1])+cos(kvec[2]))
+    if dim == 1
+        return -2.0*cos(kvec[1])
+    elseif dim == 2
+        return -2.0*(cos(kvec[1])+cos(kvec[2]))
+    elseif dim == 3
+        return -2.0*(cos(kvec[1])+cos(kvec[2])+cos(kvec[3]))
+    else
+        println("Invalid dimension")
+        exit(1)
+    end
+end
+
+function get_kvec(ix, iy, iz)
+    kvec = [ix / (nx - 1) - 0.5, iy / (ny - 1) - 0.5, iz / (nz - 1) - 0.5] 
+    if dim < 3
+        kvec[3] = 0.0
+    elseif dim < 2
+        kvec[2] = 0.0
+    end
+    kvec = BZ * kvec
+    return kvec
 end
 
 function get_ckio_ir()
     println("Calculating IR response")
-    basis = IR_Mesh()
+    basis = IR_Mesh(1e-15)
     ek = Array{ComplexF64,3}(undef, nx, ny, nz)
     for iy in 1:ny, ix in 1:nx, iz in 1:nz
-        kvec = [ix / nx, iy / ny, iz / nz]
-        kvec = BZ * kvec
+        kvec = get_kvec(ix - 1, iy - 1, iz - 1)
         ek[ix, iy, iz] = epsilon(kvec)
     end
 
@@ -79,9 +98,8 @@ function save_ckio_ir(basis, ckio::Array{ComplexF64,4})
             println("Invalid dimension")
             exit(1)
         end
-        for ix in 1:nx, iy in 1:ny, iz in 1:nz, iw in 1:basis.fnw
-            kvec = [ix / nx, iy / ny, iz / nz]
-            kvec = BZ * kvec
+        for ix in 1:nx, iy in 1:ny, iz in 1:nz, iw in 1:basis.bnw
+            kvec = get_kvec(ix - 1, iy - 1, iz - 1)
             iv = valueim(basis.IR_basis_set.smpl_wn_b.sampling_points[iw], beta)
             if dim == 3
                 @printf(f, "%f %f %f %f %f %f\n", kvec[1], kvec[2], kvec[3], iv.im, ckio[iw,ix,iy,iz].re, ckio[iw,ix,iy,iz].im)

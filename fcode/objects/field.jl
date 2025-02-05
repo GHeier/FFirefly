@@ -1,10 +1,12 @@
 module CondensedMatterField
 
 using Interpolations
-using DelimitedFiles
+using DelimitedFiles, Printf
 #using ConvexHull
 using LinearAlgebra
 using Statistics
+
+export CMF, save_CMF, save_arr_as_meshgrid
 
 struct CMF{}
     points::Matrix{Float64}
@@ -14,6 +16,7 @@ struct CMF{}
     inv_domain::Matrix{Float64}
     dimension::Int
     with_w::Bool
+    bounds::Vector{Float64}
     filled::Bool
 end
 
@@ -23,11 +26,9 @@ function CMF(points::Matrix{Float64}, data, dimension, with_w::Bool)::CMF
     inv_domain = inv(domain)
     temp_inv = expand_domain(inv_domain, with_w)
     transformed_points = Array([temp_inv * points[i,:] for i in 1:size(points,1)])
+    bounds = get_bounds(transformed_points, dimension, with_w)
     interp, w_interp = calculate_interp(transformed_points, data, dimension)
-    println("Interpolations calculated")
-    println("domain: ", domain)
-    println("inv_domain: ", inv_domain)
-    return CMF(points, data, interp, w_interp, inv_domain, dimension, with_w, true)
+    return CMF(points, data, interp, w_interp, inv_domain, dimension, with_w, bounds, true)
 end
 
 function CMF(filename::String)::CMF
@@ -37,6 +38,26 @@ function CMF(filename::String)::CMF
     data = data[:,dimension + p1 + 1:end]
     data = reconstruct_data(data, is_complex, is_vector)
     return CMF(points, data, dimension, Bool(p1))
+end
+
+function get_bounds(points, dim, with_w)
+    points_matrix = reduce(hcat, points)'  # Convert to a 2D matrix
+    xmin, xmax, ymin, ymax, zmin, zmax, wmin, wmax = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+    xmin = minimum(points_matrix[:,1])
+    xmax = maximum(points_matrix[:,1])
+    if dim > 1
+        ymin = minimum(points_matrix[:,2])
+        ymax = maximum(points_matrix[:,2])
+    end
+    if dim > 2
+        zmin = minimum(points_matrix[:,3])
+        zmax = maximum(points_matrix[:,3])
+    end
+    if with_w
+        wmin = minimum(points_matrix[:,end])
+        wmax = maximum(points_matrix[:,end])
+    end
+    return [xmin, xmax, ymin, ymax, zmin, zmax, wmin, wmax]
 end
 
 function get_info(header)
@@ -175,12 +196,98 @@ function extract_domain(points::Matrix{Float64}, dimension::Int)
     return domain
 end
 
+function sanitize_within_bounds(value::Float64, min::Float64, max::Float64, tol::Float64)
+    if value <= min && value > min - tol
+        return min + tol
+    elseif value >= max && value < max + tol
+        return max - tol
+    else
+        return value
+    end
+end
+
 function (cmf::CMF)(q::Vector{Float64}, w::Float64 = 0.0)
     q = cmf.inv_domain * q
+    q = [sanitize_within_bounds(q[i], cmf.bounds[2*i-1], cmf.bounds[2*i], 1e-4) for i in 1:length(q)]
     if cmf.with_w
         q = [q; cmf.w_interp(w)]
     end
     return cmf.interp(q...)
+end
+
+function get_header(data, dimension, with_w)
+    is_complex = !isreal(data[1])
+    is_vector = (length(data[1]) > 1 && !is_complex || is_complex && length(data[1]) > 2)
+    fheader = "f"
+    if is_complex
+        fheader = "Re(f) Im(f)"
+    end
+    if is_vector && !is_complex
+        fheader = "fx "
+    end
+    if is_vector && is_complex
+        fheader = "Re(fx) Im(fx) "
+    end
+    header = "x "
+    if dimension > 1
+        header *= "y "
+        if is_vector && !is_complex
+            fheader *= "fy "
+        end
+        if is_vector && is_complex
+            fheader *= "Re(fy) Im(fy) "
+        end
+    elseif dimension > 2
+        header *= "z "
+        if is_vector && !is_complex
+            fheader *= "fz "
+        end
+        if is_vector && is_complex
+            fheader *= "Re(fz) Im(fz) "
+        end
+    end
+    if with_w
+        header *= "w "
+    end
+    header *= fheader
+    return header
+end
+
+function save_arr_as_meshgrid(points::Matrix{Float64}, data, filename::String, with_w::Bool = false)
+    data_r = reduce(hcat, data)'  # Convert to a 2D matrix
+    dimension = size(points,2) - with_w
+    is_complex = !isreal(data[1])
+
+    if is_complex
+        data_r = hcat(real(data_r), imag(data_r))
+    end
+
+    data_matrix = hcat(points, data_r)
+    header = get_header(data, dimension, with_w)
+    header_as_vector = split(header)
+
+    # Format data as strings with 6 decimal places
+    formatted_data = [@sprintf("%.6f", x) for x in data_matrix]  # Flatten to vector
+    formatted_data = reshape(formatted_data, size(data_matrix))  # Reshape to match matrix size
+
+    # Compute column widths dynamically
+    combined_matrix = vcat(reshape(header_as_vector, 1, :), formatted_data)  # Ensure header is a row
+    col_widths = [maximum(length.(combined_matrix[:, i])) for i in 1:size(combined_matrix, 2)]
+
+    open(filename, "w") do io
+        # Format and write header
+        header_str = join([rpad(header_as_vector[i], col_widths[i]) for i in 1:length(header_as_vector)], "  ")
+        println(io, header_str)
+
+        # Write formatted data rows
+        for row in eachrow(formatted_data)
+            println(io, join([rpad(row[i], col_widths[i]) for i in 1:length(row)], "  "))
+        end
+    end
+end
+
+function save_CMF(cmf::CMF, filename::String)
+    save_arr_as_meshgrid(cmf.points, cmf.data, filename, cmf.with_w)
 end
 
 function test_2dim_real_scalar_field()

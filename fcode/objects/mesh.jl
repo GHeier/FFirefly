@@ -56,7 +56,6 @@ function Mesh(
         dimension = 0
         nk = 0
     end
-    println("Mesh dimension = ", dimension)
 
     # lowest Matsubara frequency index
     iw0_f = findall(x->x==FermionicFreq(1), IR_basis_set.smpl_wn_f.sampling_points)[1]
@@ -158,14 +157,18 @@ function epsilon(k)
     return -2 * (cos(k[1]) + cos(k[2]) + cos(k[3]))
 end
 
-function IR_Mesh()
-    """ Test function """
+function IR_Mesh(IR_tol = 1e-10)
     beta = 1 / cfg.Temperature
     nx, ny, nz = cfg.k_mesh
-    IR_tol = 1e-10
     wmax = get_bandwidth()
     IR_basis_set = FiniteTempBasisSet(beta, Float64(wmax), IR_tol)
-    mesh = Mesh(IR_basis_set, nx, ny, nz)
+    if dim == 1
+        mesh = Mesh(IR_basis_set, nx, 0, 0)
+    elseif dim == 2
+        mesh = Mesh(IR_basis_set, nx, ny, 0)
+    elseif dim == 3
+        mesh = Mesh(IR_basis_set, nx, ny, nz)
+    end
     return mesh
 end
 

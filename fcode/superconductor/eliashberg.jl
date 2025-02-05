@@ -26,7 +26,6 @@ np_BZ = np.array(cfg.brillouin_zone)
 
 nx, ny, nz = cfg.k_mesh
 dim = cfg.dimension
-println("Dimension: ", dim)
 if dim == 2
     nz = 1
 end
@@ -48,7 +47,7 @@ function to_IBZ(k)
     q .= ifelse.(abs.(q .- 2π) .< tolerance, 0.0, ifelse.(q .> π, -(q .- 2π), q))
     q = abs.(q)
     q .+= 1e-4
-    q .= ifelse.(q .> 2π, q .- 1e-4, q)
+    q .= ifelse.(q .> π, q .- 1e-4, q)
     return q
 end
 
@@ -115,7 +114,6 @@ function initialize_phi_Z_chi!(phi_arr, Z_arr, chi_arr, iw)
         Z_arr[i, j, k] = 1.0 
         chi_arr[i, j, k] = 0.0
     end
-    println("Initialized phi and Z")
 end
 
 function get_kvec(i, j, k)
@@ -206,7 +204,7 @@ function newfunc()
     println("Beginning Eliashberg")
     wmax = get_bandwidth()
     println("Bandwidth: ", wmax)
-    IR_tol = 1e-15
+    IR_tol = 1e-10
     scf_tol = 1e-4
     println("Creating IRMesh")
     IR_basis_set = FiniteTempBasisSet(beta, Float64(wmax), IR_tol)
@@ -237,10 +235,12 @@ function newfunc()
     println("Initializing phi, Z, and chi")
     initialize_phi_Z_chi!(phi_arr, Z_arr, chi_arr, iw)
 
+    println("Initializing V")
     sigma = Array{ComplexF64}(undef, fnw, nx, ny)
     V_arr = Array{ComplexF64}(undef, bntau, nx, ny)
     fill_V_arr!(V_arr, iv)
 
+    println("Initializing F and G")
     F_arr = Array{ComplexF64}(undef, fnw, nx, ny)
     G_arr = Array{ComplexF64}(undef, fnw, nx, ny)
     condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw)
@@ -270,18 +270,19 @@ function newfunc()
     println("Error: ", phierr)
     println("Max phi: ", max_phi)
     println("Max Z: ", max_Z)
-    phi_w = phi_FS_average(phi_arr)
-    p = plot(npts, phi_w, xlimits=(-500, 500))
-    display(p)
-    readline()
-    Z_w = phi_FS_average(Z_arr)
-    p = plot(npts, Z_w, xlimits=(-500, 500))
-    display(p)
-    readline()
-    sigma_w = phi_FS_average(sigma)
-    p = plot(npts, sigma_w, xlimits=(-500, 500))
-    display(p)
-    readline()
+    reordered_phi = Array{ComplexF64}(undef, nx, ny, fnw)
+    reordered_Z = Array{ComplexF64}(undef, nx, ny, fnw)
+    points = Matrix{Float64}(undef, nx*ny*fnw, 3)
+    for i in 1:fnw, j in 1:nx, k in 1:ny
+        reordered_phi[j, k, i] = phi_arr[i, j, k]
+        reordered_Z[j, k, i] = Z_arr[i, j, k]
+        w = iw[i]
+        kvec = get_kvec(j, k, 0)
+        points[(i-1)*nx*ny + (j-1)*nx + k, :] = [kvec[1], kvec[2], w.im]
+    end
+    println("Saving phi and Z")
+    save_arr_as_meshgrid(points, reordered_phi, "phi.dat", true)
+    save_arr_as_meshgrid(points, reordered_Z, "Z.dat", true)
 end 
 
 function phi_FS_average(phi)
@@ -713,7 +714,7 @@ end # module
 #using .Eliashberg
 #println(Threads.nthreads(), " threads available")
 #Eliashberg.evaluate_eliashberg()
-Eliashberg.newfunc()
+#Eliashberg.newfunc()
 #Eliashberg.restart()
 #Eliashberg.gpu_sum()
 
