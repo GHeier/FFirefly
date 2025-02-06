@@ -1,5 +1,5 @@
 import fcode
-import re
+import numpy as np
 
 config = {
         'CONTROL': {
@@ -25,18 +25,33 @@ config = {
             },
         }
 
-def eliashberg():
+def eliashberg(filename):
     Ti = 1e-4
     Tf = 1.0
+    phi_max_initial = 0
+    T_list, phi_list = [], []
     print("Temperature, Max phi")
+
     for i in range(50):
         config['SYSTEM']['Temperature'] = Ti
         output = fcode.launch(config)
         match = fcode.grep(output, "Max phi:")
         value = fcode.extract_value(match)
-        print(Ti, round(value, 6))
-        Ti *= 2
-        if Ti > Tf:
-            break
 
-eliashberg()
+        if i == 0:
+            phi_max_initial = value
+        print(Ti, round(value, 6))
+
+        T_list.append(Ti)
+        phi_list.append(value)
+        if phi_max_initial * 0.9 < value:
+            Ti += Tf / 100
+        else:
+            Ti += Ti / 20
+        if Ti > Tf or value < phi_max_initial * 0.1:
+            break
+    data = np.array([T_list, phi_list])
+    header = "Temperature Max_phi"
+    np.savetxt(filename, data, delimiter=" ", header=header, fmt="%d")
+
+eliashberg("Phi_v_T.dat")

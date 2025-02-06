@@ -80,6 +80,11 @@ function get_bandwidth()
     return maxval - minval
 end
 
+function custom_V(w)
+    lambda = 2.0
+    return lambda * 0.01 / (imag(w)^2 + 0.01)
+end
+
 function paper_V(w)
     lambda = 2.0
     return lambda * 0.01 / (imag(w)^2 + 0.01)
