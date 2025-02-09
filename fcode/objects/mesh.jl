@@ -113,45 +113,44 @@ function wn_to_tau_c(mesh::Mesh, statistics::Statistics, obj_wn)
     return obj_tau
 end
 
-function k_to_r(mesh::Mesh, obj_k)
+function k_to_r(obj_k)
     """ Fourier transform from k-space to real space """
-    if dimension == 1
+    if dim == 1
         obj_r = fft(obj_k,[2])
-    elseif dimension == 2
+    elseif dim == 2
         obj_r = fft(obj_k,[2,3])
-    elseif dimension == 3
+    elseif dim == 3
         obj_r = fft(obj_k,[2,3,4])
     end
-    return obj_r #* nk^(-0.5)
+    return obj_r 
 end
 
-function r_to_k(mesh::Mesh, obj_r)
+function r_to_k(obj_r)
     """ Fourier transform from real space to k-space """
-    if dimension == 1
+    if dim == 1
         obj_k = ifft(obj_r,[2])
-    elseif dimension == 2
+    elseif dim == 2
         obj_k = ifft(obj_r,[2,3])
-    elseif dimension == 3
+    elseif dim == 3
         obj_k = ifft(obj_r,[2,3,4])
     end
-    return obj_k #/ nk
-    #return obj_k * nk^(-0.5)
+    return obj_k
 end
 
 function kw_to_rtau(obj_k, particle_type, mesh)
     temp = k_to_r(obj_k)
     if particle_type == 'F'
-        return tau_to_wn(mesh, Fermionic(), temp)
+        return wn_to_tau(mesh, Fermionic(), temp)
     elseif particle_type == 'B'
-        return tau_to_wn(mesh, Bosonic(), temp)
+        return wn_to_tau(mesh, Bosonic(), temp)
     end
 end
 
 function rtau_to_kw(obj_r, particle_type, mesh)
     if particle_type == 'F'
-        temp = wn_to_tau(mesh, Fermionic(), obj_r)
+        temp = tau_to_wn(mesh, Fermionic(), obj_r)
     elseif particle_type == 'B'
-        temp = wn_to_tau(mesh, Bosonic(), obj_r)
+        temp = tau_to_wn(mesh, Bosonic(), obj_r)
     end
     return r_to_k(temp)
 end

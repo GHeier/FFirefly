@@ -101,7 +101,7 @@ function fill_V_arr!(V_arr, iw)
         #Vw_arr[l, i, j] = V(kvec, zeros(dim), w1)
         Vw_arr[l, i, j] = paper2_V(w1)
     end
-    temp = k_to_r(mesh, Vw_arr)
+    temp = k_to_r(Vw_arr)
     V_arr .= wn_to_tau(mesh, Bosonic(), temp)
     println("Filled V_arr")
 end
@@ -134,13 +134,13 @@ end
 
 function update!(F, G, V_arr, phi, Z, chi, iw, sigma)
     F_rt = kw_to_rtau(F, 'F', mesh)
-    G_rt = kw_to_rtau(G, 'B', mesh)
+    G_rt = kw_to_rtau(G, 'F', mesh)
 
     phit = V_arr .* F_rt / mesh.nk
     sigmat = -V_arr .* G_rt / mesh.nk
 
     phi .= rtau_to_kw(phit, 'F', mesh)
-    sigma .= rtau_to_kw(sigmat, 'B', mesh)
+    sigma .= rtau_to_kw(sigmat, 'F', mesh)
 
     for i in 1:fnw, j in 1:nx, k in 1:ny
         w = iw[i]
@@ -168,8 +168,10 @@ function eliashberg_sparse_ir()
 
     println("Filled iw and iv")
     println("Min & Max iw: ", minimum(imag.(iw)), " ", maximum(imag.(iw)))
-    input_data_file = prefix + "_chi_mesh_dynamic.dat"
+    input_data_file = prefix * "_ckio_ir.dat"
+    println("input_data_file: ", input_data_file)
     global Susceptibility = CondensedMatterField.CMF(input_data_file)
+    println("Loaded Susceptibility")
 
     phi_arr = Array{ComplexF64}(undef, fnw, nx, ny)
     Z_arr = Array{ComplexF64}(undef, fnw, nx, ny)
@@ -178,13 +180,13 @@ function eliashberg_sparse_ir()
     initialize_phi_Z_chi!(phi_arr, Z_arr, chi_arr, iw)
 
     println("Initializing V")
-    sigma = Array{ComplexF64}(undef, fnw, nx, ny)
-    V_arr = Array{ComplexF64}(undef, bntau, nx, ny)
+    sigma = Array{ComplexF64}(undef, fnw, nx, ny, nz)
+    V_arr = Array{ComplexF64}(undef, bntau, nx, ny, nz)
     fill_V_arr!(V_arr, iv)
 
     println("Initializing F and G")
-    F_arr = Array{ComplexF64}(undef, fnw, nx, ny)
-    G_arr = Array{ComplexF64}(undef, fnw, nx, ny)
+    F_arr = Array{ComplexF64}(undef, fnw, nx, ny, nz)
+    G_arr = Array{ComplexF64}(undef, fnw, nx, ny, nz)
     condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw)
 
 
@@ -212,15 +214,17 @@ function eliashberg_sparse_ir()
     println("Error: ", phierr)
     println("Max phi: ", max_phi)
     println("Max Z: ", max_Z)
-    reordered_phi = Array{ComplexF64}(undef, nx, ny, fnw)
-    reordered_Z = Array{ComplexF64}(undef, nx, ny, fnw)
-    points = Matrix{Float64}(undef, nx*ny*fnw, 3)
-    for i in 1:fnw, j in 1:nx, k in 1:ny
-        reordered_phi[j, k, i] = phi_arr[i, j, k]
-        reordered_Z[j, k, i] = Z_arr[i, j, k]
+    reordered_phi = Array{ComplexF64}(undef, nx, ny, nz, fnw)
+    reordered_Z = Array{ComplexF64}(undef, nx, ny, nz, fnw)
+    points = Matrix{Float64}(undef, nx*ny*nz*fnw, dim+1)
+    for i in 1:fnw, j in 1:nx, k in 1:ny, l in 1:nz
+        reordered_phi[j, k, l, i] = phi_arr[i, j, k, l]
+        reordered_Z[j, k, l, i] = Z_arr[i, j, k, l]
         w = iw[i]
-        kvec = get_kvec(j, k, 0)
-        points[(i-1)*nx*ny + (j-1)*nx + k, :] = [kvec[1], kvec[2], w.im]
+        kvec = get_kvec(j, k, l)
+        idx = (i - 1) * nx * ny * nz + (j - 1) * ny * nz + (k - 1) * nz + l
+        points[idx, 1:dim] .= kvec
+        points[idx, dim+1] = imag(w)
     end
     println("Saving phi and Z")
     save_arr_as_meshgrid(points, reordered_phi, "phi.dat", true)
@@ -415,3 +419,6 @@ function kernel_summation!(
 end
 
 end
+
+using .Eliashberg
+Eliashberg.eliashberg_sparse_ir()

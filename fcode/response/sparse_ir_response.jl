@@ -19,6 +19,7 @@ end
 n = cfg.w_pts
 mu = cfg.fermi_energy
 BZ = cfg.brillouin_zone
+prefix = cfg.prefix
 
 function epsilon(kvec)
     if dim == 1
@@ -69,7 +70,7 @@ function gkio_calc(basis, ek::Array{ComplexF64,3}, mu::Float64)
 end
 
 function grit_calc(basis, gkio)
-    grio = k_to_r(basis, gkio)
+    grio = k_to_r(gkio)
     grit = wn_to_tau(basis, Fermionic(), grio)
     return grit
 end
@@ -80,14 +81,14 @@ function ckio_calc(basis, grit)
         crit[it,ix,iy,iz] = grit[it,ix,iy,iz] * grit[basis.bntau-it+1,ix,iy,iz]
     end
     # Fourier transform
-    ckit = r_to_k(basis, crit)
+    ckit = r_to_k(crit)
     ckio = tau_to_wn(basis, Bosonic(), ckit)
     return ckio
 end
 
 function save_ckio_ir(basis, ckio::Array{ComplexF64,4})
     println("Saving IR response")
-    open("ckio_ir.dat", "w") do f
+    open(prefix * "_ckio_ir.dat", "w") do f
         if dim == 3
             @printf(f, "# x y z Im(w) Re(f) Im(f)\n")
         elseif dim == 2

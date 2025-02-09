@@ -49,7 +49,7 @@ bool call_julia_func(const char *folder, const char *filename, const char* modul
 
     ret = jl_eval_string(command);
     if (jl_exception_occurred()) {
-        printf("Error at function call\n");
+        printf("Julia function call error:\n");
         jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), jl_exception_occurred());
         fprintf(stderr, "\n");
         jl_atexit_hook(0);

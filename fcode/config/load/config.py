@@ -100,6 +100,8 @@ def load_config():
                 key, value = line.split('=', 1)
             key = key.strip()
             value = value.strip()
+            value = value.replace("'", "")
+            value = value.replace('"', '')
             # Set the variable
 
 #[CONTROL]
