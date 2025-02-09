@@ -6,26 +6,26 @@ ext_modules = [
         "fcode.fmodule",  # Name of the compiled submodule
         [
             "fcode/fmodule.cpp",
-            "fcode/algorithms/interpolate.cpp",
-            "fcode/algorithms/linear_algebra.cpp",
+            #"fcode/algorithms/interpolate.cpp",
+            #"fcode/algorithms/linear_algebra.cpp",
             "fcode/config/load/cpp_config.cpp",
             "fcode/config/load/c_config.c",
             "fcode/hamiltonian/band_structure.cpp",
-            "fcode/hamiltonian/interaction.cpp",
+            #"fcode/hamiltonian/interaction.cpp",
             "fcode/objects/eigenvec.cpp",
-            "fcode/objects/field.cpp",
-            "fcode/objects/fastfield.cpp",
+            #"fcode/objects/field.cpp",
+            #"fcode/objects/fastfield.cpp",
             "fcode/objects/matrix.cpp",
             "fcode/objects/vec.cpp",
-            "fcode/response/susceptibility.cpp",
+            #"fcode/response/susceptibility.cpp",
             ], # Source file
         include_dirs=[
             'fcode', 
-            'fcode/algorithms', 
+            #'fcode/algorithms', 
             'fcode/config', 
             'fcode/hamiltonian', 
             'fcode/objects', 
-            'fcode/response'
+            #'fcode/response'
             ],  # Include directory for headers
         language="c++",  # Specify C++ compilation
     ),

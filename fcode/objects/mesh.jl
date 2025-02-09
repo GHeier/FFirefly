@@ -14,7 +14,7 @@ BZ = cfg.brillouin_zone
 dim = cfg.dimension
 
 export Mesh
-export tau_to_wn, wn_to_tau, k_to_r, r_to_k, tau_to_wn_c, wn_to_tau_c, IR_Mesh
+export tau_to_wn, wn_to_tau, k_to_r, r_to_k, kw_to_rtau, rtau_to_kw, IR_Mesh
 
 """
 Holding struct for k-mesh and sparsely sampled imaginary time 'tau' / Matsubara frequency 'iw_n' grids.
@@ -56,11 +56,6 @@ function Mesh(
         dimension = 0
         nk = 0
     end
-    println("nk = ", nk)
-    println("dimension = ", dimension)
-    println("nk1 = ", nk1)
-    println("nk2 = ", nk2)
-    println("nk3 = ", nk3)
 
     # lowest Matsubara frequency index
     iw0_f = findall(x->x==FermionicFreq(1), IR_basis_set.smpl_wn_f.sampling_points)[1]
@@ -120,27 +115,45 @@ end
 
 function k_to_r(mesh::Mesh, obj_k)
     """ Fourier transform from k-space to real space """
-    if mesh.dimension == 1
+    if dimension == 1
         obj_r = fft(obj_k,[2])
-    elseif mesh.dimension == 2
+    elseif dimension == 2
         obj_r = fft(obj_k,[2,3])
-    elseif mesh.dimension == 3
+    elseif dimension == 3
         obj_r = fft(obj_k,[2,3,4])
     end
-    return obj_r #* mesh.nk^(-0.5)
+    return obj_r #* nk^(-0.5)
 end
 
 function r_to_k(mesh::Mesh, obj_r)
     """ Fourier transform from real space to k-space """
-    if mesh.dimension == 1
+    if dimension == 1
         obj_k = ifft(obj_r,[2])
-    elseif mesh.dimension == 2
+    elseif dimension == 2
         obj_k = ifft(obj_r,[2,3])
-    elseif mesh.dimension == 3
+    elseif dimension == 3
         obj_k = ifft(obj_r,[2,3,4])
     end
-    return obj_k #/ mesh.nk
-    #return obj_k * mesh.nk^(-0.5)
+    return obj_k #/ nk
+    #return obj_k * nk^(-0.5)
+end
+
+function kw_to_rtau(obj_k, particle_type, mesh)
+    temp = k_to_r(obj_k)
+    if particle_type == 'F'
+        return tau_to_wn(mesh, Fermionic(), temp)
+    elseif particle_type == 'B'
+        return tau_to_wn(mesh, Bosonic(), temp)
+    end
+end
+
+function rtau_to_kw(obj_r, particle_type, mesh)
+    if particle_type == 'F'
+        temp = wn_to_tau(mesh, Fermionic(), obj_r)
+    elseif particle_type == 'B'
+        temp = wn_to_tau(mesh, Bosonic(), obj_r)
+    end
+    return r_to_k(temp)
 end
 
 function get_bandwidth()

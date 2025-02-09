@@ -188,6 +188,10 @@ void read_c_config(const char* path) {
     bool got_bz = false;
     bool got_nbnd = false;
     FILE *file = fopen(path, "r");
+    if (file == NULL) {
+        printf("Error opening file!\n");
+        exit(1);
+    }
     while (fgets(line, sizeof(line), file) != NULL) {
         if (strstr(line, "[CELL]") != NULL) {
             set_section(section, "CELL");

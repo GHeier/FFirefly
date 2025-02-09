@@ -67,10 +67,11 @@ ALL = {
 }
 
 
-from write import write_c, write_cpp, write_f90, write_py
+from write import write_c, write_cpp, write_f90, write_py, write_julia
 write_c.write_c(ALL)
 write_c.write_c_header(ALL)
 write_cpp.write_cpp(ALL)
 write_cpp.write_cpp_header(ALL)
 write_f90.write_f90(ALL)
 write_py.write_py(ALL)
+write_julia.write_julia(ALL)

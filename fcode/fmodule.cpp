@@ -8,11 +8,11 @@
 
 #include "config/load/cpp_config.hpp"
 #include "config/load/c_config.h"
-#include "response/susceptibility.hpp"
+//#include "response/susceptibility.hpp"
 #include "hamiltonian/interaction.hpp"
 #include "hamiltonian/band_structure.hpp"
 #include "objects/vec.hpp"
-#include "objects/fastfield.hpp"
+//#include "objects/fastfield.hpp"
 
 
 namespace py = pybind11;
@@ -53,57 +53,9 @@ PYBIND11_MODULE(fmodule, m) {
                 return self(i);
             }, py::return_value_policy::reference, py::arg("i"));
 
-    //py::class_<ScalarField>(m, "ScalarField")
-    //    .def(py::init<vector<Vec>, vector<float>, int>())
-    //    .def(py::init<vector<vector<double>>, vector<float>, int>())
-    //    .def(py::init<string, int>())
-    //    .def("__call__", py::overload_cast<vector<double>>(&ScalarField::operator()))
-    //    .def("__call__", py::overload_cast<Vec>(&ScalarField::operator()));
-
-    //py::class_<ComplexField>(m, "ComplexField")
-    //    .def(py::init<vector<Vec>, vector<complex<float>>, int>())
-    //    .def(py::init<vector<vector<double>>, vector<complex<float>>, int>())
-    //    .def(py::init<string, int>())
-    //    .def("__call__", py::overload_cast<vector<double>>(&ComplexField::operator()))
-    //    .def("__call__", py::overload_cast<Vec>(&ComplexField::operator()));
-
-    //py::class_<VectorField>(m, "VectorField")
-    //    .def(py::init<vector<Vec>, vector<float>, int>())
-    //    .def(py::init<vector<vector<double>>, vector<float>, int>())
-    //    .def(py::init<string, int>())
-    //    .def("__call__", py::overload_cast<vector<double>>(&VectorField::operator()))
-    //    .def("__call__", py::overload_cast<Vec>(&VectorField::operator()));
-
-    //py::class_<ComplexVectorField>(m, "ComplexVectorField")
-    //    .def(py::init<vector<Vec>, vector<complex<float>>, int>())
-    //    .def(py::init<vector<vector<double>>, vector<complex<float>>, int>())
-    //    .def(py::init<string, int>())
-    //    .def("__call__", py::overload_cast<vector<double>>(&ComplexVectorField::operator()))
-    //    .def("__call__", py::overload_cast<Vec>(&ComplexVectorField::operator()));
-
     // Expose the V function
-    m.def("V", &V, "Calculate the interaction potential",
-          py::arg("k1"), py::arg("k2"), py::arg("spin1") = "up", py::arg("spin2") = "up");
-
-    py::class_<FastScalarField>(m, "FastScalarField")
-        .def(py::init<>())
-        .def(py::init<string, int, bool>(), py::arg("filename"), py::arg("dimension") = 3, py::arg("is_complex") = false)
-        .def("__call__", py::overload_cast<Vec>(&FastScalarField::operator()), py::arg("point"));
-
-    // Bind the Susceptibility struct
-    py::class_<Susceptibility, FastScalarField>(m, "Susceptibility")
-        .def(py::init<>())
-        .def(py::init<std::string, int, bool>(), py::arg("filename"), py::arg("dimension") = 3, py::arg("is_complex") = false)
-        .def("__call__", py::overload_cast<Vec, float>(&Susceptibility::operator()), py::arg("point"), py::arg("w"))
-        .def("__call__", py::overload_cast<Vec>(&Susceptibility::operator()), py::arg("point"));
-
-    // Expose the global variable chi
-    m.attr("chi") = py::cast(&chi);  // Pass chi by pointer to allow modification
-
-    // Expose the load_chi function
-    m.def("load_global_chi", [](string filename, int dimension_) {
-        load_chi(filename, dimension_);
-    });
+//    m.def("V", &V, "Calculate the interaction potential",
+//          py::arg("k1"), py::arg("k2"), py::arg("spin1") = "up", py::arg("spin2") = "up");
 
     // Expose the epsilon function
     m.def("epsilon", &epsilon, "Calculate the energy band",

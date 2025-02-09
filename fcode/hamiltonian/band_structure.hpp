@@ -18,6 +18,7 @@ Vec fermi_velocity_SC_layered(int n, Vec k);
 
 extern "C" {
     double epsilon_c(int n, double k[3]);
+    double epsilon_c2d(int n, double k[2]);
     double vp_c(int n, double k[3]);
 }
 

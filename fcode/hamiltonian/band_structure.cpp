@@ -132,9 +132,12 @@ Vec fermi_velocity_SC_layered(int n, Vec k) {
 */
 
 double epsilon_c(int n, double k[3]) {
-    n--;
     Vec k_vec = Vec(k[0], k[1], k[2]);
-    n++;
+    return epsilon(n, k_vec);
+}
+
+double epsilon_c2d(int n, double k[2]) {
+    Vec k_vec = Vec(k[0], k[1]);
     return epsilon(n, k_vec);
 }
 

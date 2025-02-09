@@ -1,10 +1,8 @@
 module CondensedMatterField
 
-using Interpolations
+using Interpolations, LinearAlgebra, Statistics
 using DelimitedFiles, Printf
-#using ConvexHull
-using LinearAlgebra
-using Statistics
+#using Base: ccall, @ccallable
 
 export CMF, save_CMF, save_arr_as_meshgrid
 
@@ -289,6 +287,26 @@ end
 function save_CMF(cmf::CMF, filename::String)
     save_arr_as_meshgrid(cmf.points, cmf.data, filename, cmf.with_w)
 end
+
+
+# C-callable wrapper to create CMF object
+#@ccallable function cmf_create(filename::Cstring)::Ptr{CMF}
+#    cmf = CMF(unsafe_string(filename))
+#    return pointer_from_objref(cmf)
+#end
+#
+## C-callable wrapper for cmf_eval
+#@ccallable function cmf_eval_c(cmf_ptr::Ptr{CMF}, q_ptr::Ptr{Cdouble}, w::Cdouble)::Cdouble
+#    cmf = unsafe_pointer_to_objref(cmf_ptr)::CMF
+#    q = unsafe_wrap(Array, q_ptr, (size(cmf.inv_domain, 2),))  # Adapt to dimensionality
+#    return cmf_eval(cmf, q, w)
+#end
+#
+## C-callable function to free memory (not strictly needed unless managing manually)
+#@ccallable function cmf_destroy(cmf_ptr::Ptr{CMF})::Cvoid
+#    nothing  # Julia's GC will handle it
+#end
+
 
 function test_2dim_real_scalar_field()
     points = [0.0 0.0; 1.0 0.0; 0.0 1.0; 1.0 1.0]
