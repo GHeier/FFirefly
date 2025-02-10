@@ -20,6 +20,8 @@ n = cfg.w_pts
 mu = cfg.fermi_energy
 BZ = cfg.brillouin_zone
 prefix = cfg.prefix
+dynamic = cfg.dynamic
+println("dynamic = ", dynamic)
 
 function epsilon(kvec)
     if dim == 1
@@ -70,7 +72,7 @@ function gkio_calc(basis, ek::Array{ComplexF64,3}, mu::Float64)
 end
 
 function grit_calc(basis, gkio)
-    grio = k_to_r(gkio)
+    grio = k_to_r(gkio, basis)
     grit = wn_to_tau(basis, Fermionic(), grio)
     return grit
 end
@@ -81,7 +83,7 @@ function ckio_calc(basis, grit)
         crit[it,ix,iy,iz] = grit[it,ix,iy,iz] * grit[basis.bntau-it+1,ix,iy,iz]
     end
     # Fourier transform
-    ckit = r_to_k(crit)
+    ckit = r_to_k(crit, basis)
     ckio = tau_to_wn(basis, Bosonic(), ckit)
     return ckio
 end
@@ -89,12 +91,18 @@ end
 function save_ckio_ir(basis, ckio::Array{ComplexF64,4})
     println("Saving IR response")
     open(prefix * "_ckio_ir.dat", "w") do f
-        if dim == 3
+        if dim == 3 && dynamic == true
             @printf(f, "# x y z Im(w) Re(f) Im(f)\n")
-        elseif dim == 2
+        elseif dim == 2 && dynamic == true
             @printf(f, "# x y Im(w) Re(f) Im(f)\n")
-        elseif dim == 1
+        elseif dim == 1 && dynamic == true
             @printf(f, "# x Im(w) Re(f) Im(f)\n")
+        elseif dim == 3 && dynamic == false
+            @printf(f, "# x y z Re(f) Im(f)\n")
+        elseif dim == 2 && dynamic == false
+            @printf(f, "# x y Re(f) Im(f)\n")
+        elseif dim == 1 && dynamic == false
+            @printf(f, "# x Re(f) Im(f)\n")
         else
             println("Invalid dimension")
             exit(1)
@@ -102,6 +110,10 @@ function save_ckio_ir(basis, ckio::Array{ComplexF64,4})
         for ix in 1:nx, iy in 1:ny, iz in 1:nz, iw in 1:basis.bnw
             kvec = get_kvec(ix - 1, iy - 1, iz - 1)
             iv = valueim(basis.IR_basis_set.smpl_wn_b.sampling_points[iw], beta)
+            if dynamic == false && iv.im != 0.0
+                println("Dynamic response is not calculated")
+                continue
+            end
             if dim == 3
                 @printf(f, "%f %f %f %f %f %f\n", kvec[1], kvec[2], kvec[3], iv.im, ckio[iw,ix,iy,iz].re, ckio[iw,ix,iy,iz].im)
             elseif dim == 2

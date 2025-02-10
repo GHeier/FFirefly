@@ -113,32 +113,32 @@ function wn_to_tau_c(mesh::Mesh, statistics::Statistics, obj_wn)
     return obj_tau
 end
 
-function k_to_r(obj_k)
+function k_to_r(obj_k, mesh)
     """ Fourier transform from k-space to real space """
-    if dim == 1
+    if mesh.dimension == 1
         obj_r = fft(obj_k,[2])
-    elseif dim == 2
+    elseif mesh.dimension == 2
         obj_r = fft(obj_k,[2,3])
-    elseif dim == 3
+    elseif mesh.dimension == 3
         obj_r = fft(obj_k,[2,3,4])
     end
     return obj_r 
 end
 
-function r_to_k(obj_r)
+function r_to_k(obj_r, mesh)
     """ Fourier transform from real space to k-space """
-    if dim == 1
+    if mesh.dimension == 1
         obj_k = ifft(obj_r,[2])
-    elseif dim == 2
+    elseif mesh.dimension == 2
         obj_k = ifft(obj_r,[2,3])
-    elseif dim == 3
+    elseif mesh.dimension == 3
         obj_k = ifft(obj_r,[2,3,4])
     end
-    return obj_k
+    return obj_k / mesh.nk
 end
 
 function kw_to_rtau(obj_k, particle_type, mesh)
-    temp = k_to_r(obj_k)
+    temp = k_to_r(obj_k, mesh)
     if particle_type == 'F'
         return wn_to_tau(mesh, Fermionic(), temp)
     elseif particle_type == 'B'
@@ -152,7 +152,7 @@ function rtau_to_kw(obj_r, particle_type, mesh)
     elseif particle_type == 'B'
         temp = tau_to_wn(mesh, Bosonic(), obj_r)
     end
-    return r_to_k(temp)
+    return r_to_k(temp, mesh)
 end
 
 function get_bandwidth()

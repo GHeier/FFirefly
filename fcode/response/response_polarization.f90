@@ -50,7 +50,7 @@ module mesh
             temp_pts = npts
             temp_pts(3) = 2
         end if
-        qvec(1:3) = dble([i1, i2, i3] + 1e-5) / dble(temp_pts(1:3) - 1)
+        qvec(1:3) = dble([i1, i2, i3] + 1e-4) / dble(temp_pts(1:3) - 1)
     end function get_qvec
 
     function fill_energy_mesh(qvec) result(eig)

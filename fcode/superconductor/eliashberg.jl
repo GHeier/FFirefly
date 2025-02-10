@@ -94,14 +94,14 @@ function paper2_V(w)
 end
 
 function fill_V_arr!(V_arr, iw)
-    Vw_arr = Array{Complex{Float64}}(undef, bnw, nx, ny)
+    Vw_arr = Array{Complex{Float64}}(undef, bnw, nx, ny, nz)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:bnw
         kvec = get_kvec(i, j, k)
         w1 = iw[l]
         #Vw_arr[l, i, j] = V(kvec, zeros(dim), w1)
-        Vw_arr[l, i, j] = paper2_V(w1)
+        Vw_arr[l, i, j, k] = paper2_V(w1)
     end
-    temp = k_to_r(Vw_arr)
+    temp = k_to_r(Vw_arr, mesh)
     V_arr .= wn_to_tau(mesh, Bosonic(), temp)
     println("Filled V_arr")
 end
@@ -111,9 +111,9 @@ function initialize_phi_Z_chi!(phi_arr, Z_arr, chi_arr, iw)
         w = iw[i]
         kvec = get_kvec(j, k, l)
         dwave = (cos(kvec[1]) - cos(kvec[2])) / 2
-        phi_arr[i, j, k] = 1 / abs(imag(w)^2 + 1)# * dwave
-        Z_arr[i, j, k] = 1.0 
-        chi_arr[i, j, k] = 0.0
+        phi_arr[i, j, k, l] = 1 / abs(imag(w)^2 + 1)# * dwave
+        Z_arr[i, j, k, l] = 1.0 
+        chi_arr[i, j, k, l] = 0.0
     end
 end
 
@@ -126,9 +126,9 @@ function condense_to_F_and_G!(phi, Z, chi, F_arr, G_arr, iw)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:fnw
         w = iw[l]
         kvec = get_kvec(i, j, k)
-        denom = get_denominator(w, phi[l, i, j], Z[l, i, j], chi[l, i, j] + epsilon(kvec) - mu)
-        F_arr[l, i, j] = -phi[l, i, j] / denom
-        G_arr[l, i, j] = -(w * Z[l, i, j] + epsilon(kvec) - mu + chi[l, i, j]) / denom
+        denom = get_denominator(w, phi[l, i, j, k], Z[l, i, j, k], chi[l, i, j, k] + epsilon(kvec) - mu)
+        F_arr[l, i, j, k] = -phi[l, i, j, k] / denom
+        G_arr[l, i, j, k] = -(w * Z[l, i, j, k] + epsilon(kvec) - mu + chi[l, i, j, k]) / denom
     end
 end
 
@@ -136,17 +136,17 @@ function update!(F, G, V_arr, phi, Z, chi, iw, sigma)
     F_rt = kw_to_rtau(F, 'F', mesh)
     G_rt = kw_to_rtau(G, 'F', mesh)
 
-    phit = V_arr .* F_rt / mesh.nk
-    sigmat = -V_arr .* G_rt / mesh.nk
+    phit = V_arr .* F_rt 
+    sigmat = -V_arr .* G_rt 
 
     phi .= rtau_to_kw(phit, 'F', mesh)
     sigma .= rtau_to_kw(sigmat, 'F', mesh)
 
-    for i in 1:fnw, j in 1:nx, k in 1:ny
+    for i in 1:fnw, j in 1:nx, k in 1:ny, l in 1:nz
         w = iw[i]
-        sp, sm = sigma[i, j, k], sigma[fnw - i + 1, j, k]
-        Z[i, j, k] = 1.0 - 0.5 * (sp - sm) / w
-        chi[i, j, k] = 0.5 * (sp + sm)
+        sp, sm = sigma[i, j, k, l], sigma[fnw - i + 1, j, k, l]
+        Z[i, j, k, l] = 1.0 - 0.5 * (sp - sm) / w
+        chi[i, j, k, l] = 0.5 * (sp + sm)
     end
 end
 
@@ -173,9 +173,9 @@ function eliashberg_sparse_ir()
     global Susceptibility = CondensedMatterField.CMF(input_data_file)
     println("Loaded Susceptibility")
 
-    phi_arr = Array{ComplexF64}(undef, fnw, nx, ny)
-    Z_arr = Array{ComplexF64}(undef, fnw, nx, ny)
-    chi_arr = Array{ComplexF64}(undef, fnw, nx, ny)
+    phi_arr = Array{ComplexF64}(undef, fnw, nx, ny, nz)
+    Z_arr = Array{ComplexF64}(undef, fnw, nx, ny, nz)
+    chi_arr = Array{ComplexF64}(undef, fnw, nx, ny, nz)
     println("Initializing phi, Z, and chi")
     initialize_phi_Z_chi!(phi_arr, Z_arr, chi_arr, iw)
 
@@ -197,7 +197,7 @@ function eliashberg_sparse_ir()
     for i in 1:iterations
         update!(F_arr, G_arr, V_arr, phi_arr, Z_arr, chi_arr, iw, sigma)
 
-        phierr = round(sum(abs.(prev_phi_arr - phi_arr)) / (fnw * nx * ny),digits=8)
+        phierr = round(sum(abs.(prev_phi_arr - phi_arr)) / (fnw * nx * ny * nz),digits=8)
         print("Iteration $i: Error = $phierr           \r")
 
         if abs(phierr) < scf_tol || maximum(abs.(phi_arr)) < 1e-10
@@ -418,7 +418,50 @@ function kernel_summation!(
     return nothing
 end
 
+function test_multiply()
+    pts = 1000
+    f = Array{ComplexF64}(undef, pts)
+    exact_r = Array{ComplexF64}(undef, pts)
+    IR_basis_set = FiniteTempBasisSet(beta, 10, 1e-10)
+    mesh = IRMesh.Mesh(IR_basis_set, pts)
+    for i in 1:pts
+        x = 2 * pi * i / pts
+        f[i] = sin(x)
+        exact_r[i] = -cos(x) / 2 - sin(x) / (8 * pi)
+    end
+    temp = fft(f)
+    r_r = temp .* temp
+    calc_r = ifft(r_r) / pts
+
+    p = plot(real.(calc_r), label="Calculated")
+    plot!(p, real.(exact_r), label="Exact")
+    display(p)
+    readline()
 end
 
+function test_transform()
+    pts = 1000
+    f = Array{ComplexF64}(undef, pts)
+    g = Array{ComplexF64}(undef, pts)
+    IR_basis_set = FiniteTempBasisSet(beta, 10, 1e-10)
+    mesh = IRMesh.Mesh(IR_basis_set, pts)
+    for i in 1:pts
+        x = 2 * pi * i / pts
+        f[i] = sin(x)
+        g[i] = sin(x)
+    end
+    temp = fft(f)
+    new_f = ifft(temp)
+
+    p = plot(real.(new_f), label="Calculated")
+    plot!(p, real.(g), label="Exact")
+    display(p)
+    readline()
+end
+
+end # module
+
 using .Eliashberg
+#Eliashberg.test_transform()
+#Eliashberg.test_multiply()
 Eliashberg.eliashberg_sparse_ir()

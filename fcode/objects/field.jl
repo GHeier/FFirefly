@@ -112,9 +112,10 @@ function calculate_interp(points, data, dimension)
     # Step 3: Create the interpolation object
     w_coords = coords_list[end]
     integer_list = [1.0*i for i in 1:size(w_coords,1)]
-    if psize > dimension
-        coords_list[end] = integer_list
-    end
+    #if psize > dimension
+    #    println("psize > dimension")
+    #    coords_list[end] = integer_list
+    #end
     coords_tuple = tuple(coords_list...)
     interp = interpolate(coords_tuple, data_nd, Gridded(Linear()))
 
@@ -122,6 +123,9 @@ function calculate_interp(points, data, dimension)
     w_tuple = tuple(w_coords)
     data_integer = reshape(integer_list, length(w_coords))
     w_interp = interpolate(w_tuple, data_integer, Gridded(Linear()))
+    println(w_tuple)
+    println(data_integer)
+    println(w_interp(0.0))
 
     return interp, w_interp
 end
@@ -206,10 +210,15 @@ end
 
 function (cmf::CMF)(q::Vector{Float64}, w::Float64 = 0.0)
     q = cmf.inv_domain * q
+    println(q)
     q = [sanitize_within_bounds(q[i], cmf.bounds[2*i-1], cmf.bounds[2*i], 1e-4) for i in 1:length(q)]
-    if cmf.with_w
-        q = [q; cmf.w_interp(w)]
-    end
+    println(q)
+    #if cmf.with_w
+    #    q = [q; cmf.w_interp(w)]
+    #end
+    println(q)
+    q = [q; w]
+    println(q)
     return cmf.interp(q...)
 end
 
@@ -231,11 +240,11 @@ function get_header(data, dimension, with_w)
         header *= "y "
         if is_vector && !is_complex
             fheader *= "fy "
-        end
-        if is_vector && is_complex
+        elseif is_vector && is_complex
             fheader *= "Re(fy) Im(fy) "
         end
-    elseif dimension > 2
+    end
+    if dimension > 2
         header *= "z "
         if is_vector && !is_complex
             fheader *= "fz "

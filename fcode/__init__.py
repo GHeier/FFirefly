@@ -1,6 +1,9 @@
 from .fmodule import *
 from .config.load import config
-#from .config import input_variables
+
+#import julia
+#from julia import FCode
+#CMF = FCode.CMF
 
 import re
 import subprocess
