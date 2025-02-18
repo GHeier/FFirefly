@@ -1,0 +1,4 @@
+name = "CondensedMatterField"
+uuid = "653343bd-fc05-49aa-8735-c4cfd0de52f4"
+authors = ["Gsnores <griffinheier@gmail.com>"]
+version = "0.1.0"

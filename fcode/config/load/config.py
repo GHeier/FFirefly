@@ -221,7 +221,7 @@ def load_config():
                 method = value
             if "FS_only" in key:
                 global FS_only
-                FS_only = bool(value)
+                FS_only = value == 'true'
             if "bcs_cutoff_frequency" in key:
                 global bcs_cutoff_frequency
                 bcs_cutoff_frequency = float(value)
@@ -235,7 +235,7 @@ def load_config():
 #[RESPONSE]
             if "dynamic" in key:
                 global dynamic
-                dynamic = bool(value)
+                dynamic = value == 'true'
             # Finished setting variables
         if not brillouin_zone:
             print("Error: Brillouin zone not specified.")

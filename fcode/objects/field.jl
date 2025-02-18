@@ -173,7 +173,7 @@ function extract_domain(points::Matrix{Float64}, dimension::Int)
     prev_p = lattice_vec
 
     i = 1
-    while i < length(points)
+    while i < length(points) - 1
         p = points[i+1,1:e]
         current_vec = round.((p - first) / section_sizes[section], digits=4)
         cross = cross_product(lattice_vec, current_vec)
@@ -217,7 +217,7 @@ function (cmf::CMF)(q::Vector{Float64}, w::Float64 = 0.0)
     #    q = [q; cmf.w_interp(w)]
     #end
     println(q)
-    q = [q; w]
+    #q = [q; w]
     println(q)
     return cmf.interp(q...)
 end
@@ -316,28 +316,6 @@ end
 #    nothing  # Julia's GC will handle it
 #end
 
-
-function test_2dim_real_scalar_field()
-    points = [0.0 0.0; 1.0 0.0; 0.0 1.0; 1.0 1.0]
-    data = [1.0, 2.0, 3.0, 4.0]
-    cmf = CMF(points, data, 2, false)
-    println(cmf([0.5, 0.5], 0.0))
-    return true
-end
-
-function test_2dim_complex_scalar_field()
-    points = [0.0 0.0; 1.0 0.0; 0.0 1.0; 1.0 1.0]
-    data = [1.0 + 1.0*im, 2.0 + 2.0*im, 3.0 + 3.0*im, 4.0 + 4.0*im]
-    cmf = CMF(points, data, 2, false)
-    println(cmf([0.5, 0.5], 0.0))
-end
-
-function test_2dim_complex_scalar_field_with_w()
-    points = [0.0 0.0 0.0; 1.0 0.0 0.0; 0.0 1.0 0.0; 1.0 1.0 0.0; 0.0 0.0 1.0; 1.0 0.0 1.0; 0.0 1.0 1.0; 1.0 1.0 1.0]
-    data = [1.0 + 1.0*im, 2.0 + 2.0*im, 3.0 + 3.0*im, 4.0 + 4.0*im, 5.0 + 5.0*im, 6.0 + 6.0*im, 7.0 + 7.0*im, 8.0 + 8.0*im]
-    cmf = CMF(points, data, 2, true)
-    println(cmf([0.5, 0.5], 0.0))
-end
 
 end # module
 

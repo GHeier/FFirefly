@@ -58,7 +58,7 @@ int main() {
     else if (!strcmp(c_category, "response")) response();
     else if (!strcmp(c_category, "superconductor")) superconductor();
     else if (!strcmp(c_category, "test")) test();
-    else printf("Unknown Calculation Type\n\n");
+    else printf("Unknown Category\n\n");
 
     //unload_c_config(); // Free memory allocated for global c variables
     end_python();

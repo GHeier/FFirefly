@@ -56,6 +56,7 @@ function Mesh(
         dimension = 0
         nk = 0
     end
+    println("nk = ", nk, " dimension = ", dimension)
 
     # lowest Matsubara frequency index
     iw0_f = findall(x->x==FermionicFreq(1), IR_basis_set.smpl_wn_f.sampling_points)[1]
@@ -97,6 +98,12 @@ function wn_to_tau(mesh::Mesh, statistics::Statistics, obj_wn)
     """ Fourier transform from iw_n to tau via IR basis """
     smpl_tau, smpl_wn = smpl_obj(mesh, statistics)
     obj_l   = fit(smpl_wn, obj_wn, dim=1)
+    max_l = maximum(abs.(obj_l))
+    for i in 1:length(obj_l)
+        if abs(obj_l[i]) < 1e-5 * max_l
+            obj_l[i] = 0
+        end
+    end
     obj_tau = evaluate(smpl_tau, obj_l, dim=1)
     return obj_tau
 end

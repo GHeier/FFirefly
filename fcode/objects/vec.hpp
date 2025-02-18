@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <complex>
 
 using namespace std;
 
@@ -48,6 +49,18 @@ Vec operator/(int multiple, const Vec &input);
 Vec operator/(const Vec &input, int multiple);
 Vec operator/(float multiple, const Vec &input);
 Vec operator/(const Vec &input, float multiple);
+
+complex<Vec> operator*(const float& left, const complex<Vec>& right);
+complex<Vec> operator*(const complex<Vec>& left, const float& right);
+complex<Vec> operator/(const complex<Vec>& left, const float& right);
+complex<Vec> operator/(const float& left, const complex<Vec>& right);
+complex<Vec> operator+(const complex<Vec>& left, const complex<Vec>& right);
+complex<Vec> operator+(const complex<Vec>& left, const Vec& right);
+complex<Vec> operator+(const Vec& left, const complex<Vec>& right);
+complex<Vec> operator-(const complex<Vec>& left, const complex<Vec>& right);
+complex<Vec> operator-(const complex<Vec>& left, const Vec& right);
+complex<Vec> operator-(const Vec& left, const complex<Vec>& right);
+
 bool operator==(const Vec& k, const Vec& q);
 /// Comparison operator for Vec, sorting them by area
 bool operator<(const Vec& left, const Vec& right);

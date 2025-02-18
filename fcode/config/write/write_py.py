@@ -42,8 +42,8 @@ def format_set_line(key, value, section):
         return f"            if \"{key}\" in key:\n                global {key}\n                {key} = float(value)"
     if type(value) == bool:
         if section == 'BANDS':
-            return f"            if \"{key}\" in key:\n                global {key}\n                {key}.append(bool(value))"
-        return f"            if \"{key}\" in key:\n                global {key}\n                {key} = bool(value)"
+            return f"            if \"{key}\" in key:\n                global {key}\n                {key}.append(value == 'true')"
+        return f"            if \"{key}\" in key:\n                global {key}\n                {key} = value == 'true'"
     if type(value) == list:
         if type(value[0]) == str:
             return f"            if \"{key}\" in key:\n                global {key}\n                {key} = [value.split()[i] for i in range(3)]"
@@ -52,7 +52,7 @@ def format_set_line(key, value, section):
         if type(value[0]) == float:
             return f"            if \"{key}\" in key:\n                global {key}\n                {key} = [float(value.split()[i]) for i in range(3)]"
         if type(value[0]) == bool:
-            return f"            if \"{key}\" in key:\n                global {key}\n                {key} = [bool(value.split()[i]) for i in range(3)]"
+            return f"            if \"{key}\" in key:\n                global {key}\n                {key} = [value.split()[i] == 'true' for i in range(3)]"
         if type(value[0]) == list:
             return f"            if section == \"{section}\" and index < 3:\n                global {key}\n                {key}.append([float(line.split()[i]) for i in range(3)])\n                index += 1"
     print(f"Error: {key} has an unsupported type.")

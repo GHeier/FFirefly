@@ -5,18 +5,19 @@
  */
 
 #include <vector>
+#include <complex>
 #include <string>
 #include <math.h>
 #include "vec.hpp"
 
 Vec::Vec() {
-    dimension = 0;
+    dimension = 3;
     area = 0;
     x = 0;
     y = 0;
     z = 0;
     w = 0;
-    n = 0;
+    n = 1;
 }
 
 Vec::Vec(float _x, float _y, float _z, float _w, float _area, int _dimension, int _n) {
@@ -44,7 +45,7 @@ Vec Vec::round(int precision) {
             std::round(y * r) / r, 
             std::round(z * r) / r, 
             std::round(w * r) / r,
-        dimension, n);
+        area, dimension, n);
     return result;
 }
 
@@ -101,27 +102,27 @@ string vec_to_string(Vec k) {
 }
 
 Vec operator+(const Vec& k, const Vec& q) {
-    return Vec(k.x + q.x, k.y + q.y, k.z + q.z, k.w + q.w);
+    return Vec(k.x + q.x, k.y + q.y, k.z + q.z, k.w + q.w, k.area, k.dimension, k.n);
 }
 
 Vec operator-(const Vec& k, const Vec& q) {
-    return Vec(k.x - q.x, k.y - q.y, k.z - q.z, k.w - q.w);
+    return Vec(k.x - q.x, k.y - q.y, k.z - q.z, k.w - q.w, k.area, k.dimension, k.n);
 }
 
 Vec operator*(const Vec& input, int multiple) {
-    return Vec(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple);
+    return Vec(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple, input.area, input.dimension, input.n);
 }
 
 Vec operator*(int multiple, const Vec& input) {
-    return Vec(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple);
+    return Vec(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple, input.area, input.dimension, input.n);
 }
 
 Vec operator*(const Vec& input, float multiple) {
-    return Vec(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple);
+    return Vec(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple, input.area, input.dimension, input.n);
 }
 
 Vec operator*(float multiple, const Vec& input) {
-    return Vec(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple);
+    return Vec(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple, input.area, input.dimension, input.n);
 }
 
 float operator*(const Vec& left, const Vec& right) {
@@ -141,19 +142,59 @@ Vec operator*(vector<vector<float>>& left, Vec right) {
 }
 
 Vec operator/(const Vec& input, float multiple) {
-    return Vec(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple);
+    return Vec(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple, input.area, input.dimension, input.n);
 }
 
 Vec operator/(float multiple, const Vec& input) {
-    return Vec(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple);
+    return Vec(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple, input.area, input.dimension, input.n);
 }
 
 Vec operator/(const Vec& input, int multiple) {
-    return Vec(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple);
+    return Vec(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple, input.area, input.dimension, input.n);
 }
 
 Vec operator/(int multiple, const Vec& input) {
-    return Vec(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple);
+    return Vec(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple, input.area, input.dimension, input.n);
+}
+
+complex<Vec> operator*(const float& left, const complex<Vec>& right) {
+    return complex<Vec>(left * right.real(), left * right.imag());
+}
+
+complex<Vec> operator*(const complex<Vec>& left, const float& right) {
+    return complex<Vec>(left.real() * right, left.imag() * right);
+}
+
+complex<Vec> operator/(const complex<Vec>& left, const float& right) {
+    return complex<Vec>(left.real() / right, left.imag() / right);
+}
+
+complex<Vec> operator/(const float& left, const complex<Vec>& right) {
+    return complex<Vec>(left / right.real(), left / right.imag());
+}
+
+complex<Vec> operator+(const complex<Vec>& left, const complex<Vec>& right) {
+    return complex<Vec>(left.real() + right.real(), left.imag() + right.imag());
+}
+
+complex<Vec> operator+(const complex<Vec>& left, const Vec& right) {
+    return complex<Vec>(left.real() + right, left.imag());
+}
+
+complex<Vec> operator+(const Vec& left, const complex<Vec>& right) {
+    return complex<Vec>(left + right.real(), right.imag());
+}
+
+complex<Vec> operator-(const complex<Vec>& left, const complex<Vec>& right) {
+    return complex<Vec>(left.real() - right.real(), left.imag() - right.imag());
+}
+
+complex<Vec> operator-(const complex<Vec>& left, const Vec& right) {
+    return complex<Vec>(left.real() - right, left.imag());
+}
+
+complex<Vec> operator-(const Vec& left, const complex<Vec>& right) {
+    return complex<Vec>(left - right.real(), float(-1.0) * right.imag());
 }
 
 float Vec::norm() {
