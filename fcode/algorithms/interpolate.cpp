@@ -599,7 +599,7 @@ complex<Vec> interpolate_1D(float x_val, float x_min, float x_max, vector<comple
     float dx = (x_max - x_min) / (f.size() - 1);
     int i = (x_val - x_min) / dx;
     if (i < 0 || i >= f.size()) throw out_of_range("i out of bounds");
-    if (i == f.size() - 1) i--;
+    //if (i == f.size() - 1) i--;
 
     float x_rel = (x_val - x_min) / dx - i;
     if (x_rel < 0 || x_rel > 1) throw out_of_range("x_rel out of bounds");
@@ -630,8 +630,8 @@ complex<Vec> interpolate_2D(float x_val, float y_val, float x_min, float x_max, 
     int j = (y_val - y_min) / dy;
     if (i < 0 || i >= nx) throw out_of_range("i out of bounds");
     if (j < 0 || j >= ny) throw out_of_range("j out of bounds");
-    if (i == nx - 1) i--;
-    if (j == ny - 1) j--;
+    //if (i == nx - 1) i--;
+    //if (j == ny - 1) j--;
 
     float x_rel = (x_val - x_min) / dx - i;
     float y_rel = (y_val - y_min) / dy - j;
@@ -674,9 +674,9 @@ complex<Vec> interpolate_3D(float x_val, float y_val, float z_val, float x_min, 
     if (j < 0 || j >= ny) throw out_of_range("j out of bounds");
     if (k < 0 || k >= nz) throw out_of_range("k out of bounds");
 
-    if (i == nx - 1) i--;
-    if (j == ny - 1) j--;
-    if (k == nz - 1) k--;
+    //if (i == nx - 1) i--;
+    //if (j == ny - 1) j--;
+    //if (k == nz - 1) k--;
 
     float x_rel = (x_val - x_min) / dx - i;
     float y_rel = (y_val - y_min) / dy - j;

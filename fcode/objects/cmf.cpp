@@ -7,6 +7,7 @@
  * Author: Griffin Heier
  */
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <string>
 #include <fstream>
@@ -39,13 +40,6 @@ CMF::CMF() {
 
 // Function to invert a matrix represented as vector<Vec>
 vector<Vec> invertMatrix(vector<Vec>& matrix, int n) {
-    // Print matrix
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            cout << matrix[i](j) << " ";
-        }
-        cout << endl;
-    }
     // Create augmented matrix [A|I]
     vector<vector<float>> augmented(n, std::vector<float>(2 * n, 0.0f));
     for (size_t i = 0; i < n; ++i) {
@@ -149,13 +143,29 @@ void CMF::get_values_for_interpolation(vector<Vec> &points, vector<float> &w_poi
     int jump = 1;
     if (w_size > 1) jump = w_size;
     Vec lattice_vec = (points[jump] - first).round();
+
+    if (dimension == 1) {
+        section_sizes[0] = points.size() / w_points.size();
+        domain.push_back((points[points.size()-1] - first).round());
+        this->domain = domain;
+        inv_domain = invertMatrix(domain, dimension);
+        nx = section_sizes[0];
+        if (with_w) {
+            wmin = *min_element(w_points.begin(), w_points.end());
+            wmax = *max_element(w_points.begin(), w_points.end());
+        }
+        return;
+    }
+
     for (int i = 1; i < points.size(); i += jump) {
         Vec current_vec = ((points[i] - first) / section_sizes[section]).round();
         if (cross_product(lattice_vec, current_vec).norm() < 1e-6) {
             section_sizes[section]++;
         }
         else {
-            domain.push_back((points[i-jump] - first).round());
+            Vec p = (points[i-jump] - first).round();
+            p.dimension = dimension;
+            domain.push_back(p);
             jump = i;
             section++;
             section_sizes[section]++;
@@ -163,7 +173,7 @@ void CMF::get_values_for_interpolation(vector<Vec> &points, vector<float> &w_poi
             lattice_vec = (points[i] - first).round();
         }
     }
-    if (w_size > 0) jump -= w_size;
+    if (w_size > 0 and domain.size() != 0) jump -= w_size;
     domain.push_back((points[points.size()-jump] - first).round());
     reverse(domain.begin(), domain.end());
     this->domain = domain;
@@ -196,6 +206,7 @@ CMF::CMF(vector<Vec> points, vector<complex<Vec>> values, int dimension, bool wi
     this->values = values;
     this->dimension = dimension;
     this->is_complex = is_complex;
+    this->is_vector = is_vector;
     get_values_for_interpolation(points, w_points);
     filled = true;
 }
@@ -228,35 +239,6 @@ complex<Vec> CMF::operator() (Vec point, float w) {
     throw runtime_error("Invalid dimension.");
 }
 
-CMF CMF::load_CMF_from_file(string filename) {
-    ifstream file(filename);
-    if (!file.is_open()) {
-        throw runtime_error("Failed to open the file.");
-    }
-    string line;
-    while (getline(file, line)) {
-        istringstream iss(line);
-        Vec point;
-        float value;
-        float ivalue;
-        for (int i = 0; i < dimension; i++) {
-            float temp;
-            iss >> temp;
-            point(i) = temp;
-        }
-        iss >> value;
-        point.dimension = dimension;
-        points.push_back(point);
-        complex<Vec> vval = complex<Vec>(value, 0);
-        if (is_complex) {
-            iss >> ivalue;
-            vval = complex<Vec>(value, ivalue);
-        }
-        values.push_back(vval);
-    }
-    return CMF(points, values, dimension, with_w, is_complex, is_vector);
-}
-
 complex<Vec> CMF_search_1d(float w_val, vector<float> &w_points, vector<complex<Vec>> &f) {
     // Interpolates a 1D function f(w) given on a grid between w_min and w_max
     // at the point w_val using linear interpolation
@@ -279,7 +261,6 @@ complex<Vec> CMF_search_1d(float w_val, vector<float> &w_points, vector<complex<
 }
 
 complex<Vec> CMF_search_2d(float x_val, float w_val, int nx, vector<float> &w_points, vector<complex<Vec>> &f) {
-    printf("CMF searhc 2d\n");
     // Interpolates a 2D function f(x, y) given on a grid between x_min and x_max
     // and y_min and y_max at the point (x_val, y_val) using bilinear interpolation
     // x_val, y_val: values at which to interpolate
@@ -288,15 +269,19 @@ complex<Vec> CMF_search_2d(float x_val, float w_val, int nx, vector<float> &w_po
     // f: vector of function values at the grid points
     // returns: interpolated value of f(x_val)
     float x_min = 0, x_max = 1;
+    float w_min = w_points[0], w_max = w_points[w_points.size()-1];
 
     x_val = sanitize_within_bounds(x_val, x_min, x_max);
+    w_val = sanitize_within_bounds(w_val, w_min, w_max);
     if (x_val < x_min || x_val > x_max) throw out_of_range("x_val out of bounds");
+    if (w_val < w_min || w_val > w_max) throw out_of_range("w_val out of bounds");
 
     float dx = (x_max - x_min) / (nx - 1);
 
     int i = (x_val - x_min) / dx;
     int j = binary_search(w_val, w_points);
     if (i < 0 || i >= nx) throw out_of_range("i out of bounds");
+    if (j < 0 || j >= w_points.size()) throw out_of_range("j out of bounds");
     if (i == nx - 1) i--;
     if (j == w_points.size() - 1) j--;
 
@@ -399,9 +384,9 @@ complex<Vec> CMF_search_4d(float x_val, float y_val, float z_val, float w_val,
     int j = (y_val - y_min) / dy;
     int k = (z_val - z_min) / dz;
     int l = binary_search(w_val, w_points);
-    if (i < 0 || i >= nx) throw out_of_range("i out of bounds");
-    if (j < 0 || j >= ny) throw out_of_range("j out of bounds");
-    if (k < 0 || k >= nz) throw out_of_range("k out of bounds");
+    if (i < 0 || i > nx) throw out_of_range("i out of bounds");
+    if (j < 0 || j > ny) throw out_of_range("j out of bounds");
+    if (k < 0 || k > nz) throw out_of_range("k out of bounds");
     if (i == nx - 1) i--;
     if (j == ny - 1) j--;
     if (k == nz - 1) k--;
@@ -416,24 +401,164 @@ complex<Vec> CMF_search_4d(float x_val, float y_val, float z_val, float w_val,
     if (z_rel < 0 || z_rel > 1) throw out_of_range("z_rel out of bounds");
     if (w_rel < 0 || w_rel > 1) throw out_of_range("w_rel out of bounds");
 
+
     complex<Vec> result = 
         (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * (1 - w_rel) * f[i*nx*nx*nx+j*ny*ny+k*nz+l] + 
         x_rel * (1 - y_rel) * (1 - z_rel) * (1 - w_rel) * f[(i + 1)*nx*nx*nx+j*ny*ny+k*nz+l] + 
         (1 - x_rel) * y_rel * (1 - z_rel) * (1 - w_rel) * f[i*nx*nx*nx + (j + 1)*ny*ny+k*nz+l] +
         x_rel * y_rel * (1 - z_rel) * (1 - w_rel) * f[(i + 1)*nx*nx*nx+(j + 1)*ny*ny+k*nz+l] +
-        (1 - x_rel) * (1 - y_rel) * z_rel * (1 - w_rel) * f[i*nx*nx*nx+j*ny*ny+k*nz+l + 1] +
-        x_rel * (1 - y_rel) * z_rel * (1 - w_rel) * f[(i + 1)*nx*nx*nx+j*ny*ny+k*nz+l + 1] +
-        (1 - x_rel) * y_rel * z_rel * (1 - w_rel) * f[i*nx*nx*nx + (j + 1)*ny*ny+k*nz+l + 1] +
-        x_rel * y_rel * z_rel * (1 - w_rel) * f[(i + 1)*nx*nx*nx+(j + 1)*ny*ny+k*nz+l + 1] +
+        (1 - x_rel) * (1 - y_rel) * z_rel * (1 - w_rel) * f[i*nx*nx*nx+j*ny*ny+(k+1)*nz+l] +
+        x_rel * (1 - y_rel) * z_rel * (1 - w_rel) * f[(i + 1)*nx*nx*nx+j*ny*ny+(k+1)*nz+l] +
+        (1 - x_rel) * y_rel * z_rel * (1 - w_rel) * f[i*nx*nx*nx + (j + 1)*ny*ny+(k+1)*nz+l] +
+        x_rel * y_rel * z_rel * (1 - w_rel) * f[(i + 1)*nx*nx*nx+(j + 1)*ny*ny+(k+1)*nz+l] +
         (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * w_rel * f[i*nx*nx*nx+j*ny*ny+k*nz+l + 1] +
         x_rel * (1 - y_rel) * (1 - z_rel) * w_rel * f[(i + 1)*nx*nx*nx+j*ny*ny+k*nz+l + 1] +
         (1 - x_rel) * y_rel * (1 - z_rel) * w_rel * f[i*nx*nx*nx + (j + 1)*ny*ny+k*nz+l + 1] +
         x_rel * y_rel * (1 - z_rel) * w_rel * f[(i + 1)*nx*nx*nx+(j + 1)*ny*ny+k*nz+l + 1] +
-        (1 - x_rel) * (1 - y_rel) * z_rel * w_rel * f[i*nx*nx*nx+j*ny*ny+k*nz+l + 1] +
-        x_rel * (1 - y_rel) * z_rel * w_rel * f[(i + 1)*nx*nx*nx+j*ny*ny+k*nz+l + 1] +
-        (1 - x_rel) * y_rel * z_rel * w_rel * f[i*nx*nx*nx + (j + 1)*ny*ny+k*nz+l + 1] +
-        x_rel * y_rel * z_rel * w_rel * f[(i + 1)*nx*nx*nx+(j + 1)*ny*ny+k*nz+l + 1];
+        (1 - x_rel) * (1 - y_rel) * z_rel * w_rel * f[i*nx*nx*nx+j*ny*ny+(k+1)*nz+l + 1] +
+        x_rel * (1 - y_rel) * z_rel * w_rel * f[(i + 1)*nx*nx*nx+j*ny*ny+(k+1)*nz+l + 1] +
+        (1 - x_rel) * y_rel * z_rel * w_rel * f[i*nx*nx*nx + (j + 1)*ny*ny+(k+1)*nz+l + 1] +
+        x_rel * y_rel * z_rel * w_rel * f[(i + 1)*nx*nx*nx+(j + 1)*ny*ny+(k+1)*nz+l + 1];
 
     return result;
 }
 
+CMF load_CMF_from_file(string filename) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        throw runtime_error("Failed to open the file.");
+    }
+    string line;
+    int ind = 0;
+    int dimension = 0;
+    bool with_w = false;
+    bool is_complex = false;
+    bool is_vector = false;
+    vector<Vec> points;
+    vector<complex<Vec>> values;
+    while (getline(file, line)) {
+        istringstream iss(line);
+        if (ind == 0) {
+            string word;
+            while (iss >> word) {
+                if (word == "x") dimension++;
+                if (word == "y") dimension++;
+                if (word == "z") dimension++;
+                if (word == "w") with_w = true;
+                if (word == "Re(f)") is_complex = true;
+                if (word == "Im(f)") is_complex = true;
+                if (word == "fx") is_vector = true;
+                if (word == "fy") is_vector = true;
+                if (word == "fz") is_vector = true;
+            }
+            dimension += with_w;
+            ind++;
+            continue;
+        }
+        Vec point;
+        float value;
+        float ivalue;
+        for (int i = 0; i < dimension; i++) {
+            float temp;
+            iss >> temp;
+            point(i) = temp;
+        }
+        iss >> value;
+        point.dimension = dimension;
+        points.push_back(point);
+        complex<Vec> vval = complex<Vec>(value, 0);
+        if (is_complex) {
+            iss >> ivalue;
+            vval = complex<Vec>(value, ivalue);
+        }
+        values.push_back(vval);
+    }
+    return CMF(points, values, dimension, with_w, is_complex, is_vector);
+}
+
+string get_header(int dimension, bool with_w, bool is_complex, bool is_vector) {
+   // Determine fheader
+    string fheader = "    f    ";
+    if (is_complex) {
+        fheader = "   Re(f)         Im(f)";
+    }
+    if (is_vector && !is_complex) {
+        fheader = "   fx    ";
+    }
+    if (is_vector && is_complex) {
+        fheader = "    Re(fx)      Im(fx) ";
+    }
+
+    // Build header
+    string header = "    x         ";
+    if (dimension > 1) {
+        header += "    y         ";
+        if (is_vector && !is_complex) {
+            fheader += "   fy        ";
+        } else if (is_vector && is_complex) {
+            fheader += "    Re(fy)    Im(fy) ";
+        }
+    }
+    if (dimension > 2) {
+        header += "    z        ";
+        if (is_vector && !is_complex) {
+            fheader += "   fz        ";
+        }
+        if (is_vector && is_complex) {
+            fheader += "     Re(fz)    Im(fz) ";
+        }
+    }
+    if (with_w) {
+        header += "   w        ";
+    }
+
+    header += fheader;
+    return header;
+}
+
+
+void save_to_file(string filename, vector<Vec> &points, vector<complex<Vec>> &values, int dimension, bool with_w, bool is_complex, bool is_vector) {
+    ofstream file(filename);
+    dimension -= with_w;
+    string header = get_header(dimension, with_w, is_complex, is_vector);
+    file << fixed << setprecision(6);
+    file << header << endl;
+    for (int i = 0; i < points.size(); i++) {
+        Vec point = points[i];
+        complex<Vec> value = values[i];
+        file << point(0) << "      ";
+        if (dimension > 1) file << point(1) << "      ";
+        if (dimension > 2) file << point(2) << "      ";
+        if (with_w) file << point(dimension) << "      ";
+        if (is_complex) {
+            file << value.real()(0) << "      " << value.imag()(0) << "      ";
+            if (is_vector) {
+                file << value.real()(1) << "      " << value.imag()(1) << "      ";
+                if (dimension > 2) {
+                    file << value.real()(2) << "      " << value.imag()(2) << "      ";
+                }
+            }
+        } else {
+            file << value.real()(0) << "      ";
+            if (is_vector) {
+                file << value.real()(1) << "      ";
+                if (dimension > 2) {
+                    file << value.real()(2) << "      ";
+                }
+            }
+        }
+        file << endl;
+    }
+}
+
+void combine_points_and_w(vector<Vec> &points, vector<float> &w_points) {
+    for (int i = 0; i < points.size(); i++) {
+        points[i].dimension++;
+        points[i](points[i].dimension-1) = w_points[i % w_points.size()];
+    }
+}
+
+void save_CMF_to_file(string filename, CMF &field) {
+    if (field.with_w) combine_points_and_w(field.points, field.w_points);
+    save_to_file(filename, field.points, field.values, field.dimension + field.with_w, field.with_w, field.is_complex, field.is_vector);
+}

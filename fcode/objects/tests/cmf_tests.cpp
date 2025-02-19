@@ -12,7 +12,6 @@ complex<Vec> func(Vec point) {
 }
 
 bool test_2d() {
-    printf("Running 2D test\n");
     vector<Vec> points;
     vector<complex<Vec>> values;
     int dimension = 2;
@@ -39,11 +38,22 @@ bool test_2d() {
     bool test2 = fabs(r2 - 2.0) < 1e-2;
     bool test3 = fabs(r3 - 0.0) < 1e-2;
 
-    return test1 && test2 && test3;
+    bool frompoint = test1 && test2 && test3;
+    save_CMF_to_file("temp.dat", field);
+
+    CMF filefield = load_CMF_from_file("temp.dat");
+
+    float r4 = filefield(Vec(0.5, 0.5)).real()(0);
+    float r5 = filefield(Vec(1.0, 1.0)).real()(0);
+    float r6 = filefield(Vec(0.0, 0.0)).real()(0);
+
+    bool fromfile = fabs(r4 - 0.5) < 1e-2 && fabs(r5 - 2.0) < 1e-2 && fabs(r6 - 0.0) < 1e-2;
+
+    remove("temp.dat");
+    return frompoint && fromfile;
 }
 
 bool test_2d_complex() {
-    printf("Running 2D complex test\n");
     vector<Vec> points;
     vector<complex<Vec>> values;
     int dimension = 2;
@@ -77,11 +87,30 @@ bool test_2d_complex() {
     bool test2 = fabs(r2.real() - 2.0) < 1e-2;
     bool test3 = fabs(r3.real() - 0.0) < 1e-2;
 
-    return test1 && test2 && test3;
+    save_CMF_to_file("temp.dat", field);
+
+    CMF filefield = load_CMF_from_file("temp.dat");
+
+    Vec rv4 = filefield(Vec(0.5, 0.5)).real();
+    Vec iv4 = filefield(Vec(0.5, 0.5)).imag();
+    Vec rv5 = filefield(Vec(1.0, 1.0)).real();
+    Vec iv5 = filefield(Vec(1.0, 1.0)).imag();
+    Vec rv6 = filefield(Vec(0.0, 0.0)).real();
+    Vec iv6 = filefield(Vec(0.0, 0.0)).imag();
+
+    complex<float> r4 = complex<float>(rv4(0), iv4(0));
+    complex<float> r5 = complex<float>(rv5(0), iv5(0));
+    complex<float> r6 = complex<float>(rv6(0), iv6(0));
+
+    bool test4 = fabs(r4.real() - 0.5) < 1e-2;
+    bool test5 = fabs(r5.real() - 2.0) < 1e-2;
+    bool test6 = fabs(r6.real() - 0.0) < 1e-2;
+
+    remove("temp.dat");
+    return test1 && test2 && test3 && test4 && test5 && test6;
 }
 
 bool test_3d() {
-    printf("Running 3D test\n");
     vector<Vec> points;
     vector<complex<Vec>> values;
     int dimension = 3;
@@ -111,11 +140,23 @@ bool test_3d() {
     bool test2 = fabs(r2 - 3.0) < 1e-2;
     bool test3 = fabs(r3 - 0.0) < 1e-2;
 
-    return test1 && test2 && test3;
+    save_CMF_to_file("temp.dat", field);
+
+    CMF filefield = load_CMF_from_file("temp.dat");
+
+    float r4 = filefield(Vec(0.5, 0.5, 0.5)).real()(0);
+    float r5 = filefield(Vec(1.0, 1.0, 1.0)).real()(0);
+    float r6 = filefield(Vec(0.0, 0.0, 0.0)).real()(0);
+
+    bool test4 = fabs(r4 - 0.75) < 1e-2;
+    bool test5 = fabs(r5 - 3.0) < 1e-2;
+    bool test6 = fabs(r6 - 0.0) < 1e-2;
+
+    remove("temp.dat");
+    return test1 && test2 && test3 && test4 && test5 && test6;
 }
 
 bool test_3d_complex() {
-    printf("Running 3D complex test\n");
     vector<Vec> points;
     vector<complex<Vec>> values;
     int dimension = 3;
@@ -152,11 +193,30 @@ bool test_3d_complex() {
     bool test2 = fabs(r2.real() - 3.0) < 1e-2;
     bool test3 = fabs(r3.real() - 0.0) < 1e-2;
 
-    return test1 && test2 && test3;
+    save_CMF_to_file("temp.dat", field);
+
+    CMF filefield = load_CMF_from_file("temp.dat");
+
+    Vec rv4 = filefield(Vec(0.5, 0.5, 0.5)).real();
+    Vec iv4 = filefield(Vec(0.5, 0.5, 0.5)).imag();
+    Vec rv5 = filefield(Vec(1.0, 1.0, 1.0)).real();
+    Vec iv5 = filefield(Vec(1.0, 1.0, 1.0)).imag();
+    Vec rv6 = filefield(Vec(0.0, 0.0, 0.0)).real();
+    Vec iv6 = filefield(Vec(0.0, 0.0, 0.0)).imag();
+
+    complex<float> r4 = complex<float>(rv4(0), iv4(0));
+    complex<float> r5 = complex<float>(rv5(0), iv5(0));
+    complex<float> r6 = complex<float>(rv6(0), iv6(0));
+
+    bool test4 = fabs(r4.real() - 0.75) < 1e-2;
+    bool test5 = fabs(r5.real() - 3.0) < 1e-2;
+    bool test6 = fabs(r6.real() - 0.0) < 1e-2;
+
+    remove("temp.dat");
+    return test1 && test2 && test3 && test4 && test5 && test6;
 }
 
 bool test_2d_with_w() {
-    printf("Running 2D with_w test\n");
     vector<Vec> points;
     vector<complex<Vec>> values;
     int dimension = 2;
@@ -183,15 +243,69 @@ bool test_2d_with_w() {
     bool test2 = fabs(r2 - 2.0) < 1e-2;
     bool test3 = fabs(r3 - 0.0) < 1e-2;
 
-    printf("Test 1\n Expected: 0.5\n Got: %f\n", r1);
-    printf("Test 2\n Expected: 2.0\n Got: %f\n", r2);
-    printf("Test 3\n Expected: 0.0\n Got: %f\n", r3);
+    save_CMF_to_file("temp.dat", field);
 
-    return test1 && test2 && test3;
+    CMF filefield = load_CMF_from_file("temp.dat");
+
+    float r4 = filefield(Vec(0.5, 0.5), 0.5).real()(0);
+    float r5 = filefield(Vec(1.0, 1.0), 1.0).real()(0);
+    float r6 = filefield(Vec(0.0, 0.0), 0.0).real()(0);
+
+    bool test4 = fabs(r4 - 0.5) < 1e-2;
+    bool test5 = fabs(r5 - 2.0) < 1e-2;
+    bool test6 = fabs(r6 - 0.0) < 1e-2;
+
+    remove("temp.dat");
+    return test1 && test2 && test3 && test4 && test5 && test6;
+}
+
+bool test_3d_with_w() {
+    vector<Vec> points;
+    vector<complex<Vec>> values;
+    int dimension = 3;
+    bool is_complex = false;
+    bool is_vector = false;
+    bool with_w = true;
+
+    for (int i = 0; i < pnts; i++) {
+        for (int j = 0; j < pnts; j++) {
+            for (int k = 0; k < pnts; k++) {
+                float x = 1.0 * i / (pnts - 1);
+                float y = 1.0 * j / (pnts - 1);
+                float w = 1.0 * k / (pnts - 1);
+                Vec point(x, y, w);
+                point.dimension = dimension;
+                points.push_back(point);
+                values.push_back(func(point));
+            }
+        }
+    }
+    auto field = CMF(points, values, dimension, with_w, is_complex, is_vector);
+    float r1 = field(Vec(0.5, 0.5, 0.5), 0.5).real()(0);
+    float r2 = field(Vec(1.0, 1.0, 1.0), 1.0).real()(0);
+    float r3 = field(Vec(0.0, 0.0, 0.0), 0.0).real()(0);
+
+    bool test1 = fabs(r1 - 0.75) < 1e-2;
+    bool test2 = fabs(r2 - 3.0) < 1e-2;
+    bool test3 = fabs(r3 - 0.0) < 1e-2;
+
+    save_CMF_to_file("temp.dat", field);
+
+    CMF filefield = load_CMF_from_file("temp.dat");
+
+    float r4 = filefield(Vec(0.5, 0.5, 0.5), 0.5).real()(0);
+    float r5 = filefield(Vec(1.0, 1.0, 1.0), 1.0).real()(0);
+    float r6 = filefield(Vec(0.0, 0.0, 0.0), 0.0).real()(0);
+
+    bool test4 = fabs(r4 - 0.75) < 1e-2;
+    bool test5 = fabs(r5 - 3.0) < 1e-2;
+    bool test6 = fabs(r6 - 0.0) < 1e-2;
+
+    remove("temp.dat");
+    return test1 && test2 && test3 && test4 && test5 && test6;
 }
 
 bool test_4d_with_w() {
-    printf("Running 4D test\n");
     vector<Vec> points;
     vector<complex<Vec>> values;
     int dimension = 4;
@@ -224,22 +338,32 @@ bool test_4d_with_w() {
     bool test2 = fabs(r2 - 4.0) < 1e-2;
     bool test3 = fabs(r3 - 0.0) < 1e-2;
 
-    printf("Test 1\n Expected: 1.0\n Got: %f\n", r1);
-    printf("Test 2\n Expected: 4.0\n Got: %f\n", r2);
-    printf("Test 3\n Expected: 0.0\n Got: %f\n", r3);
+    save_CMF_to_file("temp.dat", field);
 
-    return test1 && test2 && test3;
+    CMF filefield = load_CMF_from_file("temp.dat");
+
+    float r4 = filefield(Vec(0.5, 0.5, 0.5), 0.5).real()(0);
+    float r5 = filefield(Vec(1.0, 1.0, 1.0), 1.0).real()(0);
+    float r6 = filefield(Vec(0.0, 0.0, 0.0), 0.0).real()(0);
+
+    bool test4 = fabs(r4 - 1.0) < 1e-2;
+    bool test5 = fabs(r5 - 4.0) < 1e-2;
+    bool test6 = fabs(r6 - 0.0) < 1e-2;
+
+    remove("temp.dat");
+    return test1 && test2 && test3 && test4 && test5 && test6;
 }
 
 bool cmf_tests() {
     printf("Running CMF tests\n");
-    int num_tests = 6;
+    int num_tests = 7;
     bool all_tests[num_tests] = {
         test_2d(),
         test_2d_complex(),
         test_3d(),
         test_3d_complex(),
         test_2d_with_w(),
+        test_3d_with_w(),
         test_4d_with_w()
     };
     return print_test_results(all_tests, num_tests, "CMF tests");

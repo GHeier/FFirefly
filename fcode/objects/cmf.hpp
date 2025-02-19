@@ -33,7 +33,6 @@ class CMF {
 
         CMF();
         CMF(vector<Vec> points, vector<complex<Vec>> values, int dimension, bool with_w, bool is_complex, bool is_vector);
-        CMF load_CMF_from_file(string filename);
 
         void get_values_for_interpolation(vector<Vec> &points, vector<float> &w_points);
         complex<Vec> operator() (Vec point, float w = 0);
@@ -49,3 +48,7 @@ complex<Vec> CMF_search_1d(float w_val, vector<float> &w_points, vector<complex<
 complex<Vec> CMF_search_2d(float x_val, float w_val, int nx, vector<float> &w_points, vector<complex<Vec>> &f);
 complex<Vec> CMF_search_3d(float x_val, float y_val, float w_val, int nx, int ny, vector<float> &w_points, vector<complex<Vec>> &f);
 complex<Vec> CMF_search_4d(float x_val, float y_val, float z_val, float w_val, int nx, int ny, int nz, vector<float> &w_points, vector<complex<Vec>> &f);
+
+CMF load_CMF_from_file(string filename);
+void save_to_file(string filename, vector<Vec> &points, vector<complex<Vec>> &values, int dimension, bool with_w, bool is_complex, bool is_vector);
+void save_CMF_to_file(string filename, CMF &field);

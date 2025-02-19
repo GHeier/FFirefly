@@ -42,14 +42,14 @@ float triangle_area_from_points(Vec k1, Vec k2, Vec k3) {
 }
 
 vector<Vec> points_from_indices(function<float(Vec)> func, int i, int j, int k, vector<int> k_mesh) {
-    Vec p1 = brillouin_zone * Vec(1.0*i/k_mesh[0], 1.0*j/k_mesh[1], 1.0*k/k_mesh[2]);
-    Vec p2 = brillouin_zone * Vec(1.0*(i+1)/k_mesh[0], 1.0*j/k_mesh[1], 1.0*k/k_mesh[2]);
-    Vec p3 = brillouin_zone * Vec(1.0*(i+1)/k_mesh[0], 1.0*(j+1)/k_mesh[1], 1.0*k/k_mesh[2]);
-    Vec p4 = brillouin_zone * Vec(1.0*i/k_mesh[0], 1.0*(j+1)/k_mesh[1], 1.0*k/k_mesh[2]);
-    Vec p5 = brillouin_zone * Vec(1.0*i/k_mesh[0], 1.0*j/k_mesh[1], 1.0*(k+1)/k_mesh[2]);
-    Vec p6 = brillouin_zone * Vec(1.0*(i+1)/k_mesh[0], 1.0*j/k_mesh[1], 1.0*(k+1)/k_mesh[2]);
-    Vec p7 = brillouin_zone * Vec(1.0*(i+1)/k_mesh[0], 1.0*(j+1)/k_mesh[1], 1.0*(k+1)/k_mesh[2]);
-    Vec p8 = brillouin_zone * Vec(1.0*i/k_mesh[0], 1.0*(j+1)/k_mesh[1], 1.0*(k+1)/k_mesh[2]);
+    Vec p1 = brillouin_zone * Vec((i-0.5)/k_mesh[0], (j-0.5)/k_mesh[1], (k-0.5)/k_mesh[2]);
+    Vec p2 = brillouin_zone * Vec((i+0.5)/k_mesh[0], (j-0.5)/k_mesh[1], (k-0.5)/k_mesh[2]);
+    Vec p3 = brillouin_zone * Vec((i+0.5)/k_mesh[0], (j+0.5)/k_mesh[1], (k-0.5)/k_mesh[2]);
+    Vec p4 = brillouin_zone * Vec((i-0.5)/k_mesh[0], (j+0.5)/k_mesh[1], (k-0.5)/k_mesh[2]);
+    Vec p5 = brillouin_zone * Vec((i-0.5)/k_mesh[0], (j-0.5)/k_mesh[1], (k+0.5)/k_mesh[2]);
+    Vec p6 = brillouin_zone * Vec((i+0.5)/k_mesh[0], (j-0.5)/k_mesh[1], (k+0.5)/k_mesh[2]);
+    Vec p7 = brillouin_zone * Vec((i+0.5)/k_mesh[0], (j+0.5)/k_mesh[1], (k+0.5)/k_mesh[2]);
+    Vec p8 = brillouin_zone * Vec((i-0.5)/k_mesh[0], (j+0.5)/k_mesh[1], (k+0.5)/k_mesh[2]);
 
     p1.w = func(p1);  
     p2.w = func(p2);
