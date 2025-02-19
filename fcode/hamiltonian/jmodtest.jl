@@ -22,9 +22,9 @@ function save_cmf_to_file!(path::String, cmf::Ptr{Cvoid})
     ccall((:cmf_save, testmodule), Cvoid, (Cstring, Ptr{Cvoid}), path, cmf)
 end
 
-cmf = create_CMF_CS()
-file = "/home/g/Research/Materials/Test/test_ckio_ir.dat"
-cmf2 = load_cmf_cs(file)
+#cmf = create_CMF_CS()
+#file = "/home/g/Research/Materials/Test/test_ckio_ir.dat"
+#cmf2 = load_cmf_cs(file)
 
 path = "/home/g/Research/fcode/build/bin/input.cfg"
 load_config!(path)
