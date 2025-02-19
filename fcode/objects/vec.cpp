@@ -30,6 +30,21 @@ Vec::Vec(float _x, float _y, float _z, float _w, float _area, int _dimension, in
     n = _n;
 }
 
+Vec::Vec(vector<float> input) {
+    dimension = input.size();
+    printf("Vec created with dimension %d\n", dimension);
+    area = 0;
+    if (dimension > 0) x = input[0];
+    printf("Vec created with dimension %d\n", dimension);
+    if (dimension > 1) y = input[1];
+    printf("Vec created with dimension %d\n", dimension);
+    if (dimension > 2) z = input[2];
+    printf("Vec created with dimension %d\n", dimension);
+    if (dimension > 3) w = input[3];
+    n = 1;
+    printf("Vec created with dimension %d\n", dimension);
+}
+
 float& Vec::operator()(int i) {
     if (i == 0) return x;
     if (i == 1) return y;

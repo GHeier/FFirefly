@@ -34,8 +34,12 @@ CMF_CS* load_cmf_cs(const char* filename) {
 }
 
 // Call operator() overload for `Vec`
-void cmf_cs_call(CMF_CS* cmf, Vec point, float w, std::complex<float>* result) {
-    *result = cmf->operator()(point, w);
+void cmf_cs_call(CMF_CS* cmf, double *point, float w, int len, std::complex<float>* result) {
+    Vec q; q.dimension = len;
+    for (int i = 0; i < len; i++) {
+        q(i) = point[i];
+    }
+    *result = cmf->operator()(q, w);
 }
 
 // Call operator() overload for `float`

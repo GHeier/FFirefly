@@ -1,11 +1,12 @@
 #include "../cmf.hpp"
+#include "../cmf_types.hpp"
 #include "../vec.hpp"
 
 #include "../../config/load/c_config.h"
 
 using namespace std;
 
-int pnts = 11;
+int pnts = 30;
 
 complex<Vec> func(Vec point) {
     return complex<Vec>(point.norm()*point.norm());
@@ -19,10 +20,10 @@ bool test_2d() {
     bool is_vector = false;
     bool with_w = false;
 
-    for (int i = 0; i < pnts; i++) {
-        for (int j = 0; j < pnts; j++) {
-            float x = 1.0 * i / (pnts - 1);
-            float y = 1.0 * j / (pnts - 1);
+    for (int i = 0; i <= pnts; i++) {
+        for (int j = 0; j <= pnts; j++) {
+            float x = 2.0 * (i-pnts/2.0) / (pnts - 1);
+            float y = 2.0 * (j-pnts/2.0) / (pnts - 1);
             Vec point(x, y);
             point.dimension = dimension;
             points.push_back(point);
@@ -37,6 +38,9 @@ bool test_2d() {
     bool test1 = fabs(r1 - 0.5) < 1e-2;
     bool test2 = fabs(r2 - 2.0) < 1e-2;
     bool test3 = fabs(r3 - 0.0) < 1e-2;
+
+    printf("\nExpected: 0.5, 2.0, 0.0\n");
+    printf("Got: %f, %f, %f\n\n", r1, r2, r3);
 
     bool frompoint = test1 && test2 && test3;
     save_CMF_to_file("temp.dat", field);
@@ -61,10 +65,10 @@ bool test_2d_complex() {
     bool is_vector = false;
     bool with_w = false;
 
-    for (int i = 0; i < pnts; i++) {
-        for (int j = 0; j < pnts; j++) {
-            float x = 1.0 * i / (pnts - 1);
-            float y = 1.0 * j / (pnts - 1);
+    for (int i = 0; i <= pnts; i++) {
+        for (int j = 0; j <= pnts; j++) {
+            float x = 2.0 * (i-pnts/2.0) / (pnts - 1);
+            float y = 2.0 * (j-pnts/2.0) / (pnts - 1);
             Vec point(x, y);
             point.dimension = dimension;
             points.push_back(point);
@@ -86,6 +90,9 @@ bool test_2d_complex() {
     bool test1 = fabs(r1.real() - 0.5) < 1e-2;
     bool test2 = fabs(r2.real() - 2.0) < 1e-2;
     bool test3 = fabs(r3.real() - 0.0) < 1e-2;
+
+    printf("Expected: 0.5, 2.0, 0.0\n");
+    printf("Got: %f, %f, %f\n\n", r1.real(), r2.real(), r3.real());
 
     save_CMF_to_file("temp.dat", field);
 
@@ -118,12 +125,12 @@ bool test_3d() {
     bool is_vector = false;
     bool with_w = false;
 
-    for (int i = 0; i < pnts; i++) {
-        for (int j = 0; j < pnts; j++) {
-            for (int k = 0; k < pnts; k++) {
-                float x = 1.0 * i / (pnts - 1);
-                float y = 1.0 * j / (pnts - 1);
-                float z = 1.0 * k / (pnts - 1);
+    for (int i = 0; i <= pnts; i++) {
+        for (int j = 0; j <= pnts; j++) {
+            for (int k = 0; k <= pnts; k++) {
+                float x = 2.0 * (i-pnts/2.0) / (pnts - 1);
+                float y = 2.0 * (j-pnts/2.0) / (pnts - 1);
+                float z = 2.0 * (k-pnts/2.0) / (pnts - 1);
                 Vec point(x, y, z);
                 point.dimension = dimension;
                 points.push_back(point);
@@ -135,6 +142,9 @@ bool test_3d() {
     float r1 = field(Vec(0.5, 0.5, 0.5)).real()(0);
     float r2 = field(Vec(1.0, 1.0, 1.0)).real()(0);
     float r3 = field(Vec(0.0, 0.0, 0.0)).real()(0);
+
+    printf("\nExpected: 0.75, 3.0, 0.0\n");
+    printf("Got: %f, %f, %f\n\n", r1, r2, r3);
 
     bool test1 = fabs(r1 - 0.75) < 1e-2;
     bool test2 = fabs(r2 - 3.0) < 1e-2;
@@ -164,12 +174,12 @@ bool test_3d_complex() {
     bool is_vector = false;
     bool with_w = false;
 
-    for (int i = 0; i < pnts; i++) {
-        for (int j = 0; j < pnts; j++) {
-            for (int k = 0; k < pnts; k++) {
-                float x = 1.0 * i / (pnts - 1);
-                float y = 1.0 * j / (pnts - 1);
-                float z = 1.0 * k / (pnts - 1);
+    for (int i = 0; i <= pnts; i++) {
+        for (int j = 0; j <= pnts; j++) {
+            for (int k = 0; k <= pnts; k++) {
+                float x = 2.0 * (i-pnts/2.0) / (pnts - 1);
+                float y = 2.0 * (j-pnts/2.0) / (pnts - 1);
+                float z = 2.0 * (k-pnts/2.0) / (pnts - 1);
                 Vec point(x, y, z);
                 point.dimension = dimension;
                 points.push_back(point);
@@ -188,6 +198,8 @@ bool test_3d_complex() {
     complex<float> r1 = complex<float>(rv1(0), iv1(0));
     complex<float> r2 = complex<float>(rv2(0), iv2(0));
     complex<float> r3 = complex<float>(rv3(0), iv3(0));
+
+    printf("Expected: 0.5, 2.0, 0.0\n");
 
     bool test1 = fabs(r1.real() - 0.75) < 1e-2;
     bool test2 = fabs(r2.real() - 3.0) < 1e-2;
@@ -224,10 +236,10 @@ bool test_2d_with_w() {
     bool is_vector = false;
     bool with_w = true;
 
-    for (int i = 0; i < pnts; i++) {
-        for (int j = 0; j < pnts; j++) {
-            float x = 1.0 * i / (pnts - 1);
-            float w = 1.0 * j / (pnts - 1);
+    for (int i = 0; i <= pnts; i++) {
+        for (int j = 0; j <= pnts; j++) {
+            float x = 2.0 * (i-pnts/2.0) / (pnts - 1);
+            float w = 2.0 * (j-pnts/2.0) / (pnts - 1);
             Vec point(x, w);
             point.dimension = dimension;
             points.push_back(point);
@@ -238,6 +250,9 @@ bool test_2d_with_w() {
     float r1 = field(Vec(0.5, 0.5), 0.5).real()(0);
     float r2 = field(Vec(1.0, 1.0), 1.0).real()(0);
     float r3 = field(Vec(0.0, 0.0), 0.0).real()(0);
+
+    printf("\nExpected: 0.5, 2.0, 0.0\n");
+    printf("Got: %f, %f, %f\n\n", r1, r2, r3);
 
     bool test1 = fabs(r1 - 0.5) < 1e-2;
     bool test2 = fabs(r2 - 2.0) < 1e-2;
@@ -267,12 +282,12 @@ bool test_3d_with_w() {
     bool is_vector = false;
     bool with_w = true;
 
-    for (int i = 0; i < pnts; i++) {
-        for (int j = 0; j < pnts; j++) {
-            for (int k = 0; k < pnts; k++) {
-                float x = 1.0 * i / (pnts - 1);
-                float y = 1.0 * j / (pnts - 1);
-                float w = 1.0 * k / (pnts - 1);
+    for (int i = 0; i <= pnts; i++) {
+        for (int j = 0; j <= pnts; j++) {
+            for (int k = 0; k <= pnts; k++) {
+                float x = 2.0 * (i-pnts/2.0) / (pnts - 1);
+                float y = 2.0 * (j-pnts/2.0) / (pnts - 1);
+                float w = 2.0 * (k-pnts/2.0) / (pnts - 1);
                 Vec point(x, y, w);
                 point.dimension = dimension;
                 points.push_back(point);
@@ -284,6 +299,9 @@ bool test_3d_with_w() {
     float r1 = field(Vec(0.5, 0.5, 0.5), 0.5).real()(0);
     float r2 = field(Vec(1.0, 1.0, 1.0), 1.0).real()(0);
     float r3 = field(Vec(0.0, 0.0, 0.0), 0.0).real()(0);
+
+    printf("\nExpected: 0.75, 3.0, 0.0\n");
+    printf("Got: %f, %f, %f\n\n", r1, r2, r3);
 
     bool test1 = fabs(r1 - 0.75) < 1e-2;
     bool test2 = fabs(r2 - 3.0) < 1e-2;
@@ -313,14 +331,14 @@ bool test_4d_with_w() {
     bool is_vector = false;
     bool with_w = true;
 
-    for (int i = 0; i < pnts; i++) {
-        for (int j = 0; j < pnts; j++) {
-            for (int k = 0; k < pnts; k++) {
-                for (int l = 0; l < pnts; l++) {
-                    float x = 1.0 * i / (pnts - 1);
-                    float y = 1.0 * j / (pnts - 1);
-                    float z = 1.0 * k / (pnts - 1);
-                    float w = 1.0 * l / (pnts - 1);
+    for (int i = 0; i <= pnts; i++) {
+        for (int j = 0; j <= pnts; j++) {
+            for (int k = 0; k <= pnts; k++) {
+                for (int l = 0; l <= pnts; l++) {
+                    float x = 2.0 * (i-pnts/2.0) / (pnts - 1);
+                    float y = 2.0 * (j-pnts/2.0) / (pnts - 1);
+                    float z = 2.0 * (k-pnts/2.0) / (pnts - 1);
+                    float w = 2.0 * (l-pnts/2.0) / (pnts - 1);
                     Vec point(x, y, z, w);
                     point.dimension = dimension;
                     points.push_back(point);
@@ -334,6 +352,9 @@ bool test_4d_with_w() {
     float r2 = field(Vec(1.0, 1.0, 1.0), 1.0).real()(0);
     float r3 = field(Vec(0.0, 0.0, 0.0), 0.0).real()(0);
 
+    printf("\nExpected: 1.0, 4.0, 0.0\n");
+    printf("Got: %f, %f, %f\n\n", r1, r2, r3);
+
     bool test1 = fabs(r1 - 1.0) < 1e-2;
     bool test2 = fabs(r2 - 4.0) < 1e-2;
     bool test3 = fabs(r3 - 0.0) < 1e-2;
@@ -341,10 +362,11 @@ bool test_4d_with_w() {
     save_CMF_to_file("temp.dat", field);
 
     CMF filefield = load_CMF_from_file("temp.dat");
+    CMF_CS filefield_cs("temp.dat");
 
-    float r4 = filefield(Vec(0.5, 0.5, 0.5), 0.5).real()(0);
-    float r5 = filefield(Vec(1.0, 1.0, 1.0), 1.0).real()(0);
-    float r6 = filefield(Vec(0.0, 0.0, 0.0), 0.0).real()(0);
+    float r4 = filefield_cs(Vec(0.5, 0.5, 0.5), 0.5).real();
+    float r5 = filefield_cs(Vec(1.0, 1.0, 1.0), 1.0).real();
+    float r6 = filefield_cs(Vec(0.0, 0.0, 0.0), 0.0).real();
 
     bool test4 = fabs(r4 - 1.0) < 1e-2;
     bool test5 = fabs(r5 - 4.0) < 1e-2;
@@ -354,9 +376,52 @@ bool test_4d_with_w() {
     return test1 && test2 && test3 && test4 && test5 && test6;
 }
 
+bool test_1d_with_w() {
+    vector<Vec> points;
+    vector<complex<Vec>> values;
+    int dimension = 1;
+    bool is_complex = false;
+    bool is_vector = false;
+    bool with_w = true;
+
+    for (int i = 0; i <= pnts; i++) {
+        float w = 2.0 * (i-pnts/2.0) / (pnts - 1);
+        Vec point(w);
+        point.dimension = dimension;
+        points.push_back(point);
+        values.push_back(func(point));
+    }
+    auto field = CMF(points, values, dimension, with_w, is_complex, is_vector);
+    float r1 = field(0.5).real()(0);
+    float r2 = field(1.0).real()(0);
+    float r3 = field(0.0).real()(0);
+
+    printf("\nExpected: 0.25, 1.0, 0.0\n");
+    printf("Got: %f, %f, %f\n\n", r1, r2, r3);
+
+    bool test1 = fabs(r1 - 0.25) < 1e-2;
+    bool test2 = fabs(r2 - 1.0) < 1e-2;
+    bool test3 = fabs(r3 - 0.0) < 1e-2;
+
+    save_CMF_to_file("temp.dat", field);
+
+    CMF filefield = load_CMF_from_file("temp.dat");
+
+    float r4 = filefield(0.5).real()(0);
+    float r5 = filefield(1.0).real()(0);
+    float r6 = filefield(0.0).real()(0);
+
+    bool test4 = fabs(r4 - 0.25) < 1e-2;
+    bool test5 = fabs(r5 - 1.0) < 1e-2;
+    bool test6 = fabs(r6 - 0.0) < 1e-2;
+
+    remove("temp.dat");
+    return test1 && test2 && test3 && test4 && test5 && test6;
+}
+
 bool cmf_tests() {
     printf("Running CMF tests\n");
-    int num_tests = 7;
+    int num_tests = 8;
     bool all_tests[num_tests] = {
         test_2d(),
         test_2d_complex(),
@@ -364,7 +429,8 @@ bool cmf_tests() {
         test_3d_complex(),
         test_2d_with_w(),
         test_3d_with_w(),
-        test_4d_with_w()
+        test_4d_with_w(),
+        test_1d_with_w()
     };
     return print_test_results(all_tests, num_tests, "CMF tests");
 }

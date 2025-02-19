@@ -23,6 +23,7 @@ class CMF {
         vector<Vec> ivalues;
         vector<Vec> domain;
         vector<Vec> inv_domain;
+        Vec first;
         float xmin, xmax, ymin, ymax, zmin, zmax, wmin, wmax;
         int nx, ny, nz, nw;
         int dimension;

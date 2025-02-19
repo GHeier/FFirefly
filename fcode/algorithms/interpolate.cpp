@@ -630,8 +630,8 @@ complex<Vec> interpolate_2D(float x_val, float y_val, float x_min, float x_max, 
     int j = (y_val - y_min) / dy;
     if (i < 0 || i >= nx) throw out_of_range("i out of bounds");
     if (j < 0 || j >= ny) throw out_of_range("j out of bounds");
-    //if (i == nx - 1) i--;
-    //if (j == ny - 1) j--;
+    if (i == nx - 1) i--;
+    if (j == ny - 1) j--;
 
     float x_rel = (x_val - x_min) / dx - i;
     float y_rel = (y_val - y_min) / dy - j;

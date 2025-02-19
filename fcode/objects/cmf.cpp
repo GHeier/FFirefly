@@ -28,6 +28,7 @@ CMF::CMF() {
     values = vector<complex<Vec>>();
     domain = vector<Vec>();
     inv_domain = vector<Vec>();
+    first = Vec();
     nx = 0, ny = 0, nz = 0, nw = 0;
     wmax = 0, wmin = 0;
     dimension = 0;
@@ -140,11 +141,12 @@ void CMF::get_values_for_interpolation(vector<Vec> &points, vector<float> &w_poi
     vector<int> section_sizes = {1, 1, 1};
     vector<Vec> domain;
     Vec first = points[0];
+    this->first = first;
     int jump = 1;
     if (w_size > 1) jump = w_size;
     Vec lattice_vec = (points[jump] - first).round();
 
-    if (dimension == 1) {
+    if (dimension == 1 or (dimension == 0 and with_w)) {
         section_sizes[0] = points.size() / w_points.size();
         domain.push_back((points[points.size()-1] - first).round());
         this->domain = domain;
@@ -218,7 +220,8 @@ complex<Vec> CMF::operator() (float w) {
 
 complex<Vec> CMF::operator() (Vec point, float w) {
     if (w != 0 && !with_w) throw runtime_error("This field does not have a w dimension.");
-    Vec p = vec_matrix_multiplication(inv_domain, point, dimension);
+    Vec shifted = point - first;
+    Vec p = vec_matrix_multiplication(inv_domain, shifted, dimension);
     p.w = w;
     if (!with_w) {
         if (dimension == 1) 

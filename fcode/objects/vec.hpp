@@ -25,6 +25,7 @@ class Vec {
 
         Vec();
         Vec(float _x, float _y = 0, float _z = 0, float _w = 0, float _area = 0, int _dimension = 3, int _n = 1);
+        Vec(vector<float> input);
         float& operator()(int i);
         Vec round(int precision = 4);
         float norm();
