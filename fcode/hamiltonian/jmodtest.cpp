@@ -34,17 +34,21 @@ CMF_CS* load_cmf_cs(const char* filename) {
 }
 
 // Call operator() overload for `Vec`
-void cmf_cs_call(CMF_CS* cmf, double *point, float w, int len, std::complex<float>* result) {
+void cmf_cs_call(CMF_CS* cmf, const double *point, float w, int len, double *real_result, double *imag_result) {
     Vec q; q.dimension = len;
     for (int i = 0; i < len; i++) {
         q(i) = point[i];
     }
-    *result = cmf->operator()(q, w);
+    complex<float> result = cmf->operator()(q, w);
+    *real_result = real(result);
+    *imag_result = imag(result);
 }
 
 // Call operator() overload for `float`
-void cmf_cs_call2(CMF_CS* cmf, float w, std::complex<float>* result) {
-    *result = cmf->operator()(w);
+void cmf_cs_call2(CMF_CS* cmf, float w, double *real_result, double *imag_result) {
+    complex<float> result = cmf->operator()(w);
+    *real_result = real(result);
+    *imag_result = imag(result);
 }
 
 void cmf_save(CMF_CS* cmf, const char* filename) {

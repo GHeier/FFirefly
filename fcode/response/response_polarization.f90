@@ -246,7 +246,10 @@ module mesh
      subroutine save_DOS_spectrum(dos_list, emax, emin)
         real(8) :: dos_list(ne), emax, emin
         integer :: i
+        character(len=100) :: header
         open(10, file='DOS.dat', status='unknown')
+        header = "         w             f"
+        write(10, '(A)') header
         do i = 0, w_pts - 1
             write(10, '(1x, f13.6, 1x, f13.6)') emin + dble(i) * (emax - emin) / dble(w_pts - 1), dos_list(i+1)
         end do

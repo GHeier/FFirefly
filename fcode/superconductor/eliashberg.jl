@@ -737,12 +737,14 @@ function test_multiply_flat()
     exact_r = Array{ComplexF64}(undef, pts)
     IR_basis_set = FiniteTempBasisSet(beta, 10, 1e-10)
     mesh = IRMesh.Mesh(IR_basis_set, pts)
+    sum = 0
     for i in 1:pts
-        x = 2 * pi * i / pts
+        x = 1 * pi * i / pts
         f[i] = 1.0
         g[i] = sin(x)
-        exact_r[i] = -cos(x)
+        sum += f[i] * g[i]
     end
+    exact_r .= sum / pts
     f_r = fft(f)
     g_r = fft(g)
     r_r = f_r .* g_r
