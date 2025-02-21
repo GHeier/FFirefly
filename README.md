@@ -54,7 +54,7 @@ The upside of a package like this is that it grants access to a wide variety of 
 ---
 
 ## **📚 Developer Guide**
- - This code is designed to encourage good coding practice but to not impede the developer. In src/ there are folders for each category of calculation, with subfolders as needed. If you are adding a new category, simply create a new folder in src/ and add a new file for the calculation. The main.c file handles the input file and calls the appropriate calculation function. After your folder has been created, add a "node" that connects main.c to your folder. Make sure to call this node from main.c and compile with qbuild.sh after.
+This code is designed to encourage good coding practice but to not impede the developer. In src/ there are folders for each category of calculation, with subfolders as needed. If you are adding a new category, simply create a new folder in src/ and add a new file for the calculation. The main.c file handles the input file and calls the appropriate calculation function. After your folder has been created, add a "node" that connects main.c to your folder. Make sure to call this node from main.c and compile with qbuild.sh after.
    - An example of this in the superconductor/ folder in the `node.cpp` file. This file has a function called superconductor_wrapper(), which determines the type of calculation to be performed. main.c calls this superconductor_wrapper() function if the category type is "superconductor". New categories should follow this format.
    - If you develop, it's encouraged that you add your code to thoe project! In order to do so, the code must interact with the config file by modifying its behavior based on all relevant variables. 
    - It also must pass tests to confirm that it is working correctly, and to confirm that the code still works upon future development. These tests must have a source, whether it be an analytical limit or a reference paper. They also must be quick to run, so no need to calculate an entire dense mesh, simply check that 1 or 2 points are correct.
@@ -69,6 +69,6 @@ Documentation is important, but it is also important to not let it get in the wa
 
 ---
 
-### ** 🔹 Plotting**  
- - Plotting is handled in the "qplot" folder. This folder contains a "base" python script that acts as a command-line interface to the plotting functions. Still under development, this allows for easy plotting of results. Just as qbuild.sh, it is recommended to make this a command line argument so that it can be run from anywhere.
+### **🔹 Plotting**  
+Plotting is handled in the "qplot" folder. This folder contains a "base" python script that acts as a command-line interface to the plotting functions. Still under development, this allows for easy plotting of results. Just as qbuild.sh, it is recommended to make this a command line argument so that it can be run from anywhere.
 
