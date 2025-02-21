@@ -1,7 +1,7 @@
-<h1 align="center"># **Quasi**</h1>
+<h1 align="center">Quasi</h1>
 
 <p align="center">
-  <img src="./sovapic.png" alt="Project Logo" width="400">
+  <img src="./sovapic.png" alt="Project Logo" width="300">
 </p>
 
 ---
