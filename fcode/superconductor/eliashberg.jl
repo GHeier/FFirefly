@@ -1,8 +1,6 @@
 module Eliashberg
 
 t1 = time()
-include("../objects/field.jl")
-using .CondensedMatterField
 include("../objects/mesh.jl")
 using .IRMesh
 
@@ -45,7 +43,7 @@ println("Beta: ", beta)
 const pi = π
 
 
-wD = 1.5
+wD = 0.1
 
 function to_IBZ(k)
     tolerance = 1e-10  # small tolerance to account for floating-point errors
@@ -100,11 +98,11 @@ end
 
 function BCS_V(k, w)
     e = epsilon(k) - mu
-    lambda = -1.0
+    lambda = -0.2
     if abs(e) < wD
-        return lambda / (1 + 0.001 * imag(w)^2)
+        return lambda / (1 + 0.01 * imag(w)^2)
     end
-    return lambda / (1 + 10 * imag(w)^2) / 100
+    return lambda / (1 + 0.01 * imag(w)^2) / 100
 end
 
 function fill_V_arr!(V_arr, iw)
@@ -133,7 +131,7 @@ function initialize_phi_Z_chi!(phi_arr, Z_arr, chi_arr, iw)
                 @inbounds for l in 1:nz
                     w = iw[i]
                     kvec = get_kvec(j, k, l)
-                    phi_arr[i, j, k, l] = 0.02 / (imag(w)^2/2.0 + 1)# * dwave
+                    #phi_arr[i, j, k, l] = 0.02 / (imag(w)^2/2.0 + 1)# * dwave
                     phi_arr[i, j, k, l] = 1.0
                     Z_arr[i, j, k, l] = 1.0 
                     chi_arr[i, j, k, l] = 0.0
@@ -180,8 +178,8 @@ function update!(F, G, V_arr, phi, Z, chi, iw, sigma)
                 @inbounds for l in 1:nz
                     w = iw[i]
                     sp, sm = sigma[i, j, k, l], sigma[fnw - i + 1, j, k, l]
-                    #Z[i, j, k, l] = 1.0 - 0.5 * (sp - sm) / w
-                    Z[i, j, k, l] = 1
+                    Z[i, j, k, l] = 1.0 - 0.5 * (sp - sm) / w
+                    #Z[i, j, k, l] = 1
                     chi[i, j, k, l] = 0.5 * (sp + sm)
                 end
             end
@@ -799,11 +797,94 @@ function test_transform()
     readline()
 end
 
+function test_max_bcs_no_w()
+    f = Array{ComplexF64}(undef, nx, ny)
+    g = Array{ComplexF64}(undef, nx, ny)
+
+    lambda = 1.0
+    wD = 0.2
+    mu = 1.0
+    phi = 1.0
+    exact = lambda * asinh(wD / phi) / (2 * pi)
+
+    sphere(kx, ky) = kx^2 + ky^2
+    func(e, z) = 1 / (e^2 + phi^2)^(0.5)
+    almost_constant(e, z) = abs(e) > wD ? 0.0 : lambda
+    for i in 1:nx, j in 1:ny
+        kx = 2 * pi * (i / nx - 0.5)
+        ky = 2 * pi * (j / ny - 0.5)
+        e = sphere(kx, ky) - mu
+        g[i, j] = func(e, 0)
+        f[i, j] = almost_constant(e, 0)
+    end
+
+    ft = fft(f)
+    gt = fft(g)
+    resultt = ft .* gt
+    result = ifft(resultt) / (nx * ny)
+
+    println(maximum(real.(result)), " ", maximum(real.(exact)))
+end
+
+
+function test_max_bcs()
+    IR_basis_set = FiniteTempBasisSet(beta, 10, 1e-10)
+    mesh = IRMesh.Mesh(IR_basis_set, nx, ny)
+    fnw, bnw = mesh.fnw, mesh.bnw
+    f = Array{ComplexF64}(undef, bnw, nx, ny)
+    g = Array{ComplexF64}(undef, fnw, nx, ny)
+    exact = Array{ComplexF64}(undef, fnw)
+
+    lambda = 1.0
+    wD = 0.1
+    mu = 1.0
+    phi = 1.0
+
+    sphere(kx, ky) = kx^2 + ky^2
+    func(e, z) = 1 / (e^2 + phi^2 - z^2)
+    almost_constant(e, z) = abs(e) > wD ? (lambda / (1 - 0.01 * z^2)) / 100 : lambda / (1 - 0.01 * z^2)
+    #almost_constant(z) = lambda / (1 - 0.01 * z^2)
+
+    for i in 1:fnw, j in 1:nx, k in 1:ny
+        iw = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta) 
+        kx = 2 * pi * (j / nx - 0.5)
+        ky = 2 * pi * (k / ny - 0.5)
+        e = sphere(kx, ky) - mu
+        g[i, j, k] = func(e, iw)
+        #exact[i] = lambda / (2 * (a^2 + phi^2)^(0.5)) * tanh(beta * (a^2 + phi^2)^(0.5) / 2)
+        exact[i] = lambda * asinh(wD / phi)
+    end
+    for i in 1:bnw, j in 1:nx, k in 1:ny
+        iv = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[i], beta)
+        kx = 2 * pi * (j / nx - 0.5)
+        ky = 2 * pi * (k / ny - 0.5)
+        e = sphere(kx, ky) - mu
+        f[i, j, k] = pi * almost_constant(e, iv)
+    end
+
+    ft = kw_to_rtau(f, 'B', mesh)
+    gt = kw_to_rtau(g, 'F', mesh)
+    resultt = ft .* gt
+    result = rtau_to_kw(resultt, 'F', mesh)
+
+    println(maximum(real.(result)), " ", maximum(real.(exact)))
+
+    result_plot = sum(result, dims=(2, 3))[:, 1, 1] / (nx * ny)
+    println("size: ", size(result_plot))
+    p = plot(real.(result_plot), label="Calculated(Real)")
+    plot!(imag.(result_plot), label="Calculated(Imag)")
+    plot!(p, real.(exact), label="Exact")
+    display(p)
+    readline()
+end
+
 end # module
 
 #using .Eliashberg
 #Eliashberg.test_transform()
-Eliashberg.test_multiply_flat()
+#Eliashberg.test_multiply_flat()
 #Eliashberg.test_ir_multiply2()
 #Eliashberg.gpu_sum()
 #Eliashberg.eliashberg_sparse_ir()
+#Eliashberg.test_max_bcs()
+Eliashberg.test_max_bcs_no_w()

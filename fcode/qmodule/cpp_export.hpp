@@ -2,7 +2,7 @@
 
 #include <complex>
 #include <iostream>
-#include "objects/CondensedMatterField/fields.hpp"  // Include CMF class
+#include "../objects/CondensedMatterField/fields.hpp"  // Include CMF class
 
 float epsilon_julia(int n, float kx, float ky = 0, float kz = 0);
 

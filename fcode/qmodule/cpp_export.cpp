@@ -1,11 +1,10 @@
 #include <string>
 
-
-#include "objects/CondensedMatterField/fields.hpp"  // Include CMF class
-#include "objects/vec.hpp"
-#include "config/load/c_config.h"
-#include "config/load/cpp_config.hpp"
-#include "hamiltonian/band_structure.hpp"
+#include "../objects/CondensedMatterField/fields.hpp"  // Include CMF class
+#include "../objects/vec.hpp"
+#include "../config/load/c_config.h"
+#include "../config/load/cpp_config.hpp"
+#include "../hamiltonian/band_structure.hpp"
 
 extern "C" double epsilon_julia(int n, double *k, int size) {
     Vec kvec;
