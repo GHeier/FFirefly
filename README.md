@@ -1,6 +1,8 @@
-# **Quasi**  
+<h1 align="center"># **Quasi**</h1>
 
-![Project Logo/Diagram](./sovapic.png)  
+<p align="center">
+  <img src="./sovapic.png" alt="Project Logo" width="400">
+</p>
 
 ---
 
