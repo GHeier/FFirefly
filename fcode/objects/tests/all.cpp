@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "all.hpp"
-#include "cmf_tests.hpp"
+#include "../CondensedMatterField/tests/cmf_tests.hpp"
 #include "../../config/load/c_config.h"
 #include "../../config/load/jl_interface.h"
 

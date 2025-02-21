@@ -113,7 +113,7 @@ float coupling_calc(vector<Vec> &FS, float T) {
         for (int j = 0; j < size; j++) {
             Vec k2 = FS[j];
             //lambda += - k1.area * k2.area / vp(k1.n, k1) * wave(k1) * V(k1, k2, T, cube) / vp(k2.n, k2) * wave(k2);
-            lambda += V(k1, k2)*k1.area*k2.area;
+            lambda += V(k1-k2)*k1.area*k2.area;
         }
         normalization += pow(wave(k1),2) * k1.area / vp(k1.n, k1);
     }

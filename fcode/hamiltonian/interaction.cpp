@@ -17,14 +17,13 @@ using namespace std;
 
 // Potential functions
 __attribute__((visibility("default")))
-float V(const Vec k1, const Vec k2, string spin1, string spin2) {
+float V(const Vec q, float w, string spin1, string spin2) {
     if (interaction == "const") 
         return potential_const();
-    if (interaction == "FLEX") {
-        return potential_FLEX(k1, k2, spin1, spin2);
-    }
+    if (interaction == "phonon_coulomb") 
+        return phonon_coulomb(q);
     if (interaction == "test") 
-        return potential_test(k1, k2, spin1, spin2);
+        return potential_test(q, spin1, spin2);
     else {
         cout << "Unknown Potential Function: " << interaction << endl;
         exit(1);
@@ -36,10 +35,9 @@ float potential_const() {
     return -1;
 }
 
-float potential_test(Vec k1, Vec k2, string spin1, string spin2) {
+float potential_test(Vec k1, string spin1, string spin2) {
     Vec q1 = k1;
-    Vec q2 = k2;
-    return -1.0*( cos(q1(0)) - cos(q1(1)) )*( cos(q2(0)) - cos(q2(1)) ) + (-0.5)*sin(q1(0))*sin(q1(1))*sin(q2(0))*sin(q2(1));
+    return -1.0;
 }
 
 float phonon_coulomb(Vec q) {
@@ -50,50 +48,6 @@ float phonon_coulomb(Vec q) {
     }
     float Vc = 1 / (1 + q.norm());
     return Vp + Vc;
-}
-
-float potential_FLEX(Vec k1, Vec k2, string spin1, string spin2) {
-    if (spin1 != spin2) {
-        return potential_FLEX_singlet(k1, k2);
-    }
-    else {
-        return potential_FLEX_triplet(k1, k2);
-    }
-}
-
-float potential_FLEX_singlet(Vec k1, Vec k2) {
-    Vec q_minus = to_IBZ(k1 - k2);
-    Vec q_plus = to_IBZ(k1 + k2);
-    float w = epsilon(k1.n, k1) - epsilon(k2.n, k2);
-    if (FS_only) w = 0;
-
-    //float Xm = chi(q_minus);
-    //float Xp = chi(q_plus);
-    float Xm = 1.0;
-    float Xp = 1.0;
-
-    float Vm = onsite_U*onsite_U * Xm / (1 - onsite_U*Xm) 
-        + pow(onsite_U,3)*Xm*Xm / (1 - onsite_U*onsite_U * Xm*Xm);
-    float Vp = onsite_U*onsite_U * Xp / (1 - onsite_U*Xp) 
-        + pow(onsite_U,3)*Xp*Xp / (1 - onsite_U*onsite_U * Xp*Xp);
-
-    return 0.5 * (Vm + Vp);
-}
-
-float potential_FLEX_triplet(Vec k1, Vec k2) {
-    Vec q_minus = to_IBZ(k1 - k2);
-    Vec q_plus = to_IBZ(k1 + k2);
-    float w = epsilon(k1.n, k1) - epsilon(k2.n, k2);
-
-    //float Xm = chi(q_minus);
-    //float Xp = chi(q_plus);
-    float Xm = 1.0;
-    float Xp = 1.0;
-
-    float V_minus = -pow(onsite_U,2) * Xm / ( 1 - pow(onsite_U*Xm,2));
-    float V_plus = -pow(onsite_U,2) * Xp / ( 1 - pow(onsite_U*Xp,2));
-
-    return 0.5 * ( V_minus - V_plus);
 }
 
 /* ======================================================================
@@ -107,11 +61,8 @@ float Vs_c(double k1_c[3], double k2_c[3], const char* spin1_c, const char* spin
     string spin2(spin2_c);
     if (interaction == "const") 
         return potential_const();
-    if (interaction == "FLEX") {
-        return potential_FLEX(k1, k2, spin1, spin2);
-    }
     if (interaction == "test") 
-        return potential_test(k1, k2, spin1, spin2);
+        return potential_test(k1-k2, spin1, spin2);
     else {
         cout << "Unknown Potential Function: " << interaction << endl;
         exit(1);
@@ -126,11 +77,8 @@ float V_c(double k1_c[3], double k2_c[3]) {
     string spin2 = "up";
     if (interaction == "const") 
         return potential_const();
-    if (interaction == "FLEX") {
-        return potential_FLEX(k1, k2, spin1, spin2);
-    }
     if (interaction == "test") 
-        return potential_test(k1, k2, spin1, spin2);
+        return potential_test(k1-k2, spin1, spin2);
     else {
         cout << "Unknown Potential Function: " << interaction << endl;
         exit(1);
