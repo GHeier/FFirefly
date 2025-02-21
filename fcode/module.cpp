@@ -1,0 +1,63 @@
+#include <string>
+
+
+#include "objects/CondensedMatterField/fields.hpp"  // Include CMF class
+#include "objects/vec.hpp"
+#include "config/load/c_config.h"
+#include "config/load/cpp_config.hpp"
+#include "hamiltonian/band_structure.hpp"
+
+extern "C" double epsilon_julia(int n, double *k, int size) {
+    Vec kvec;
+    for (int i = 0; i < size; i++) {
+        kvec(i) = k[i];
+    }
+    return epsilon(n, kvec);
+}
+
+extern "C" void load_config_julia(const char *filename) {
+    read_c_config(filename);
+    load_cpp_config();
+}
+
+
+extern "C" {
+
+// Create a new CMF instance and return a pointer
+Field_C* create_CMF_CS() {
+    return new Field_C();
+}
+
+// Load CMF from a file
+Field_C* load_cmf_cs(const char* filename) {
+    return new Field_C(filename);
+}
+
+// Call operator() overload for `Vec`
+void cmf_cs_call(Field_C* cmf, const double *point, float w, int len, double *real_result, double *imag_result) {
+    Vec q; q.dimension = len;
+    for (int i = 0; i < len; i++) {
+        q(i) = point[i];
+    }
+    complex<float> result = cmf->operator()(q, w);
+    *real_result = real(result);
+    *imag_result = imag(result);
+}
+
+// Call operator() overload for `float`
+void cmf_cs_call2(Field_C* cmf, float w, double *real_result, double *imag_result) {
+    complex<float> result = cmf->operator()(w);
+    *real_result = real(result);
+    *imag_result = imag(result);
+}
+
+void cmf_save(Field_C* cmf, const char* filename) {
+    save_CMF_to_file(filename, cmf->base);
+}
+
+// Destroy CMF instance
+void destroy_CMF(Field_C* cmf) {
+    delete cmf;
+}
+
+}
