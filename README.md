@@ -13,9 +13,10 @@ Welcome to **Quasi**, a computational physics toolkit designed to be easy to bot
 ---
 
 ## **📖 User Guide**  
-The simplest way to run quasi.x is to create an input file and run it with the command `quasi.x < input_file.cfg`. An example can be seen in the file `sample.cfg`. It is recommended to look at this file to understand the syntax of the input file. It is inspired from the Quantum Espresso and LmtART input file formats.
+The simplest way to run quasi.x is to create an input file and run it with the command `quasi.x < input_file.cfg`. An example can be seen in the file `sample.cfg`. It is recommended to look at this file to understand the syntax of the input file. It is inspired from the Quantum Espresso and LmtART input file formats.\
 Multiple calculations can be run sequentially either from the command line or through a python script. QuasiCode comes with launchers and data extracters for every calculation type, so you can easily run multiple calculations and extract the data you need. This can be useful for instance, to calculate the phase across a range of temperatures and chemical potentials. An example of this can be seen in helpful_scripts/eliashberg.py.
- - `category` indicates the type of calculation to be performed, with a section [CATEGORY_NAME] in the file for inputs specific to that category. Prefix is the filename prefix for files read and written by this program. Files are saved in the format 'prefix_filetype.dat', so for instance a density of states calculation would save to 'prefix_dos.dat'.
+ - `category` indicates the type of calculation to be performed, with a section [CATEGORY_NAME] in the file for inputs specific to that category. 
+ - Prefix is the filename prefix for files read and written by this program. Files are saved in the format 'prefix_filetype.dat', so for instance a density of states calculation would save to 'prefix_dos.dat'.
 
 ### **🔹 Current Calculation Categories**
 - Superconducting Gap calculations, both BCS and Eliashberg
@@ -39,10 +40,10 @@ The upside of a package like this is that it grants access to a wide variety of 
 | Python     | Julia         | C++    | Fortran    | C    |
 |:----------:|:-------------:|:------:|:----------:|:----:|
 | numpy      | PyCall        | g++    | gfortran   | gcc  |
-| scipy      | CUDA          | Ninja  | libtetrabz |      |
+| scipy      | CUDA          | Cmake  | libtetrabz |      |
 | matplotlib | FFTW          | BLAS   |            |      |
 | h5py       | Roots         | LAPACK |            |      |
-| sparse_ir  | SparseIR      | CMake  |            |      |
+| sparse_ir  | SparseIR      | Ninja  |            |      |
 | pandas     | LinearAlgebra | OpenMP |            |      |
 |            | Printf        | ccache |            |      |
 
