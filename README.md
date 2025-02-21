@@ -18,17 +18,17 @@ Multiple calculations can be run sequentially either from the command line or th
  - `category` indicates the type of calculation to be performed, with a section [CATEGORY_NAME] in the file for inputs specific to that category. Prefix is the filename prefix for files read and written by this program. Files are saved in the format 'prefix_filetype.dat', so for instance a density of states calculation would save to 'prefix_dos.dat'.
 
 ### **🔹 Current Calculation Categories**
- - Superconducting Gap calculations, both BCS and Eliashberg
- - cateogry name: `superconductor`
- - methods: `bcs`, `eliashberg`
- - calculation: `diagonalization` of exact gap functions or `projection` of gap functions onto a basis set
- - FS_only: `true` or `false` to calculate the gap only on the Fermi surface or the entire Brillouin zone
-    - Compute **self-energy (Σ)** and **2PI vertices (Γ) (with possible corrections)**  
+- Superconducting Gap calculations, both BCS and Eliashberg
+   - cateogry name: `superconductor`
+   - methods: `bcs`, `eliashberg`
+   - calculation: `diagonalization` of exact gap functions or `projection` of gap functions onto a basis set
+   - FS_only: `true` or `false` to calculate the gap only on the Fermi surface or the entire Brillouin zone
+- Compute **self-energy (Σ)** and **2PI vertices (Γ) (with possible corrections)**  
 - Response functions (polarization, etc)
     - category name: `response`
     - methods: `libtetrabz`(analytic tetrahedra integration), `sparse_ir` (sparse matsubaras with convolution theorem)
     - wpts: number of Matsubara frequencies to use. wpts=1 calculates iv=0
- - Band structure/density of states/Fermi surface calculations and displays
+- Band structure/density of states/Fermi surface calculations and displays
 
 ---
 
