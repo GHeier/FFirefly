@@ -5,31 +5,32 @@
 Welcome to **Quasi**, a computational physics toolkit designed to be easy to both use and extend. Users interact via a simple input file and easy python wrappers. Developers can easily extend the codebase by adding new models and solvers in whatever language they prefer.
 
 ### **🔹 Languages Supported**
-- **Fortran** 
-- **C** 
-- **C++** 
+- **C/C++** 
 - **Python** 
 - **Julia** 
+- **Fortran** 
 
 ---
 
 ## **📖 User Guide**  
 The simplest way to run quasi.x is to create an input file and run it with the command `quasi.x < input_file.cfg`. An example can be seen in the file `sample.cfg`. It is recommended to look at this file to understand the syntax of the input file. It is inspired from the Quantum Espresso and LmtART input file formats.
+Multiple calculations can be run sequentially either from the command line or through a python script. QuasiCode comes with launchers and data extracters for every calculation type, so you can easily run multiple calculations and extract the data you need. This can be useful for instance, to calculate the phase across a range of temperatures and chemical potentials. An example of this can be seen in helpful_scripts/eliashberg.py.
  - `category` indicates the type of calculation to be performed, with a section [CATEGORY_NAME] in the file for inputs specific to that category. Prefix is the filename prefix for files read and written by this program. Files are saved in the format 'prefix_filetype.dat', so for instance a density of states calculation would save to 'prefix_dos.dat'.
 
 ### **🔹 Current Calculation Categories**
  - Superconducting Gap calculations, both BCS and Eliashberg
- - cateogry name: superconductor
- - methods: bcs, eliashberg
+ - cateogry name: `superconductor`
+ - methods: `bcs`, `eliashberg`
  - calculation: `diagonalization` of exact gap functions or `projection` of gap functions onto a basis set
  - FS_only: `true` or `false` to calculate the gap only on the Fermi surface or the entire Brillouin zone
     - Compute **self-energy (Σ)** and **2PI vertices (Γ) (with possible corrections)**  
 - Response functions (polarization, etc)
-    - category name: response
-    - methods: libtetrabz(analytic tetrahedra integration), sparse_ir (sparse matsubaras with convolution theorem)
+    - category name: `response`
+    - methods: `libtetrabz`(analytic tetrahedra integration), `sparse_ir` (sparse matsubaras with convolution theorem)
     - wpts: number of Matsubara frequencies to use. wpts=1 calculates iv=0
-    - Band structure/density of states/Fermi surface calculations and displays
+ - Band structure/density of states/Fermi surface calculations and displays
 
+---
 
 ### **🔹 Installation**  
 The upside of a package like this is that it grants access to a wide variety of extremely powerful algorithms with a very simple interface. The downside is that because it contains so many packages, it can be a bit of a pain to get everything set up. The packages required are listed below.
@@ -65,6 +66,8 @@ The upside of a package like this is that it grants access to a wide variety of 
 
 ### **🔹 Documentation**
 Documentation is important, but it is also important to not let it get in the way of coding. If adding a new category, describe what it does and how it works in the README.md file. Include the relevant input and outputs, both datafiles and config variables. 
+
+---
 
 ### ** 🔹 Plotting**  
  - Plotting is handled in the "qplot" folder. This folder contains a "base" python script that acts as a command-line interface to the plotting functions. Still under development, this allows for easy plotting of results. Just as qbuild.sh, it is recommended to make this a command line argument so that it can be run from anywhere.
