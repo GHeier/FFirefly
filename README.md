@@ -13,15 +13,15 @@ Welcome to **Quasi**, a computational physics toolkit designed to be easy to bot
 
 ### **🔹 Current Calculation Categories**
 - Superconducting Gap calculations, both BCS and Eliashberg
--- cateogry name: superconductor
--- methods: bcs, eliashberg
--- calculation: `diagonalization` of exact gap functions or `projection` of gap functions onto a basis set
--- FS_only: `true` or `false` to calculate the gap only on the Fermi surface or the entire Brillouin zone
+ - cateogry name: superconductor
+ - methods: bcs, eliashberg
+ - calculation: `diagonalization` of exact gap functions or `projection` of gap functions onto a basis set
+ - FS_only: `true` or `false` to calculate the gap only on the Fermi surface or the entire Brillouin zone
 - Compute **self-energy (Σ)** and **2PI vertices (Γ) (with possible corrections)**  
 - Response functions (polarization, etc)
--- category name: response
--- methods: libtetrabz(analytic tetrahedra integration), sparse_ir (sparse matsubaras with convolution theorem)
--- wpts: number of Matsubara frequencies to use. wpts=1 calculates iv=0
+ - category name: response
+ - methods: libtetrabz(analytic tetrahedra integration), sparse_ir (sparse matsubaras with convolution theorem)
+ - wpts: number of Matsubara frequencies to use. wpts=1 calculates iv=0
 - Band structure/density of states/Fermi surface calculations and displays
 
 ---
@@ -52,7 +52,7 @@ The upside of a package like this is that it grants access to a wide variety of 
 
 ## **📚 Developer Guide**
  - This code is designed to encourage good coding practice but to not impede the developer. In src/ there are folders for each category of calculation, with subfolders as needed. If you are adding a new category, simply create a new folder in src/ and add a new file for the calculation. The main.c file handles the input file and calls the appropriate calculation function. After your folder has been created, add a "node" that connects main.c to your folder. Make sure to call this node from main.c and compile with qbuild.sh after.
- -- An example of this in the superconductor/ folder in the `node.cpp` file. This file has a function called superconductor_wrapper(), which determines the type of calculation to be performed. main.c calls this superconductor_wrapper() function if the category type is "superconductor". New categories should follow this format.
+  - An example of this in the superconductor/ folder in the `node.cpp` file. This file has a function called superconductor_wrapper(), which determines the type of calculation to be performed. main.c calls this superconductor_wrapper() function if the category type is "superconductor". New categories should follow this format.
 
 ### **🔹 Testing**  
  By far, the most time spent coding is actually spent debugging. This project encourages good coding practice by giving easy access to all tests across all projects. By setting up simple tests prior to running large calculations, you can save yourself a lot of time and headache. It is easy to set up, and a good habit to get into.
