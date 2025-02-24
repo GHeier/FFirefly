@@ -94,7 +94,7 @@ function paper2_V(w)
     n = beta * imag(w) / (2 * pi)
     lambda = 2.0
     v = beta * wD / (2 * pi)
-    return -1*lambda * v^2 / (n^2 + v^2)
+    return -lambda * v^2 / (n^2 + v^2)
 end
 
 function BCS_V(k, w)
@@ -183,8 +183,8 @@ function update!(F, G, V_arr, phi, Z, chi, iw, sigma)
     F_rt = kw_to_rtau(F, 'F', mesh)
     G_rt = kw_to_rtau(G, 'F', mesh)
 
-    phit = V_arr .* F_rt 
-    sigmat = -V_arr .* G_rt 
+    phit = V_arr .* F_rt / 2
+    sigmat = -V_arr .* G_rt / 2
 
     phi .= rtau_to_kw(phit, 'F', mesh)
     sigma .= rtau_to_kw(sigmat, 'F', mesh)
@@ -955,9 +955,8 @@ function test_max_bcs_no_w()
     ft = fft(f)
     gt = fft(g)
     resultt = ft .* gt
-    result = ifft(resultt) / (nx * ny)
+    result = fftshift(ifft(resultt)) / (nx * ny)
 
-    println(maximum(real.(result)), " ", maximum(real.(exact)))
 end
 
 function test_max_bcs()
@@ -970,42 +969,37 @@ function test_max_bcs()
     f = Array{ComplexF64}(undef, pts, nx, ny)
     g = Array{ComplexF64}(undef, pts, nx, ny)
     exact = Array{ComplexF64}(undef, pts)
+    phi = Array{ComplexF64}(undef, pts)
+    phi .= 1.0
 
     lambda = 1.0
     wD = 0.2
     mu = 1.0
-    phi = 1.0
 
     sphere(kx, ky) = kx^2 + ky^2
-    func(e, z) = 1 / (e^2 + phi^2 - z^2)
-    sigma = 100.0
+    func(e, z, phi) = 1 / (e^2 + phi^2 - z^2)
     almost_constant(e, z) = (abs(e) > wD) ? 0.0 : lambda 
 
-    for i in 1:pts, j in 1:nx, k in 1:ny
-        #iw = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta) 
-        n = -pts / 2 + i - 1
-        iw = 2 * (n - 1) * pi / beta
-        kx = 2 * pi * (j / nx - 0.5)
-        ky = 2 * pi * (k / ny - 0.5)
-        e = sphere(kx, ky) - mu
-        g[i, j, k] = func(e, iw)
-        #exact[i] = lambda / (2 * (a^2 + phi^2)^(0.5)) * tanh(beta * (a^2 + phi^2)^(0.5) / 2)
-        exact[i] = 2 * lambda * asinh(wD / phi) / (4 * pi)
-    end
-    for i in 1:pts, j in 1:nx, k in 1:ny
-        #iv = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[i], beta)
-        n = -pts / 2 + i - 1
-        iv = 2 * (n) * pi / beta
-        kx = 2 * pi * (j / nx - 0.5)
-        ky = 2 * pi * (k / ny - 0.5)
-        e = sphere(kx, ky) - mu
-        f[i, j, k] = almost_constant(e, iv)
+    @threads for i in 1:pts
+        for j in 1:nx, k in 1:ny
+            #iw = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta) 
+            n = -pts / 2 + i - 1
+            iw = Complex(0.0, (2 * n - 1) * pi / beta)
+            iv = Complex(0.0, 2 * n * pi / beta)
+            kx = 2 * pi * (j / nx - 0.5)
+            ky = 2 * pi * (k / ny - 0.5)
+            e = sphere(kx, ky) - mu
+            g[i, j, k] = func(e, iw, phi[i])
+            f[i, j, k] = almost_constant(e, iv)
+            #exact[i] = lambda / (2 * (a^2 + phi^2)^(0.5)) * tanh(beta * (a^2 + phi^2)^(0.5) / 2)
+            exact[i] = 2 * lambda * asinh(wD / phi[i]) / (4 * pi)
+        end
     end
 
     ft = fft(f)
     gt = fft(g)
     resultt = ft .* gt
-    result = ifft(resultt) / (nx * ny * pts)
+    result = fftshift(ifft(resultt)) / (nx * ny * pts)
 
     println(maximum(real.(result)), " ", maximum(real.(exact)))
 
@@ -1171,7 +1165,8 @@ end
 @inline function F_gpu(iw, e, phi) 
     return phi / (-iw^2 + phi^2 + e^2)
 end
-@inline function V_gpu(iv, wD, lambda) 
+@inline function V_gpu(iv, e, wD, lambda) 
+    return abs(e) > wD ? 0.0 : lambda
     #return lambda
     return lambda * 2 * wD^2 / (wD^2 - iv^2)
 end
@@ -1179,7 +1174,7 @@ end
     return kx^2 + ky^2
 end
 
-function compute_gpu_sum!(result, pts, nx, ny, nz, beta, phi, wD, lambda, w_arr_CUDA, BZ)
+function compute_gpu_sum!(result, pts, nx, ny, nz, beta, phi, wD, lambda, w_arr_CUDA, BZ, mu, kx, ky, kz)
     i = threadIdx().x + (blockIdx().x - 1) * blockDim().x
 
     if i ≤ pts
@@ -1192,8 +1187,8 @@ function compute_gpu_sum!(result, pts, nx, ny, nz, beta, phi, wD, lambda, w_arr_
             kx = BZ[1, 1] * (a / nx - 0.5) + BZ[1, 2] * (b / ny - 0.5) + BZ[1, 3] * (c / nz - 0.5)
             ky = BZ[2, 1] * (a / nx - 0.5) + BZ[2, 2] * (b / ny - 0.5) + BZ[2, 3] * (c / nz - 0.5)
             kz = BZ[3, 1] * (a / nx - 0.5) + BZ[3, 2] * (b / ny - 0.5) + BZ[3, 3] * (c / nz - 0.5)
-            em = epsilon_cuda(kx, ky, kz)
-            sum += (V_gpu(dw, wD, lambda) * F_gpu(iwm, em, phi[j])) / (beta * nx * ny * nz)
+            em = epsilon_cuda(kx, ky, kz) - mu
+            sum += (V_gpu(dw, em, wD, lambda) * F_gpu(iwm, em, phi[j])) / (beta * nx * ny * nz)
         end
         result[i] = sum
     end
@@ -1207,6 +1202,7 @@ function VF_4sum_GPU(phi, pts, phi_ir, basis)
 
     lambda = 1.0
     wD = 0.2
+    mu = 1.0
 
     F(iw, e, phi) = phi / (-iw^2 + phi^2 + e^2)
     #V(iv) = lambda * 2 * wD^2 / (wD^2 - iv^2)
@@ -1228,9 +1224,9 @@ function VF_4sum_GPU(phi, pts, phi_ir, basis)
             kx = BZ[1, 1] * (j / nx - 0.5) + BZ[1, 2] * (k / ny - 0.5) + BZ[1, 3] * (l / nz - 0.5)
             ky = BZ[2, 1] * (j / nx - 0.5) + BZ[2, 2] * (k / ny - 0.5) + BZ[2, 3] * (l / nz - 0.5)
             kz = BZ[3, 1] * (j / nx - 0.5) + BZ[3, 2] * (k / ny - 0.5) + BZ[3, 3] * (l / nz - 0.5)
-            e = epsilon_cuda(kx, ky, kz)
+            e = epsilon_cuda(kx, ky, kz) - mu
             F_arr[i, j, k, l] = F(iwn, e, phi[i])
-            V_arr[i, j, k, l] = V(iwm)
+            V_arr[i, j, k, l] = V(iwm, e)
         end
     end
     w_arr_CUDA = CuArray(w_array)
@@ -1247,17 +1243,17 @@ function VF_4sum_GPU(phi, pts, phi_ir, basis)
     println("Filling IR arrays")
     for i in 1:fnw, j in 1:nx, k in 1:ny, l in 1:nz
         iw = valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[i], beta) 
-        F_ir[i, j, k, l] = F(iw, epsilon(get_kvec(j, k, l)), phi_ir[i])
+        F_ir[i, j, k, l] = F(iw, epsilon(get_kvec(j, k, l)) - mu, phi_ir[i])
     end
-    for i in 1:bnw
+    for i in 1:bnw, j in 1:nx, k in 1:ny, l in 1:nz
         iv = valueim(basis.IR_basis_set.smpl_wn_b.sampling_points[i], beta) 
-        V_ir[i, :, :, :] .= V(iv)
+        V_ir[i, j, k, l] = V(iv, epsilon(get_kvec(j, k, l)) - mu)
     end
 
     println("Starting GPU sum")
     phi_CUDA = CuArray(phi)
 
-    CUDA.@sync @cuda threads=512 blocks=cld(pts, 512) compute_gpu_sum!(result, pts, nx, ny, nz, beta, phi_CUDA, wD, lambda, w_arr_CUDA, BZ_CUDA)
+    CUDA.@sync @cuda threads=512 blocks=cld(pts, 512) compute_gpu_sum!(result, pts, nx, ny, nz, beta, phi_CUDA, wD, lambda, w_arr_CUDA, BZ_CUDA, mu, kx, ky, kz)
 #    CUDA.@sync @cuda threads=threads_per_block blocks=blocks_per_grid compute_gpu_sum!(
 #                                                                                       result, pts, nx, ny, nz, beta, phi, wD, lambda, w_arr_CUDA, BZ_CUDA)
                 
@@ -1317,4 +1313,6 @@ end
 
 end # module
 
-Eliashberg.gpu_eliashberg()
+#Eliashberg.test_max_bcs_no_w()
+Eliashberg.eliashberg_sparse_ir()
+#Eliashberg.gpu_eliashberg()
