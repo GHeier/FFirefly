@@ -1172,6 +1172,7 @@ end
     return phi / (-iw^2 + phi^2 + e^2)
 end
 @inline function V_gpu(iv, wD, lambda) 
+    #return lambda
     return lambda * 2 * wD^2 / (wD^2 - iv^2)
 end
 @inline function epsilon_cuda(kx, ky, kz) 
@@ -1192,44 +1193,45 @@ function compute_gpu_sum!(result, pts, nx, ny, nz, beta, phi, wD, lambda, w_arr_
             ky = BZ[2, 1] * (a / nx - 0.5) + BZ[2, 2] * (b / ny - 0.5) + BZ[2, 3] * (c / nz - 0.5)
             kz = BZ[3, 1] * (a / nx - 0.5) + BZ[3, 2] * (b / ny - 0.5) + BZ[3, 3] * (c / nz - 0.5)
             em = epsilon_cuda(kx, ky, kz)
-            sum += (V_gpu(dw, wD, lambda) * F_gpu(iwm, em, phi)) / (beta * nx * ny * nz)
+            sum += (V_gpu(dw, wD, lambda) * F_gpu(iwm, em, phi[j])) / (beta * nx * ny * nz)
         end
         result[i] = sum
     end
     return nothing
 end
 
-function VF_4sum_GPU()
-    pts = 10000
+function VF_4sum_GPU(phi, pts, phi_ir, basis)
     println("Starting")
-    basis = IR_Mesh(1e-10)
     fnw, bnw, fntau, bntau = basis.fnw, basis.bnw, basis.fntau, basis.bntau
     nk = nx * ny * nz
 
-    phi = 1.0
     lambda = 1.0
     wD = 0.2
 
-    F(iw, e) = phi / (-iw^2 + phi^2 + e^2)
-    V(iv) = lambda * 2 * wD^2 / (wD^2 - iv^2)
+    F(iw, e, phi) = phi / (-iw^2 + phi^2 + e^2)
+    #V(iv) = lambda * 2 * wD^2 / (wD^2 - iv^2)
+    V(iv, e) = abs(e) > wD ? 0.0 : lambda
 
     result = CUDA.zeros(ComplexF64, pts)
     F_arr = zeros(ComplexF64, pts, nx, ny, nz)
     V_arr = zeros(ComplexF64, pts, nx, ny, nz)
     w_arr = zeros(ComplexF64, pts)
     w_array = Array{ComplexF64}(undef, pts)
-    for i in 1:pts, j in 1:nx, k in 1:ny, l in 1:nz
-        n = -pts / 2 + i - 1
-        iwn = Complex(0.0, (2 * n + 1) * pi / beta)
-        iwm = Complex(0.0, (2 * n) * pi / beta)
-        w_arr[i] = iwn
-        w_array[i] = iwn
-        kx = BZ[1, 1] * (j / nx - 0.5) + BZ[1, 2] * (k / ny - 0.5) + BZ[1, 3] * (l / nz - 0.5)
-        ky = BZ[2, 1] * (j / nx - 0.5) + BZ[2, 2] * (k / ny - 0.5) + BZ[2, 3] * (l / nz - 0.5)
-        kz = BZ[3, 1] * (j / nx - 0.5) + BZ[3, 2] * (k / ny - 0.5) + BZ[3, 3] * (l / nz - 0.5)
-        e = epsilon_cuda(kx, ky, kz)
-        F_arr[i, j, k, l] = F(iwn, e)
-        V_arr[i, j, k, l] = V(iwm)
+    println("Filling arrays")
+    @threads for i in 1:pts
+        for j in 1:nx, k in 1:ny, l in 1:nz
+            n = -pts / 2 + i - 1
+            iwn = Complex(0.0, (2 * n + 1) * pi / beta)
+            iwm = Complex(0.0, (2 * n) * pi / beta)
+            w_arr[i] = iwn
+            w_array[i] = iwn
+            kx = BZ[1, 1] * (j / nx - 0.5) + BZ[1, 2] * (k / ny - 0.5) + BZ[1, 3] * (l / nz - 0.5)
+            ky = BZ[2, 1] * (j / nx - 0.5) + BZ[2, 2] * (k / ny - 0.5) + BZ[2, 3] * (l / nz - 0.5)
+            kz = BZ[3, 1] * (j / nx - 0.5) + BZ[3, 2] * (k / ny - 0.5) + BZ[3, 3] * (l / nz - 0.5)
+            e = epsilon_cuda(kx, ky, kz)
+            F_arr[i, j, k, l] = F(iwn, e, phi[i])
+            V_arr[i, j, k, l] = V(iwm)
+        end
     end
     w_arr_CUDA = CuArray(w_array)
     BZ_CUDA = CuArray(BZ)
@@ -1245,7 +1247,7 @@ function VF_4sum_GPU()
     println("Filling IR arrays")
     for i in 1:fnw, j in 1:nx, k in 1:ny, l in 1:nz
         iw = valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[i], beta) 
-        F_ir[i, j, k, l] = F(iw, epsilon(get_kvec(j, k, l)))
+        F_ir[i, j, k, l] = F(iw, epsilon(get_kvec(j, k, l)), phi_ir[i])
     end
     for i in 1:bnw
         iv = valueim(basis.IR_basis_set.smpl_wn_b.sampling_points[i], beta) 
@@ -1253,8 +1255,9 @@ function VF_4sum_GPU()
     end
 
     println("Starting GPU sum")
+    phi_CUDA = CuArray(phi)
 
-    CUDA.@sync @cuda threads=512 blocks=cld(pts, 512) compute_gpu_sum!(result, pts, nx, ny, nz, beta, phi, wD, lambda, w_arr_CUDA, BZ_CUDA)
+    CUDA.@sync @cuda threads=512 blocks=cld(pts, 512) compute_gpu_sum!(result, pts, nx, ny, nz, beta, phi_CUDA, wD, lambda, w_arr_CUDA, BZ_CUDA)
 #    CUDA.@sync @cuda threads=threads_per_block blocks=blocks_per_grid compute_gpu_sum!(
 #                                                                                       result, pts, nx, ny, nz, beta, phi, wD, lambda, w_arr_CUDA, BZ_CUDA)
                 
@@ -1277,29 +1280,41 @@ function VF_4sum_GPU()
     println("Max result2: ", maximum(abs.(result2)))
     println("Max result3: ", maximum(abs.(result3)))
 
-    println("Plotting")
-    result_plot = cpu_result
-    result2_plot = sum(result2, dims=(2, 3, 4))[:, 1, 1, 1] / (nx * ny * nz)
-    result3_plot = sum(result3, dims=(2, 3, 4))[:, 1, 1, 1] / (nx * ny * nz)
+    #println("Plotting")
+    #result_plot = cpu_result
+    #result2_plot = sum(result2, dims=(2, 3, 4))[:, 1, 1, 1] / (nx * ny * nz)
+    #result3_plot = sum(result3, dims=(2, 3, 4))[:, 1, 1, 1] / (nx * ny * nz)
 
-    p = plot(imag.(w_arr), real.(result_plot), label="Summed", xlims=(-20, 20))
-    plot!(p, imag.(w_arr), real.(result2_plot), label="Ft'd", xlims=(-20, 20))
-    plot!(p, iw_arr, real.(result3_plot), label="IR'd", xlims=(-20, 20))
+    #p = plot(imag.(w_arr), real.(result_plot), label="Summed", xlims=(-20, 20))
+    #plot!(p, imag.(w_arr), real.(result2_plot), label="Ft'd", xlims=(-20, 20))
+    #plot!(p, iw_arr, real.(result3_plot), label="IR'd", xlims=(-20, 20))
+    #display(p)
+    #readline()
+    return cpu_result, result3_plot
+end
+
+function gpu_eliashberg()
+    pts = 10000
+    phi = ones(ComplexF64, pts)
+    basis = IR_Mesh(1e-10)
+    fnw, bnw, fntau, bntau = basis.fnw, basis.bnw, basis.fntau, basis.bntau
+    phi_ir = ones(ComplexF64, fnw)
+    prev_phi = ones(ComplexF64, pts)
+    for i in 1:20
+        prev_phi .= phi
+        println("Iteration: ", i)
+        phi, phi_ir = Eliashberg.VF_4sum_GPU(phi, pts, phi_ir, basis)
+        phi_error = maximum(abs.(phi - prev_phi))
+        if phi_error < 1e-6
+            println("Converged")
+            break
+        end
+    end
+    p = plot(real.(phi))
     display(p)
     readline()
 end
 
 end # module
 
-#using .Eliashberg
-#Eliashberg.test_transform()
-#Eliashberg.test_multiply_flat()
-#Eliashberg.test_ir_multiply2()
-#Eliashberg.gpu_sum()
-#Eliashberg.eliashberg_sparse_ir()
-#Eliashberg.test_max_bcs()
-#Eliashberg.test_max_bcs_no_w()
-#Eliashberg.VF_sum()
-#Eliashberg.VF_4sum()
-Eliashberg.VF_4sum_GPU()
-#Eliashberg.eliashberg_fourier_transform()
+Eliashberg.gpu_eliashberg()
