@@ -176,6 +176,7 @@ end
 
 function epsilon(k)
     if dim == 2
+        return k[1]^2 + k[2]^2
         return -2 * (cos(k[1]) + cos(k[2]))
     end
     return -2 * (cos(k[1]) + cos(k[2]) + cos(k[3]))

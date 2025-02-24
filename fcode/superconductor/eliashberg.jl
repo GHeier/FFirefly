@@ -8,7 +8,7 @@ using CUDA, FFTW
 using Plots
 using Roots
 using SparseIR
-import SparseIR: Statistics, value, valueim
+import SparseIR: Statistics, value, valueim, MatsubaraSampling64F, TauSampling64
 using Base.Threads, JLD
 using LinearAlgebra, Printf, PyCall
 np = pyimport("numpy")
@@ -57,6 +57,7 @@ end
 
 function epsilon(k)
     if dim == 2
+        return k[1]^2 + k[2]^2
         return -2 * (cos(k[1]) + cos(k[2]))
     end
     return -2 * (cos(k[1]) + cos(k[2]) + cos(k[3]))
@@ -114,8 +115,8 @@ function fill_V_arr!(V_arr, iw)
                     kvec = get_kvec(i, j, k)
                     w1 = iw[l]
                     #Vw_arr[l, i, j] = V(kvec, zeros(dim), w1)
-                    #Vw_arr[l, i, j, k] = paper2_V(w1)
-                    Vw_arr[l, i, j, k] = BCS_V(kvec, w1)
+                    Vw_arr[l, i, j, k] = paper2_V(w1)
+                    #Vw_arr[l, i, j, k] = BCS_V(kvec, w1)
                 end
             end
         end
@@ -124,8 +125,24 @@ function fill_V_arr!(V_arr, iw)
     println("Filled V_arr")
 end
 
+function fill_V_arr_fourier_transform(iw)
+    Vw_arr = Array{ComplexF64}(undef, nw, nx, ny, nz)
+    @threads for i in 1:nx
+        @inbounds for j in 1:ny 
+            @inbounds for k in 1:nz
+                @inbounds for l in 1:nw
+                    kvec = get_kvec(i, j, k)
+                    w1 = iw[l]
+                    Vw_arr[l, i, j, k] = paper2_V(w1)
+                end
+            end
+        end
+    end
+    return fft(Vw_arr)
+end
+
 function initialize_phi_Z_chi!(phi_arr, Z_arr, chi_arr, iw)
-    @threads for i in 1:fnw
+    @threads for i in 1:nw
         @inbounds for j in 1:nx
             @inbounds for k in 1:ny
                 @inbounds for l in 1:nz
@@ -147,7 +164,7 @@ function get_kvec(i, j, k)
 end
 
 function condense_to_F_and_G!(phi, Z, chi, F_arr, G_arr, iw, sigma, mu)
-    @threads for l in 1:fnw
+    @threads for l in 1:length(iw)
         @inbounds for i in 1:nx
             @inbounds for j in 1:ny
                 @inbounds for k in 1:nz
@@ -187,6 +204,29 @@ function update!(F, G, V_arr, phi, Z, chi, iw, sigma)
     end
 end
 
+function update_fourier_transform!(F, G, V_arr, phi, Z, chi, iw, sigma)
+    F_rt = fft(F)
+    G_rt = fft(G)
+
+    phit = V_arr .* F_rt 
+    sigmat = -V_arr .* G_rt 
+
+    phi .= ifft(phit) / (nw * nx * ny * nz)
+    sigma .= ifft(sigmat) / (nw * nx * ny * nz)
+
+    @threads for i in 1:nw
+        @inbounds for j in 1:nx
+            @inbounds for k in 1:ny
+                @inbounds for l in 1:nz
+                    w = iw[i]
+                    sp, sm = sigma[i, j, k, l], sigma[nw - i + 1, j, k, l]
+                    Z[i, j, k, l] = 1.0 - 0.5 * (sp - sm) / w
+                    chi[i, j, k, l] = 0.5 * (sp + sm)
+                end
+            end
+        end
+    end
+end
 
 function find_chemical_potential(mu_initial, phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, target_Ne)
     return mu_initial
@@ -250,8 +290,8 @@ function eliashberg_sparse_ir()
     phierr = 0.0
     prev_phi_arr = copy(phi_arr)
     println("Starting Convergence Loop")
-    #iterations = 1000
-    iterations = 1
+    iterations = 1000
+    #iterations = 1
     for i in 1:iterations
         update!(F_arr, G_arr, V_arr, phi_arr, Z_arr, chi_arr, iw, sigma)
 
@@ -275,6 +315,8 @@ function eliashberg_sparse_ir()
     println("Error: ", phierr, "            ")
     println("Max phi: ", max_phi)
     println("Max Z: ", max_Z)
+    lambda = 0.2
+    println("Analytical Phi max: ", wD / sinh((2 * pi / lambda)))
     reordered_phi = Array{ComplexF64}(undef, nx, ny, nz, fnw)
     reordered_Z = Array{ComplexF64}(undef, nx, ny, nz, fnw)
     points = Matrix{Float64}(undef, nx*ny*nz*fnw, dim+1)
@@ -310,6 +352,98 @@ function eliashberg_sparse_ir()
     #save_arr_as_meshgrid(points, reordered_phi, "phi.dat", true)
     #save_arr_as_meshgrid(points, reordered_Z, "Z.dat", true)
 end 
+
+function eliashberg_fourier_transform()
+    println("Beginning Eliashberg")
+    scf_tol = 1e-4
+    iw = Array{ComplexF64}(undef, nw)
+    iv = Array{ComplexF64}(undef, nw)
+    for i in 1:nw iw[i] = Complex(0.0, (pi*(2*((-nw/2 + i) - 1) + 1) / beta)) end
+    for i in 1:nw iv[i] = Complex(0.0, (pi*(2*(-nw/2 + i) + 1) / beta)) end
+
+    println("Filled iw and iv")
+    println("Min & Max iw: ", minimum(imag.(iw)), " ", maximum(imag.(iw)))
+    input_data_file = prefix * "_ckio_ir.dat"
+    println("input_data_file: ", input_data_file)
+    #global Susceptibility = CondensedMatterField.CMF(input_data_file)
+    println("Loaded Susceptibility")
+
+    phi_arr = Array{ComplexF64}(undef, nw, nx, ny, nz)
+    Z_arr = Array{ComplexF64}(undef, nw, nx, ny, nz)
+    chi_arr = Array{ComplexF64}(undef, nw, nx, ny, nz)
+    println("Initializing phi, Z, and chi")
+    initialize_phi_Z_chi!(phi_arr, Z_arr, chi_arr, iw)
+
+    println("Initializing V")
+    sigma = zeros(Complex{Float64}, nw, nx, ny, nz)
+    V_arr = fill_V_arr_fourier_transform(iv)
+
+    println("Initializing F and G")
+    F_arr = Array{ComplexF64}(undef, nw, nx, ny, nz)
+    G_arr = Array{ComplexF64}(undef, nw, nx, ny, nz)
+    condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, mu)
+
+    phierr = 0.0
+    prev_phi_arr = copy(phi_arr)
+    println("Starting Convergence Loop")
+    iterations = 1000
+    #iterations = 1
+    for i in 1:iterations
+        update_fourier_transform!(F_arr, G_arr, V_arr, phi_arr, Z_arr, chi_arr, iw, sigma)
+
+        phierr = round(sum(abs.(prev_phi_arr - phi_arr)) / (nw * nx * ny * nz),digits=8)
+        max_phi = round(maximum(abs.(phi_arr)), digits=6)
+        #print("Iteration $i: Max Phi = $max_phi, mu = $mu, Error = $phierr           \r")
+        print("Iteration $i: Error = $phierr           \r")
+
+        if abs(phierr) < scf_tol || max_phi < 1e-10
+            println("Converged after ", i, " iterations                                                                   ")
+            break
+        end
+        prev_phi_arr = copy(phi_arr)
+        #global mu = find_chemical_potential(mu, phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, Ne)
+        condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, mu)
+    end
+
+    max_phi = maximum(abs.(phi_arr))
+    max_Z = maximum(abs.(Z_arr))
+
+    println("Error: ", phierr, "            ")
+    println("Max phi: ", max_phi)
+    println("Max Z: ", max_Z)
+    lambda = 0.2
+    println("Analytical Phi max: ", wD / sinh((2 * pi / lambda)))
+    reordered_phi = Array{ComplexF64}(undef, nx, ny, nz, nw)
+    reordered_Z = Array{ComplexF64}(undef, nx, ny, nz, nw)
+    points = Matrix{Float64}(undef, nx*ny*nz*nw, dim+1)
+    for i in 1:nw, j in 1:nx, k in 1:ny, l in 1:nz
+        reordered_phi[j, k, l, i] = phi_arr[i, j, k, l]
+        reordered_Z[j, k, l, i] = Z_arr[i, j, k, l]
+        w = iw[i]
+        kvec = get_kvec(j, k, l)
+        idx = (i - 1) * nx * ny * nz + (j - 1) * ny * nz + (k - 1) * nz + l
+        points[idx, 1:dim] .= kvec
+        points[idx, dim+1] = imag(w)
+    end
+
+    npts = Array{Integer}(undef, nw)
+    for i in 1:nw
+        w = iw[i]
+        n = trunc((beta * imag(w) / pi - 1) / 2)
+        npts[i] = n
+    end
+    phi_average = average_over_k(real.(reordered_phi))
+    Z_average = average_over_k(real.(reordered_Z))
+    phi_average_imag = average_over_k(imag.(reordered_phi))
+
+    p = plot(npts, phi_average, label="Phi", xlims=(-500, 500))
+    #plot!(p, phi_average_imag, label="Imag Phi")
+    display(p)
+    readline()
+    p = plot(npts, Z_average, label="Z", xlims=(-500, 500))
+    display(p)
+    readline()
+end
 
 function average_over_k(arr)
     #return Float64.(arr[1, 1, 1, :])
@@ -805,7 +939,7 @@ function test_max_bcs_no_w()
     wD = 0.2
     mu = 1.0
     phi = 1.0
-    exact = lambda * asinh(wD / phi) / (2 * pi)
+    exact = 2 * lambda * asinh(wD / phi) / (4 * pi)
 
     sphere(kx, ky) = kx^2 + ky^2
     func(e, z) = 1 / (e^2 + phi^2)^(0.5)
@@ -826,46 +960,52 @@ function test_max_bcs_no_w()
     println(maximum(real.(result)), " ", maximum(real.(exact)))
 end
 
-
 function test_max_bcs()
+    pts = 1000
     IR_basis_set = FiniteTempBasisSet(beta, 10, 1e-10)
+    basis = FiniteTempBasis(Bosonic(), beta, 10, 1e-10)
     mesh = IRMesh.Mesh(IR_basis_set, nx, ny)
-    fnw, bnw = mesh.fnw, mesh.bnw
-    f = Array{ComplexF64}(undef, bnw, nx, ny)
-    g = Array{ComplexF64}(undef, fnw, nx, ny)
-    exact = Array{ComplexF64}(undef, fnw)
+    fnw, bnw, fntau, bntau = mesh.fnw, mesh.bnw, mesh.fntau, mesh.bntau
+    smpl_tau = TauSampling(basis)
+    f = Array{ComplexF64}(undef, pts, nx, ny)
+    g = Array{ComplexF64}(undef, pts, nx, ny)
+    exact = Array{ComplexF64}(undef, pts)
 
     lambda = 1.0
-    wD = 0.1
+    wD = 0.2
     mu = 1.0
     phi = 1.0
 
     sphere(kx, ky) = kx^2 + ky^2
     func(e, z) = 1 / (e^2 + phi^2 - z^2)
-    almost_constant(e, z) = abs(e) > wD ? (lambda / (1 - 0.01 * z^2)) / 100 : lambda / (1 - 0.01 * z^2)
-    #almost_constant(z) = lambda / (1 - 0.01 * z^2)
+    sigma = 100.0
+    almost_constant(e, z) = (abs(e) > wD) ? 0.0 : lambda 
 
-    for i in 1:fnw, j in 1:nx, k in 1:ny
-        iw = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta) 
+    for i in 1:pts, j in 1:nx, k in 1:ny
+        #iw = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta) 
+        n = -pts / 2 + i - 1
+        iw = 2 * (n - 1) * pi / beta
         kx = 2 * pi * (j / nx - 0.5)
         ky = 2 * pi * (k / ny - 0.5)
         e = sphere(kx, ky) - mu
         g[i, j, k] = func(e, iw)
         #exact[i] = lambda / (2 * (a^2 + phi^2)^(0.5)) * tanh(beta * (a^2 + phi^2)^(0.5) / 2)
-        exact[i] = lambda * asinh(wD / phi)
+        exact[i] = 2 * lambda * asinh(wD / phi) / (4 * pi)
     end
-    for i in 1:bnw, j in 1:nx, k in 1:ny
-        iv = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[i], beta)
+    for i in 1:pts, j in 1:nx, k in 1:ny
+        #iv = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[i], beta)
+        n = -pts / 2 + i - 1
+        iv = 2 * (n) * pi / beta
         kx = 2 * pi * (j / nx - 0.5)
         ky = 2 * pi * (k / ny - 0.5)
         e = sphere(kx, ky) - mu
-        f[i, j, k] = pi * almost_constant(e, iv)
+        f[i, j, k] = almost_constant(e, iv)
     end
 
-    ft = kw_to_rtau(f, 'B', mesh)
-    gt = kw_to_rtau(g, 'F', mesh)
+    ft = fft(f)
+    gt = fft(g)
     resultt = ft .* gt
-    result = rtau_to_kw(resultt, 'F', mesh)
+    result = ifft(resultt) / (nx * ny * pts)
 
     println(maximum(real.(result)), " ", maximum(real.(exact)))
 
@@ -874,6 +1014,277 @@ function test_max_bcs()
     p = plot(real.(result_plot), label="Calculated(Real)")
     plot!(imag.(result_plot), label="Calculated(Imag)")
     plot!(p, real.(exact), label="Exact")
+    display(p)
+    readline()
+end
+
+function VF_sum()
+    pts = 10000
+    basis = IR_Mesh(1e-10)
+    fnw, bnw, fntau, bntau = basis.fnw, basis.bnw, basis.fntau, basis.bntau
+    result = zeros(ComplexF64, pts)
+    F_arr = zeros(ComplexF64, pts)
+    V_arr = zeros(ComplexF64, pts)
+
+    w_arr = Array{Float64}(undef, pts)
+    iw_arr = Array{Float64}(undef, fnw)
+    for i in 1:fnw 
+        iw_arr[i] = imag(valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[i], beta)) 
+    end
+
+    F_ir = Array{ComplexF64}(undef, fnw)
+    V_ir = Array{ComplexF64}(undef, bnw)
+    phi = 1.0
+    lambda = 1.0
+    wD = 0.2
+    e = 0.4
+
+    F(iw) = phi / (-iw^2 + phi^2 + e^2)
+    V(iv) = lambda * 2 * wD^2 / (wD^2 - iv^2)
+
+    for i in 1:fnw 
+        iw = valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[i], beta) 
+        F_ir[i] = F(iw)
+    end
+    for i in 1:bnw 
+        iv = valueim(basis.IR_basis_set.smpl_wn_b.sampling_points[i], beta) 
+        V_ir[i] = V(iv)
+    end
+
+    @threads for i in 1:pts
+        for j in 1:pts
+            n = -pts / 2 + i - 1
+            m = -pts / 2 + j - 1
+            iwn = Complex(0.0, (2 * n + 1) * pi / beta)
+            w_arr[i] = imag(iwn)
+            iwm = Complex(0.0, (2 * m + 1) * pi / beta)
+            iv = Complex(0.0, 2 * n * pi / beta)
+            result[i] += ( V(iwn - iwm) * F(iwm) ) / beta
+            F_arr[i] = F(iwn)
+            V_arr[i] = V(iv)
+        end
+    end
+
+    F_rt = fft(F_arr)
+    V_rt = fft(V_arr)
+    phi_rt = F_rt .* V_rt
+    result2 = fftshift(ifft(phi_rt) / pts)
+
+    F_irt = wn_to_tau(basis, Fermionic(), F_ir)
+    V_irt = wn_to_tau(basis, Bosonic(), V_ir)
+    phi_irt = F_irt .* V_irt
+    result3 = tau_to_wn(basis, Fermionic(), phi_irt)
+
+    p = plot(w_arr, real.(result), label="Summed", xlims=(-20, 20))
+    plot!(p, w_arr, real.(result2), label="Ft'd", xlims=(-20, 20))
+    plot!(p, iw_arr, real.(result3), label="IR'd", xlims=(-20, 20))
+    display(p)
+    readline()
+end
+
+function VF_4sum()
+    pts = 10000
+    println("Starting")
+    basis = IR_Mesh(1e-10)
+    fnw, bnw, fntau, bntau = basis.fnw, basis.bnw, basis.fntau, basis.bntau
+    nk = nx * ny * nz
+    result = zeros(ComplexF64, pts)
+    F_arr = zeros(ComplexF64, pts, nx, ny, nz)
+    V_arr = zeros(ComplexF64, pts, nx, ny, nz)
+
+    w_arr = Array{Float64}(undef, pts)
+    iw_arr = Array{Float64}(undef, fnw)
+    for i in 1:fnw 
+        iw_arr[i] = imag(valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[i], beta)) 
+    end
+
+    F_ir = Array{ComplexF64}(undef, fnw, nx, ny, nz)
+    V_ir = Array{ComplexF64}(undef, bnw, nx, ny, nz)
+    phi = 1.0
+    lambda = 1.0
+    wD = 0.2
+
+    F(iw, e) = phi / (-iw^2 + phi^2 + e^2)
+    V(iv) = lambda * 2 * wD^2 / (wD^2 - iv^2)
+
+    println("Filling IR arrays")
+    for i in 1:fnw, j in 1:nx, k in 1:ny, l in 1:nz
+        iw = valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[i], beta) 
+        F_ir[i, j, k, l] = F(iw, epsilon(get_kvec(j, k, l)))
+    end
+    for i in 1:bnw, j in 1:nx, k in 1:ny, l in 1:nz
+        iv = valueim(basis.IR_basis_set.smpl_wn_b.sampling_points[i], beta) 
+        V_ir[i, j, k, l] = V(iv)
+    end
+
+    println("Starting sum")
+    for i in 1:pts
+        print("Percent complete: ", round(i / pts * 100, digits=2), "%                         \r")
+        @threads for j in 1:pts
+            n = -pts / 2 + i - 1
+            m = -pts / 2 + j - 1
+            iwn = Complex(0.0, (2 * n + 1) * pi / beta)
+            w_arr[i] = imag(iwn)
+            iwm = Complex(0.0, (2 * m + 1) * pi / beta)
+            iv = Complex(0.0, 2 * n * pi / beta)
+            @inbounds for a in 1:nx 
+                @inbounds for b in 1:ny 
+                    @inbounds for c in 1:nz
+                        em = epsilon(get_kvec(a, b, c))
+                        result[i] += ( V(iwn - iwm) * F(iwm, em) ) / (beta * nk)
+                        F_arr[i, a, b, c] = F(iwn, epsilon(get_kvec(a, b, c)))
+                        V_arr[i, a, b, c] = V(iv)
+                    end
+                end
+            end
+        end
+    end
+
+    println("Starting Fourier Transforms")
+    F_rt = fft(F_arr)
+    V_rt = fft(V_arr)
+    phi_rt = F_rt .* V_rt
+    result2 = fftshift(ifft(phi_rt)) / (pts * nk)
+
+    F_irt = kw_to_rtau(F_ir, 'F', basis)
+    V_irt = kw_to_rtau(V_ir, 'B', basis)
+    phi_irt = F_irt .* V_irt
+    result3 = rtau_to_kw(phi_irt, 'F', basis)
+
+    println("Printing max vals")
+    println(maximum(real.(result)), " ", maximum(real.(result2)), " ", maximum(real.(result3)))
+
+
+    println("Plotting")
+    result_plot = result
+    result2_plot = sum(result2, dims=(2, 3, 4))[:, 1, 1, 1] / (nx * ny * nz)
+    result3_plot = sum(result3, dims=(2, 3, 4))[:, 1, 1, 1] / (nx * ny * nz)
+
+    p = plot(w_arr, real.(result_plot), label="Summed", xlims=(-20, 20))
+    plot!(p, w_arr, real.(result2_plot), label="Ft'd", xlims=(-20, 20))
+    plot!(p, iw_arr, real.(result3_plot), label="IR'd", xlims=(-20, 20))
+    display(p)
+    readline()
+end
+
+
+@inline function F_gpu(iw, e, phi) 
+    return phi / (-iw^2 + phi^2 + e^2)
+end
+@inline function V_gpu(iv, wD, lambda) 
+    return lambda * 2 * wD^2 / (wD^2 - iv^2)
+end
+@inline function epsilon_cuda(kx, ky, kz) 
+    return kx^2 + ky^2
+end
+
+function compute_gpu_sum!(result, pts, nx, ny, nz, beta, phi, wD, lambda, w_arr_CUDA, BZ)
+    i = threadIdx().x + (blockIdx().x - 1) * blockDim().x
+
+    if i ≤ pts
+        iwn = ComplexF64(w_arr_CUDA[i])
+        sum = 0
+
+        for j in 1:pts, a in 1:nx, b in 1:ny, c in 1:nz
+            iwm = ComplexF64(w_arr_CUDA[j])
+            dw = iwn - iwm
+            kx = BZ[1, 1] * (a / nx - 0.5) + BZ[1, 2] * (b / ny - 0.5) + BZ[1, 3] * (c / nz - 0.5)
+            ky = BZ[2, 1] * (a / nx - 0.5) + BZ[2, 2] * (b / ny - 0.5) + BZ[2, 3] * (c / nz - 0.5)
+            kz = BZ[3, 1] * (a / nx - 0.5) + BZ[3, 2] * (b / ny - 0.5) + BZ[3, 3] * (c / nz - 0.5)
+            em = epsilon_cuda(kx, ky, kz)
+            sum += (V_gpu(dw, wD, lambda) * F_gpu(iwm, em, phi)) / (beta * nx * ny * nz)
+        end
+        result[i] = sum
+    end
+    return nothing
+end
+
+function VF_4sum_GPU()
+    pts = 10000
+    println("Starting")
+    basis = IR_Mesh(1e-10)
+    fnw, bnw, fntau, bntau = basis.fnw, basis.bnw, basis.fntau, basis.bntau
+    nk = nx * ny * nz
+
+    phi = 1.0
+    lambda = 1.0
+    wD = 0.2
+
+    F(iw, e) = phi / (-iw^2 + phi^2 + e^2)
+    V(iv) = lambda * 2 * wD^2 / (wD^2 - iv^2)
+
+    result = CUDA.zeros(ComplexF64, pts)
+    F_arr = zeros(ComplexF64, pts, nx, ny, nz)
+    V_arr = zeros(ComplexF64, pts, nx, ny, nz)
+    w_arr = zeros(ComplexF64, pts)
+    w_array = Array{ComplexF64}(undef, pts)
+    for i in 1:pts, j in 1:nx, k in 1:ny, l in 1:nz
+        n = -pts / 2 + i - 1
+        iwn = Complex(0.0, (2 * n + 1) * pi / beta)
+        iwm = Complex(0.0, (2 * n) * pi / beta)
+        w_arr[i] = iwn
+        w_array[i] = iwn
+        kx = BZ[1, 1] * (j / nx - 0.5) + BZ[1, 2] * (k / ny - 0.5) + BZ[1, 3] * (l / nz - 0.5)
+        ky = BZ[2, 1] * (j / nx - 0.5) + BZ[2, 2] * (k / ny - 0.5) + BZ[2, 3] * (l / nz - 0.5)
+        kz = BZ[3, 1] * (j / nx - 0.5) + BZ[3, 2] * (k / ny - 0.5) + BZ[3, 3] * (l / nz - 0.5)
+        e = epsilon_cuda(kx, ky, kz)
+        F_arr[i, j, k, l] = F(iwn, e)
+        V_arr[i, j, k, l] = V(iwm)
+    end
+    w_arr_CUDA = CuArray(w_array)
+    BZ_CUDA = CuArray(BZ)
+
+    iw_arr = Array{Float64}(undef, fnw)
+    for i in 1:fnw 
+        iw_arr[i] = imag(valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[i], beta)) 
+    end
+
+    F_ir = Array{ComplexF64}(undef, fnw, nx, ny, nz)
+    V_ir = Array{ComplexF64}(undef, bnw, nx, ny, nz)
+
+    println("Filling IR arrays")
+    for i in 1:fnw, j in 1:nx, k in 1:ny, l in 1:nz
+        iw = valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[i], beta) 
+        F_ir[i, j, k, l] = F(iw, epsilon(get_kvec(j, k, l)))
+    end
+    for i in 1:bnw
+        iv = valueim(basis.IR_basis_set.smpl_wn_b.sampling_points[i], beta) 
+        V_ir[i, :, :, :] .= V(iv)
+    end
+
+    println("Starting GPU sum")
+
+    CUDA.@sync @cuda threads=512 blocks=cld(pts, 512) compute_gpu_sum!(result, pts, nx, ny, nz, beta, phi, wD, lambda, w_arr_CUDA, BZ_CUDA)
+#    CUDA.@sync @cuda threads=threads_per_block blocks=blocks_per_grid compute_gpu_sum!(
+#                                                                                       result, pts, nx, ny, nz, beta, phi, wD, lambda, w_arr_CUDA, BZ_CUDA)
+                
+
+    cpu_result = Array(result)
+    
+    println("Starting Fourier Transforms")
+    F_rt = fft(F_arr)
+    V_rt = fft(V_arr)
+    phi_rt = F_rt .* V_rt
+    result2 = fftshift(ifft(phi_rt)) / (pts * nk)
+
+    F_irt = kw_to_rtau(F_ir, 'F', basis)
+    V_irt = kw_to_rtau(V_ir, 'B', basis)
+    phi_irt = F_irt .* V_irt
+    result3 = rtau_to_kw(phi_irt, 'F', basis)
+
+    println("Printing maxvals")
+    println("Max result: ", maximum(abs.(cpu_result)))
+    println("Max result2: ", maximum(abs.(result2)))
+    println("Max result3: ", maximum(abs.(result3)))
+
+    println("Plotting")
+    result_plot = cpu_result
+    result2_plot = sum(result2, dims=(2, 3, 4))[:, 1, 1, 1] / (nx * ny * nz)
+    result3_plot = sum(result3, dims=(2, 3, 4))[:, 1, 1, 1] / (nx * ny * nz)
+
+    p = plot(imag.(w_arr), real.(result_plot), label="Summed", xlims=(-20, 20))
+    plot!(p, imag.(w_arr), real.(result2_plot), label="Ft'd", xlims=(-20, 20))
+    plot!(p, iw_arr, real.(result3_plot), label="IR'd", xlims=(-20, 20))
     display(p)
     readline()
 end
@@ -887,4 +1298,8 @@ end # module
 #Eliashberg.gpu_sum()
 #Eliashberg.eliashberg_sparse_ir()
 #Eliashberg.test_max_bcs()
-Eliashberg.test_max_bcs_no_w()
+#Eliashberg.test_max_bcs_no_w()
+#Eliashberg.VF_sum()
+#Eliashberg.VF_4sum()
+Eliashberg.VF_4sum_GPU()
+#Eliashberg.eliashberg_fourier_transform()
