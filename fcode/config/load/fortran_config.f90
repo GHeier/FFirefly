@@ -105,6 +105,7 @@ module fcode
     integer :: num_eigenvalues_to_save
     integer(c_int), bind(C, name="c_frequency_pts") :: c_frequency_pts
     integer :: frequency_pts
+    character(len=50) :: projections
 
 ![RESPONSE]
     logical(c_bool), bind(C, name="c_dynamic") :: c_dynamic
@@ -194,6 +195,10 @@ module fcode
 
 
 
+        function get_projections() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_projections
+    end function get_projections
 
 ![RESPONSE]
 
@@ -273,6 +278,7 @@ contains
         bcs_cutoff_frequency = c_bcs_cutoff_frequency
         num_eigenvalues_to_save = c_num_eigenvalues_to_save
         frequency_pts = c_frequency_pts
+        projections = get_string(get_projections())
 
 ![RESPONSE]
         dynamic = c_dynamic

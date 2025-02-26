@@ -57,6 +57,7 @@ extern bool c_FS_only;
 extern float c_bcs_cutoff_frequency;
 extern int c_num_eigenvalues_to_save;
 extern int c_frequency_pts;
+extern char* c_projections; char* get_projections();
 
 //[RESPONSE]
 extern bool c_dynamic;

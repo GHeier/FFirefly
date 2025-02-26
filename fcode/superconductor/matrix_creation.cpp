@@ -19,7 +19,7 @@ using namespace std;
 // Create V matrix
 // Picks the potential based on the global variable "interaction"
 void create_P(Matrix &P, vector<Vec> &k) {
-    Two_Particle_Interaction V_func(false);
+    //Two_Particle_Interaction V_func(false);
     cout << "Creating P Matrix\n";
     for (int i = 0; i < P.size; i++) {
         Vec k1 = k[i];
@@ -27,7 +27,7 @@ void create_P(Matrix &P, vector<Vec> &k) {
         for (int j = 0; j < P.size; j++) {
             Vec k2 = k[j];
             P(i,j) = (float)(-pow(k1.area/vp(k1.n, k1),0.5) 
-                    * (V_func(k1-k2, 0, "up", "down") + V_func(k1+k2, 0, "up", "down"))
+                    * (V(k1-k2, 0, "up", "down") + V(k1+k2, 0, "up", "down"))
                         * pow(k2.area/vp(k2.n, k2),0.5));
             assert(isnan(P(i,j)) == false);
         }
@@ -39,7 +39,7 @@ void create_P(Matrix &P, vector<Vec> &k) {
 
 // Creates the P matrix based around the multiple energy surfaces calculated above
 void create_P_freq(Matrix &P, vector<vector<Vec>> &k, float T, const unordered_map<float, vector<vector<vector<float>>>> &chi_cube2) {
-    Two_Particle_Interaction V_func(false);
+    //Two_Particle_Interaction V_func(false);
     cout << "Creating P Matrix with frequency\n";
     for (int i = 0; i < k.size(); i++) {
 
@@ -66,7 +66,7 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, float T, const unordered_m
                     float w = wc * (points[l-1][x] - points[l-1][i]);
 
                     P(ind1 + j,ind2 + y) = (float)(- d1 * d2 * pow(fde1*fde2,0.5) 
-                            * (V_func(k1-k2, 0, "up", "down") + V_func(k1+k2, 0, "up", "down")));
+                            * (V(k1-k2, 0, "up", "down") + V(k1+k2, 0, "up", "down")));
                 }
             }
             string message = "Portion " + to_string(i) + " of " + to_string(k.size());

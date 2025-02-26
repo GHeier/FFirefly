@@ -58,6 +58,7 @@ FS_only::Bool = cfg.FS_only
 bcs_cutoff_frequency::Float64 = cfg.bcs_cutoff_frequency
 num_eigenvalues_to_save::Int = cfg.num_eigenvalues_to_save
 frequency_pts::Int = cfg.frequency_pts
+projections::String = cfg.projections
 
 #[RESPONSE]
 dynamic::Bool = cfg.dynamic

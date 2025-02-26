@@ -18,6 +18,8 @@ void cmf_cs_call(Field_C* cmf, Vec point, float w, std::complex<float>* result);
 // Call operator() overload for `float`
 void cmf_cs_call2(Field_C* cmf, float w, std::complex<float>* result);
 
+void save_data(string filename, vector<Vec> &points, vector<complex<Vec>> &values, int dimension, bool with_w, bool is_complex, bool is_vector);
+
 // Destroy CMF instance
 void destroy_CMF(Field_C* cmf);
 

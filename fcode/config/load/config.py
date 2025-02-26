@@ -64,6 +64,7 @@ FS_only = True
 bcs_cutoff_frequency = 0.05
 num_eigenvalues_to_save = 1
 frequency_pts = 5
+projections = ''
 
 #[RESPONSE]
 dynamic = False
@@ -231,6 +232,9 @@ def load_config():
             if "frequency_pts" in key:
                 global frequency_pts
                 frequency_pts = int(value)
+            if "projections" in key:
+                global projections
+                projections = value
 
 #[RESPONSE]
             if "dynamic" in key:

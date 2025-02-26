@@ -61,6 +61,7 @@ bool FS_only;
 float bcs_cutoff_frequency;
 int num_eigenvalues_to_save;
 int frequency_pts;
+string projections;
 
 //[RESPONSE]
 bool dynamic;
@@ -120,6 +121,7 @@ extern "C" void load_cpp_config() {
     bcs_cutoff_frequency = c_bcs_cutoff_frequency;
     num_eigenvalues_to_save = c_num_eigenvalues_to_save;
     frequency_pts = c_frequency_pts;
+    projections = c_projections;
 
 //[RESPONSE]
     dynamic = c_dynamic;

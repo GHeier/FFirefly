@@ -13,6 +13,7 @@
 #include "hamiltonian/band_structure.hpp"
 #include "objects/vec.hpp"
 //#include "objects/fastfield.hpp"
+//#include "objects/CondensedMatterField/fields.hpp"
 
 
 namespace py = pybind11;
@@ -85,6 +86,24 @@ PYBIND11_MODULE(fmodule, m) {
             throw std::runtime_error("Input must have shape (3,) or (N, 3).");
         }
     });
+
+//    py::class_<Field_R>(m, "Field_R")
+//        .def(py::init<>())
+//        // Expose the parameterized constructor
+//        .def(py::init<string>(), py::arg("path"))
+//        .def("__call__", [](Field_R &self, float w) -> float {
+//                return self(w);
+//            }, py::arg("w"))
+//        .def("__call__", [](Field_R &self, const std::vector<double> &p, float w) -> float {
+//            Vec q;
+//            q.dimension = p.size();  // Set dimension
+//
+//            for (size_t i = 0; i < p.size(); i++) {
+//                q(i) = p[i];  // Assuming Vec supports () operator for assignment
+//            }
+//
+//            return self(q, w);
+//        }, py::arg("p"), py::arg("w") = 0.0f);  // Second overload (Python list input)
 
 
     m.def("load_c_config", [](string path) {

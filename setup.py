@@ -14,6 +14,8 @@ ext_modules = [
             #"fcode/hamiltonian/interaction.cpp",
             "fcode/objects/eigenvec.cpp",
             #"fcode/objects/field.cpp",
+            #"fcode/objects/CondensedMatterField/cmf.cpp",
+            #"fcode/objects/CondensedMatterField/fields.cpp",
             #"fcode/objects/fastfield.cpp",
             "fcode/objects/matrix.cpp",
             "fcode/objects/vec.cpp",

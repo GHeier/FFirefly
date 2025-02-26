@@ -214,6 +214,7 @@ CMF::CMF(vector<Vec> points, vector<complex<Vec>> values, int dimension, bool wi
 }
 
 complex<Vec> CMF::operator() (float w) {
+    printf("w: %f\n", w);
     if (!with_w) throw runtime_error("This field does not have a w dimension.");
     return CMF_search_1d(w, w_points, values);
 }
@@ -243,22 +244,35 @@ complex<Vec> CMF::operator() (Vec point, float w) {
 }
 
 complex<Vec> CMF_search_1d(float w_val, vector<float> &w_points, vector<complex<Vec>> &f) {
+
     // Interpolates a 1D function f(w) given on a grid between w_min and w_max
     // at the point w_val using linear interpolation
     // w_val: value at which to interpolate
     // w_min, w_max: minimum and maximum values of w
     // f: vector of function values at the grid points
     // returns: interpolated value of f(w_val)
+    printf("f[0]: %f\n", f[0].real()(0));
+    printf("f[end]: %f\n", f[f.size()-1].real()(0));
     float w_min = w_points[0], w_max = w_points[w_points.size()-1];
+    printf("w_val: %f\n", w_val);
+    printf("w_min: %f\n", w_min);
+    printf("w_max: %f\n", w_max);
     w_val = sanitize_within_bounds(w_val, w_min, w_max);
     if (w_val < w_min || w_val > w_max) throw out_of_range("w_val out of bounds");
 
     int i = binary_search(w_val, w_points);
     if (i == w_points.size() - 1) i--;
 
+    if (w_val < w_points[i] || w_val > w_points[i+1]) throw out_of_range("Binary search failed\n");
     float w_rel = (w_val - w_points[i]) / (w_points[i+1] - w_points[i]);
     if (w_rel < 0 || w_rel > 1) throw out_of_range("w_rel out of bounds");
 
+    printf("w_rel: %f\n", w_rel);
+    printf("i: %d\n", i);
+    printf("w_points[i]: %f\n", w_points[i]);
+    printf("w_points[i+1]: %f\n", w_points[i+1]);
+    printf("f[i]: %f\n", f[i].real()(0));
+    printf("f[i+1]: %f\n", f[i+1].real()(0));
     complex<Vec> result = (1 - w_rel) * f[i] + w_rel * f[i + 1];
     return result;
 }

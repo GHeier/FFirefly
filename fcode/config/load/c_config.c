@@ -69,6 +69,8 @@ bool c_FS_only = true;
 float c_bcs_cutoff_frequency = 0.05;
 int c_num_eigenvalues_to_save = 1;
 int c_frequency_pts = 5;
+char* c_projections = "";
+char* get_projections() {return c_projections;}
 
 //[RESPONSE]
 bool c_dynamic = false;
@@ -352,6 +354,9 @@ void read_c_config(const char* path) {
             else if (strstr(key, "frequency_pts") != NULL) {
                 c_frequency_pts = atoi(value);
             }
+            else if (strstr(key, "projections") != NULL) {
+                set_string(&c_projections, value);
+            }
 
 //[RESPONSE]
             else if (strstr(key, "dynamic") != NULL) {
@@ -426,6 +431,8 @@ void unload_c_config() {
 
 //[SUPERCONDUCTOR]
     free(c_method);
+
+    free(c_projections);
 
 //[RESPONSE]
 

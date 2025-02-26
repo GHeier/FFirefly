@@ -1,6 +1,7 @@
 #include <string>
 
 #include "../objects/CondensedMatterField/fields.hpp"  // Include CMF class
+#include "../objects/CondensedMatterField/cmf.hpp"  // Include CMF class
 #include "../objects/vec.hpp"
 #include "../config/load/c_config.h"
 #include "../config/load/cpp_config.hpp"
@@ -32,6 +33,14 @@ Field_C* load_cmf_cs(const char* filename) {
     return new Field_C(filename);
 }
 
+Field_R* create_CMF_RS() {
+    return new Field_R();
+}
+
+Field_R* load_cmf_rs(const char* filename) {
+    return new Field_R(filename);
+}
+
 // Call operator() overload for `Vec`
 void cmf_cs_call(Field_C* cmf, const double *point, float w, int len, double *real_result, double *imag_result) {
     Vec q; q.dimension = len;
@@ -50,8 +59,26 @@ void cmf_cs_call2(Field_C* cmf, float w, double *real_result, double *imag_resul
     *imag_result = imag(result);
 }
 
+void cmf_rs_call(Field_R* cmf, const double *point, float w, int len, double *result) {
+    Vec q; q.dimension = len;
+    for (int i = 0; i < len; i++) {
+        q(i) = point[i];
+    }
+    float temp = cmf->operator()(q, w);
+    *result = temp;
+}
+
+void cmf_rs_call2(Field_R* cmf, float w, double *result) {
+    float temp = cmf->operator()(w);
+    *result = temp;
+}
+
 void cmf_save(Field_C* cmf, const char* filename) {
     save_CMF_to_file(filename, cmf->base);
+}
+
+void save_data(string filename, vector<Vec> &points, vector<complex<Vec>> &values, int dimension, bool with_w, bool is_complex, bool is_vector) {
+    save_to_file(filename, points, values, dimension, with_w, is_complex, is_vector);
 }
 
 // Destroy CMF instance

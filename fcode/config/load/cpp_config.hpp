@@ -58,6 +58,7 @@ extern bool FS_only;
 extern float bcs_cutoff_frequency;
 extern int num_eigenvalues_to_save;
 extern int frequency_pts;
+extern string projections;
 
 //[RESPONSE]
 extern bool dynamic;
