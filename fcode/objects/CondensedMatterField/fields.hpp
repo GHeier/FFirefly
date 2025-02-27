@@ -35,6 +35,7 @@ class Field_R {
         Field_R(string filename);
 
         float operator() (Vec point, float w = 0);
-        float operator() (float w);
+        float operator() (double w);
 };
 
+extern "C" float test_func(float w);

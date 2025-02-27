@@ -7,7 +7,7 @@
 #include "../config/load/cpp_config.hpp"
 #include "../hamiltonian/band_structure.hpp"
 
-extern "C" double epsilon_julia(int n, double *k, int size) {
+extern "C" float epsilon_julia(int n, float *k, int size) {
     Vec kvec;
     for (int i = 0; i < size; i++) {
         kvec(i) = k[i];
@@ -42,7 +42,7 @@ Field_R* load_cmf_rs(const char* filename) {
 }
 
 // Call operator() overload for `Vec`
-void cmf_cs_call(Field_C* cmf, const double *point, float w, int len, double *real_result, double *imag_result) {
+void cmf_cs_call(Field_C* cmf, const float *point, float w, int len, float *real_result, float *imag_result) {
     Vec q; q.dimension = len;
     for (int i = 0; i < len; i++) {
         q(i) = point[i];
@@ -53,13 +53,13 @@ void cmf_cs_call(Field_C* cmf, const double *point, float w, int len, double *re
 }
 
 // Call operator() overload for `float`
-void cmf_cs_call2(Field_C* cmf, float w, double *real_result, double *imag_result) {
+void cmf_cs_call2(Field_C* cmf, float w, float *real_result, float *imag_result) {
     complex<float> result = cmf->operator()(w);
     *real_result = real(result);
     *imag_result = imag(result);
 }
 
-void cmf_rs_call(Field_R* cmf, const double *point, float w, int len, double *result) {
+void cmf_rs_call(Field_R* cmf, const float *point, float w, int len, float *result) {
     Vec q; q.dimension = len;
     for (int i = 0; i < len; i++) {
         q(i) = point[i];
@@ -68,7 +68,7 @@ void cmf_rs_call(Field_R* cmf, const double *point, float w, int len, double *re
     *result = temp;
 }
 
-void cmf_rs_call2(Field_R* cmf, float w, double *result) {
+void cmf_rs_call2(Field_R* cmf, float w, float *result) {
     float temp = cmf->operator()(w);
     *result = temp;
 }

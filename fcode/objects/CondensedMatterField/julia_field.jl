@@ -35,17 +35,20 @@ function load_config!(path::String)
     ccall((:load_config_julia, testmod), Cvoid, (Cstring,), path)
 end
 
-function (self::Field_C)(k::Vector{Float64}, w::Float64)::ComplexF64
-    real_result::Ref{Float64} = Ref(Float64(0.0))
-    imag_result::Ref{Float64} = Ref(Float64(0.0))
-    ccall((:cmf_cs_call, testmod), Cvoid, (Ptr{Cvoid}, Ptr{Float64}, Float64, Cint, Ptr{Float64}, Ptr{Float64}), self.cmf, k, w, length(k), real_result, imag_result)
-    return ComplexF64(real_result[], imag_result[])
+function (self::Field_C)(k, w)::ComplexF32
+    real_result::Ref{Float32} = Ref(Float32(0.0))
+    imag_result::Ref{Float32} = Ref(Float32(0.0))
+    newk::Vector{Float32} = Float32.(k)
+    neww = Float32(w)
+    ccall((:cmf_cs_call, testmod), Cvoid, (Ptr{Cvoid}, Ptr{Float32}, Float32, Cint, Ptr{Float32}, Ptr{Float32}), self.cmf, newk, neww, length(k), real_result, imag_result)
+    return ComplexF32(real_result[], imag_result[])
 end
 
-function (self::Field_C)(w::Float64)::ComplexF64
+function (self::Field_C)(w)::ComplexF32
     real_result::Ref{Float64} = Ref(Float64(0.0))
     imag_result::Ref{Float64} = Ref(Float64(0.0))
-    ccall((:cmf_cs_call2, testmod), Cvoid, (Ptr{Cvoid}, Float64, Ptr{Float64}, Ptr{Float64}), self.cmf, w, real_result, imag_result)
+    neww = Float32(w)
+    ccall((:cmf_cs_call2, testmod), Cvoid, (Ptr{Cvoid}, Float64, Ptr{Float64}, Ptr{Float64}), self.cmf, neww, real_result, imag_result)
     return ComplexF64(real_result[], imag_result[])
 end
 
@@ -68,18 +71,21 @@ mutable struct Field_R
     end
 end
 
-function (self::Field_R)(k::Vector{Float64}, w::Float64)::Float64
+function (self::Field_R)(k, w)::Float32
     real_result::Ref{Float64} = Ref(Float64(0.0))
     imag_result::Ref{Float64} = Ref(Float64(0.0))
-    ccall((:cmf_rs_call, testmod), Cvoid, (Ptr{Cvoid}, Ptr{Float64}, Float64, Cint, Ptr{Float64}, Ptr{Float64}), self.cmf, k, w, length(k), real_result, imag_result)
+    newk::Vector{Float32} = Float32.(k)
+    neww = Float32(w)
+    ccall((:cmf_rs_call, testmod), Cvoid, (Ptr{Cvoid}, Ptr{Float64}, Float64, Cint, Ptr{Float64}, Ptr{Float64}), self.cmf, newk, neww, length(k), real_result, imag_result)
     return Float64(real_result[])
 end
 
-function (self::Field_R)(w::Float64)::Float64
-    real_result::Ref{Float64} = Ref(Float64(0.0))
-    imag_result::Ref{Float64} = Ref(Float64(0.0))
-    ccall((:cmf_rs_call2, testmod), Cvoid, (Ptr{Cvoid}, Float64, Ptr{Float64}, Ptr{Float64}), self.cmf, w, real_result, imag_result)
-    return Float64(real_result[])
+function (self::Field_R)(w)::Float32
+    real_result::Ref{Float32} = Ref(Float32(0.0))
+    imag_result::Ref{Float32} = Ref(Float32(0.0))
+    neww = Float32(w)
+    ccall((:cmf_rs_call2, testmod), Cvoid, (Ptr{Cvoid}, Float32, Ptr{Float32}, Ptr{Float32}), self.cmf, neww, real_result, imag_result)
+    return Float32(real_result[])
 end
 
 function Base.finalize(csf::Field_R)
@@ -90,9 +96,18 @@ function save_data(path::String, points, data, dimension, with_w, is_complex, is
     ccall((:save_to_file, testmod), Cvoid, (Cstring, Ptr{Float64}, Ptr{Float64}, Cint, Cint, Cint, Cint), path, points, data, dimension, with_w, is_complex, is_vector)
 end
 
+function jtestfunc(x)::Float32
+    newx = Float32(x)
+    return ccall((:test_func, testmod), Float32, (Float32,), newx)
+end
+
 end # module Field
 
 #using .Field
+
+println("Testing Field module")
+println(Field.jtestfunc(2.0))
+println("Test passed")
 
 file = "/home/g/Research/Materials/Test/test_ckio_ir.dat"
 #cmf2 = load_cmf_cs(file)
@@ -100,7 +115,8 @@ cmf2 = Field.Field_C(file)
 if cmf2 == C_NULL
     error("Failed to load CMF_CS from file: ", file)
 end
-println(cmf2([-3.14, -3.14, -3.14], 1.0))
+println(cmf2([-3.14, -3.14, -3.14], 0.0))
+println("Test passed")
 #println(cmf_cs_call(cmf2, [-3.14, -3.14, -3.14], 0.0))
 #cmf3 = load_cmf_cs("/home/g/Research/Materials/Test/DOS.dat")
 cmf3 = Field.Field_R("/home/g/Research/Materials/Test/test_DOS.dat")

@@ -10,23 +10,28 @@ config = {
         'SYSTEM': {
             'interaction': 'FLEX',
             'dimension': 2,
-            'fermi_energy': -1.0,
-            'Temperature': 0.01,
+            'fermi_energy': 1.0,
+            'Temperature': 0.0001,
             'onsite_U': 4.0,
+            'nbnd': 1,
             },
         'MESH': {
-            'k_mesh': [10, 10, 10],
+            'k_mesh': [60, 60, 60],
             'q_mesh': [10, 10, 10],
-            'w_pts': 100
+            'w_pts': 30000
             },
         'BANDS': {
-            'band': 'tight_binding',
+            'band1': 'tight_binding',
             't0': 1.0
+            },
+        'SUPERCONDUCTOR': {
+            'projections': 's'
             },
         }
 
 def eliashberg(filename):
     Ti = 1e-4
+    Ti = 0.05
     Tf = 1.0
     phi_max_initial = 0
     T_list, phi_list = [], []
