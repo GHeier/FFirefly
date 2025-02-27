@@ -27,6 +27,7 @@
 #include "calculations.h"
 #include "potential.h"
 #include "save_data.h"
+#include "save_data_recursive.h"
 #include "vec.h"
 #include "matrix.hpp"
 #include "eigenvec.hpp"
@@ -55,12 +56,52 @@ float get_max_eigenvalue() {
     freq_FS = freq_tetrahedron_method(mu);
     vector<Vec> FS = freq_FS[(l+1)/2 - 1];
     vector<Vec> layer = tetrahedron_method(e_base_avg, Vec(0,0,0), 0);
+    
+    printf("\n");
+    for (int i = 0; i < 5; i++)
+    {
+	Vec k = layer[i]; // was once vec i believe this was an error
+	printf("v_k = %lf\n", vp(k));
+    }
+    printf("\n");
+
+    save_vp_dir(mu, layer);
+    save_V_dir(mu, layer);
+
+    // this is a commented out section but un commenting it out did not fix anything
+    /*
+    unordered_map <float, vector<vector<vector<float>>>> nothing;
+    ofstream vp_file("vp_file.dat");
+    ofstream V_file("V_file.dat");
+    for (int i = 0; i < layer.size(); i++) {
+	    Vec k = layer[i];
+	    vp_file << vp(k) << endl;
+    }
+
+    for (int i = 0; i < layer.size(); i++) {
+	    for (int j = 0; j < layer.size(); j++) {
+		    Vec k1 = layer[i];
+		    Vec k2 = layer[j];
+		    float V_val = V(k1, k2, 0, 0, nothing);
+		    V_file << V_val << endl;
+	    }
+    }
+    */
+    
 
 
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
     save_FS(layer, iteration, mu);
+
+    //PUT VELOCITY STUFF HERE (I lied)
+
+
+
     float DOS = get_DOS(FS);
     cout << "Density of States: " << DOS << endl;
+    //cout << "Ending code early\n";
+    //return 0;
+
 
 
 
@@ -130,8 +171,13 @@ float get_max_eigenvalue() {
 
 
 
-
-
+/*
+ * ========================================================================================
+ * ================= FERMI VELOCITY AND INTERACTION POTENTIAL SAVING ======================
+   ========================================================================================
+ */
+    //fermi_velocity_average(mu);
+    //interaction_potential_average(mu);
 
 
 
@@ -176,25 +222,54 @@ float get_max_eigenvalue() {
 
 
 
-
 	return solutions[0].eigenvalue;
+    
+    // taking averages	
+    fermi_velocity_average(mu);
+    interaction_potential_average(mu);
 
 }
-// This is ASPEN here to work again
+
+int iteration;
+
 int main() {
+
+	std::cout << "\nYou are about to run the gap code. Do you want to clear and archive the data files in the fermi_velocity_data and interaction_potential_data directories? (y/n)\n";
+
+	char response;
+	
+	std::cin >> response;
+
+	response = std::tolower(response);
+
+	if(response == 'y')
+	{
+
+		archive_and_clear_data("fermi_velocity_data"); archive_and_clear_data("interaction_potential_data"); // empty and archive old data files
+	}
+
+	else
+	{
+		std::cout << "\nProceeding without deleting old data.\n";
+	}
+
 	int num_iters = 20;
-	for (int i = 0; i < num_iters; i++) {
+	for (int i = 0; i <= num_iters; i++) {
 		
+		printf("\n\n\n==============================\nBeginning code for iteration %i\n==============================\n", i);
+
 		int iteration = i; 
 		
 		float new_mu = 0 - 4.0 * i / num_iters;
 		
-		mu = new_mu;
+		//mu = new_mu;
 
 
 		change_global_constant(mu, new_mu);
 		float eig = get_max_eigenvalue();
 		printf("Iteration %i | Eigenvalue: %.4f\n", i, eig);
+		printf("\n\n");
+		printf("\n==============================\nEnding  code  for  iteration %i\n==============================\n\n\n\n\n", i);
 	}
    	return 0;
 }
