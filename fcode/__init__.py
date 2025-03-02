@@ -9,7 +9,6 @@ import re
 import subprocess
 
 file = config.load_config()
-print("Loading config from", file)
 load_c_config(file)
 
 def run(cfg_file):

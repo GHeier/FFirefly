@@ -7,6 +7,7 @@
 // Category nodes below
 #include "response/DOS.h"
 #include "response/response.h"
+#include "hamiltonian/vertex.hpp"
 #include "superconductor/superconductor.hpp"
 
 // Test nodes below
@@ -22,6 +23,11 @@ void DOS() {
 void response() {
     printf("Starting Response Calculation\n\n");
     response_wrapper();
+}
+
+void vertex() {
+    printf("Starting Vertex Calculation\n\n");
+    vertex_wrapper();
 }
 
 void superconductor() {
@@ -53,10 +59,10 @@ int main() {
     load_cpp_config_wrapper(); // Read input to load global cpp variables
     start_python();
 
-
     if (!strcmp(c_category, "DOS")) DOS();
     else if (!strcmp(c_category, "response")) response();
     else if (!strcmp(c_category, "superconductor")) superconductor();
+    else if (!strcmp(c_category, "vertex")) vertex();
     else if (!strcmp(c_category, "test")) test();
     else printf("Unknown Category\n\n");
 

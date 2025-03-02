@@ -1,13 +1,13 @@
 #  g++ -shared -fPIC ../../build/CMakeFiles/fcode.x.dir/fcode/config/load/c_config.c.o ../../build/CMakeFiles/fcode.x.dir/fcode/objects/vec.cpp.o ../../build/CMakeFiles/fcode.x.dir/fcode/hamiltonian/band_structure.cpp.o ../../build/CMakeFiles/fcode.x.dir/fcode/config/load/cpp_config.cpp.o jmodtest.o -o jmodtest.so
 
-#function epsilon(n::Int, k::Vector{Float64})
-#    return ccall((:epsilon_julia, testmod), Float64, (Int, Ptr{Float64}, Int), n, k, length(k))
-#end
 
-module Field
+function epsilon(n::Int, k::Vector{Float64})
+    return ccall((:epsilon_julia, testmod), Float64, (Int, Ptr{Float64}, Int), n, k, length(k))
+end
 
-#const testmod = "/home/g/Research/fcode/fcode/hamiltonian/jmodtest.so"
+module Quasi
 const testmod = "/home/g/Research/fcode/build/lib/libfcode.so"
+
 mutable struct Field_C
     cmf::Ptr{Cvoid}
     function Field_C(cmf::Ptr{Cvoid})
@@ -15,7 +15,7 @@ mutable struct Field_C
     end
 
     function Field_C(filename::String)
-        cmf = ccall((:load_cmf_cs, testmod), Ptr{Cvoid}, (Cstring,), filename)
+        cmf = ccall((:load_Field_C, testmod), Ptr{Cvoid}, (Cstring,), filename)
         if cmf == C_NULL
             error("Failed to load CMF_CS from file: ", filename)
         end
@@ -23,7 +23,7 @@ mutable struct Field_C
     end
 
     function destroy!(csf::Field_C)
-        ccall((:destroy_CMF_CS, testmod), Cvoid, (Ptr{Cvoid},), csf.cmf)
+        ccall((:destroy_Field_C, testmod), Cvoid, (Ptr{Cvoid},), csf.cmf)
     end
 end
 
@@ -40,7 +40,7 @@ function (self::Field_C)(k, w)::ComplexF32
     imag_result::Ref{Float32} = Ref(Float32(0.0))
     newk::Vector{Float32} = Float32.(k)
     neww = Float32(w)
-    ccall((:cmf_cs_call, testmod), Cvoid, (Ptr{Cvoid}, Ptr{Float32}, Float32, Cint, Ptr{Float32}, Ptr{Float32}), self.cmf, newk, neww, length(k), real_result, imag_result)
+    ccall((:Field_C_call, testmod), Cvoid, (Ptr{Cvoid}, Ptr{Float32}, Float32, Cint, Ptr{Float32}, Ptr{Float32}), self.cmf, newk, neww, length(k), real_result, imag_result)
     return ComplexF32(real_result[], imag_result[])
 end
 
@@ -48,7 +48,7 @@ function (self::Field_C)(w)::ComplexF32
     real_result::Ref{Float64} = Ref(Float64(0.0))
     imag_result::Ref{Float64} = Ref(Float64(0.0))
     neww = Float32(w)
-    ccall((:cmf_cs_call2, testmod), Cvoid, (Ptr{Cvoid}, Float64, Ptr{Float64}, Ptr{Float64}), self.cmf, neww, real_result, imag_result)
+    ccall((:Field_C_call_w, testmod), Cvoid, (Ptr{Cvoid}, Float64, Ptr{Float64}, Ptr{Float64}), self.cmf, neww, real_result, imag_result)
     return ComplexF64(real_result[], imag_result[])
 end
 
@@ -63,7 +63,7 @@ mutable struct Field_R
     end
 
     function Field_R(filename::String)
-        cmf = ccall((:load_cmf_rs, testmod), Ptr{Cvoid}, (Cstring,), filename)
+        cmf = ccall((:load_Field_R, testmod), Ptr{Cvoid}, (Cstring,), filename)
         if cmf == C_NULL
             error("Failed to load CMF_R from file: ", filename)
         end
@@ -76,7 +76,7 @@ function (self::Field_R)(k, w)::Float32
     imag_result::Ref{Float64} = Ref(Float64(0.0))
     newk::Vector{Float32} = Float32.(k)
     neww = Float32(w)
-    ccall((:cmf_rs_call, testmod), Cvoid, (Ptr{Cvoid}, Ptr{Float64}, Float64, Cint, Ptr{Float64}, Ptr{Float64}), self.cmf, newk, neww, length(k), real_result, imag_result)
+    ccall((:Field_R_call, testmod), Cvoid, (Ptr{Cvoid}, Ptr{Float64}, Float64, Cint, Ptr{Float64}, Ptr{Float64}), self.cmf, newk, neww, length(k), real_result, imag_result)
     return Float64(real_result[])
 end
 
@@ -84,7 +84,7 @@ function (self::Field_R)(w)::Float32
     real_result::Ref{Float32} = Ref(Float32(0.0))
     imag_result::Ref{Float32} = Ref(Float32(0.0))
     neww = Float32(w)
-    ccall((:cmf_rs_call2, testmod), Cvoid, (Ptr{Cvoid}, Float32, Ptr{Float32}, Ptr{Float32}), self.cmf, neww, real_result, imag_result)
+    ccall((:Field_R_call_w, testmod), Cvoid, (Ptr{Cvoid}, Float32, Ptr{Float32}, Ptr{Float32}), self.cmf, neww, real_result, imag_result)
     return Float32(real_result[])
 end
 
@@ -93,39 +93,34 @@ function Base.finalize(csf::Field_R)
 end
 
 function save_data(path::String, points, data, dimension, with_w, is_complex, is_vector)
-    ccall((:save_to_file, testmod), Cvoid, (Cstring, Ptr{Float64}, Ptr{Float64}, Cint, Cint, Cint, Cint), path, points, data, dimension, with_w, is_complex, is_vector)
-end
-
-function jtestfunc(x)::Float32
-    newx = Float32(x)
-    return ccall((:test_func, testmod), Float32, (Float32,), newx)
+    ccall((:save_data, testmod), Cvoid, (Cstring, Ptr{Float64}, Ptr{Float64}, Cint, Cint, Cint, Cint), path, points, data, dimension, with_w, is_complex, is_vector)
 end
 
 end # module Field
 
 #using .Field
 
-println("Testing Field module")
-println(Field.jtestfunc(2.0))
-println("Test passed")
-
-file = "/home/g/Research/Materials/Test/test_ckio_ir.dat"
+#println("Testing Field module")
+#println(Field.jtestfunc(2.0))
+#println("Test passed")
+#
+file = "/home/g/Research/Materials/Test/test_chi.dat"
 #cmf2 = load_cmf_cs(file)
-cmf2 = Field.Field_C(file)
+cmf2 = Quasi.Field_C(file)
 if cmf2 == C_NULL
     error("Failed to load CMF_CS from file: ", file)
 end
 println(cmf2([-3.14, -3.14, -3.14], 0.0))
-println("Test passed")
-#println(cmf_cs_call(cmf2, [-3.14, -3.14, -3.14], 0.0))
-#cmf3 = load_cmf_cs("/home/g/Research/Materials/Test/DOS.dat")
-cmf3 = Field.Field_R("/home/g/Research/Materials/Test/test_DOS.dat")
-if cmf3 == C_NULL
-    error("Failed to load CMF_CS from file: DOS.dat")
-end
-#println(cmf_cs_call2(cmf3, 0.0))
-#println(cmf3(0.0))
-println(cmf3(1.0))
+#println("Test passed")
+##println(cmf_cs_call(cmf2, [-3.14, -3.14, -3.14], 0.0))
+##cmf3 = load_cmf_cs("/home/g/Research/Materials/Test/DOS.dat")
+#cmf3 = Field.Field_R("/home/g/Research/Materials/Test/test_DOS.dat")
+#if cmf3 == C_NULL
+#    error("Failed to load CMF_CS from file: DOS.dat")
+#end
+##println(cmf_cs_call2(cmf3, 0.0))
+##println(cmf3(0.0))
+#println(cmf3(1.0))
 
 ##path = "/home/g/Research/fcode/build/bin/input.cfg"
 ##load_config!(path)

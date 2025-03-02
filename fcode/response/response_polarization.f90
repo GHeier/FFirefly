@@ -40,17 +40,17 @@ module mesh
         real(8), dimension(3) :: kvec
         ivec(1:3) = (/i1, i2, i3/)
         ivec(1:3) = modulo(ivec(1:3) + npts(1:3) / 2, npts(1:3)) - npts(1:3) / 2
-        kvec(1:3) = dble(ivec(1:3)) / dble(npts(1:3))
+        kvec(1:3) = dble(ivec(1:3)) / dble(npts(1:3)) - 0.5
     end function get_kvec
 
     function get_qvec(i1, i2, i3, npts) result(qvec)
         integer, intent(in) :: i1, i2, i3, npts(3)
         real(8), dimension(3) :: qvec, temp_pts
+        temp_pts = npts
         if (dimension == 2) then
-            temp_pts = npts
             temp_pts(3) = 2
         end if
-        qvec(1:3) = dble([i1, i2, i3] + 1e-4) / dble(temp_pts(1:3) - 1)
+        qvec(1:3) = dble([i1, i2, i3] + 1e-4) / dble(temp_pts(1:3) - 1) - 0.5
     end function get_qvec
 
     function fill_energy_mesh(qvec) result(eig)
@@ -206,7 +206,17 @@ module mesh
         real(8) :: chi_mesh(ngw(1), ngw(2), ngw(3))
         integer :: i1, i2, i3
         real(8), dimension(3) :: qvec
-        open(10, file='chi_mesh_static.dat', status='unknown')
+        character(len=100) :: header, filename
+        filename = trim(adjustl(trim(outdir) // trim(prefix))) // '_chi.dat'
+        if (dimension == 3) then
+            header = "         x             y             z             f"
+        else if (dimension == 2) then
+            header = "         x             y             f"
+        else if (dimension == 1) then
+            header = "         x             f"
+        end if
+        open(10, file=filename, status='unknown')
+        write(10, '(A)') header
         do i3 = 0, ngw(3) - 1
             do i2 = 0, ngw(2) - 1
                 do i1 = 0, ngw(1) - 1
@@ -217,7 +227,7 @@ module mesh
             end do
         end do
         close(10)
-        print *, 'Chi mesh saved to chi_mesh_static.dat'
+        print *, 'Chi mesh saved to ', filename
      end subroutine save_static_mesh
 
      subroutine save_dynamic_mesh(chi_mesh)
@@ -226,7 +236,18 @@ module mesh
         real(8), dimension(3) :: qvec
         real(8) :: pi = 3.1415926535897932384626433832795028841971
         complex(8) :: e0
-        open(10, file='chi_mesh_dynamic.dat', status='unknown')
+        character(len=100) :: header, filename
+        filename = trim(adjustl(trim(outdir) // trim(prefix))) // '_chi.dat'
+        if (dimension == 3) then
+            header = "         x             y             z             w            Re(f)         Im(f)"
+        else if (dimension == 2) then
+            header = "         x             y             w            Re(f)         Im(f)"
+        else if (dimension == 1) then
+            header = "         x             w            Re(f)         Im(f)"
+        end if
+
+        open(10, file=filename, status='unknown')
+        write(10, '(A)') header
         do i4 = 0, ne - 1
             do i3 = 0, ngw(3) - 1
                 do i2 = 0, ngw(2) - 1
@@ -240,14 +261,14 @@ module mesh
             end do
         end do
         close(10)
-        print *, 'Chi mesh saved to chi_mesh_dynamic.dat'
+        print *, 'Chi mesh saved to ', filename
      end subroutine save_dynamic_mesh
 
      subroutine save_DOS_spectrum(dos_list, emax, emin)
         real(8) :: dos_list(ne), emax, emin
         integer :: i
         character(len=100) :: header, filename
-        filename = trim(adjustl(prefix)) // '_DOS.dat'
+        filename = trim(adjustl(trim(outdir) // trim(prefix))) // '_DOS.dat'
         open(10, file=filename, status='unknown')
         header = "         w             f"
         write(10, '(A)') header

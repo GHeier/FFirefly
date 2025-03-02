@@ -16,10 +16,10 @@
 using namespace std;
 class Field_C {
     public:
-        CMF base;
+        CMF cmf;
 
         Field_C();
-        Field_C(CMF base);
+        Field_C(CMF cmf);
         Field_C(string filename);
 
         complex<float> operator() (Vec point, float w = 0);
@@ -28,10 +28,10 @@ class Field_C {
 
 class Field_R {
     public:
-        CMF base;
+        CMF cmf;
 
         Field_R();
-        Field_R(CMF base);
+        Field_R(CMF cmf);
         Field_R(string filename);
 
         float operator() (Vec point, float w = 0);

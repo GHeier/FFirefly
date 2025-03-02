@@ -41,6 +41,13 @@ CMF::CMF() {
 
 // Function to invert a matrix represented as vector<Vec>
 vector<Vec> invertMatrix(vector<Vec>& matrix, int n) {
+    //Print matrix
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            cout << matrix[i](j) << " ";
+        }
+        cout << endl;
+    }
     // Create augmented matrix [A|I]
     vector<vector<float>> augmented(n, std::vector<float>(2 * n, 0.0f));
     for (size_t i = 0; i < n; ++i) {

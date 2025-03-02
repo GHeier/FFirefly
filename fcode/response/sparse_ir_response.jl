@@ -20,6 +20,7 @@ n = cfg.w_pts
 mu = cfg.fermi_energy
 BZ = cfg.brillouin_zone
 prefix = cfg.prefix
+outdir = cfg.outdir
 dynamic = cfg.dynamic
 
 function epsilon(kvec)
@@ -89,7 +90,7 @@ end
 
 function save_ckio_ir(basis, ckio::Array{ComplexF64,4})
     println("Saving IR response")
-    open(prefix * "_ckio_ir.dat", "w") do f
+    open(outdir * prefix * "_chi.dat", "w") do f
         if dim == 3 && dynamic == true
             @printf(f, "# x y z Im(w) Re(f) Im(f)\n")
         elseif dim == 2 && dynamic == true

@@ -4,8 +4,8 @@ t1 = time()
 include("../objects/mesh.jl")
 using .IRMesh
 
-include("../objects/CondensedMatterField/julia_field.jl")
-using .Field
+include("../qmodule/src/cpp_imports.jl")
+using .Quasi
 
 using CUDA, FFTW
 using Plots
@@ -25,6 +25,8 @@ println("Time to load fcode: ", t3 - t2)
 cfg = fcode.config
 
 prefix = cfg.prefix
+outdir = cfg.outdir
+
 np_BZ = np.array(cfg.brillouin_zone)
 projections = cfg.projections
 
@@ -59,13 +61,13 @@ function to_IBZ(k)
     return q
 end
 
-function epsilon(k)
-    if dim == 2
-        return k[1]^2 + k[2]^2
-        return -2 * (cos(k[1]) + cos(k[2]))
-    end
-    return -2 * (cos(k[1]) + cos(k[2]) + cos(k[3]))
-end
+#function epsilon(k)
+#    if dim == 2
+#        return k[1]^2 + k[2]^2
+#        return -2 * (cos(k[1]) + cos(k[2]))
+#    end
+#    return -2 * (cos(k[1]) + cos(k[2]) + cos(k[3]))
+#end
 
 function V(k1, k2, w)
     qm = k1 - k2
@@ -75,6 +77,11 @@ function V(k1, k2, w)
     Xm = Susceptibility(qm, iw)
     Vm = U^2 * Xm / (1 - U*Xm) + U^3 * Xm^2 / (1 - U^2 * Xm^2)
     return Vm
+end
+
+function get_kvec(i, j, k)
+    temp = BZ * [i / nx - 0.5, j / ny - 0.5, k / nz - 0.5]
+    return temp[1:dim]
 end
 
 function get_bandwidth()
@@ -110,7 +117,7 @@ function BCS_V(k, w)
     return 0.0
 end
 
-function fill_V_arr(iw, frequency_dependence)
+function fill_V_arr(iw, frequency_dependence, V_obj)
     Vw_arr = Array{ComplexF32}(undef, length(iw), nx, ny, nz)
     @threads for i in 1:nx
         @inbounds for j in 1:ny 
@@ -118,9 +125,8 @@ function fill_V_arr(iw, frequency_dependence)
                 @inbounds for l in 1:length(iw)
                     kvec = get_kvec(i, j, k)
                     w1 = iw[l]
-                    #Vw_arr[l, i, j] = V(kvec, zeros(dim), w1)
-                    #Vw_arr[l, i, j, k] = paper2_V(w1)
-                    Vw_arr[l, i, j, k] = BCS_V(kvec, w1)
+                    V_val::Float32 = V_obj(kvec, imag(w1))
+                    Vw_arr[l, i, j, k] = Float64(V_val)
                 end
             end
         end
@@ -160,11 +166,11 @@ function condense_to_F_and_G!(phi, Z, chi, F_arr, G_arr, iw, sigma, mu, projecti
             @inbounds for j in 1:ny
                 @inbounds for k in 1:nz
                     w = iw[l]
-                    kvec = get_kvec(i, j, k)
+                    e = epsilon(get_kvec(i, j, k))
                     phi_el = phi[l] * projection[i, j, k]
-                    denom = get_denominator(imag(w), phi_el, Z[l, i, j, k], chi[l, i, j, k] + epsilon(kvec) - mu)
+                    denom = get_denominator(imag(w), phi_el, Z[l, i, j, k], chi[l, i, j, k] + e - mu)
                     F_arr[l, i, j, k] = -phi_el / denom
-                    G_arr[l, i, j, k] = -(w * Z[l, i, j, k] + epsilon(kvec) - mu + chi[l, i, j, k]) / denom
+                    G_arr[l, i, j, k] = -(w * Z[l, i, j, k] + e - mu + chi[l, i, j, k]) / denom
                 end
             end
         end
@@ -243,20 +249,10 @@ function eliashberg_global()
     IR_tol = 1e-10
     scf_tol = 1e-4
 
-    dosfile = prefix * "_DOS.dat"
-    #DOS = Field.Field_R(dosfile)
-    println("fermi energy: ", mu)
-    #n0 = DOS(mu)
-    n0 = 0.0314
-    println("DOS: ", n0)
-    #global Susceptibility = CondensedMatterField.CMF(input_data_file)
-    println("Loaded Susceptibility")
+    vertex = Quasi.Field_C(outdir * prefix * "_2PI.dat")
+    println(vertex([-1.0, 0.0, 0.0], 0.0))
 
     frequency_dependence = true
-    #if V([0.2,0.3,0.4], 0) == V([0.2,0.3,0.4], 0.3)
-    #    frequency_dependence = false
-    #end
-    frequency_dependence = false
     if frequency_dependence
         println("Creating IRMesh")
         global mesh = IR_Mesh(IR_tol)
@@ -302,7 +298,7 @@ function eliashberg_global()
 
     println("Initializing V")
     sigma = zeros(Complex{Float32}, nw, nx, ny, nz)
-    V_arr = fill_V_arr(iv, frequency_dependence)
+    V_arr = fill_V_arr(iv, frequency_dependence, vertex)
 
     println("Initializing F and G")
     F_arr = Array{ComplexF32}(undef, nw, nx, ny, nz)
@@ -345,7 +341,6 @@ function eliashberg_global()
     println("Max phi: ", max_phi)
     println("Max Z: ", max_Z)
     lambda = 32.0
-    println("Analytical Phi max: ", wD / sinh(( n0 / lambda)))
     reordered_phi = Array{ComplexF32}(undef, nx, ny, nz, nw)
     reordered_Z = Array{ComplexF32}(undef, nx, ny, nz, nw)
     points = Matrix{Float32}(undef, nx*ny*nz*nw, dim+1)
