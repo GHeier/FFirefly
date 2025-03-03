@@ -89,7 +89,7 @@ function get_bandwidth()
     minval = 1000
     for i in 1:200, j in 1:200, k in 1:200
         kvec = get_kvec(i, j, k)
-        eps = epsilon(kvec)
+        eps = epsilon(1, kvec)
         maxval = max(maxval, eps)
         minval = min(minval, eps)
     end
@@ -109,7 +109,7 @@ function paper2_V(w)
 end
 
 function BCS_V(k, w)
-    e = epsilon(k) - mu
+    e = epsilon(1, k) - mu
     lambda = -32.0
     if abs(e) < wD
         return lambda 
@@ -166,7 +166,7 @@ function condense_to_F_and_G!(phi, Z, chi, F_arr, G_arr, iw, sigma, mu, projecti
             @inbounds for j in 1:ny
                 @inbounds for k in 1:nz
                     w = iw[l]
-                    e = epsilon(get_kvec(i, j, k))
+                    e = epsilon(1, get_kvec(i, j, k))
                     phi_el = phi[l] * projection[i, j, k]
                     denom = get_denominator(imag(w), phi_el, Z[l, i, j, k], chi[l, i, j, k] + e - mu)
                     F_arr[l, i, j, k] = -phi_el / denom
@@ -245,12 +245,14 @@ function get_number_of_electrons(G)
 end
 
 function eliashberg_global()
+    Quasi.load_config!("/home/g/Research/fcode/build/bin/input.cfg")
     println("Beginning Eliashberg")
     IR_tol = 1e-10
     scf_tol = 1e-4
 
     vertex = Quasi.Field_C(outdir * prefix * "_2PI.dat")
     println(vertex([-1.0, 0.0, 0.0], 0.0))
+    println(epsilon(1, [0.0, 0.0, 0.0]))
 
     frequency_dependence = true
     if frequency_dependence

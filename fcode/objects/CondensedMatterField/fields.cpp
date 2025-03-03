@@ -8,7 +8,6 @@ complex<float> Field_C::operator() (float w) {
 }
 
 complex<float> Field_C::operator() (Vec point, float w) {
-    printf("point: %f %f %f\n", point.x, point.y, point.z);
     return complex<float>(cmf(point, w).real().x, cmf(point, w).imag().x);
 }
 

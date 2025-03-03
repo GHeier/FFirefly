@@ -1,12 +1,14 @@
 #  g++ -shared -fPIC ../../build/CMakeFiles/fcode.x.dir/fcode/config/load/c_config.c.o ../../build/CMakeFiles/fcode.x.dir/fcode/objects/vec.cpp.o ../../build/CMakeFiles/fcode.x.dir/fcode/hamiltonian/band_structure.cpp.o ../../build/CMakeFiles/fcode.x.dir/fcode/config/load/cpp_config.cpp.o jmodtest.o -o jmodtest.so
 
 
-function epsilon(n::Int, k::Vector{Float64})
-    return ccall((:epsilon_julia, testmod), Float64, (Int, Ptr{Float64}, Int), n, k, length(k))
-end
-
 module Quasi
+export epsilon
+
 const testmod = "/home/g/Research/fcode/build/lib/libfcode.so"
+
+function epsilon(n::Int, k::Vector{Float64})
+    return ccall((:epsilon_julia, testmod), Float32, (Int, Ptr{Float64}, Int), n, k, length(k))
+end
 
 mutable struct Field_C
     cmf::Ptr{Cvoid}
@@ -104,13 +106,13 @@ end # module Field
 #println(Field.jtestfunc(2.0))
 #println("Test passed")
 #
-file = "/home/g/Research/Materials/Test/test_chi.dat"
-#cmf2 = load_cmf_cs(file)
-cmf2 = Quasi.Field_C(file)
-if cmf2 == C_NULL
-    error("Failed to load CMF_CS from file: ", file)
-end
-println(cmf2([-3.14, -3.14, -3.14], 0.0))
+#file = "/home/g/Research/Materials/Test/test_chi.dat"
+##cmf2 = load_cmf_cs(file)
+#cmf2 = Quasi.Field_C(file)
+#if cmf2 == C_NULL
+#    error("Failed to load CMF_CS from file: ", file)
+#end
+#println(cmf2([-3.14, -3.14, -3.14], 0.0))
 #println("Test passed")
 ##println(cmf_cs_call(cmf2, [-3.14, -3.14, -3.14], 0.0))
 ##cmf3 = load_cmf_cs("/home/g/Research/Materials/Test/DOS.dat")

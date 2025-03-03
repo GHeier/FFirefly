@@ -92,11 +92,11 @@ function save_ckio_ir(basis, ckio::Array{ComplexF64,4})
     println("Saving IR response")
     open(outdir * prefix * "_chi.dat", "w") do f
         if dim == 3 && dynamic == true
-            @printf(f, "# x y z Im(w) Re(f) Im(f)\n")
+            @printf(f, "# x y z w Re(f) Im(f)\n")
         elseif dim == 2 && dynamic == true
-            @printf(f, "# x y Im(w) Re(f) Im(f)\n")
+            @printf(f, "# x y w Re(f) Im(f)\n")
         elseif dim == 1 && dynamic == true
-            @printf(f, "# x Im(w) Re(f) Im(f)\n")
+            @printf(f, "# x w Re(f) Im(f)\n")
         elseif dim == 3 && dynamic == false
             @printf(f, "# x y z Re(f) Im(f)\n")
         elseif dim == 2 && dynamic == false

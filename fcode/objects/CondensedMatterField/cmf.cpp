@@ -41,13 +41,6 @@ CMF::CMF() {
 
 // Function to invert a matrix represented as vector<Vec>
 vector<Vec> invertMatrix(vector<Vec>& matrix, int n) {
-    //Print matrix
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            cout << matrix[i](j) << " ";
-        }
-        cout << endl;
-    }
     // Create augmented matrix [A|I]
     vector<vector<float>> augmented(n, std::vector<float>(2 * n, 0.0f));
     for (size_t i = 0; i < n; ++i) {
@@ -172,17 +165,19 @@ void CMF::get_values_for_interpolation(vector<Vec> &points, vector<float> &w_poi
             section_sizes[section]++;
         }
         else {
+            Vec current_point = points[i];
             Vec p = (points[i-jump] - first).round();
             p.dimension = dimension;
             domain.push_back(p);
-            jump = i;
+            jump = i - 1;
+            i -= jump;
             section++;
             section_sizes[section]++;
             if (section >= dimension) break;
-            lattice_vec = (points[i] - first).round();
+            Vec temp = current_point - first;
+            lattice_vec = (current_point - first).round();
         }
     }
-    if (w_size > 0 and domain.size() != 0) jump -= w_size;
     domain.push_back((points[points.size()-jump] - first).round());
     reverse(domain.begin(), domain.end());
     this->domain = domain;
