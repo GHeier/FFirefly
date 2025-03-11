@@ -7,7 +7,8 @@ export epsilon
 const testmod = "/home/g/Research/fcode/build/lib/libfcode.so"
 
 function epsilon(n::Int, k::Vector{Float64})
-    return ccall((:epsilon_julia, testmod), Float32, (Int, Ptr{Float64}, Int), n, k, length(k))
+    newk = Float32.(k)
+    return ccall((:epsilon_julia, testmod), Float32, (Int, Ptr{Float64}, Int), n, newk, length(k))
 end
 
 mutable struct Field_C
@@ -112,7 +113,7 @@ end # module Field
 #if cmf2 == C_NULL
 #    error("Failed to load CMF_CS from file: ", file)
 #end
-#println(cmf2([-3.14, -3.14, -3.14], 0.0))
+#println(cmf2([-3.07, -3.07], -751.0593))
 #println("Test passed")
 ##println(cmf_cs_call(cmf2, [-3.14, -3.14, -3.14], 0.0))
 ##cmf3 = load_cmf_cs("/home/g/Research/Materials/Test/DOS.dat")

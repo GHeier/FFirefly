@@ -10,7 +10,7 @@ module response
         real(8) :: k(3), e
         call load_f90_config()
         call get_vals()
-        if (dynamic) then
+        if (w_pts .ne. 1) then
             allocate(chi_mesh_dynamic(ne, nge(1), nge(2), nge(3)))
             chi_mesh_dynamic = get_dynamic_polarization_mesh()
             call save_dynamic_mesh(chi_mesh_dynamic)

@@ -10,13 +10,13 @@ config = {
         'SYSTEM': {
             'interaction': 'FLEX',
             'dimension': 2,
-            'fermi_energy': 1.0,
+            'fermi_energy': -1.0,
             'Temperature': 0.0001,
             'onsite_U': 4.0,
             'nbnd': 1,
             },
         'MESH': {
-            'k_mesh': [60, 60, 60],
+            'k_mesh': [100, 100, 100],
             'q_mesh': [10, 10, 10],
             'w_pts': 30000
             },
@@ -31,15 +31,16 @@ config = {
 
 def eliashberg(filename):
     Ti = 1e-4
-    Ti = 0.05
     Tf = 1.0
     phi_max_initial = 0
+    flatline = True
     T_list, phi_list = [], []
     print("Temperature, Max phi")
 
     for i in range(50):
         config['SYSTEM']['Temperature'] = Ti
         output = fcode.launch(config)
+        print(output)
         match = fcode.grep(output, "Max phi:")
         value = fcode.extract_value(match)
 
@@ -50,9 +51,12 @@ def eliashberg(filename):
         T_list.append(Ti)
         phi_list.append(value)
         if phi_max_initial * 0.9 < value:
-            Ti += Tf / 1000
+            Ti += 5e-4
         else:
-            Ti += Ti / 20
+            Ti += 5e-5
+            if flatline:
+                Ti -= 5e-4
+            flatline = False
         if Ti > Tf or value < phi_max_initial * 0.1:
             break
     data = np.array([T_list, phi_list])

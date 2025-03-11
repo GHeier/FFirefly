@@ -147,7 +147,7 @@ module mesh
                     qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
                     eig2 = fill_energy_mesh(qvec)
                     chi = get_static_polarization(eig1, eig2, wght, wght_dos, qvec)
-                    chi_mesh(i1+1, i2+1, i3+1) = chi
+                    chi_mesh(i1+1, i2+1, i3+1) = 2d0 * chi
                 end do
             end do
         end do 
@@ -166,7 +166,7 @@ module mesh
 
         
         do i = 1, ne
-            e0(i) = cmplx(0, pi * T * (2 * (i-1) + 1))
+            e0(i) = cmplx(0, pi * T * 2 * (i-1))
         end do
         ltetra = 1
         ! Calculate the polarization function
@@ -210,16 +210,16 @@ module mesh
         filename = trim(adjustl(trim(outdir) // trim(prefix))) // '_chi.dat'
         if (dimension == 3) then
             header = "         x             y             z             f"
-        else if (dimension == 2) then
-            header = "         x             y             f"
-        else if (dimension == 1) then
-            header = "         x             f"
+        !else if (dimension == 2) then
+        !    header = "         x             y             f"
+        !else if (dimension == 1) then
+        !    header = "         x             f"
         end if
         open(10, file=filename, status='unknown')
         write(10, '(A)') header
-        do i3 = 0, ngw(3) - 1
+        do i1 = 0, ngw(1) - 1
             do i2 = 0, ngw(2) - 1
-                do i1 = 0, ngw(1) - 1
+                do i3 = 0, ngw(3) - 1
                     qvec = get_qvec(i1, i2, i3, ngw)
                     qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
                     write(10, '(1x, f13.6, 1x, f13.6, 1x, f13.6, 1x, f13.6)') qvec(1), qvec(2), qvec(3), chi_mesh(i1+1, i2+1, i3+1)
@@ -240,10 +240,10 @@ module mesh
         filename = trim(adjustl(trim(outdir) // trim(prefix))) // '_chi.dat'
         if (dimension == 3) then
             header = "         x             y             z             w            Re(f)         Im(f)"
-        else if (dimension == 2) then
-            header = "         x             y             w            Re(f)         Im(f)"
-        else if (dimension == 1) then
-            header = "         x             w            Re(f)         Im(f)"
+        !else if (dimension == 2) then
+        !    header = "         x             y             w            Re(f)         Im(f)"
+        !else if (dimension == 1) then
+        !    header = "         x             w            Re(f)         Im(f)"
         end if
 
         open(10, file=filename, status='unknown')
@@ -254,7 +254,7 @@ module mesh
                     do i1 = 0, ngw(1) - 1
                         qvec = get_qvec(i1, i2, i3, ngw)
                         qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
-                        e0 = cmplx(0, pi * T * (2 * i4 + 1))
+                        e0 = cmplx(0, pi * T * (2 * i4))
                         write(10, '(1x, f13.6, 1x, f13.6, 1x, f13.6, 1x, f13.6, 1x, f13.6, 1x, f13.6)') qvec(1), qvec(2), qvec(3), aimag(e0), real(chi_mesh(i4+1, i1+1, i2+1, i3+1)), aimag(chi_mesh(i4+1, i1+1, i2+1, i3+1))
                     end do
                 end do

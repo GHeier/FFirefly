@@ -6,8 +6,10 @@ using .IRMesh
 
 include("../qmodule/src/cpp_imports.jl")
 using .Quasi
+Quasi.load_config!("/home/g/Research/fcode/build/bin/input.cfg")
 
 using CUDA, FFTW
+using NFFT
 using Plots
 using Roots
 using SparseIR
@@ -48,7 +50,6 @@ const beta = 1/cfg.Temperature
 println("Beta: ", beta)
 const pi = π
 
-
 wD = 0.2
 
 function to_IBZ(k)
@@ -84,6 +85,19 @@ function get_kvec(i, j, k)
     return temp[1:dim]
 end
 
+function get_kpts()
+    kpts_list = Vector{Vector{Float64}}()
+    for i in 1:nx, j in 1:ny, k in 1:nz
+        kvec = get_kvec(i, j, k)
+        e = epsilon(1, kvec)
+        if abs(e - mu) > wD
+            continue
+        end
+        push!(kpts_list, kvec)
+    end
+    return kpts_list
+end
+
 function get_bandwidth()
     maxval = -1000
     minval = 1000
@@ -110,6 +124,7 @@ end
 
 function BCS_V(k, w)
     e = epsilon(1, k) - mu
+    #e = 0.0
     lambda = -32.0
     if abs(e) < wD
         return lambda 
@@ -125,12 +140,16 @@ function fill_V_arr(iw, frequency_dependence, V_obj)
                 @inbounds for l in 1:length(iw)
                     kvec = get_kvec(i, j, k)
                     w1 = iw[l]
-                    V_val::Float32 = V_obj(kvec, imag(w1))
-                    Vw_arr[l, i, j, k] = Float64(V_val)
+                    #V_val::Float32 = V_obj(kvec, imag(w1))
+                    #Vw_arr[l, i, j, k] = Float64(V_val)
+                    Vw_arr[l, i, j, k] = paper2_V(w1)
+                    #Vw_arr[l, i, j, k] = BCS_V(kvec, w1)
                 end
             end
         end
     end
+    println("Max V(k,w): ", maximum(abs.(Vw_arr)))
+    println("Min V(k,w): ", minimum(abs.(Vw_arr)))
     if frequency_dependence
         return kw_to_rtau(Vw_arr, 'B', mesh)
     else
@@ -155,11 +174,6 @@ function initialize_phi_Z_chi!(phi_arr, Z_arr, chi_arr, iw)
     end
 end
 
-function get_kvec(i, j, k)
-    temp = BZ * [i / nx - 0.5, j / ny - 0.5, k / nz - 0.5]
-    return temp[1:dim]
-end
-
 function condense_to_F_and_G!(phi, Z, chi, F_arr, G_arr, iw, sigma, mu, projection)
     @threads for l in 1:length(iw)
         @inbounds for i in 1:nx
@@ -167,7 +181,26 @@ function condense_to_F_and_G!(phi, Z, chi, F_arr, G_arr, iw, sigma, mu, projecti
                 @inbounds for k in 1:nz
                     w = iw[l]
                     e = epsilon(1, get_kvec(i, j, k))
+                    #e = 0.0
                     phi_el = phi[l] * projection[i, j, k]
+                    denom = get_denominator(imag(w), phi_el, Z[l, i, j, k], chi[l, i, j, k] + e - mu)
+                    F_arr[l, i, j, k] = -phi_el / denom
+                    G_arr[l, i, j, k] = -(w * Z[l, i, j, k] + e - mu + chi[l, i, j, k]) / denom
+                end
+            end
+        end
+    end
+end
+
+function condense_to_F_and_G!(phi, Z, chi, F_arr, G_arr, iw, sigma, mu)
+    @threads for l in 1:length(iw)
+        @inbounds for i in 1:nx
+            @inbounds for j in 1:ny
+                @inbounds for k in 1:nz
+                    w = iw[l]
+                    e = epsilon(1, get_kvec(i, j, k))
+                    #e = 0.0
+                    phi_el = phi[l, i, j, k]
                     denom = get_denominator(imag(w), phi_el, Z[l, i, j, k], chi[l, i, j, k] + e - mu)
                     F_arr[l, i, j, k] = -phi_el / denom
                     G_arr[l, i, j, k] = -(w * Z[l, i, j, k] + e - mu + chi[l, i, j, k]) / denom
@@ -188,7 +221,20 @@ function update!(F, G, V_arr, phi, Z, chi, iw, sigma, projection)
     sigma .= rtau_to_kw(sigmat, 'F', mesh)
 
     phi .= phi_full[:, 1, 1, 1] / projection[1, 1, 1]
-    fill_Z_chi(iw, sigma, Z, chi)
+    fill_Z_chi!(iw, sigma, Z, chi)
+end
+
+function update!(F, G, V_arr, phi, Z, chi, iw, sigma)
+    F_rt = kw_to_rtau(F, 'F', mesh)
+    G_rt = kw_to_rtau(G, 'F', mesh)
+
+    phit = V_arr .* F_rt / 2
+    sigmat = -V_arr .* G_rt / 2
+
+    phi .= rtau_to_kw(phit, 'F', mesh)
+    sigma .= rtau_to_kw(sigmat, 'F', mesh)
+
+    fill_Z_chi!(iw, sigma, Z, chi)
 end
 
 function update_fourier_transform!(F, G, V_arr, phi, Z, chi, iw, sigma, projection)
@@ -205,13 +251,38 @@ function update_fourier_transform!(F, G, V_arr, phi, Z, chi, iw, sigma, projecti
     ind = argmax(abs.(phi_full))
     inds = Tuple(CartesianIndices(phi_full)[ind])
     phi .= phi_full[:, inds[2], inds[3], inds[4]] / projection[inds[2], inds[3], inds[4]]
-    fill_Z_chi(iw, sigma, Z, chi)
+    fill_Z_chi!(iw, sigma, Z, chi)
 end
 
-function fill_Z_chi(iw, sigma, Z, chi)
-    Z .= 1.0
-    chi .= 0.0
-    return
+function update_fourier_transform!(F, G, V_arr, phi, Z, chi, iw, sigma)
+    println("Max F(w,k): ", maximum(abs.(F)))
+    println("Max G(w,k): ", maximum(abs.(G)))
+    F_rt = fft(F)
+    G_rt = fft(G)
+    println("Max F_rt(w,k): ", maximum(abs.(F_rt)))
+    println("Max G_rt(w,k): ", maximum(abs.(G_rt)))
+
+    phit = V_arr .* F_rt 
+    sigmat = -V_arr .* G_rt 
+    println("Max phit(r,t): ", maximum(abs.(phit)))
+    println("Max sigmat(r,t): ", maximum(abs.(sigmat)))
+
+    phi .= fftshift(ifft(phit)) / (beta * nx * ny * nz)
+    sigma .= fftshift(ifft(sigmat)) / (beta * nx * ny * nz)
+    println("Max phi(w,k): ", maximum(abs.(phi)))
+    println("Max sigma(w,k): ", maximum(abs.(sigma)))
+
+
+    #ind = argmax(abs.(phi_full))
+    #inds = Tuple(CartesianIndices(phi_full)[ind])
+    #phi .= phi_full[:, inds[2], inds[3], inds[4]] / projection[inds[2], inds[3], inds[4]]
+    fill_Z_chi!(iw, sigma, Z, chi)
+end
+
+function fill_Z_chi!(iw, sigma, Z, chi)
+    #Z .= 1.0
+    #chi .= 0.0
+    #return
     @threads for i in 1:nw
         @inbounds for j in 1:nx
             @inbounds for k in 1:ny
@@ -245,14 +316,11 @@ function get_number_of_electrons(G)
 end
 
 function eliashberg_global()
-    Quasi.load_config!("/home/g/Research/fcode/build/bin/input.cfg")
     println("Beginning Eliashberg")
-    IR_tol = 1e-10
+    IR_tol = 1e-5
     scf_tol = 1e-4
 
     vertex = Quasi.Field_C(outdir * prefix * "_2PI.dat")
-    println(vertex([-1.0, 0.0, 0.0], 0.0))
-    println(epsilon(1, [0.0, 0.0, 0.0]))
 
     frequency_dependence = true
     if frequency_dependence
@@ -269,6 +337,7 @@ function eliashberg_global()
         for i in 1:bnw iv[i] = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[i], beta) end
 
         println("Filled iw and iv")
+        println("fnw, bnw: ", fnw, " ", bnw)
         println("Min & Max iw: ", minimum(imag.(iw)), " ", maximum(imag.(iw)))
         global nw = length(iw)
     else
@@ -293,7 +362,9 @@ function eliashberg_global()
     end
 
     println("Initializing phi, Z, and chi")
-    phi_arr = ComplexF32.(0.001 ./ (imag.(iw).^2 .+ 1))
+    phi_arr = ones(Complex{Float32}, nw, nx, ny, nz)
+    #phi_arr .= 0.001 ./ (imag.(iw).^2 .+ 1)
+    #phi_arr = ComplexF32.(0.001 ./ (imag.(iw).^2 .+ 1))
     Z_arr = ones(Complex{Float32}, nw, nx, ny, nz)
     chi_arr = zeros(Complex{Float32}, nw, nx, ny, nz)
 
@@ -301,13 +372,16 @@ function eliashberg_global()
     println("Initializing V")
     sigma = zeros(Complex{Float32}, nw, nx, ny, nz)
     V_arr = fill_V_arr(iv, frequency_dependence, vertex)
+    println("Max V(r,tau): ", maximum(abs.(V_arr)))
+    println("Min V(r,tau): ", minimum(abs.(V_arr)))
 
     println("Initializing F and G")
     F_arr = Array{ComplexF32}(undef, nw, nx, ny, nz)
     G_arr = Array{ComplexF32}(undef, nw, nx, ny, nz)
-    condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, mu, projection)
+    #condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, mu, projection)
+    condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, mu)
 
-    Ne = round(get_number_of_electrons(G_arr), digits=6)
+    #Ne = round(get_number_of_electrons(G_arr), digits=6)
 
     phierr = 0.0
     prev_phi_arr = copy(phi_arr)
@@ -316,9 +390,11 @@ function eliashberg_global()
     #iterations = 1
     for i in 1:iterations
         if frequency_dependence
-            update!(F_arr, G_arr, V_arr, phi_arr, Z_arr, chi_arr, iw, sigma, projection)
+            #update!(F_arr, G_arr, V_arr, phi_arr, Z_arr, chi_arr, iw, sigma, projection)
+            update!(F_arr, G_arr, V_arr, phi_arr, Z_arr, chi_arr, iw, sigma)
         else
-            update_fourier_transform!(F_arr, G_arr, V_arr, phi_arr, Z_arr, chi_arr, iw, sigma, projection)
+            #update_fourier_transform!(F_arr, G_arr, V_arr, phi_arr, Z_arr, chi_arr, iw, sigma, projection)
+            update_fourier_transform!(F_arr, G_arr, V_arr, phi_arr, Z_arr, chi_arr, iw, sigma)
         end
 
         #phierr = round(sum(abs.(prev_phi_arr - phi_arr)) / (nw * nx * ny * nz),digits=8)
@@ -331,9 +407,13 @@ function eliashberg_global()
             println("Converged after ", i, " iterations                                                                   ")
             break
         end
+        #p = plot(real.(phi_arr[:, 1, 1, 1]))
+        #display(p)
+        #readline()
         prev_phi_arr = copy(phi_arr)
-        global mu = find_chemical_potential(mu, phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, Ne, projection)
-        condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, mu, projection)
+        #global mu = find_chemical_potential(mu, phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, Ne, projection)
+        #condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, mu, projection)
+        condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, mu)
     end
 
     max_phi = maximum(abs.(phi_arr))
@@ -342,13 +422,13 @@ function eliashberg_global()
     println("Error: ", phierr, "            ")
     println("Max phi: ", max_phi)
     println("Max Z: ", max_Z)
-    lambda = 32.0
+    return
     reordered_phi = Array{ComplexF32}(undef, nx, ny, nz, nw)
     reordered_Z = Array{ComplexF32}(undef, nx, ny, nz, nw)
     points = Matrix{Float32}(undef, nx*ny*nz*nw, dim+1)
     @threads for i in 1:nw
         for j in 1:nx, k in 1:ny, l in 1:nz
-            reordered_phi[j, k, l, i] = phi_arr[i] * projection[j, k, l]
+            reordered_phi[j, k, l, i] = phi_arr[i, j, k, l]
             reordered_Z[j, k, l, i] = Z_arr[i, j, k, l]
             w = iw[i]
             kvec = get_kvec(j, k, l)
@@ -376,11 +456,11 @@ function eliashberg_global()
     phi_average_imag = average_over_k(imag.(reordered_phi))
     println("Calculated averages")
 
-    p = plot(npts, real.(phi_arr), label="Phi", xlims=(-500, 500))
+    p = plot(npts, real.(phi_average), label="Phi", xlims=(-500, 500))
     #plot!(p, phi_average_imag, label="Imag Phi")
     display(p)
     readline()
-    p = plot(npts, real.(Z_w), label="Z", xlims=(-500, 500))
+    p = plot(npts, real.(Z_average), label="Z", xlims=(-500, 500))
     display(p)
     readline()
 
@@ -718,6 +798,45 @@ function fill_F_arr_gpu!(F_arr, V_arr, phi, pts, nx, ny, beta, BZ, mu, F_func, V
     end
 end
 
+function VF_4sum()
+    nk = nx * ny * nz
+    println("nk: ", nk)
+    phi = ones(Float32, nw)
+    n = [-nw / 2 + i - 1 for i in 1:nw]
+    iw = [Complex(0.0, (2 * n + 1) * pi / beta) for n in n]
+    iv = [Complex(0.0, 2 * n * pi / beta) for n in n]
+    println("Filling epsilon array")
+    e = zeros(Float32, nx, ny)
+    for i in 1:nx, j in 1:ny
+        #kvec = [kx[i], ky[j], 0]
+        kvec = get_kvec(i, j, 1)
+        e[i, j] = epsilon(1, kvec) - mu
+        #e[i, j] = epsilon_cuda(kvec[1], kvec[2], 0) - mu
+    end
+    println("Filling V array")
+    iw_3d = reshape(iw, (nw, 1, 1))
+    e_3d = reshape(e, (1, nx, ny))
+    phi_3d = reshape(phi, (nw, 1, 1))
+    V = zeros(Float32, nw, nx, ny)
+    #V .= V .+ ifelse.(abs.(e_3d) .> wD, 0.0, 10.0)
+    V .= V .+ V_gpu.(iv, e_3d, 0.2, 10.0)
+    V_rt = fft(V)
+
+    iterations = 20
+    for i in 1:iterations
+        F = F_gpu.(iw_3d, e_3d, phi_3d)
+        F_rt = fft(F)
+        phi_rt = F_rt .* V_rt
+        result = fftshift(ifft(phi_rt)) / (beta * nk)
+        println("Max val: ", maximum(abs.(result)))
+        ind_max = argmax(abs.(result))
+        index = Tuple(CartesianIndices(result)[ind_max])
+        newphi = result[:, index[2], index[3]]
+        #phi_3d = reshape(newphi, (nw, 1, 1))
+        phi_3d = result
+    end
+end
+
 function VF_4sum_GPU(phi, pts, phi_ir)
     println("Starting")
     #fnw, bnw, fntau, bntau = basis.fnw, basis.bnw, basis.fntau, basis.bntau
@@ -732,9 +851,11 @@ function VF_4sum_GPU(phi, pts, phi_ir)
     #V(iv) = lambda * 2 * wD^2 / (wD^2 - iv^2)
     V(iv, e) = abs(e) > wD ? 0.0 : lambda
 
-    #result = CUDA.zeros(ComplexF32, pts)
-    F_arr = CUDA.zeros(ComplexF32, pts, nx, ny)
-    V_arr = CUDA.zeros(ComplexF32, pts, nx, ny)
+    #kpts = get_kpts()
+
+    result = CUDA.zeros(ComplexF32, pts)
+    F_arr = CUDA.ones(ComplexF32, pts, nx, ny)
+    V_arr = CUDA.ones(ComplexF32, pts, nx, ny)
     w_arr = zeros(ComplexF32, pts)
     w_array = Array{ComplexF32}(undef, pts)
     println("Filling arrays")
@@ -755,11 +876,11 @@ function VF_4sum_GPU(phi, pts, phi_ir)
     #        ky = BZ[2, 1] * (j / nx - 0.5) + BZ[2, 2] * (k / ny - 0.5) + BZ[2, 3] * (l / nz - 0.5)
     #        kz = BZ[3, 1] * (j / nx - 0.5) + BZ[3, 2] * (k / ny - 0.5) + BZ[3, 3] * (l / nz - 0.5)
     #        e = epsilon_cuda(kx, ky, kz) - mu
-    #        F_arr[i, j, k, l] = F(iwn, e, phi[i])
-    #        V_arr[i, j, k, l] = V(iwm, e)
+    #        F_arr[i, j, k] = 1.0 #F(iwn, e, phi[i])
+    #        V_arr[i, j, k] = V(iwm, e)
     #    end
     #end
-    #w_arr_CUDA = CuArray(w_array)
+    w_arr_CUDA = CuArray(w_array)
     BZ_CUDA = CuArray(BZ)
 
     #iw_arr = Array{Float32}(undef, fnw)
@@ -784,14 +905,19 @@ function VF_4sum_GPU(phi, pts, phi_ir)
     println("Filling FT arrays")
     CUDA.@sync @cuda threads=512 blocks=cld(pts, 512) fill_F_arr_gpu!(F_arr, V_arr, phi_CUDA, pts, nx, ny, beta, BZ_CUDA, mu, F_gpu, V_gpu, epsilon_cuda, wD, lambda)
 
+    F_cpu = Array(F_arr)
+    V_cpu = Array(V_arr)
+    println("Max F: ", maximum(abs.(F_cpu)))
+    println("Max V: ", maximum(abs.(V_cpu)))
+
     println("Starting GPU sum")
 
-    #CUDA.@sync @cuda threads=512 blocks=cld(pts, 512) compute_gpu_sum!(result, pts, nx, ny, nz, beta, phi_CUDA, wD, lambda, w_arr_CUDA, BZ_CUDA, mu)
+    CUDA.@sync @cuda threads=512 blocks=cld(pts, 512) compute_gpu_sum!(result, pts, nx, ny, nz, beta, phi_CUDA, wD, lambda, w_arr_CUDA, BZ_CUDA, mu)
 #    CUDA.@sync @cuda threads=threads_per_block blocks=blocks_per_grid compute_gpu_sum!(
 #                                                                                       result, pts, nx, ny, nz, beta, phi, wD, lambda, w_arr_CUDA, BZ_CUDA)
 
 
-    #cpu_result = Array(result)
+    cpu_result = Array(result)
 
     println("Starting Fourier Transforms")
     F_rt = CUDA.CUFFT.fft(F_arr)
@@ -805,12 +931,12 @@ function VF_4sum_GPU(phi, pts, phi_ir)
     #result3 = rtau_to_kw(phi_irt, 'F', basis)
 
     println("Printing maxvals")
-    #println("Max result: ", maximum(abs.(cpu_result)))
+    println("Max result: ", maximum(abs.(cpu_result)))
     println("Max result2: ", maximum(abs.(result2)))
     #println("Max result3: ", maximum(abs.(result3)))
 
     println("Plotting")
-    #result_plot = cpu_result
+    result_plot = cpu_result
     max2_index = argmax(abs.(result2))
     println("Max2 index: ", max2_index)
     max2_indices = Tuple(CartesianIndices(result2)[max2_index])
@@ -819,20 +945,21 @@ function VF_4sum_GPU(phi, pts, phi_ir)
 
     #p = plot(imag.(w_arr), real.(result_plot), label="Summed", xlims=(-20, 20))
     #plot!(p, imag.(w_arr), real.(result2_plot), label="Ft'd", xlims=(-20, 20))
-    ###plot!(p, iw_arr, real.(result3_plot), label="IR'd", xlims=(-20, 20))
+    ##plot!(p, iw_arr, real.(result3_plot), label="IR'd", xlims=(-20, 20))
     #display(p)
     #readline()
-    return result2_plot, ones(ComplexF32, 3)
+    return result_plot, ones(ComplexF32, 3)
 end
 
 function gpu_eliashberg()
     pts = nw
-    phi = ones(ComplexF32, pts) * 1e-3
+    phi = ones(ComplexF32, pts)# * 1e-3
     #basis = FiniteTempBasisSet(beta, Float32(1.0), IR_tol)
     #fnw, bnw, fntau, bntau = basis.fnw, basis.bnw, basis.fntau, basis.bntau
     phi_ir = ones(ComplexF32, 3)
     prev_phi = ones(ComplexF32, pts)
-    for i in 1:20
+    iterations = 5
+    for i in 1:iterations
         prev_phi = copy(phi)
         println("Iteration: ", i)
         phi, phi_ir = Eliashberg.VF_4sum_GPU(phi, pts, phi_ir)
@@ -849,7 +976,10 @@ end
 
 end # module
 
+#kpts = Eliashberg.get_kpts()
+#println("Size of kpts: ", size(kpts))
+
 #Eliashberg.test_max_bcs_no_w()
-#Eliashberg.eliashberg_global()
+Eliashberg.eliashberg_global()
 #Eliashberg.gpu_eliashberg()
-#Eliashberg.VF_3sum_GPU(Int(1e5))
+#Eliashberg.VF_4sum()
