@@ -3,7 +3,6 @@
 #include "../../config/load/c_config.h"
 #include "../../config/load/cpp_config.hpp"
 #include "../../hamiltonian/band_structure.hpp"
-#include "../../superconductor/solver.hpp"
 #include <cmath>
 
 using namespace std;
@@ -36,7 +35,7 @@ bool DOS_test() {
 
     vector<Vec> FS = get_FS(fermi_energy);
     float DOS = get_DOS(FS);
-    printf("Fermi Energy: %.3f\n", fermi_energy);
+    printv("Fermi Energy: %.3f\n", fermi_energy);
 
     if (fabs(answer - DOS) < 0.001) {
         printv("Density of States Test Passed\n");

@@ -1,5 +1,6 @@
 
 #include <math.h>
+#include <fstream>
 
 #include "../objects/vec.hpp"
 #include "../config/load/cpp_config.hpp"
@@ -158,5 +159,15 @@ vector<Vec> get_FS(float E) {
         FS.insert(FS.end(), temp.begin(), temp.end());
     }
     return FS;
+}
+
+float get_DOS(vector<Vec> &FS) {
+    float sum = 0;
+    for (auto k : FS) {
+        sum += k.area / vp(k.n, k);
+    }
+    sum /= pow(2*M_PI, dimension);
+    printv("Density of States: %.5f\n", sum);
+    return sum;
 }
 

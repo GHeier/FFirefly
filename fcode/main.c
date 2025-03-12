@@ -8,6 +8,7 @@
 #include "response/DOS.h"
 #include "response/response.h"
 #include "hamiltonian/vertex.hpp"
+#include "hamiltonian/fs.hpp"
 #include "superconductor/superconductor.hpp"
 
 // Test nodes below
@@ -18,6 +19,11 @@
 void DOS() {
     printf("Starting DOS Calculation\n\n");
     DOS_spectrum();
+}
+
+void fermi_surface() {
+    printf("Starting Fermi Surface Calculation\n\n");
+    save_FS();
 }
 
 void response() {
@@ -60,6 +66,7 @@ int main() {
     start_python();
 
     if (!strcmp(c_category, "DOS")) DOS();
+    else if (!strcmp(c_category, "fermi_surface")) fermi_surface();
     else if (!strcmp(c_category, "response")) response();
     else if (!strcmp(c_category, "superconductor")) superconductor();
     else if (!strcmp(c_category, "vertex")) vertex();

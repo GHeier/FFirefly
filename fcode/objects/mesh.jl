@@ -7,6 +7,9 @@ using SparseIR
 import SparseIR: Statistics, value, valueim
 using PyCall
 
+include("../qmodule/src/cpp_imports.jl")
+using .Quasi
+
 fcode = pyimport("fcode")
 cfg = fcode.config
 
@@ -167,19 +170,11 @@ function get_bandwidth()
     minval = 1000
     for i in 1:200, j in 1:200, k in 1:200
         kvec = BZ * [i / 200, j / 200, k / 200]
-        eps = epsilon(kvec)
+        eps = epsilon(1, kvec)
         maxval = max(maxval, eps)
         minval = min(minval, eps)
     end
     return maxval - minval
-end
-
-function epsilon(k)
-    if dim == 2
-        return k[1]^2 + k[2]^2
-        return -2 * (cos(k[1]) + cos(k[2]))
-    end
-    return -2 * (cos(k[1]) + cos(k[2]) + cos(k[3]))
 end
 
 function IR_Mesh(IR_tol = 1e-10)

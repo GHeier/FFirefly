@@ -2,3 +2,4 @@
 
 
 void DOS_spectrum();
+void custom_dos_call();

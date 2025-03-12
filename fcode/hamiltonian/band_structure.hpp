@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
 #include "../objects/vec.hpp"
 
 using namespace std;
@@ -23,4 +22,5 @@ extern "C" {
 }
 
 vector<Vec> get_FS(float E);
+float get_DOS(vector<Vec> &FS);
 

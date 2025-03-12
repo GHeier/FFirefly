@@ -86,16 +86,6 @@ float get_Tc(vector<Vec> k, const unordered_map<float, vector<vector<vector<floa
     return root;
 }
 
-float get_DOS(vector<Vec> &FS) {
-    float sum = 0;
-    for (auto k : FS) {
-        sum += k.area / vp(k.n, k);
-    }
-    sum /= pow(2*M_PI, dim);
-    printv("Density of States: %.5f\n", sum);
-    return sum;
-}
-
 float coupling_calc(vector<Vec> &FS, float T) {
     cout << "Calculating Coupling Constant...\n";
     int size = FS.size();
