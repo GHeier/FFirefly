@@ -291,6 +291,8 @@ function get_number_of_electrons(G)
 end
 
 function eliashberg_global()
+    fastest()
+    return
     println("Beginning Eliashberg")
     IR_tol = 1e-5
     scf_tol = 1e-4
@@ -799,6 +801,7 @@ function fastest()
     V_rt = get_transformed_V()
     println("Starting iterations")
 
+    println("Expected initial: 1.08")
     iterations = 1
     for i in 1:iterations
         F = F_mod.(iw_3d, e_3d, phi_3d)
@@ -808,6 +811,7 @@ function fastest()
         println("Max val: ", maximum(abs.(result)))
         phi_3d = result
     end
+    println("Expected final: 0.333")
 end
 
 function VF_4sum_GPU(phi, pts, phi_ir)
@@ -955,4 +959,4 @@ end # module
 #Eliashberg.test_max_bcs_no_w()
 #Eliashberg.eliashberg_global()
 #Eliashberg.gpu_eliashberg()
-Eliashberg.fastest()
+#Eliashberg.fastest()
