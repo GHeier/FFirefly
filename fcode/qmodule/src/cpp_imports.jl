@@ -117,7 +117,7 @@ using .Quasi
 #println("Test passed")
 ##println(cmf_cs_call(cmf2, [-3.14, -3.14, -3.14], 0.0))
 ##cmf3 = load_cmf_cs("/home/g/Research/Materials/Test/DOS.dat")
-cmf3 = Quasi.Field_R("/home/g/Research/Materials/Test/test_DOS.dat")
+#cmf3 = Quasi.Field_R("/home/g/Research/Materials/Test/test_DOS.dat")
 #if cmf3 == C_NULL
 #    error("Failed to load CMF_CS from file: DOS.dat")
 #end

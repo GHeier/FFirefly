@@ -16,7 +16,7 @@ def run(cfg_file):
     #result = subprocess.run([folder + "fcode.x", cfg_file], capture_output=True, text=True)
     with open(cfg_file, 'r') as f:
         result = subprocess.run([folder + "fcode.x"], stdin=f, capture_output=True, text=True)
-    return result.stdout
+    return result.stdout, result.stderr
 
 def forge(cfg_file, config):
     folder = "/home/g/Research/fcode/build/bin/"
@@ -42,9 +42,9 @@ def forge(cfg_file, config):
 def launch(config):
     cfg_file = "temp.cfg"
     forge(cfg_file, config)
-    result = run(cfg_file)
+    output, error = run(cfg_file)
     subprocess.run(["rm", cfg_file])
-    return result
+    return output, error
 
 def grep(output, phrase):
     match = re.search(r".*?" + re.escape(phrase) + r".*", output)

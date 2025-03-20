@@ -10,6 +10,7 @@ void load_cpp_config_wrapper();
 #ifdef __cplusplus
 }
 
-bool DOS_test();
+bool DOS_test_3d();
+bool DOS_test_2d();
 #endif
 

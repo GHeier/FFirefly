@@ -114,7 +114,7 @@ void eliashberg() {
     string folder = "superconductor/";
     string filename = "eliashberg";
     string module = "Eliashberg";
-    string function = "eliashberg_global";
+    string function = "eliashberg_node";
     //call_python_func(folder.c_str(), filename.c_str(), function.c_str());
     call_julia_func(folder.c_str(), filename.c_str(), module.c_str(), function.c_str());
 }

@@ -152,9 +152,15 @@ double vp_c(int n, double k[3]) {
 vector<Vec> get_FS(float E) {
     printv("Finding Fermi Surface for E = %.2f\n", E);
     vector<Vec> FS;
+    vector<Vec> temp;
     for (int i = 1; i <= nbnd; i++) {
         auto func = [i](Vec k) { return epsilon(i, k); };
-        vector<Vec> temp = tetrahedron_method(func, E);
+        if (dimension == 3) temp = tetrahedron_method(func, E);
+        else if (dimension == 2) temp = tetrahedron_method_2D(func, E);
+        else {
+            cout << "Dimension not supported\n";
+            exit(1);
+        }
         for (auto k : temp) k.n = i;
         FS.insert(FS.end(), temp.begin(), temp.end());
     }

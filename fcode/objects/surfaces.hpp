@@ -87,6 +87,7 @@ float area_in_corners(vector<Vec> cp);
  * @return A vector of Vec structs
  */
 vector<Vec> tetrahedron_method(function<float(Vec k)> func, float s_val);
+vector<Vec> tetrahedron_method_2D(function<float(Vec k)> func, float s_val);
 
 /**
  * @brief gives index of lowest surface and number of surfaces in cube

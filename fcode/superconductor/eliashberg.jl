@@ -1,4 +1,5 @@
 module Eliashberg
+println("Started Julia")
 
 t1 = time()
 include("../objects/mesh.jl")
@@ -19,11 +20,11 @@ using LinearAlgebra, Printf, PyCall
 np = pyimport("numpy")
 
 t2 = time()
-println("Time to load: ", t2 - t1)
+#println("Time to load: ", t2 - t1)
 
 fcode = pyimport("fcode")
 t3 = time()
-println("Time to load fcode: ", t3 - t2)
+#println("Time to load fcode: ", t3 - t2)
 cfg = fcode.config
 
 prefix = cfg.prefix
@@ -34,7 +35,7 @@ projections = cfg.projections
 
 nx, ny, nz = cfg.k_mesh
 dim = cfg.dimension
-println("Dimension: ", dim)
+#println("Dimension: ", dim)
 if dim == 2
     nz = 1
 end
@@ -44,7 +45,7 @@ U = cfg.onsite_U
 BZ = cfg.brillouin_zone
 mu = cfg.fermi_energy
 t4 = time()
-println("Time to load config: ", t4 - t3)
+#println("Time to load config: ", t4 - t3)
 
 const beta = 1/cfg.Temperature
 println("Beta: ", beta)
@@ -291,8 +292,6 @@ function get_number_of_electrons(G)
 end
 
 function eliashberg_global()
-    fastest()
-    return
     println("Beginning Eliashberg")
     IR_tol = 1e-5
     scf_tol = 1e-4
@@ -448,18 +447,6 @@ function average_over_k(arr)
         average .+= (arr[i, j, k, :])
     end
     return average
-end
-
-@inline function F_gpu(iw, e, phi) 
-    return phi / (-iw^2 + phi^2 + e^2)
-end
-@inline function V_gpu(iv, e, wD, lambda) 
-    return abs(e) > wD ? 0.0 : lambda
-    #return lambda
-    return lambda * 2 * wD^2 / (wD^2 - iv^2)
-end
-@inline function epsilon_cuda(kx, ky, kz) 
-    return kx^2 + ky^2
 end
 
 function fill_gpu!(F_arr, V_arr, e_arr, phi, pts, nx, ny, beta, BZ, mu, w_arr, F_func, V_func, e_func)
@@ -725,37 +712,6 @@ end
     end
     #return phi / (-iw^2 + phi^2 + e^2)
 end
-@inline function V_gpu(iv, e, wD, lambda)
-    return abs(e) > wD ? 0.0 : lambda
-    #return lambda
-    return lambda * 2 * wD^2 / (wD^2 - iv^2)
-end
-@inline function epsilon_cuda(kx, ky, kz)
-    #return -2 * (cos(kx) + cos(ky))
-    return kx^2 + ky^2
-end
-
-function compute_gpu_sum!(result, pts, nx, ny, nz, beta, phi, wD, lambda, w_arr_CUDA, BZ, mu)
-    i = threadIdx().x + (blockIdx().x - 1) * blockDim().x
-
-    if i ≤ pts
-        iwn = ComplexF32(w_arr_CUDA[i])
-        sum = 0
-
-        for j in 1:pts, a in 1:nx, b in 1:ny, c in 1:nz
-            iwm = ComplexF32(w_arr_CUDA[j])
-            dw = iwn - iwm
-            kx = BZ[1, 1] * (a / nx - 0.5) + BZ[1, 2] * (b / ny - 0.5) + BZ[1, 3] * (c / nz - 0.5)
-            ky = BZ[2, 1] * (a / nx - 0.5) + BZ[2, 2] * (b / ny - 0.5) + BZ[2, 3] * (c / nz - 0.5)
-            kz = BZ[3, 1] * (a / nx - 0.5) + BZ[3, 2] * (b / ny - 0.5) + BZ[3, 3] * (c / nz - 0.5)
-            em = epsilon_cuda(kx, ky, kz) - mu
-            sum += (V_gpu(dw, em, wD, lambda) * F_gpu(iwm, em, phi[j])) / (beta * nx * ny * nz)
-        end
-        result[i] = sum
-    end
-    return nothing
-end
-
 function fill_F_arr_gpu!(F_arr, V_arr, phi, pts, nx, ny, beta, BZ, mu, F_func, V_func, e_func, wD, lambda)
     i = threadIdx().x + (blockIdx().x - 1) * blockDim().x  # Compute global index
     if i ≤ pts
@@ -778,6 +734,52 @@ function get_transformed_V()
     #V .= V .+ V_gpu.(iv, e_3d, 0.2, 10.0)
     V .= V .+ 32.0
     return fft(V)
+end
+
+function energy_fastest()
+    nk = nx * ny * nz
+    println("nk: ", nk)
+    phi = ones(Float64, nx, ny, nz)
+    println("Filling epsilon array")
+    e = zeros(Float64, nx, ny, nz)
+    kpts = Array{Vector{Float64}}(undef, nx, ny, nz)
+    for i in 1:nx, j in 1:ny, k in 1:nz
+        kpts[i, j, k] = get_kvec(i, j, k)
+    end
+    e = epsilon.(1, kpts) .- mu
+    println("Filling V array")
+    V = ones(Float64, nx, ny, nz) .* 1.0 #.* ifelse.(abs.(e) .> 0.1, 0.0, 1.0)
+    V_rt = fft(V)
+    println("Starting iterations")
+
+    println("Expected initial: 0.014245")
+    #sumval = 0.00018
+    iterations = 20
+    for i in 1:iterations
+        nonzero_values = 0
+        F = phi ./ (2 .* (phi.^2 .+ e.^2).^0.5) .* ifelse.(abs.(e) .> 0.1, 0.0, 1.0)
+        for i in 1:nx, j in 1:ny, k in 1:nz
+            if F[i, j, k] != 0.0
+                nonzero_values += 1
+            end
+        end
+        println("Nonzero values: ", nonzero_values)
+        #F_sum = sumval ./ (2 .* (sumval^2 .+ e.^2).^0.5) .* ifelse.(abs.(e) .> 0.1, 0.0, 1.0)
+        #sumval = sum(F_sum) / nk
+        #sumval2 = 0.0
+        #for i in 1:nx, j in 1:ny, k in 1:nz
+        #    sumval2 += F_sum[i, j, k]
+        #end
+        #F = ones(Float32, nx, ny, nz)
+        F_rt = fft(F)
+        phi_rt = F_rt .* V_rt
+        result = fftshift(ifft(phi_rt)) / (nk)
+        println("Max val: ", maximum(abs.(result)))
+        #println("Sum val: ", sumval)
+        #println("Sum val2: ", sumval2 / nk)
+        phi = result
+    end
+    println("Expected final: 0.00018")
 end
 
 function fastest()
@@ -814,9 +816,66 @@ function fastest()
     println("Expected final: 0.333")
 end
 
+@inline function V_gpu(iv, e, wD, lambda)
+    return abs(e) > wD ? 0.0 : lambda
+    #return lambda
+    #return lambda * 2 * wD^2 / (wD^2 - iv^2)
+end
+
+@inline function F_gpu(iw, e, phi) 
+    return phi / (-iw^2 + phi^2 + e^2)
+end
+
+@inline function epsilon_cuda(kx, ky, kz)
+    return -2 * (cos(kx) + cos(ky))
+    #return kx^2 + ky^2
+end
+
+
+function compute_gpu_sum!(result, pts, nx, ny, nz, beta, phi, wD, lambda, w_arr_CUDA, BZ, mu)
+    i = threadIdx().x + (blockIdx().x - 1) * blockDim().x
+
+    if i ≤ pts
+        iwn = ComplexF32(w_arr_CUDA[i])
+        sum = 0
+
+        for j in 1:pts, a in 1:nx, b in 1:ny, c in 1:nz
+            iwm = ComplexF32(w_arr_CUDA[j])
+            dw = iwn - iwm
+            kx = BZ[1, 1] * (a / nx - 0.5) + BZ[1, 2] * (b / ny - 0.5) + BZ[1, 3] * (c / nz - 0.5)
+            ky = BZ[2, 1] * (a / nx - 0.5) + BZ[2, 2] * (b / ny - 0.5) + BZ[2, 3] * (c / nz - 0.5)
+            kz = BZ[3, 1] * (a / nx - 0.5) + BZ[3, 2] * (b / ny - 0.5) + BZ[3, 3] * (c / nz - 0.5)
+            em = epsilon_cuda(kx, ky, kz) - mu
+            sum += (V_gpu(dw, em, wD, lambda) * F_gpu(iwm, em, phi[j])) / (beta * nx * ny * nz)
+        end
+        result[i] = sum
+    end
+    return nothing
+end
+
+function energy_2sum()
+    println("Starting")
+    nk = nx * ny * nz
+    println("nk: ", nk)
+
+    lambda = 1.0
+    wD = 0.1
+
+    println("Starting CPU sum")
+    result::Float64 = 0.0
+    for i in 1:nx, j in 1:ny, k in 1:nz
+        e = epsilon(1, get_kvec(i, j, k)) - mu
+        if abs(e) < wD
+            result += lambda
+        end
+    end
+    println("Result: ", result / nk)
+    println("Expected: ", 0.28)
+    return nothing
+end
+
 function VF_4sum_GPU(phi, pts, phi_ir)
     println("Starting")
-    #fnw, bnw, fntau, bntau = basis.fnw, basis.bnw, basis.fntau, basis.bntau
     nk = nx * ny * nz
     println("nk: ", nk)
 
@@ -825,10 +884,7 @@ function VF_4sum_GPU(phi, pts, phi_ir)
     mu = 1.0
 
     F(iw, e, phi) = phi / (-iw^2 + phi^2 + e^2)
-    #V(iv) = lambda * 2 * wD^2 / (wD^2 - iv^2)
     V(iv, e) = abs(e) > wD ? 0.0 : lambda
-
-    #kpts = get_kpts()
 
     result = CUDA.zeros(ComplexF32, pts)
     F_arr = CUDA.ones(ComplexF32, pts, nx, ny)
@@ -841,91 +897,16 @@ function VF_4sum_GPU(phi, pts, phi_ir)
         w_arr[i] = Complex(0.0, (2 * n - 1) * pi / beta)
         w_array[i] = Complex(0.0, (2 * n - 1) * pi / beta)
     end
-
-    #@threads for i in 1:pts
-    #    for j in 1:nx, k in 1:ny, l in 1:nz
-    #        n = -pts / 2 + i - 1
-    #        iwn = Complex(0.0, (2 * n + 1) * pi / beta)
-    #        iwm = Complex(0.0, (2 * n) * pi / beta)
-    #        w_arr[i] = iwn
-    #        w_array[i] = iwn
-    #        kx = BZ[1, 1] * (j / nx - 0.5) + BZ[1, 2] * (k / ny - 0.5) + BZ[1, 3] * (l / nz - 0.5)
-    #        ky = BZ[2, 1] * (j / nx - 0.5) + BZ[2, 2] * (k / ny - 0.5) + BZ[2, 3] * (l / nz - 0.5)
-    #        kz = BZ[3, 1] * (j / nx - 0.5) + BZ[3, 2] * (k / ny - 0.5) + BZ[3, 3] * (l / nz - 0.5)
-    #        e = epsilon_cuda(kx, ky, kz) - mu
-    #        F_arr[i, j, k] = 1.0 #F(iwn, e, phi[i])
-    #        V_arr[i, j, k] = V(iwm, e)
-    #    end
-    #end
     w_arr_CUDA = CuArray(w_array)
     BZ_CUDA = CuArray(BZ)
 
-    #iw_arr = Array{Float32}(undef, fnw)
-    #for i in 1:fnw
-    #    iw_arr[i] = imag(valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[i], beta))
-    #end
-
-    #F_ir = Array{ComplexF32}(undef, fnw, nx, ny, nz)
-    #V_ir = Array{ComplexF32}(undef, bnw, nx, ny, nz)
-
-    #println("Filling IR arrays")
-    #for i in 1:fnw, j in 1:nx, k in 1:ny, l in 1:nz
-    #    iw = valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[i], beta)
-    #    F_ir[i, j, k, l] = F(iw, epsilon(get_kvec(j, k, l)) - mu, phi_ir[i])
-    #end
-    #for i in 1:bnw, j in 1:nx, k in 1:ny, l in 1:nz
-    #    iv = valueim(basis.IR_basis_set.smpl_wn_b.sampling_points[i], beta)
-    #    V_ir[i, j, k, l] = V(iv, epsilon(get_kvec(j, k, l)) - mu)
-    #end
-
     phi_CUDA = CuArray(phi)
-    #println("Filling FT arrays")
-    #CUDA.@sync @cuda threads=512 blocks=cld(pts, 512) fill_F_arr_gpu!(F_arr, V_arr, phi_CUDA, pts, nx, ny, beta, BZ_CUDA, mu, F_gpu, V_gpu, epsilon_cuda, wD, lambda)
-
-    #F_cpu = Array(F_arr)
-    #V_cpu = Array(V_arr)
-    #println("Max F: ", maximum(abs.(F_cpu)))
-    #println("Max V: ", maximum(abs.(V_cpu)))
-
     println("Starting GPU sum")
 
     CUDA.@sync @cuda threads=512 blocks=cld(pts, 512) compute_gpu_sum!(result, pts, nx, ny, nz, beta, phi_CUDA, wD, lambda, w_arr_CUDA, BZ_CUDA, mu)
-#    CUDA.@sync @cuda threads=threads_per_block blocks=blocks_per_grid compute_gpu_sum!(
-#                                                                                       result, pts, nx, ny, nz, beta, phi, wD, lambda, w_arr_CUDA, BZ_CUDA)
-
-
     cpu_result = Array(result)
-
-    #println("Starting Fourier Transforms")
-    #F_rt = CUDA.CUFFT.fft(F_arr)
-    #V_rt = CUDA.CUFFT.fft(V_arr)
-    #phi_rt = F_rt .* V_rt
-    #result2 = fftshift(Array(CUDA.CUFFT.ifft(phi_rt) ./ (beta * nk)))
-
-    #F_irt = kw_to_rtau(F_ir, 'F', basis)
-    #V_irt = kw_to_rtau(V_ir, 'B', basis)
-    #phi_irt = F_irt .* V_irt
-    #result3 = rtau_to_kw(phi_irt, 'F', basis)
-
-    #println("Printing maxvals")
     println("Max result: ", maximum(abs.(cpu_result)))
-    #println("Max result2: ", maximum(abs.(result2)))
-    #println("Max result3: ", maximum(abs.(result3)))
-
-    #println("Plotting")
-    result_plot = cpu_result
-    #max2_index = argmax(abs.(result2))
-    #println("Max2 index: ", max2_index)
-    #max2_indices = Tuple(CartesianIndices(result2)[max2_index])
-    #result2_plot = result2[:, max2_indices[2], max2_indices[3]]
-    #result3_plot = sum(result3, dims=(2, 3, 4))[:, 1, 1, 1] / (nx * ny * nz)
-
-    #p = plot(imag.(w_arr), real.(result_plot), label="Summed", xlims=(-20, 20))
-    #plot!(p, imag.(w_arr), real.(result2_plot), label="Ft'd", xlims=(-20, 20))
-    ##plot!(p, iw_arr, real.(result3_plot), label="IR'd", xlims=(-20, 20))
-    #display(p)
-    #readline()
-    return result_plot, ones(ComplexF32, 3)
+    return cpu_result, ones(ComplexF32, 3)
 end
 
 function gpu_eliashberg()
@@ -951,12 +932,13 @@ function gpu_eliashberg()
     readline()
 end
 
+
+function eliashberg_node()
+    #eliashberg_global()
+    energy_2sum()
+    energy_fastest()
+    #fastest()
+    return
+end
+
 end # module
-
-#kpts = Eliashberg.get_kpts()
-#println("Size of kpts: ", size(kpts))
-
-#Eliashberg.test_max_bcs_no_w()
-#Eliashberg.eliashberg_global()
-#Eliashberg.gpu_eliashberg()
-#Eliashberg.fastest()
