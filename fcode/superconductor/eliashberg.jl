@@ -51,7 +51,7 @@ const beta = 1/cfg.Temperature
 println("Beta: ", beta)
 const pi = π
 
-wD = 0.2
+wD = 0.1
 
 function to_IBZ(k)
     tolerance = 1e-10  # small tolerance to account for floating-point errors
@@ -126,7 +126,7 @@ end
 function BCS_V(k, w)
     e = epsilon(1, k) - mu
     #e = 0.0
-    lambda = -32.0
+    lambda = -5.0
     if abs(e) < wD
         return lambda 
     end
@@ -136,7 +136,7 @@ end
 function fill_V_arr(iw, frequency_dependence, V_obj)
     Vw_arr = Array{ComplexF32}(undef, length(iw), nx, ny, nz)
     #Vw_arr .= Vw_arr .+ paper2_V.(iw)
-    Vw_arr .= -32.0
+    Vw_arr .= -5.0
     if frequency_dependence
         return kw_to_rtau(Vw_arr, 'B', mesh)
     else
@@ -705,7 +705,7 @@ end
 
 @inline function F_mod(iw, e, phi)
     val = phi / (-iw^2 + phi^2 + e^2)
-    if abs(e) < 0.2
+    if abs(e) < 0.1
         return val
     else
         return val * 0.0
@@ -732,14 +732,14 @@ function get_transformed_V()
     V = zeros(Float32, nw, nx, ny)
     #V .= V .+ ifelse.(abs.(e_3d) .> wD, 0.0, 10.0)
     #V .= V .+ V_gpu.(iv, e_3d, 0.2, 10.0)
-    V .= V .+ 32.0
+    V .= V .+ 5.0
     return fft(V)
 end
 
 function energy_fastest()
     nk = nx * ny * nz
     println("nk: ", nk)
-    phi = ones(Float64, nx, ny, nz)
+    phi = ones(Float64, nx, ny, nz) 
     println("Filling epsilon array")
     e = zeros(Float64, nx, ny, nz)
     kpts = Array{Vector{Float64}}(undef, nx, ny, nz)
@@ -748,22 +748,22 @@ function energy_fastest()
     end
     e = epsilon.(1, kpts) .- mu
     println("Filling V array")
-    V = ones(Float64, nx, ny, nz) .* 1.0 #.* ifelse.(abs.(e) .> 0.1, 0.0, 1.0)
+    V = ones(Float64, nx, ny, nz) .* 5.0 #.* ifelse.(abs.(e) .> 0.1, 0.0, 1.0)
     V_rt = fft(V)
     println("Starting iterations")
 
-    println("Expected initial: 0.014245")
+    println("Expected initial: 0.054")
     #sumval = 0.00018
     iterations = 20
     for i in 1:iterations
         nonzero_values = 0
         F = phi ./ (2 .* (phi.^2 .+ e.^2).^0.5) .* ifelse.(abs.(e) .> 0.1, 0.0, 1.0)
-        for i in 1:nx, j in 1:ny, k in 1:nz
-            if F[i, j, k] != 0.0
-                nonzero_values += 1
-            end
-        end
-        println("Nonzero values: ", nonzero_values)
+        #for i in 1:nx, j in 1:ny, k in 1:nz
+        #    if F[i, j, k] != 0.0
+        #        nonzero_values += 1
+        #    end
+        #end
+        #println("Nonzero values: ", nonzero_values)
         #F_sum = sumval ./ (2 .* (sumval^2 .+ e.^2).^0.5) .* ifelse.(abs.(e) .> 0.1, 0.0, 1.0)
         #sumval = sum(F_sum) / nk
         #sumval2 = 0.0
@@ -774,12 +774,13 @@ function energy_fastest()
         F_rt = fft(F)
         phi_rt = F_rt .* V_rt
         result = fftshift(ifft(phi_rt)) / (nk)
-        println("Max val: ", maximum(abs.(result)))
+        #println("Max val: ", maximum(abs.(result)))
         #println("Sum val: ", sumval)
         #println("Sum val2: ", sumval2 / nk)
         phi = result
+        println("Max val: ", maximum(abs.(phi)))
     end
-    println("Expected final: 0.00018")
+    println("Expected final: 0.032")
 end
 
 function fastest()
@@ -803,8 +804,8 @@ function fastest()
     V_rt = get_transformed_V()
     println("Starting iterations")
 
-    println("Expected initial: 1.08")
-    iterations = 1
+    println("Expected initial: 0.054")
+    iterations = 7
     for i in 1:iterations
         F = F_mod.(iw_3d, e_3d, phi_3d)
         F_rt = fft(F)
@@ -813,7 +814,7 @@ function fastest()
         println("Max val: ", maximum(abs.(result)))
         phi_3d = result
     end
-    println("Expected final: 0.333")
+    println("Expected final: 0.032")
 end
 
 @inline function V_gpu(iv, e, wD, lambda)
@@ -870,7 +871,7 @@ function energy_2sum()
         end
     end
     println("Result: ", result / nk)
-    println("Expected: ", 0.28)
+    println("Expected: ", 0.0216)
     return nothing
 end
 
@@ -934,10 +935,10 @@ end
 
 
 function eliashberg_node()
-    #eliashberg_global()
     energy_2sum()
     energy_fastest()
-    #fastest()
+    fastest()
+    eliashberg_global()
     return
 end
 
