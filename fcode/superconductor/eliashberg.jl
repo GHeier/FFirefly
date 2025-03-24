@@ -296,7 +296,8 @@ function eliashberg_global()
     IR_tol = 1e-5
     scf_tol = 1e-4
 
-    vertex = Quasi.Field_C(outdir * prefix * "_2PI.dat")
+    vertex = Quasi.Field_C("test_2PI.dat")
+    #vertex = Quasi.Field_C(outdir * prefix * "_2PI.dat")
 
     frequency_dependence = false
     if frequency_dependence
@@ -758,25 +759,9 @@ function energy_fastest()
     for i in 1:iterations
         nonzero_values = 0
         F = phi ./ (2 .* (phi.^2 .+ e.^2).^0.5) .* ifelse.(abs.(e) .> 0.1, 0.0, 1.0)
-        #for i in 1:nx, j in 1:ny, k in 1:nz
-        #    if F[i, j, k] != 0.0
-        #        nonzero_values += 1
-        #    end
-        #end
-        #println("Nonzero values: ", nonzero_values)
-        #F_sum = sumval ./ (2 .* (sumval^2 .+ e.^2).^0.5) .* ifelse.(abs.(e) .> 0.1, 0.0, 1.0)
-        #sumval = sum(F_sum) / nk
-        #sumval2 = 0.0
-        #for i in 1:nx, j in 1:ny, k in 1:nz
-        #    sumval2 += F_sum[i, j, k]
-        #end
-        #F = ones(Float32, nx, ny, nz)
         F_rt = fft(F)
         phi_rt = F_rt .* V_rt
         result = fftshift(ifft(phi_rt)) / (nk)
-        #println("Max val: ", maximum(abs.(result)))
-        #println("Sum val: ", sumval)
-        #println("Sum val2: ", sumval2 / nk)
         phi = result
         println("Max val: ", maximum(abs.(phi)))
     end
@@ -792,9 +777,8 @@ function fastest()
     iv = [Complex(0.0, 2 * n * pi / beta) for n in n]
     println("Filling epsilon array")
     e = zeros(Float32, nx, ny)
-    #small_BZ = [2.8 0.0 0.0; 0.0 2.8 0.0; 0.0 0.0 2.8]
     for i in 1:nx, j in 1:ny
-        kvec = get_kvec(i, j, 1)
+        kvec = get_kvec(i, j, 100)
         e[i, j] = epsilon(1, kvec) - mu
     end
     println("Filling V array")
@@ -805,7 +789,7 @@ function fastest()
     println("Starting iterations")
 
     println("Expected initial: 0.054")
-    iterations = 7
+    iterations = 8
     for i in 1:iterations
         F = F_mod.(iw_3d, e_3d, phi_3d)
         F_rt = fft(F)

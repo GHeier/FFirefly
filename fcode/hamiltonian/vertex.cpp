@@ -17,7 +17,6 @@ extern "C" void vertex_wrapper() {
 }
 
 void call_flex() {
-    printf("interaction: %s\n", interaction.c_str());
     CMF vertex = load_CMF_from_file(outdir + prefix + "_chi.dat"); 
     float U = onsite_U;
 
