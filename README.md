@@ -1,4 +1,4 @@
-# **The Argo Collaboration**
+# **Project Argo**
 ---
 
 ## **🚀 Welcome**  
