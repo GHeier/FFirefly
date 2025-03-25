@@ -4,14 +4,14 @@ Welcome to **Argo**, a Condensed Matter Computational Physics Workspace designed
 **Argo** currently includes calculations across the range of condensed matter topics listed below.
 
 ### **🔹 Computational Categories**
-- ** Bands, Density of States, and Fermi Surface Calculations **
-- ** Response Functions **
-- ** Vertex Calculations **
-- ** Self-Energy Calculations **
-- ** Superconducting Calculations **
+- **Bands, Density of States, and Fermi Surface Calculations **
+- **Response Functions **
+- **Vertex Calculations **
+- **Self-Energy Calculations **
+- **Superconducting Calculations **
 
-### **[User Documentation](./documentation/User.md) **
-### **[Developer Documentation](./documentation/Developer.md) **
+### [User Documentation](./documentation/User.md)
+### [Developer Documentation](./documentation/Developer.md)
 
 ### **🔹 Languages Supported**
 - **C/C++** 
