@@ -1,6 +1,6 @@
 # The Argo Project
 ## **🚀 Welcome**  
-Welcome to **Argo**, a Condensed Matter Computational Physics Workspace designed to be easy to both use and extend. Users interact via a simple input file and easy python wrappers. Developers can easily extend the codebase by adding new models and solvers in whatever language they prefer. \\
+Welcome to **Argo**, a Condensed Matter Computational Physics Workspace designed to be easy to both use and extend. Users interact via a simple input file and easy python wrappers. Developers can easily extend the codebase by adding new models and solvers in whatever language they prefer. \ \
 **Argo** currently includes calculations across the range of condensed matter topics listed below.
 
 ### **🔹 Computational Categories**
