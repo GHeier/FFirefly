@@ -1,7 +1,7 @@
-<h1 align="center">📦Argo</h1>
+<h1 align="center">Argo</h1>
 
 ## **🚀 Welcome**  
-Welcome to **Quasi**, a computational physics toolkit designed to be easy to both use and extend. Users interact via a simple input file and easy python wrappers. Developers can easily extend the codebase by adding new models and solvers in whatever language they prefer.
+Welcome to **Argo**, a computational physics toolkit designed to be easy to both use and extend. Users interact via a simple input file and easy python wrappers. Developers can easily extend the codebase by adding new models and solvers in whatever language they prefer.
 
 ### **🔹 Languages Supported**
 - **C/C++** 
@@ -12,7 +12,7 @@ Welcome to **Quasi**, a computational physics toolkit designed to be easy to bot
 ---
 
 ## **📖 User Guide**  
-The simplest way to run quasi.x is to create an input file and run it with the command `quasi.x < input_file.cfg`. An example can be seen in the file `sample.cfg`. It is recommended to look at this file to understand the syntax of the input file. It is inspired from the Quantum Espresso and LmtART input file formats.\
+The simplest way to run fcode.x is to create an input file and run it with the command `fcode.x < input_file.cfg`. An example can be seen in the file `sample.cfg`. It is recommended to look at this file to understand the syntax of the input file. It is inspired from the Quantum Espresso and LmtART input file formats.\
 Multiple calculations can be run sequentially either from the command line or through a python script. QuasiCode comes with launchers and data extracters for every calculation type, so you can easily run multiple calculations and extract the data you need. This can be useful for instance, to calculate the phase across a range of temperatures and chemical potentials. An example of this can be seen in helpful_scripts/eliashberg.py.
  - `category` indicates the type of calculation to be performed, with a section [CATEGORY_NAME] in the file for inputs specific to that category. 
  - Prefix is the filename prefix for files read and written by this program. Files are saved in the format 'prefix_filetype.dat', so for instance a density of states calculation would save to 'prefix_dos.dat'.
@@ -48,7 +48,7 @@ The upside of a package like this is that it grants access to a wide variety of 
 
 
 #### **2️⃣ Build Instructions**  
- - Once the above have been downloaded, simply go to the "helpful_scripts" folder and run "./qbuild.sh -vv" to build the code. -v indicates a verbose output, -vv indicates a very verbose output. I recommend setting qbuild.sh to a terminal command, so that you can recompile from outside folders (useful when running tests and material calculations).
+ - Once the above have been downloaded, simply go to the "helpful_scripts" folder and run "./fbuild.sh -vv" to build the code. -v indicates a verbose output, -vv indicates a very verbose output. I recommend setting qbuild.sh to a terminal command, so that you can recompile from outside folders (useful when running tests and material calculations).
  - To run all tests, simply run "quasi.x". The tests will run, and if all pass then you have downloaded the packages correctly. If not, the package that failed will be printed to the screen.
 
 ---
