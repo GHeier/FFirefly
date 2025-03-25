@@ -45,13 +45,13 @@ The upside of a package like this is that it grants access to a wide variety of 
 
 
 #### **2️⃣ Build Instructions**  
- - Once the above have been downloaded, simply go to the "helpful_scripts" folder and run "./arbuild.sh -vv" to build the code. -v indicates a verbose output, -vv indicates a very verbose output. I recommend setting arbuild.sh to a terminal command, so that you can recompile from outside folders (useful when running tests and material calculations).
+ - Once the above have been downloaded, simply go to the "helpful_scripts" folder and run "./argo-build.sh -vv" to build the code. -v indicates a verbose output, -vv indicates a very verbose output. I recommend setting argo-build.sh to a terminal command, so that you can recompile from outside folders (useful when running tests and material calculations).
  - To run all tests, simply run "argo.x". The tests will run, and if all pass then you have downloaded the packages correctly. If not, the package that failed will be printed to the screen.
 
 ---
 
 ## **📚 Developer Guide**
-This code is designed to encourage good coding practice but to not impede the developer. In src/ there are folders for each category of calculation, with subfolders as needed. If you are adding a new category, simply create a new folder in src/ and add a new file for the calculation. The main.c file handles the input file and calls the appropriate calculation function. After your folder has been created, add a "node" that connects main.c to your folder. Make sure to call this node from main.c and compile with arbuild.sh after.
+This code is designed to encourage good coding practice but to not impede the developer. In src/ there are folders for each category of calculation, with subfolders as needed. If you are adding a new category, simply create a new folder in src/ and add a new file for the calculation. The main.c file handles the input file and calls the appropriate calculation function. After your folder has been created, add a "node" that connects main.c to your folder. Make sure to call this node from main.c and compile with argo-build.sh after.
    - An example of this in the superconductor/ folder in the `node.cpp` file. This file has a function called superconductor_wrapper(), which determines the type of calculation to be performed. main.c calls this superconductor_wrapper() function if the category type is "superconductor". New categories should follow this format.
    - If you develop, it's encouraged that you add your code to thoe project! In order to do so, the code must interact with the config file by modifying its behavior based on all relevant variables. 
    - It also must pass tests to confirm that it is working correctly, and to confirm that the code still works upon future development. These tests must have a source, whether it be an analytical limit or a reference paper. They also must be quick to run, so no need to calculate an entire dense mesh, simply check that 1 or 2 points are correct.
@@ -62,10 +62,10 @@ This code is designed to encourage good coding practice but to not impede the de
  - To add tests to the test suite, make a "tests/" folder in your category folder. In "tests/" create "all.cpp" and "all.hpp". A good example is in src/objects/tests/all.cpp, and should be copied to your cateogry folder. This file stores a bool array of all test results, and runs "print_test_results" to display the results. Simply copy this file, replace the tests with your own, and link the function in main.c. Don't forget to update num_tests to the correct number of tests you run.
 
 ### **🔹 Documentation**
-Documentation is important, but it is also important to not let it get in the way of coding. If adding a new category, describe what it does and how it works in the README.md file. Include the relevant input and outputs, both datafiles and config variables. 
+If adding a new category, describe what it does and how it works in the User.md file. Include the relevant input and outputs, both datafiles and config variables. 
 
 ---
 
 ### **🔹 Plotting**  
-Plotting is handled in the "arplot" folder. This folder contains a "base" python script that acts as a command-line interface to the plotting functions. Still under development, this allows for easy plotting of results. Just as arbuild.sh, it is recommended to make this a command line argument so that it can be run from anywhere.
+Plotting is handled in the "plot" folder. This folder contains a "argo-plot" python script that acts as a command-line interface to the plotting functions. Still under development, this allows for easy plotting of results. Just as argo-build.sh, it is recommended to make this a command line argument so that it can be run from anywhere.
 

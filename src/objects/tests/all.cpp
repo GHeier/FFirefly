@@ -2,7 +2,8 @@
 #include <vector>
 
 #include "all.hpp"
-#include "../CondensedMatterField/tests/cmf_tests.hpp"
+#include "../CMField/tests/cmf_tests.hpp"
+#include "../CMData/tests/all.hpp"
 #include "../../config/load/c_config.h"
 #include "../../config/load/jl_interface.h"
 
@@ -13,7 +14,8 @@ extern "C" bool object_tests() {
     int num_tests = 2;
     bool all_tests[num_tests] = {
         field_tests(),
-        cmf_tests()
+        CMData_tests()
+        //cmf_tests()
     };
     return print_test_results(all_tests, num_tests, "Object tests");
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <complex>
-#include "../objects/CondensedMatterField/fields.hpp"  // Include field class
+#include "../objects/CMField/fields.hpp"  // Include field class
 
 float epsilon_julia(int n, float kx, float ky = 0, float kz = 0);
 

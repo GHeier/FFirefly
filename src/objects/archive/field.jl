@@ -1,4 +1,4 @@
-module CondensedMatterField
+module CMField
 
 using Interpolations, LinearAlgebra, Statistics
 using DelimitedFiles, Printf

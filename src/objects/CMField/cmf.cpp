@@ -1,5 +1,5 @@
 /*
- * This file contains the implementation of the class CondensedMatterField
+ * This file contains the implementation of the class CMField
  * They interpolate BZ(n+1 dimension) fields
  * They have been implemented to allow for input via a file or a list of points and values.
  * They are constructed to exist over a mesh, so it is ideal for Brillouin Zone calculations.
@@ -18,32 +18,42 @@
 #include "../vec.hpp"
 #include "../../algorithms/interpolate.hpp"
 #include "cmf.hpp"
+#include "../CMData/cmdata.hpp"
 
 using namespace std;
 
 CMF::CMF() {
-    points = vector<Vec>();
-    w_points = vector<float>();
-    values = vector<complex<Vec>>();
+    *data = CMData();
+
     domain = vector<Vec>();
     inv_domain = vector<Vec>();
     first = Vec();
     nx = 0, ny = 0, nz = 0, nw = 0;
     wmax = 0, wmin = 0;
-    dimension = 0;
-    is_complex = false;
-    is_vector = false;
-    with_w = false;
+}
 
-    filled = false;
+CMF::CMF(CMData &data) {
+    this->data = &data;
+    get_values_for_interpolation(data);
+}
+
+CMF::CMF(vector<Vec> points, vector<complex<Vec>> values, int dimension, bool with_w, bool with_n, bool is_complex, bool is_vector) {
+    *data = CMData(points, values, dimension, with_w, with_n, is_complex, is_vector);
+    get_values_for_interpolation(*data);
+}
+
+CMF load_CMF(string filename) {
+    CMData data = load(filename);
+    CMF temp(data);
+    return temp;
+}
+
+void save_CMF(string filename, CMF &field) {
+    save(*field.data, filename);
 }
 
 // Function to invert a matrix represented as vector<Vec>
 vector<Vec> invertMatrix(vector<Vec>& matrix, int n) {
-    printf("Incoming matrix:\n");
-    for (Vec x : matrix) {
-        cout << x << endl;
-    }
     // Create augmented matrix [A|I]
     vector<vector<float>> augmented(n, std::vector<float>(2 * n, 0.0f));
     for (size_t i = 0; i < n; ++i) {
@@ -145,40 +155,93 @@ Vec cross_product(Vec a, Vec b) {
     throw runtime_error("Cross product only defined for 2D and 3D vectors.");
 }
 
-void CMF::get_values_for_interpolation(vector<Vec> &points, vector<float> &w_points) {
-    int w_size = w_points.size();
+void CMF::find_domain(CMData &data) {
+    // Define initial number of points
+    int section = 0;
+    vector<int> section_sizes = {1, 1, 1};
+
+    vector<Vec> domain;
+
+    // Set initial point, vector, and hopping
+    Vec first = data.points[0];
+    int jump = 1;
+    int w_size = data.w_points.size();
+    if (w_size > 1) jump = w_size;
+    Vec lattice_vec = (data.points[jump] - first).round();
+
+    for (int i = 1; i < data.points.size(); i += jump) {
+        Vec current_vec = (data.points[i] - first);
+        if (cross_product(lattice_vec, current_vec).norm() < 1e-6) { // If the same lattice vec
+            section_sizes[section]++;
+        }
+        else { // Trigger if deviation from previous lattice vector
+            Vec p = (data.points[i-jump] - first).round();
+            p.dimension = data.dimension;
+            domain.push_back(p);
+            jump = i;
+            i -= jump;
+            section++;
+            if (section >= data.dimension) break;
+            Vec temp = data.points[i] - first;
+            lattice_vec = (data.points[i] - first);
+        }
+    }
+    // Save last lattice vector
+    domain.push_back((data.points[data.points.size()-jump] - first));
+    reverse(domain.begin(), domain.end());
+
+    // Save public values
+    if (data.with_w) {
+        wmin = *min_element(data.w_points.begin(), data.w_points.end());
+        wmax = *max_element(data.w_points.begin(), data.w_points.end());
+    }
+    this->domain = domain;
+    inv_domain = invertMatrix(domain, data.dimension);
+    nx = section_sizes[0];
+    if (data.with_w) nx--;
+    if (data.dimension > 1) ny = section_sizes[1];
+    if (data.dimension > 2) nz = section_sizes[2];
+    if (data.dimension > 3) nw = section_sizes[3];
+    this->first = first;
+}
+
+void CMF::get_values_for_interpolation(CMData &data) {
+    int w_size = data.w_points.size();
+    int dimension = data.dimension;
+    bool with_w = data.with_w;
+
     int section = 0;
     vector<int> section_sizes = {1, 1, 1};
     vector<Vec> domain;
-    Vec first = points[0];
+    Vec first = data.points[0];
     this->first = first;
     int jump = 1;
     if (w_size > 1) jump = w_size;
-    Vec lattice_vec = (points[jump] - first).round();
+    Vec lattice_vec = (data.points[jump] - first).round();
 
     if (dimension == 1 or (dimension == 0 and with_w)) {
-        nx = points.size() / w_points.size();
-        Vec newpoint = (points[points.size()-1] - first);
+        nx = data.points.size() / data.w_points.size();
+        Vec newpoint = (data.points[data.points.size()-1] - first);
         newpoint.dimension = dimension;
         domain.push_back(newpoint);
         this->domain = domain;
         inv_domain = invertMatrix(domain, dimension);
         if (with_w) {
-            wmin = *min_element(w_points.begin(), w_points.end());
-            wmax = *max_element(w_points.begin(), w_points.end());
+            wmin = *min_element(data.w_points.begin(), data.w_points.end());
+            wmax = *max_element(data.w_points.begin(), data.w_points.end());
         }
         printf("wmin, wmax: %f %f\n", wmin, wmax);
         return;
     }
 
-    for (int i = 1; i < points.size(); i += jump) {
-        Vec current_vec = (points[i] - first);
+    for (int i = 1; i < data.points.size(); i += jump) {
+        Vec current_vec = (data.points[i] - first);
         if (cross_product(lattice_vec, current_vec).norm() < 1e-6) {
             section_sizes[section]++;
         }
         else {
-            Vec current_point = points[i];
-            Vec p = (points[i-jump] - first).round();
+            Vec current_point = data.points[i];
+            Vec p = (data.points[i-jump] - first).round();
             cout << "current point: " << current_point << endl;
             cout << "p: " << p << endl;
             p.dimension = dimension;
@@ -192,7 +255,7 @@ void CMF::get_values_for_interpolation(vector<Vec> &points, vector<float> &w_poi
             lattice_vec = (current_point - first);
         }
     }
-    domain.push_back((points[points.size()-jump] - first));
+    domain.push_back((data.points[data.points.size()-jump] - first));
     reverse(domain.begin(), domain.end());
     printf("domain:\n");
     for (Vec x : domain) {
@@ -210,59 +273,36 @@ void CMF::get_values_for_interpolation(vector<Vec> &points, vector<float> &w_poi
     if (dimension > 3) nw = section_sizes[3];
 
     if (with_w) {
-        wmin = *min_element(w_points.begin(), w_points.end());
-        wmax = *max_element(w_points.begin(), w_points.end());
+        wmin = *min_element(data.w_points.begin(), data.w_points.end());
+        wmax = *max_element(data.w_points.begin(), data.w_points.end());
     }
-}
-
-CMF::CMF(vector<Vec> points, vector<complex<Vec>> values, int coords_dim, bool w_col, bool n_col, bool is_complex, bool is_vector) {
-    this->with_w = w_col;
-    if (with_w) {
-        int dim = points[0].dimension;
-        printf("dim: %d\n", dim);
-        for (int i = 0; i < points.size(); i++) {
-            printf("point: %f %f\n", points[i](0), points[i](1));
-            if (find(w_points.begin(), w_points.end(), points[i](dim-1)) == w_points.end())
-                this->w_points.push_back(points[i](dim-1));
-            points[i](dim-1) = 0;
-            points[i].dimension--;
-        }
-        printf("w_points size: %d\n", w_points.size());
-    }
-    this->points = points;
-    this->values = values;
-    this->dimension = coords_dim;
-    this->is_complex = is_complex;
-    this->is_vector = is_vector;
-    get_values_for_interpolation(points, w_points);
-    filled = true;
 }
 
 complex<Vec> CMF::operator() (float w) {
-    if (!with_w) throw runtime_error("This field does not have a w dimension.");
-    return CMF_search_1d(w, w_points, values);
+    if (!data->with_w) throw runtime_error("This field does not have a w dimension.");
+    return CMF_search_1d(w, data->w_points, data->values);
 }
 
 complex<Vec> CMF::operator() (Vec point, float w) {
-    if (w != 0 && !with_w) throw runtime_error("This field does not have a w dimension.");
+    if (w != 0 && !data->with_w) throw runtime_error("This field does not have a w dimension.");
     Vec shifted = point - first;
-    Vec p = vec_matrix_multiplication(inv_domain, shifted, dimension);
+    Vec p = vec_matrix_multiplication(inv_domain, shifted, data->dimension);
     p.w = w;
-    if (!with_w) {
-        if (dimension == 1) 
-            return interpolate_1D(p.x, 0, 1, values);
-        if (dimension == 2) 
-            return interpolate_2D(p.x, p.y, 0, 1, 0, 1, nx, ny, values);
-        if (dimension == 3) 
-            return interpolate_3D(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, nx, ny, nz, values);
+    if (!data->with_w) {
+        if (data->dimension == 1) 
+            return interpolate_1D(p.x, 0, 1, data->values);
+        if (data->dimension == 2) 
+            return interpolate_2D(p.x, p.y, 0, 1, 0, 1, nx, ny, data->values);
+        if (data->dimension == 3) 
+            return interpolate_3D(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, nx, ny, nz, data->values);
     }
     else {
-        if (dimension == 1) 
-            return CMF_search_2d(p.x, w, nx, w_points, values);
-        if (dimension == 2) 
-            return CMF_search_3d(p.x, p.y, w, nx, ny, w_points, values);
-        if (dimension == 3) 
-            return CMF_search_4d(p.x, p.y, p.z, w, nx, ny, nz, w_points, values);
+        if (data->dimension == 1) 
+            return CMF_search_2d(p.x, w, nx, data->w_points, data->values);
+        if (data->dimension == 2) 
+            return CMF_search_3d(p.x, p.y, w, nx, ny, data->w_points, data->values);
+        if (data->dimension == 3) 
+            return CMF_search_4d(p.x, p.y, p.z, w, nx, ny, nz, data->w_points, data->values);
     }
     throw runtime_error("Invalid dimension.");
 }
@@ -451,146 +491,4 @@ complex<Vec> CMF_search_4d(float x_val, float y_val, float z_val, float w_val,
         x_rel * y_rel * z_rel * w_rel * f[(i + 1)*nx*nx*nx+(j + 1)*ny*ny+(k+1)*nz+l + 1];
 
     return result;
-}
-
-CMF load_CMF_from_file(string filename) {
-    ifstream file(filename);
-    if (!file.is_open()) {
-        throw runtime_error("Failed to open the file.");
-    }
-    string line;
-    int ind = 0;
-    int dimension = 0;
-    bool w_col = false;
-    bool n_col = false;
-    bool is_complex = false;
-    bool is_vector = false;
-    vector<Vec> points;
-    vector<complex<Vec>> values;
-    while (getline(file, line)) {
-        istringstream iss(line);
-        if (ind == 0) {
-            string word;
-            while (iss >> word) {
-                if (word == "x") dimension++;
-                if (word == "y") dimension++;
-                if (word == "z") dimension++;
-                if (word == "w") w_col = true;
-                if (word == "n") n_col = true;
-                if (word == "Re(f)") is_complex = true;
-                if (word == "Im(f)") is_complex = true;
-                if (word == "fx") is_vector = true;
-                if (word == "fy") is_vector = true;
-                if (word == "fz") is_vector = true;
-            }
-            dimension += w_col;
-            ind++;
-            continue;
-        }
-        Vec point;
-        float value;
-        float ivalue;
-        for (int i = 0; i < dimension; i++) {
-            float temp;
-            iss >> temp;
-            point(i) = temp;
-        }
-        iss >> value;
-        point.dimension = dimension;
-        points.push_back(point);
-        complex<Vec> vval = complex<Vec>(value, 0);
-        if (is_complex) {
-            iss >> ivalue;
-            vval = complex<Vec>(value, ivalue);
-        }
-        values.push_back(vval);
-    }
-    return CMF(points, values, dimension, w_col, n_col, is_complex, is_vector);
-}
-
-string get_header(int dimension, bool with_w, bool is_complex, bool is_vector) {
-   // Determine fheader
-    string fheader = "    f    ";
-    if (is_complex) {
-        fheader = "   Re(f)         Im(f)";
-    }
-    if (is_vector && !is_complex) {
-        fheader = "   fx    ";
-    }
-    if (is_vector && is_complex) {
-        fheader = "    Re(fx)      Im(fx) ";
-    }
-
-    // Build header
-    string header = "    x         ";
-    if (dimension > 1) {
-        header += "    y         ";
-        if (is_vector && !is_complex) {
-            fheader += "   fy        ";
-        } else if (is_vector && is_complex) {
-            fheader += "    Re(fy)    Im(fy) ";
-        }
-    }
-    if (dimension > 2) {
-        header += "    z        ";
-        if (is_vector && !is_complex) {
-            fheader += "   fz        ";
-        }
-        if (is_vector && is_complex) {
-            fheader += "     Re(fz)    Im(fz) ";
-        }
-    }
-    if (with_w) {
-        header += "   w        ";
-    }
-
-    header += fheader;
-    return header;
-}
-
-
-void save_to_file(string filename, vector<Vec> &points, vector<complex<Vec>> &values, int dimension, bool with_w, bool is_complex, bool is_vector) {
-    ofstream file(filename);
-    dimension -= with_w;
-    string header = get_header(dimension, with_w, is_complex, is_vector);
-    file << fixed << setprecision(6);
-    file << header << endl;
-    for (int i = 0; i < points.size(); i++) {
-        Vec point = points[i];
-        complex<Vec> value = values[i];
-        file << point(0) << "      ";
-        if (dimension > 1) file << point(1) << "      ";
-        if (dimension > 2) file << point(2) << "      ";
-        if (with_w) file << point(dimension) << "      ";
-        if (is_complex) {
-            file << value.real()(0) << "      " << value.imag()(0) << "      ";
-            if (is_vector) {
-                file << value.real()(1) << "      " << value.imag()(1) << "      ";
-                if (dimension > 2) {
-                    file << value.real()(2) << "      " << value.imag()(2) << "      ";
-                }
-            }
-        } else {
-            file << value.real()(0) << "      ";
-            if (is_vector) {
-                file << value.real()(1) << "      ";
-                if (dimension > 2) {
-                    file << value.real()(2) << "      ";
-                }
-            }
-        }
-        file << endl;
-    }
-}
-
-void combine_points_and_w(vector<Vec> &points, vector<float> &w_points) {
-    for (int i = 0; i < points.size(); i++) {
-        points[i].dimension++;
-        points[i](points[i].dimension-1) = w_points[i % w_points.size()];
-    }
-}
-
-void save_CMF_to_file(string filename, CMF &field) {
-    if (field.with_w) combine_points_and_w(field.points, field.w_points);
-    save_to_file(filename, field.points, field.values, field.dimension + field.with_w, field.with_w, field.is_complex, field.is_vector);
 }

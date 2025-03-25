@@ -20,7 +20,7 @@ Field_C::Field_C(CMF cmf) {
 }
 
 Field_C::Field_C(string filename) {
-    cmf = load_CMF_from_file(filename);
+    cmf = load_CMF(filename);
 }
 
 extern "C" float Field_R::operator() (double w) {
@@ -40,7 +40,7 @@ Field_R::Field_R(CMF cmf) {
 }
 
 Field_R::Field_R(string filename) {
-    cmf = load_CMF_from_file(filename);
+    cmf = load_CMF(filename);
 }
 
 extern "C" float test_func(float w) {

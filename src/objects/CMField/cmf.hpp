@@ -13,29 +13,25 @@
 #include <vector>
 
 #include "../vec.hpp"
+#include "../CMData/cmdata.hpp"
 
 using namespace std;
 class CMF {
     public:
-        vector<Vec> points;
-        vector<float> w_points;
-        vector<complex<Vec>> values;
-        vector<Vec> ivalues;
+        CMData *data;
+
         vector<Vec> domain;
         vector<Vec> inv_domain;
         Vec first;
         float xmin, xmax, ymin, ymax, zmin, zmax, wmin, wmax;
         int nx = 0, ny = 0, nz = 0, nw = 0;
-        int dimension;
-        bool is_complex;
-        bool is_vector;
-        bool with_w;
-        bool filled;
 
         CMF();
+        CMF(CMData &data);
         CMF(vector<Vec> points, vector<complex<Vec>> values, int coords_dim, bool w_col, bool n_col, bool is_complex, bool is_vector);
 
-        void get_values_for_interpolation(vector<Vec> &points, vector<float> &w_points);
+        void find_domain(CMData &data);
+        void get_values_for_interpolation(CMData &data);
         complex<Vec> operator() (Vec point, float w = 0);
         complex<Vec> operator() (float w);
 };
@@ -50,6 +46,5 @@ complex<Vec> CMF_search_2d(float x_val, float w_val, int nx, vector<float> &w_po
 complex<Vec> CMF_search_3d(float x_val, float y_val, float w_val, int nx, int ny, vector<float> &w_points, vector<complex<Vec>> &f);
 complex<Vec> CMF_search_4d(float x_val, float y_val, float z_val, float w_val, int nx, int ny, int nz, vector<float> &w_points, vector<complex<Vec>> &f);
 
-CMF load_CMF_from_file(string filename);
-void save_to_file(string filename, vector<Vec> &points, vector<complex<Vec>> &values, int dimension, bool with_w, bool is_complex, bool is_vector);
-void save_CMF_to_file(string filename, CMF &field);
+CMF load_CMF(string filename);
+void save_CMF(string filename, CMF &field);

@@ -1,7 +1,7 @@
 module FieldTests
 
 include("../field.jl")
-using .CondensedMatterField
+using .CMField
 
 using Test
 

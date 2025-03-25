@@ -2,8 +2,8 @@
 #include <vector>
 
 #include "../config/load/cpp_config.hpp"
-#include "../objects/CondensedMatterField/fields.hpp"
-#include "../objects/CondensedMatterField/cmf.hpp"
+#include "../objects/CMField/fields.hpp"
+#include "../objects/CMField/cmf.hpp"
 #include "../objects/vec.hpp"
 #include "vertex.hpp"
 
@@ -17,15 +17,15 @@ extern "C" void vertex_wrapper() {
 }
 
 void call_flex() {
-    CMF vertex = load_CMF_from_file(outdir + prefix + "_chi.dat"); 
+    CMF vertex = load_CMF(outdir + prefix + "_chi.dat"); 
     float U = onsite_U;
 
-    for (int i = 0; i < vertex.values.size(); i++) {
-        complex<Vec> temp = vertex.values[i];
+    for (int i = 0; i < vertex.data->values.size(); i++) {
+        complex<Vec> temp = vertex.data->values[i];
         complex<float> V = 0.0;
         float val_real = temp.real().x;
         float val_imag = temp.imag().x;
-        if (vertex.is_complex) {
+        if (vertex.data->is_complex) {
             complex<float> X = complex<float>(static_cast<float>(val_real), static_cast<float>(val_imag));
             if (abs(U*X) >= 1) {
                 printf("Geometric series not convergent: U*X = %f\n", U*X.real());
@@ -41,7 +41,7 @@ void call_flex() {
             }
             V = U*U * X / (1 - U*X) + U*U*U * X*X / (1 - U*U * X*X);
         }
-        vertex.values[i] = complex<Vec>(Vec(V.real()), Vec(0.0)); 
+        vertex.data->values[i] = complex<Vec>(Vec(V.real()), Vec(0.0)); 
     }
-    save_CMF_to_file(outdir+prefix+"_2PI.dat", vertex);
+    save_CMF(outdir+prefix+"_2PI.dat", vertex);
 }

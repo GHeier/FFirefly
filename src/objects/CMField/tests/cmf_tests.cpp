@@ -44,9 +44,9 @@ bool test_2d() {
     printf("Got: %f, %f, %f\n\n", r1, r2, r3);
 
     bool frompoint = test1 && test2 && test3;
-    save_CMF_to_file("temp.dat", field);
+    save_CMF("temp.dat", field);
 
-    CMF filefield = load_CMF_from_file("temp.dat");
+    CMF filefield = load_CMF("temp.dat");
 
     float r4 = filefield(Vec(0.5, 0.5)).real()(0);
     float r5 = filefield(Vec(1.0, 1.0)).real()(0);
@@ -96,9 +96,9 @@ bool test_2d_complex() {
     printf("Expected: 0.5, 2.0, 0.0\n");
     printf("Got: %f, %f, %f\n\n", r1.real(), r2.real(), r3.real());
 
-    save_CMF_to_file("temp.dat", field);
+    save_CMF("temp.dat", field);
 
-    CMF filefield = load_CMF_from_file("temp.dat");
+    CMF filefield = load_CMF("temp.dat");
 
     Vec rv4 = filefield(Vec(0.5, 0.5)).real();
     Vec iv4 = filefield(Vec(0.5, 0.5)).imag();
@@ -153,9 +153,9 @@ bool test_3d() {
     bool test2 = fabs(r2 - 3.0) < 1e-2;
     bool test3 = fabs(r3 - 0.0) < 1e-2;
 
-    save_CMF_to_file("temp.dat", field);
+    save_CMF("temp.dat", field);
 
-    CMF filefield = load_CMF_from_file("temp.dat");
+    CMF filefield = load_CMF("temp.dat");
 
     float r4 = filefield(Vec(0.5, 0.5, 0.5)).real()(0);
     float r5 = filefield(Vec(1.0, 1.0, 1.0)).real()(0);
@@ -209,9 +209,9 @@ bool test_3d_complex() {
     bool test2 = fabs(r2.real() - 3.0) < 1e-2;
     bool test3 = fabs(r3.real() - 0.0) < 1e-2;
 
-    save_CMF_to_file("temp.dat", field);
+    save_CMF("temp.dat", field);
 
-    CMF filefield = load_CMF_from_file("temp.dat");
+    CMF filefield = load_CMF("temp.dat");
 
     Vec rv4 = filefield(Vec(0.5, 0.5, 0.5)).real();
     Vec iv4 = filefield(Vec(0.5, 0.5, 0.5)).imag();
@@ -264,9 +264,9 @@ bool test_2d_with_w() {
     bool test2 = fabs(r2 - 2.0) < 1e-2;
     bool test3 = fabs(r3 - 0.0) < 1e-2;
 
-    save_CMF_to_file("temp.dat", field);
+    save_CMF("temp.dat", field);
 
-    CMF filefield = load_CMF_from_file("temp.dat");
+    CMF filefield = load_CMF("temp.dat");
 
     float r4 = filefield(Vec(0.5, 0.5), 0.5).real()(0);
     float r5 = filefield(Vec(1.0, 1.0), 1.0).real()(0);
@@ -314,9 +314,9 @@ bool test_3d_with_w() {
     bool test2 = fabs(r2 - 3.0) < 1e-2;
     bool test3 = fabs(r3 - 0.0) < 1e-2;
 
-    save_CMF_to_file("temp.dat", field);
+    save_CMF("temp.dat", field);
 
-    CMF filefield = load_CMF_from_file("temp.dat");
+    CMF filefield = load_CMF("temp.dat");
 
     float r4 = filefield(Vec(0.5, 0.5, 0.5), 0.5).real()(0);
     float r5 = filefield(Vec(1.0, 1.0, 1.0), 1.0).real()(0);
@@ -372,9 +372,9 @@ bool test_4d_with_w() {
     bool test2 = fabs(r2 - 4.0) < 1e-2;
     bool test3 = fabs(r3 - 0.0) < 1e-2;
 
-    save_CMF_to_file("temp.dat", field);
+    save_CMF("temp.dat", field);
 
-    CMF filefield = load_CMF_from_file("temp.dat");
+    CMF filefield = load_CMF("temp.dat");
     Field_C filefield_cs("temp.dat");
 
     float r4 = filefield_cs(Vec(0.5, 0.5, 0.5), 0.5).real();
@@ -417,9 +417,9 @@ bool test_1d_with_w() {
     bool test2 = fabs(r2 - 1.0) < 1e-2;
     bool test3 = fabs(r3 - 0.0) < 1e-2;
 
-    save_CMF_to_file("temp.dat", field);
+    save_CMF("temp.dat", field);
 
-    CMF filefield = load_CMF_from_file("temp.dat");
+    CMF filefield = load_CMF("temp.dat");
 
     float r4 = filefield(0.5).real()(0);
     float r5 = filefield(1.0).real()(0);
