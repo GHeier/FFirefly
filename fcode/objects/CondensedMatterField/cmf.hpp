@@ -25,7 +25,7 @@ class CMF {
         vector<Vec> inv_domain;
         Vec first;
         float xmin, xmax, ymin, ymax, zmin, zmax, wmin, wmax;
-        int nx, ny, nz, nw;
+        int nx = 0, ny = 0, nz = 0, nw = 0;
         int dimension;
         bool is_complex;
         bool is_vector;
@@ -33,7 +33,7 @@ class CMF {
         bool filled;
 
         CMF();
-        CMF(vector<Vec> points, vector<complex<Vec>> values, int dimension, bool with_w, bool is_complex, bool is_vector);
+        CMF(vector<Vec> points, vector<complex<Vec>> values, int coords_dim, bool w_col, bool n_col, bool is_complex, bool is_vector);
 
         void get_values_for_interpolation(vector<Vec> &points, vector<float> &w_points);
         complex<Vec> operator() (Vec point, float w = 0);

@@ -12,7 +12,6 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <variant>
 #include <algorithm>
 #include <complex>
 
@@ -41,6 +40,10 @@ CMF::CMF() {
 
 // Function to invert a matrix represented as vector<Vec>
 vector<Vec> invertMatrix(vector<Vec>& matrix, int n) {
+    printf("Incoming matrix:\n");
+    for (Vec x : matrix) {
+        cout << x << endl;
+    }
     // Create augmented matrix [A|I]
     vector<vector<float>> augmented(n, std::vector<float>(2 * n, 0.0f));
     for (size_t i = 0; i < n; ++i) {
@@ -49,6 +52,13 @@ vector<Vec> invertMatrix(vector<Vec>& matrix, int n) {
             if (fabs(augmented[i][j]) < 1e-5) augmented[i][j] = 0.0f;
         }
         augmented[i][n + i] = 1.0f; // Identity matrix
+    }
+    printf("augmented:\n");
+    for (vector<float> x : augmented) {
+        for (float y : x) {
+            cout << y << " ";
+        }
+        cout << endl;
     }
 
     // Gaussian Elimination
@@ -147,40 +157,51 @@ void CMF::get_values_for_interpolation(vector<Vec> &points, vector<float> &w_poi
     Vec lattice_vec = (points[jump] - first).round();
 
     if (dimension == 1 or (dimension == 0 and with_w)) {
-        section_sizes[0] = points.size() / w_points.size();
-        domain.push_back((points[points.size()-1] - first).round());
+        nx = points.size() / w_points.size();
+        Vec newpoint = (points[points.size()-1] - first);
+        newpoint.dimension = dimension;
+        domain.push_back(newpoint);
         this->domain = domain;
         inv_domain = invertMatrix(domain, dimension);
-        nx = section_sizes[0];
         if (with_w) {
             wmin = *min_element(w_points.begin(), w_points.end());
             wmax = *max_element(w_points.begin(), w_points.end());
         }
+        printf("wmin, wmax: %f %f\n", wmin, wmax);
         return;
     }
 
     for (int i = 1; i < points.size(); i += jump) {
-        Vec current_vec = ((points[i] - first) / section_sizes[section]).round();
+        Vec current_vec = (points[i] - first);
         if (cross_product(lattice_vec, current_vec).norm() < 1e-6) {
             section_sizes[section]++;
         }
         else {
             Vec current_point = points[i];
             Vec p = (points[i-jump] - first).round();
+            cout << "current point: " << current_point << endl;
+            cout << "p: " << p << endl;
             p.dimension = dimension;
             domain.push_back(p);
-            jump = i - 1;
+            jump = i;
             i -= jump;
             section++;
-            section_sizes[section]++;
+            //section_sizes[section]++;
             if (section >= dimension) break;
             Vec temp = current_point - first;
-            lattice_vec = (current_point - first).round();
+            lattice_vec = (current_point - first);
         }
     }
-    domain.push_back((points[points.size()-jump] - first).round());
+    domain.push_back((points[points.size()-jump] - first));
     reverse(domain.begin(), domain.end());
+    printf("domain:\n");
+    for (Vec x : domain) {
+        cout << x << endl;
+    }
     this->domain = domain;
+    printf("with_w: %d\n", with_w);
+    printf("Dimension: %d\n", dimension);
+    printf("Dimensions: %d %d %d %d\n", nx, ny, nz, nw);
     inv_domain = invertMatrix(domain, dimension);
     nx = section_sizes[0];
     if (with_w) nx--;
@@ -194,21 +215,23 @@ void CMF::get_values_for_interpolation(vector<Vec> &points, vector<float> &w_poi
     }
 }
 
-CMF::CMF(vector<Vec> points, vector<complex<Vec>> values, int dimension, bool with_w, bool is_complex, bool is_vector) {
-    this->with_w = with_w;
+CMF::CMF(vector<Vec> points, vector<complex<Vec>> values, int coords_dim, bool w_col, bool n_col, bool is_complex, bool is_vector) {
+    this->with_w = w_col;
     if (with_w) {
         int dim = points[0].dimension;
-        dimension--;
+        printf("dim: %d\n", dim);
         for (int i = 0; i < points.size(); i++) {
+            printf("point: %f %f\n", points[i](0), points[i](1));
             if (find(w_points.begin(), w_points.end(), points[i](dim-1)) == w_points.end())
                 this->w_points.push_back(points[i](dim-1));
             points[i](dim-1) = 0;
             points[i].dimension--;
         }
+        printf("w_points size: %d\n", w_points.size());
     }
     this->points = points;
     this->values = values;
-    this->dimension = dimension;
+    this->dimension = coords_dim;
     this->is_complex = is_complex;
     this->is_vector = is_vector;
     get_values_for_interpolation(points, w_points);
@@ -438,7 +461,8 @@ CMF load_CMF_from_file(string filename) {
     string line;
     int ind = 0;
     int dimension = 0;
-    bool with_w = false;
+    bool w_col = false;
+    bool n_col = false;
     bool is_complex = false;
     bool is_vector = false;
     vector<Vec> points;
@@ -451,14 +475,15 @@ CMF load_CMF_from_file(string filename) {
                 if (word == "x") dimension++;
                 if (word == "y") dimension++;
                 if (word == "z") dimension++;
-                if (word == "w") with_w = true;
+                if (word == "w") w_col = true;
+                if (word == "n") n_col = true;
                 if (word == "Re(f)") is_complex = true;
                 if (word == "Im(f)") is_complex = true;
                 if (word == "fx") is_vector = true;
                 if (word == "fy") is_vector = true;
                 if (word == "fz") is_vector = true;
             }
-            dimension += with_w;
+            dimension += w_col;
             ind++;
             continue;
         }
@@ -480,7 +505,7 @@ CMF load_CMF_from_file(string filename) {
         }
         values.push_back(vval);
     }
-    return CMF(points, values, dimension, with_w, is_complex, is_vector);
+    return CMF(points, values, dimension, w_col, n_col, is_complex, is_vector);
 }
 
 string get_header(int dimension, bool with_w, bool is_complex, bool is_vector) {

@@ -55,7 +55,7 @@ float& Vec::operator()(int i) {
 }
 
 Vec Vec::round(int precision) {
-    float r = pow(10, precision);
+    float r = pow(16, precision);
     Vec result(std::round(x * r) / r, 
             std::round(y * r) / r, 
             std::round(z * r) / r, 
@@ -130,6 +130,34 @@ Vec operator*(const Vec& input, int multiple) {
 
 Vec operator*(int multiple, const Vec& input) {
     return Vec(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple, input.area, input.dimension, input.n);
+}
+
+Vec operator*(const Vec& input, double multiple) {
+    return Vec(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple, input.area, input.dimension, input.n);
+}
+
+Vec operator*(double multiple, const Vec& input) {
+    return Vec(input.x * multiple, input.y * multiple, input.z * multiple, input.w * multiple, input.area, input.dimension, input.n);
+}
+
+Vec operator*(vector<vector<double>>& left, Vec right) {
+    int dim = left.size() > right.dimension ? right.dimension : left.size();
+    Vec result; 
+    result.dimension = right.dimension; result.n = right.n; result.area = right.area;
+    for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+            result(i) += left[i][j] * right(j);
+        }
+    }
+    return result;
+}
+
+Vec operator/(const Vec& input, double multiple) {
+    return Vec(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple, input.area, input.dimension, input.n);
+}
+
+Vec operator/(double multiple, const Vec& input) {
+    return Vec(input.x / multiple, input.y / multiple, input.z / multiple, input.w / multiple, input.area, input.dimension, input.n);
 }
 
 Vec operator*(const Vec& input, float multiple) {

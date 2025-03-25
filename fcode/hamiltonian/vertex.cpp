@@ -27,10 +27,18 @@ void call_flex() {
         float val_imag = temp.imag().x;
         if (vertex.is_complex) {
             complex<float> X = complex<float>(static_cast<float>(val_real), static_cast<float>(val_imag));
+            if (abs(U*X) >= 1) {
+                printf("Geometric series not convergent: U*X = %f\n", U*X.real());
+                exit(1);
+            }
             V = (U*U * X) / complex<float>(1.0f - U*X) + (U*U*U * X*X) / complex<float>(1.0f - U*U * X*X);
         }
         else {
             float X = val_real;
+            if (abs(U*X) >= 1) {
+                printf("Geometric series not convergent: U*X = %f\n", U*X);
+                exit(1);
+            }
             V = U*U * X / (1 - U*X) + U*U*U * X*X / (1 - U*U * X*X);
         }
         vertex.values[i] = complex<Vec>(Vec(V.real()), Vec(0.0)); 

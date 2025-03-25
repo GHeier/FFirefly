@@ -136,6 +136,7 @@ function save_ckio_ir(basis, ckio::Array{ComplexF64,4})
             end
         end
     end
+    println("Saved to ", outdir * prefix * "_chi.dat")
 end
 
 end

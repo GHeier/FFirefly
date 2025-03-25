@@ -135,8 +135,14 @@ end
 
 function fill_V_arr(iw, frequency_dependence, V_obj)
     Vw_arr = Array{ComplexF32}(undef, length(iw), nx, ny, nz)
+    for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:length(iw)
+        q = get_kvec(i, j, k)
+        w = iw[l]
+        println("q: ", q, " w: ", w)
+        Vw_arr[l, i, j, k] = V_obj(q, imag(w))
+    end
     #Vw_arr .= Vw_arr .+ paper2_V.(iw)
-    Vw_arr .= -5.0
+    #Vw_arr .= -5.0
     if frequency_dependence
         return kw_to_rtau(Vw_arr, 'B', mesh)
     else
@@ -296,10 +302,9 @@ function eliashberg_global()
     IR_tol = 1e-5
     scf_tol = 1e-4
 
-    vertex = Quasi.Field_C("test_2PI.dat")
-    #vertex = Quasi.Field_C(outdir * prefix * "_2PI.dat")
+    vertex = Quasi.Field_C(outdir * prefix * "_2PI.dat")
 
-    frequency_dependence = false
+    frequency_dependence = true
     if frequency_dependence
         println("Creating IRMesh")
         global mesh = IR_Mesh(IR_tol)
@@ -919,9 +924,9 @@ end
 
 
 function eliashberg_node()
-    energy_2sum()
-    energy_fastest()
-    fastest()
+    #energy_2sum()
+    #energy_fastest()
+    #fastest()
     eliashberg_global()
     return
 end

@@ -6,7 +6,7 @@
 
 using namespace std;
 
-int pnts = 30;
+int pnts = 3;
 
 complex<Vec> func(Vec point) {
     return complex<Vec>(point.norm()*point.norm());
@@ -19,6 +19,7 @@ bool test_2d() {
     bool is_complex = false;
     bool is_vector = false;
     bool with_w = false;
+    bool with_n = false;
 
     for (int i = 0; i <= pnts; i++) {
         for (int j = 0; j <= pnts; j++) {
@@ -30,7 +31,7 @@ bool test_2d() {
             values.push_back(func(point));
         }
     }
-    auto field = CMF(points, values, dimension, with_w, is_complex, is_vector);
+    auto field = CMF(points, values, dimension, with_w, with_n, is_complex, is_vector);
     float r1 = field(Vec(0.5, 0.5)).real()(0);
     float r2 = field(Vec(1.0, 1.0)).real()(0);
     float r3 = field(Vec(0.0, 0.0)).real()(0);
@@ -64,6 +65,7 @@ bool test_2d_complex() {
     bool is_complex = true;
     bool is_vector = false;
     bool with_w = false;
+    bool with_n = false;
 
     for (int i = 0; i <= pnts; i++) {
         for (int j = 0; j <= pnts; j++) {
@@ -75,7 +77,7 @@ bool test_2d_complex() {
             values.push_back(func(point));
         }
     }
-    auto field = CMF(points, values, dimension, with_w, is_complex, is_vector);
+    auto field = CMF(points, values, dimension, with_w, with_n, is_complex, is_vector);
     Vec rv1 = field(Vec(0.5, 0.5)).real();
     Vec iv1 = field(Vec(0.5, 0.5)).imag();
     Vec rv2 = field(Vec(1.0, 1.0)).real();
@@ -124,6 +126,7 @@ bool test_3d() {
     bool is_complex = false;
     bool is_vector = false;
     bool with_w = false;
+    bool with_n = false;
 
     for (int i = 0; i <= pnts; i++) {
         for (int j = 0; j <= pnts; j++) {
@@ -138,7 +141,7 @@ bool test_3d() {
             }
         }
     }
-    auto field = CMF(points, values, dimension, with_w, is_complex, is_vector);
+    auto field = CMF(points, values, dimension, with_w, with_n, is_complex, is_vector);
     float r1 = field(Vec(0.5, 0.5, 0.5)).real()(0);
     float r2 = field(Vec(1.0, 1.0, 1.0)).real()(0);
     float r3 = field(Vec(0.0, 0.0, 0.0)).real()(0);
@@ -173,6 +176,7 @@ bool test_3d_complex() {
     bool is_complex = true;
     bool is_vector = false;
     bool with_w = false;
+    bool with_n = false;
 
     for (int i = 0; i <= pnts; i++) {
         for (int j = 0; j <= pnts; j++) {
@@ -187,7 +191,7 @@ bool test_3d_complex() {
             }
         }
     }
-    auto field = CMF(points, values, dimension, with_w, is_complex, is_vector);
+    auto field = CMF(points, values, dimension, with_w, with_n, is_complex, is_vector);
     Vec rv1 = field(Vec(0.5, 0.5, 0.5)).real();
     Vec iv1 = field(Vec(0.5, 0.5, 0.5)).imag();
     Vec rv2 = field(Vec(1.0, 1.0, 1.0)).real();
@@ -229,24 +233,26 @@ bool test_3d_complex() {
 }
 
 bool test_2d_with_w() {
+    printf("Calling 2d_with_w\n");
     vector<Vec> points;
     vector<complex<Vec>> values;
-    int dimension = 2;
+    int dimension = 1;
     bool is_complex = false;
     bool is_vector = false;
     bool with_w = true;
+    bool with_n = false;
 
     for (int i = 0; i <= pnts; i++) {
         for (int j = 0; j <= pnts; j++) {
             float x = 2.0 * (i-pnts/2.0) / (pnts - 1);
             float w = 2.0 * (j-pnts/2.0) / (pnts - 1);
             Vec point(x, w);
-            point.dimension = dimension;
+            point.dimension = dimension+1;
             points.push_back(point);
             values.push_back(func(point));
         }
     }
-    auto field = CMF(points, values, dimension, with_w, is_complex, is_vector);
+    auto field = CMF(points, values, dimension, with_w, with_n, is_complex, is_vector);
     float r1 = field(Vec(0.5, 0.5), 0.5).real()(0);
     float r2 = field(Vec(1.0, 1.0), 1.0).real()(0);
     float r3 = field(Vec(0.0, 0.0), 0.0).real()(0);
@@ -277,10 +283,11 @@ bool test_2d_with_w() {
 bool test_3d_with_w() {
     vector<Vec> points;
     vector<complex<Vec>> values;
-    int dimension = 3;
+    int dimension = 2;
     bool is_complex = false;
     bool is_vector = false;
     bool with_w = true;
+    bool with_n = false;
 
     for (int i = 0; i <= pnts; i++) {
         for (int j = 0; j <= pnts; j++) {
@@ -295,7 +302,7 @@ bool test_3d_with_w() {
             }
         }
     }
-    auto field = CMF(points, values, dimension, with_w, is_complex, is_vector);
+    auto field = CMF(points, values, dimension, with_w, with_n, is_complex, is_vector);
     float r1 = field(Vec(0.5, 0.5, 0.5), 0.5).real()(0);
     float r2 = field(Vec(1.0, 1.0, 1.0), 1.0).real()(0);
     float r3 = field(Vec(0.0, 0.0, 0.0), 0.0).real()(0);
@@ -326,10 +333,11 @@ bool test_3d_with_w() {
 bool test_4d_with_w() {
     vector<Vec> points;
     vector<complex<Vec>> values;
-    int dimension = 4;
+    int dimension = 3;
     bool is_complex = false;
     bool is_vector = false;
     bool with_w = true;
+    bool with_n = false;
 
     for (int i = 0; i <= pnts; i++) {
         for (int j = 0; j <= pnts; j++) {
@@ -340,14 +348,19 @@ bool test_4d_with_w() {
                     float z = 2.0 * (k-pnts/2.0) / (pnts - 1);
                     float w = 2.0 * (l-pnts/2.0) / (pnts - 1);
                     Vec point(x, y, z, w);
-                    point.dimension = dimension;
+                    point.dimension = dimension + 1;
                     points.push_back(point);
                     values.push_back(func(point));
+                    cout << "x: " << point << " f(x): " << func(point) << endl;
                 }
             }
         }
     }
-    auto field = CMF(points, values, dimension, with_w, is_complex, is_vector);
+    printf("Calling 4d_with_w\n");
+    auto field = CMF(points, values, dimension, with_w, with_n, is_complex, is_vector);
+    printf("Domain:\n");
+    for (Vec x : field.domain) 
+        cout << x << endl;
     float r1 = field(Vec(0.5, 0.5, 0.5), 0.5).real()(0);
     float r2 = field(Vec(1.0, 1.0, 1.0), 1.0).real()(0);
     float r3 = field(Vec(0.0, 0.0, 0.0), 0.0).real()(0);
@@ -379,10 +392,11 @@ bool test_4d_with_w() {
 bool test_1d_with_w() {
     vector<Vec> points;
     vector<complex<Vec>> values;
-    int dimension = 1;
+    int dimension = 0;
     bool is_complex = false;
     bool is_vector = false;
     bool with_w = true;
+    bool with_n = false;
 
     for (int i = 0; i <= pnts; i++) {
         float w = 2.0 * (i-pnts/2.0) / (pnts - 1);
@@ -391,7 +405,7 @@ bool test_1d_with_w() {
         points.push_back(point);
         values.push_back(func(point));
     }
-    auto field = CMF(points, values, dimension, with_w, is_complex, is_vector);
+    auto field = CMF(points, values, dimension, with_w, with_n, is_complex, is_vector);
     float r1 = field(0.5).real()(0);
     float r2 = field(1.0).real()(0);
     float r3 = field(0.0).real()(0);

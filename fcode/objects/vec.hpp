@@ -43,6 +43,8 @@ Vec operator*(int multiple, const Vec &input);
 Vec operator*(const Vec &input, int multiple);
 Vec operator*(float multiple, const Vec &input);
 Vec operator*(const Vec &input, float multiple);
+Vec operator*(double multiple, const Vec &input);
+Vec operator*(const Vec &input, double multiple);
 /// Dot product of two vectors.
 float operator*(const Vec& left, const Vec& right);
 Vec operator*(vector<vector<float>>& left, Vec right);
@@ -50,6 +52,8 @@ Vec operator/(int multiple, const Vec &input);
 Vec operator/(const Vec &input, int multiple);
 Vec operator/(float multiple, const Vec &input);
 Vec operator/(const Vec &input, float multiple);
+Vec operator/(double multiple, const Vec &input);
+Vec operator/(const Vec &input, double multiple);
 
 complex<Vec> operator*(const float& left, const complex<Vec>& right);
 complex<Vec> operator*(const complex<Vec>& left, const float& right);
