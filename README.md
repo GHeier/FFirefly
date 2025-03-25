@@ -1,6 +1,4 @@
-<h1 align="center">Workspace Argo</h1>
-
-# **Argo Framework**
+<h1 align="center">Argo</h1>
 ---
 
 ## **🚀 Welcome**  
