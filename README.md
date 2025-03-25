@@ -1,4 +1,4 @@
-# **Project Argo**
+# **Argo**
 ---
 
 ## **🚀 Welcome**  
