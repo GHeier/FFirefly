@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(FrankensteinCode VERSION 1.0 LANGUAGES C CXX Fortran)
+project(Argo VERSION 1.0 LANGUAGES C CXX Fortran)
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -45,9 +45,9 @@ link_directories(${JULIA_LIB_DIR})
 
 # Gather all source files
 file(GLOB_RECURSE ALL_SOURCES 
-    ${CMAKE_SOURCE_DIR}/fcode/*.c
-    ${CMAKE_SOURCE_DIR}/fcode/*.cpp
-    ${CMAKE_SOURCE_DIR}/fcode/*.f90
+    ${CMAKE_SOURCE_DIR}/src/*.c
+    ${CMAKE_SOURCE_DIR}/src/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/*.f90
 )
 
 # Remove files under any 'archive' directory
@@ -80,20 +80,20 @@ add_library(objlib_fortran OBJECT ${FORTRAN_SOURCES})
 # ---------------------------
 # SHARED LIBRARY (for Python & Julia) [NO FORTRAN]
 # ---------------------------
-add_library(fcode SHARED $<TARGET_OBJECTS:objlib_cpp>)
+add_library(argo SHARED $<TARGET_OBJECTS:objlib_cpp>)
 
 # ---------------------------
 # EXECUTABLE (Standalone) [WITH FORTRAN]
 # ---------------------------
-add_executable(fcode.x $<TARGET_OBJECTS:objlib_cpp> $<TARGET_OBJECTS:objlib_fortran>)
+add_executable(argo.x $<TARGET_OBJECTS:objlib_cpp> $<TARGET_OBJECTS:objlib_fortran>)
 
 # ---------------------------
 # LINKING
 # ---------------------------
 
 # Set output directory explicitly
-set_target_properties(fcode.x PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+set_target_properties(argo.x PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
 # Link necessary libraries (but NOT the shared library!)
-target_link_libraries(fcode.x PRIVATE ${Python3_LIBRARIES} ${LIBS})
-target_link_libraries(fcode PRIVATE ${Python3_LIBRARIES} ${LIBS})
+target_link_libraries(argo.x PRIVATE ${Python3_LIBRARIES} ${LIBS})
+target_link_libraries(argo PRIVATE ${Python3_LIBRARIES} ${LIBS})

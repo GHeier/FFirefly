@@ -1,6 +1,6 @@
 # The Argo Project
 ## **🚀 Welcome**  
-Welcome to **Argo**, a Condensed Matter Computational Physics Workspace designed to be easy to both use and extend. Users interact via a simple input file and easy python wrappers. Developers can easily extend the codebase by adding new models and solvers in whatever language they prefer.
+Welcome to **Argo**, a Condensed Matter Computational Physics Workspace designed to be easy to both use and extend. Users interact via a simple input file and easy python wrappers. Developers can easily extend the codebase by adding new models and solvers in whatever language they prefer. \
 **Argo** currently includes calculations across the range of condensed matter topics listed below.
 
 ### **🔹 Computational Categories**
@@ -22,7 +22,7 @@ Welcome to **Argo**, a Condensed Matter Computational Physics Workspace designed
 ---
 
 ## **📖 User Guide**  
-The simplest way to run fcode.x is to create an input file and run it with the command `fcode.x < input_file.cfg`. An example can be seen in the file `sample.cfg`. It is recommended to look at this file to understand the syntax of the input file. It is inspired from the Quantum Espresso and LmtART input file formats.\
+The simplest way to run argo.x is to create an input file and run it with the command `argo.x < input_file.cfg`. An example can be seen in the file `sample.cfg`. It is recommended to look at this file to understand the syntax of the input file. It is inspired from the Quantum Espresso and LmtART input file formats.\
 Multiple calculations can be run sequentially either from the command line or through a python script. Argo comes with launchers and data extracters for every calculation type, so you can easily run multiple calculations and extract the data you need. This can be useful for instance, to calculate the phase across a range of temperatures and chemical potentials. An example of this can be seen in helpful_scripts/eliashberg.py.
  - `category` indicates the type of calculation to be performed, with a section [CATEGORY_NAME] in the file for inputs specific to that category. 
  - Prefix is the filename prefix for files read and written by this program. Files are saved in the format 'prefix_filetype.dat', so for instance a density of states calculation would save to 'prefix_dos.dat'.
@@ -45,13 +45,13 @@ The upside of a package like this is that it grants access to a wide variety of 
 
 
 #### **2️⃣ Build Instructions**  
- - Once the above have been downloaded, simply go to the "helpful_scripts" folder and run "./fbuild.sh -vv" to build the code. -v indicates a verbose output, -vv indicates a very verbose output. I recommend setting qbuild.sh to a terminal command, so that you can recompile from outside folders (useful when running tests and material calculations).
+ - Once the above have been downloaded, simply go to the "helpful_scripts" folder and run "./arbuild.sh -vv" to build the code. -v indicates a verbose output, -vv indicates a very verbose output. I recommend setting arbuild.sh to a terminal command, so that you can recompile from outside folders (useful when running tests and material calculations).
  - To run all tests, simply run "argo.x". The tests will run, and if all pass then you have downloaded the packages correctly. If not, the package that failed will be printed to the screen.
 
 ---
 
 ## **📚 Developer Guide**
-This code is designed to encourage good coding practice but to not impede the developer. In src/ there are folders for each category of calculation, with subfolders as needed. If you are adding a new category, simply create a new folder in src/ and add a new file for the calculation. The main.c file handles the input file and calls the appropriate calculation function. After your folder has been created, add a "node" that connects main.c to your folder. Make sure to call this node from main.c and compile with qbuild.sh after.
+This code is designed to encourage good coding practice but to not impede the developer. In src/ there are folders for each category of calculation, with subfolders as needed. If you are adding a new category, simply create a new folder in src/ and add a new file for the calculation. The main.c file handles the input file and calls the appropriate calculation function. After your folder has been created, add a "node" that connects main.c to your folder. Make sure to call this node from main.c and compile with arbuild.sh after.
    - An example of this in the superconductor/ folder in the `node.cpp` file. This file has a function called superconductor_wrapper(), which determines the type of calculation to be performed. main.c calls this superconductor_wrapper() function if the category type is "superconductor". New categories should follow this format.
    - If you develop, it's encouraged that you add your code to thoe project! In order to do so, the code must interact with the config file by modifying its behavior based on all relevant variables. 
    - It also must pass tests to confirm that it is working correctly, and to confirm that the code still works upon future development. These tests must have a source, whether it be an analytical limit or a reference paper. They also must be quick to run, so no need to calculate an entire dense mesh, simply check that 1 or 2 points are correct.
@@ -67,5 +67,5 @@ Documentation is important, but it is also important to not let it get in the wa
 ---
 
 ### **🔹 Plotting**  
-Plotting is handled in the "qplot" folder. This folder contains a "base" python script that acts as a command-line interface to the plotting functions. Still under development, this allows for easy plotting of results. Just as qbuild.sh, it is recommended to make this a command line argument so that it can be run from anywhere.
+Plotting is handled in the "arplot" folder. This folder contains a "base" python script that acts as a command-line interface to the plotting functions. Still under development, this allows for easy plotting of results. Just as arbuild.sh, it is recommended to make this a command line argument so that it can be run from anywhere.
 
