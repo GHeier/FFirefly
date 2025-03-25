@@ -1,5 +1,4 @@
-<h1 align="center">Argo</h1>
-
+# Workspace Argo
 ## **🚀 Welcome**  
 Welcome to **Argo**, a computational physics toolkit designed to be easy to both use and extend. Users interact via a simple input file and easy python wrappers. Developers can easily extend the codebase by adding new models and solvers in whatever language they prefer.
 
