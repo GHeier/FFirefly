@@ -1,4 +1,4 @@
-<h1 style="font-size:500%;">Argo</h1>
+<h1 align="center" style="font-size:500%;">Argo</h1>
 
 # **Argo Framework**
 ---
