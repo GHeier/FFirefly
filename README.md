@@ -1,4 +1,4 @@
-# **Argo**
+# **Argo Framework**
 ---
 
 ## **🚀 Welcome**  
