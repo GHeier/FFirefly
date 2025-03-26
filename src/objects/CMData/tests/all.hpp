@@ -29,3 +29,7 @@ bool readwrite_3d_complexvector_with_w();
 bool readwrite_1d_with_n();
 bool readwrite_2d_with_n();
 bool readwrite_3d_with_n();
+bool readwrite_0d_with_w_with_n();
+bool readwrite_1d_with_w_with_n();
+bool readwrite_2d_with_w_with_n();
+bool readwrite_3d_with_w_with_n();

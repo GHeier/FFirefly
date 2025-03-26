@@ -8,7 +8,7 @@ using namespace std;
 
 bool CMData_tests() {
     printf("Running CMData tests\n");
-    int num_tests = 21;
+    int num_tests = 27;
     bool all_tests[num_tests] = {
         readwrite_1d(),
         readwrite_2d(),
@@ -31,8 +31,14 @@ bool CMData_tests() {
         readwrite_2d_complexvector_with_w(),
         readwrite_3d_complexvector_with_w(),
         readwrite_1d_with_n(),
+        readwrite_2d_with_n(),
+        readwrite_3d_with_n(),
+        readwrite_0d_with_w_with_n(),
+        readwrite_1d_with_w_with_n(),
+        readwrite_2d_with_w_with_n(),
+        readwrite_3d_with_w_with_n(),
     };
-    //remove("testfile");
+    remove("testfile");
     return print_test_results(all_tests, num_tests, "CMData tests");
 }
 
@@ -736,6 +742,7 @@ bool readwrite_3d_complexvector_with_w() {
 bool readwrite_1d_with_n() {
     vector<Vec> points;
     vector<complex<Vec>> values;
+    vector<int> ninds;
     for (int n = 1; n <= npts; n++) {
         for (int i = 0; i < pts; i++) {
             Vec x(indf(i));
@@ -744,12 +751,262 @@ bool readwrite_1d_with_n() {
             points.push_back(x);
             values.push_back(func_d(x));
         }
+        ninds.push_back((n-1) * pts);
     }
     Vec test_pnt = points[2];
     float test_val = real(values[2])(0);
-    cout << "test_pnt: " << test_pnt << " " << test_pnt.n << endl;
 
     CMData data(points, values, 1, false, true, false, false);
+
+    if (ninds != data.n_inds) return false;
+
+    Vec data_pnt = data.points[2];
+    float data_val = real(data.values[2])(0);
+
+    if ((test_pnt - data_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - data_val) > 1e-6) return false;
+
+    save(data, "testfile");
+    CMData loaddata("testfile");
+
+    Vec load_pnt = loaddata.points[2];
+    float load_val = real(loaddata.values[2])(0);
+
+    if ((test_pnt - load_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - load_val) > 1e-6) return false;
+
+    return true;
+}
+
+bool readwrite_2d_with_n() {
+    vector<Vec> points;
+    vector<complex<Vec>> values;
+    vector<int> ninds;
+    for (int n = 1; n <= npts; n++) {
+        for (int i = 0; i < pts; i++) {
+            for (int j = 0; j < pts; j++) {
+                Vec x(indf(i), indf(j));
+                x.dimension = 2;
+                x.n = n;
+                points.push_back(x);
+                values.push_back(func_d(x));
+            }
+        }
+        ninds.push_back((n-1) * pts * pts);
+    }
+    Vec test_pnt = points[2];
+    float test_val = real(values[2])(0);
+
+    CMData data(points, values, 2, false, true, false, false);
+
+    if (ninds != data.n_inds) return false;
+
+    Vec data_pnt = data.points[2];
+    float data_val = real(data.values[2])(0);
+
+    if ((test_pnt - data_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - data_val) > 1e-6) return false;
+
+    save(data, "testfile");
+    CMData loaddata("testfile");
+
+    Vec load_pnt = loaddata.points[2];
+    float load_val = real(loaddata.values[2])(0);
+
+    if ((test_pnt - load_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - load_val) > 1e-6) return false;
+
+    return true;
+}
+
+bool readwrite_3d_with_n() {
+    vector<Vec> points;
+    vector<complex<Vec>> values;
+    vector<int> ninds;
+    for (int n = 1; n <= npts; n++) {
+        for (int i = 0; i < pts; i++) {
+            for (int j = 0; j < pts; j++) {
+                for (int k = 0; k < pts; k++) {
+                    Vec x(indf(i), indf(j), indf(k));
+                    x.dimension = 2;
+                    x.n = n;
+                    points.push_back(x);
+                    values.push_back(func_d(x));
+                }
+            }
+        }
+        ninds.push_back((n-1) * pts * pts * pts);
+    }
+    Vec test_pnt = points[2];
+    float test_val = real(values[2])(0);
+
+    CMData data(points, values, 3, false, true, false, false);
+
+    if (ninds != data.n_inds) return false;
+
+    Vec data_pnt = data.points[2];
+    float data_val = real(data.values[2])(0);
+
+    if ((test_pnt - data_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - data_val) > 1e-6) return false;
+
+    save(data, "testfile");
+    CMData loaddata("testfile");
+
+    Vec load_pnt = loaddata.points[2];
+    float load_val = real(loaddata.values[2])(0);
+
+    if ((test_pnt - load_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - load_val) > 1e-6) return false;
+
+    return true;
+}
+
+bool readwrite_0d_with_w_with_n() {
+    vector<Vec> points;
+    vector<complex<Vec>> values;
+    vector<int> ninds;
+    for (int n = 1; n <= npts; n++) {
+        for (int i = 0; i < pts; i++) {
+            Vec x(indf(i));
+            x.n = n;
+            points.push_back(x);
+            values.push_back(func_d(x));
+        }
+        ninds.push_back((n-1) * pts );
+    }
+    Vec test_pnt = points[2];
+    float test_val = real(values[2])(0);
+
+    CMData data(points, values, 0, true, true, false, false);
+
+    if (ninds != data.n_inds) return false;
+
+    Vec data_pnt = data.points[2];
+    float data_val = real(data.values[2])(0);
+
+    if ((test_pnt - data_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - data_val) > 1e-6) return false;
+
+    save(data, "testfile");
+    CMData loaddata("testfile");
+
+    Vec load_pnt = loaddata.points[2];
+    float load_val = real(loaddata.values[2])(0);
+
+    if ((test_pnt - load_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - load_val) > 1e-6) return false;
+
+    return true;
+}
+
+bool readwrite_1d_with_w_with_n() {
+    vector<Vec> points;
+    vector<complex<Vec>> values;
+    vector<int> ninds;
+    for (int n = 1; n <= npts; n++) {
+        for (int i = 0; i < pts; i++) {
+            for (int j = 0; j < pts; j++) {
+                Vec x(indf(i), indf(j));
+                x.n = n;
+                points.push_back(x);
+                values.push_back(func_d(x));
+            }
+        }
+        ninds.push_back((n-1) * pts * pts);
+    }
+    Vec test_pnt = points[2];
+    float test_val = real(values[2])(0);
+
+    CMData data(points, values, 1, true, true, false, false);
+
+    if (ninds != data.n_inds) return false;
+
+    Vec data_pnt = data.points[2];
+    float data_val = real(data.values[2])(0);
+
+    if ((test_pnt - data_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - data_val) > 1e-6) return false;
+
+    save(data, "testfile");
+    CMData loaddata("testfile");
+
+    Vec load_pnt = loaddata.points[2];
+    float load_val = real(loaddata.values[2])(0);
+
+    if ((test_pnt - load_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - load_val) > 1e-6) return false;
+
+    return true;
+}
+
+bool readwrite_2d_with_w_with_n() {
+    vector<Vec> points;
+    vector<complex<Vec>> values;
+    vector<int> ninds;
+    for (int n = 1; n <= npts; n++) {
+        for (int i = 0; i < pts; i++) {
+            for (int j = 0; j < pts; j++) {
+                for (int k = 0; k < pts; k++) {
+                    Vec x(indf(i), indf(j), indf(k));
+                    x.n = n;
+                    points.push_back(x);
+                    values.push_back(func_d(x));
+                }
+            }
+        }
+        ninds.push_back((n-1) * pts * pts * pts);
+    }
+    Vec test_pnt = points[2];
+    float test_val = real(values[2])(0);
+
+    CMData data(points, values, 2, true, true, false, false);
+
+    if (ninds != data.n_inds) return false;
+
+    Vec data_pnt = data.points[2];
+    float data_val = real(data.values[2])(0);
+
+    if ((test_pnt - data_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - data_val) > 1e-6) return false;
+
+    save(data, "testfile");
+    CMData loaddata("testfile");
+
+    Vec load_pnt = loaddata.points[2];
+    float load_val = real(loaddata.values[2])(0);
+
+    if ((test_pnt - load_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - load_val) > 1e-6) return false;
+
+    return true;
+}
+
+bool readwrite_3d_with_w_with_n() {
+    vector<Vec> points;
+    vector<complex<Vec>> values;
+    vector<int> ninds;
+    for (int n = 1; n <= npts; n++) {
+        for (int i = 0; i < pts; i++) {
+            for (int j = 0; j < pts; j++) {
+                for (int k = 0; k < pts; k++) {
+                    for (int l = 0; l < pts; l++) {
+                        Vec x(indf(i), indf(j), indf(k), indf(l));
+                        x.n = n;
+                        points.push_back(x);
+                        values.push_back(func_d(x));
+                    }
+                }
+            }
+        }
+        ninds.push_back((n-1) * pts * pts * pts * pts);
+    }
+    Vec test_pnt = points[2];
+    float test_val = real(values[2])(0);
+
+    CMData data(points, values, 3, true, true, false, false);
+
+    if (ninds != data.n_inds) return false;
 
     Vec data_pnt = data.points[2];
     float data_val = real(data.values[2])(0);

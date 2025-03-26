@@ -28,12 +28,13 @@ CMData::CMData(vector<Vec> points, vector<complex<Vec>> values, int dimension, b
     this->with_n = with_n;
     this->n_inds = vector<int>();
 
+    if (with_n) n_inds.push_back(0);
     if (with_w or with_n) {
         for (int i = 0; i < points.size(); i++) {
             if (with_w)
                 w_points.push_back(points[i](dimension));
-            if (with_n and i < points.size() - 1 and points[i + 1].n - points[i].n == 0)
-                n_inds.push_back(points[i].n);
+            if (with_n and i < points.size() - 1 and points[i + 1].n - points[i].n != 0)
+                n_inds.push_back(i+1);
         }
     }
 
@@ -82,6 +83,10 @@ CMData load(string filename) {
             float temp;
             iss >> temp;
             point(i) = temp;
+        }
+        if (n_col) {
+            iss >> ivalue;
+            point.n = ivalue;
         }
         point.dimension = dimension;
         points.push_back(point);
@@ -168,15 +173,32 @@ void save_to_file(string filename, vector<Vec> &points, vector<complex<Vec>> &va
     for (int i = 0; i < points.size(); i++) {
         Vec point = points[i];
         complex<Vec> value = values[i];
-        if (point(0) > 0) file << " ";
-        if (dimension > 0) file << point(0) << "     ";
-        if (point(1) > 0) file << " ";
-        if (dimension > 1) file << point(1) << "     ";
-        if (point(2) > 0) file << " ";
-        if (dimension > 2) file << point(2) << "     ";
-        if (with_w) file << point(dimension) << "     ";
-        if (point(dimension) > 0) file << " ";
+        if (dimension > 0) {
+            if (point(0) >= 0) file << " ";
+            file << point(0) << "    ";
+            if (point(0) < 0) file << " ";
+        }
+
+        if (dimension > 1) {
+            if (point(1) >= 0) file << " ";
+            file << point(1) << "    ";
+            if (point(1) < 0) file << " ";
+        }
+
+        if (dimension > 2) {
+            if (point(2) >= 0) file << " ";
+            file << point(2) << "    ";
+            if (point(2) < 0) file << " ";
+        }
+
+        if (with_w) {
+            if (point(dimension) >= 0) file << " ";
+            file << point(dimension) << "    ";
+            if (point(dimension) < 0) file << " ";
+        }
+        if (point(dimension) >= 0) file << " ";
         if (with_n) file << point.n << "     ";
+
         if (is_complex) {
             file << value.real()(0) << "      " << value.imag()(0) << "      ";
             if (is_vector and dimension > 1) {
