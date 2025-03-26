@@ -13,6 +13,7 @@ CMData::CMData() {
     is_vector = false;
     with_w = false;
     with_n = false;
+    n_inds = vector<int>();
 
     filled = false;
 }
@@ -25,6 +26,16 @@ CMData::CMData(vector<Vec> points, vector<complex<Vec>> values, int dimension, b
     this->is_vector = is_vector;
     this->with_w = with_w;
     this->with_n = with_n;
+    this->n_inds = vector<int>();
+
+    if (with_w or with_n) {
+        for (int i = 0; i < points.size(); i++) {
+            if (with_w)
+                w_points.push_back(points[i](dimension));
+            if (with_n and i < points.size() - 1 and points[i + 1].n - points[i].n == 0)
+                n_inds.push_back(points[i].n);
+        }
+    }
 
     filled = true;
 }
@@ -61,32 +72,48 @@ CMData load(string filename) {
                 if (word == "fx") is_vector = true;
                 if (word == "Re(fx)") {is_vector = true; is_complex = true;}
             }
-            dimension += w_col;
             ind++;
             continue;
         }
         Vec point;
         float value;
         float ivalue;
-        for (int i = 0; i < dimension; i++) {
+        for (int i = 0; i < dimension + w_col; i++) {
             float temp;
             iss >> temp;
             point(i) = temp;
         }
-        iss >> value;
         point.dimension = dimension;
         points.push_back(point);
-        complex<Vec> vval = complex<Vec>(value, 0);
+        iss >> value;
+        Vec f_val(value);
+        Vec fi_val(value);
+        complex<Vec> vval = complex<Vec>(f_val, 0);
         if (is_complex) {
             iss >> ivalue;
-            vval = complex<Vec>(value, ivalue);
+            fi_val = Vec(ivalue);
+            vval = complex<Vec>(f_val, fi_val);
         }
+        if (is_vector) {
+            f_val.dimension = dimension;
+            fi_val.dimension = dimension;
+            for (int i = 1; i < dimension; i++) {
+                iss >> value;
+                f_val(i) = value;
+                if (is_complex) {
+                    iss >> ivalue;
+                    fi_val(i) = ivalue;
+                }
+            }
+            vval = complex<Vec>(f_val, fi_val);
+        }
+
         values.push_back(vval);
     }
     return CMData(points, values, dimension, w_col, n_col, is_complex, is_vector);
 }
 
-string get_header(int dimension, bool with_w, bool is_complex, bool is_vector) {
+string get_header(int dimension, bool with_w, bool with_n, bool is_complex, bool is_vector) {
    // Determine fheader
     string fheader = "    f    ";
     if (is_complex) {
@@ -101,6 +128,9 @@ string get_header(int dimension, bool with_w, bool is_complex, bool is_vector) {
 
     // Build header
     string header = "    x         ";
+    if (dimension == 0) {
+        header = "    w         ";
+    }
     if (dimension > 1) {
         header += "    y         ";
         if (is_vector && !is_complex) {
@@ -118,8 +148,11 @@ string get_header(int dimension, bool with_w, bool is_complex, bool is_vector) {
             fheader += "     Re(fz)    Im(fz) ";
         }
     }
-    if (with_w) {
+    if (with_w and dimension != 0) {
         header += "   w        ";
+    }
+    if (with_n) {
+        header += "n        ";
     }
 
     header += fheader;
@@ -127,22 +160,26 @@ string get_header(int dimension, bool with_w, bool is_complex, bool is_vector) {
 }
 
 
-void save_to_file(string filename, vector<Vec> &points, vector<complex<Vec>> &values, int dimension, bool with_w, bool is_complex, bool is_vector) {
+void save_to_file(string filename, vector<Vec> &points, vector<complex<Vec>> &values, int dimension, bool with_w, bool with_n, bool is_complex, bool is_vector) {
     ofstream file(filename);
-    dimension -= with_w;
-    string header = get_header(dimension, with_w, is_complex, is_vector);
+    string header = get_header(dimension, with_w, with_n, is_complex, is_vector);
     file << fixed << setprecision(6);
     file << header << endl;
     for (int i = 0; i < points.size(); i++) {
         Vec point = points[i];
         complex<Vec> value = values[i];
-        file << point(0) << "      ";
-        if (dimension > 1) file << point(1) << "      ";
-        if (dimension > 2) file << point(2) << "      ";
-        if (with_w) file << point(dimension) << "      ";
+        if (point(0) > 0) file << " ";
+        if (dimension > 0) file << point(0) << "     ";
+        if (point(1) > 0) file << " ";
+        if (dimension > 1) file << point(1) << "     ";
+        if (point(2) > 0) file << " ";
+        if (dimension > 2) file << point(2) << "     ";
+        if (with_w) file << point(dimension) << "     ";
+        if (point(dimension) > 0) file << " ";
+        if (with_n) file << point.n << "     ";
         if (is_complex) {
             file << value.real()(0) << "      " << value.imag()(0) << "      ";
-            if (is_vector) {
+            if (is_vector and dimension > 1) {
                 file << value.real()(1) << "      " << value.imag()(1) << "      ";
                 if (dimension > 2) {
                     file << value.real()(2) << "      " << value.imag()(2) << "      ";
@@ -150,7 +187,7 @@ void save_to_file(string filename, vector<Vec> &points, vector<complex<Vec>> &va
             }
         } else {
             file << value.real()(0) << "      ";
-            if (is_vector) {
+            if (is_vector and dimension > 1) {
                 file << value.real()(1) << "      ";
                 if (dimension > 2) {
                     file << value.real()(2) << "      ";
@@ -161,14 +198,6 @@ void save_to_file(string filename, vector<Vec> &points, vector<complex<Vec>> &va
     }
 }
 
-void combine_points_and_w(vector<Vec> &points, vector<float> &w_points) {
-    for (int i = 0; i < points.size(); i++) {
-        points[i].dimension++;
-        points[i](points[i].dimension-1) = w_points[i % w_points.size()];
-    }
-}
-
 void save(CMData &data, string filename) {
-    if (data.with_w) combine_points_and_w(data.points, data.w_points);
-    save_to_file(filename, data.points, data.values, data.dimension + data.with_w, data.with_w, data.is_complex, data.is_vector);
+    save_to_file(filename, data.points, data.values, data.dimension, data.with_w, data.with_n, data.is_complex, data.is_vector);
 }

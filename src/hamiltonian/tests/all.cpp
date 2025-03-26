@@ -65,7 +65,6 @@ bool DOS_test_2d() {
 
     vector<Vec> FS = get_FS(fermi_energy);
     float DOS = get_DOS(FS);
-    save_FS(FS);
     printv("Fermi Energy: %.3f\n", fermi_energy);
 
     if (fabs(answer - DOS) < 0.001) {
