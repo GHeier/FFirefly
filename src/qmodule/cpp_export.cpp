@@ -1,7 +1,7 @@
 #include <string>
 
 #include "../objects/CMField/fields.hpp"  // Include CMF class
-#include "../objects/CMField/cmf.hpp"  // Include CMF class
+#include "../objects/CMField/cmfield.hpp"  // Include CMF class
 #include "../objects/vec.hpp"
 #include "../config/load/c_config.h"
 #include "../config/load/cpp_config.hpp"
@@ -98,13 +98,13 @@ void destroy_Field_R(Field_R* field) {
 }
 
 void get_points(CMF* cmf, vector<Vec> &points) {
-    points = cmf->data->points;
+    points = cmf->data.points;
 }
 void get_w_points(CMF* cmf, vector<float> &w_points) {
-    w_points = cmf->data->w_points;
+    w_points = cmf->data.w_points;
 }
 void get_values(CMF* cmf, vector<complex<Vec>> &values) {
-    values = cmf->data->values;
+    values = cmf->data.values;
 }
 void get_domain(CMF* cmf, vector<Vec> &domain) {
     domain = cmf->domain;
@@ -122,20 +122,20 @@ void get_num_points(CMF* cmf, int &nx, int &ny, int &nz, int &nw) {
     nw = cmf->nw;
 }
 void get_dimension(CMF* cmf, int &dimension) {
-    dimension = cmf->data->dimension;
+    dimension = cmf->data.dimension;
 }
 void get_w_max_min(CMF* cmf, float &wmax, float &wmin) {
     wmax = cmf->wmax;
     wmin = cmf->wmin;
 }
 void get_is_complex(CMF* cmf, bool &is_complex) {
-    is_complex = cmf->data->is_complex;
+    is_complex = cmf->data.is_complex;
 }
 void get_is_vector(CMF* cmf, bool &is_vector) {
-    is_vector = cmf->data->is_vector;
+    is_vector = cmf->data.is_vector;
 }
 void get_with_w(CMF* cmf, bool &with_w) {
-    with_w = cmf->data->with_w;
+    with_w = cmf->data.with_w;
 }
 
 

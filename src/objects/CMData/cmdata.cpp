@@ -2,6 +2,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 #include "cmdata.hpp"
 
 CMData::CMData() {
@@ -31,7 +32,7 @@ CMData::CMData(vector<Vec> points, vector<complex<Vec>> values, int dimension, b
     if (with_n) n_inds.push_back(0);
     if (with_w or with_n) {
         for (int i = 0; i < points.size(); i++) {
-            if (with_w)
+            if (with_w and find(w_points.begin(), w_points.end(), points[i](dimension)) == w_points.end())
                 w_points.push_back(points[i](dimension));
             if (with_n and i < points.size() - 1 and points[i + 1].n - points[i].n != 0)
                 n_inds.push_back(i+1);

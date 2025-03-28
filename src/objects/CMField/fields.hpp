@@ -11,7 +11,7 @@
 #include <complex>
 
 #include "../vec.hpp"
-#include "cmf.hpp"
+#include "cmfield.hpp"
 
 using namespace std;
 class Field_C {

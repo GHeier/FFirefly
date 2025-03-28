@@ -13,13 +13,9 @@ using namespace std;
 
 Bands::Bands() {
     file_found = false;
-    ifstream file(prefix+"_bands.dat");
+    ifstream file(outdir + prefix + "_bands.dat");
     if (file.is_open()) {
-        string line;
-        while (getline(file, line)) {
-            fields.push_back(Field_R(line));
-        }
-        file.close();
+        Field_R data(outdir + prefix + "_bands.dat");
     }
     file_found = true;
 }

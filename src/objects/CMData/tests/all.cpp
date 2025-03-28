@@ -7,7 +7,6 @@
 using namespace std;
 
 bool CMData_tests() {
-    printf("Running CMData tests\n");
     int num_tests = 27;
     bool all_tests[num_tests] = {
         readwrite_1d(),

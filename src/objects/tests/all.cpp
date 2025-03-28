@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "all.hpp"
-#include "../CMField/tests/cmf_tests.hpp"
+#include "../CMField/tests/cmfield_tests.hpp"
 #include "../CMData/tests/all.hpp"
 #include "../../config/load/c_config.h"
 #include "../../config/load/jl_interface.h"
@@ -13,9 +13,9 @@ extern "C" bool object_tests() {
     printf("Running Object tests\n");
     int num_tests = 2;
     bool all_tests[num_tests] = {
-        field_tests(),
-        CMData_tests()
-        //cmf_tests()
+        //field_tests(),
+        CMData_tests(),
+        cmfield_tests(),
     };
     return print_test_results(all_tests, num_tests, "Object tests");
 }
