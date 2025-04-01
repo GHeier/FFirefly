@@ -1,9 +1,14 @@
 # Ffirefly
 ## **🚀 Welcome**  
 Welcome to **The Ffirefly Project**, a Condensed Matter Computational Physics Workspace designed to be easy to both use and extend. Users interact via a simple input file and easy python wrappers. Developers can easily extend the codebase by adding new models and solvers in whatever language they prefer. \
-**Ffirefly** currently includes calculations across the range of condensed matter topics listed below.
 
-### **🔹 Computational Categories**
+### Why use Ffirefly?
+Scenario: Professor X wants to run some calculations to determine the ground state of a material, and lacks an algorithm ready-to-run. Professor X has 3 options: \
+1) Learn the algorithm/theory, code it from scratch, and then integrate it into their code
+2) Find a package that performs this computation, become familiar with it, and then integrate it into their code
+3) Use Ffirefly, with prewritten calculations, and near-automatic code integration
+
+### **🔹 Ffirefly's Current Supported Computational Categories**
 - **Bands, Density of States, and Fermi Surface Calculations**
 - **Response Functions**
 - **Vertex Calculations**

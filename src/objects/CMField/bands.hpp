@@ -15,4 +15,5 @@ class Bands {
         Bands();
         ~Bands();
         float operator()(int n, Vec k);
+        float operator()(Vec k);
 };

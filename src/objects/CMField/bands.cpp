@@ -30,3 +30,7 @@ float Bands::operator()(int n, Vec k) {
         return fields[n](k);
     return epsilon(n, k);
 }
+
+float Bands::operator()(Vec k) {
+    return operator()(1, k);
+}
