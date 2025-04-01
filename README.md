@@ -4,9 +4,9 @@ Welcome to **The Ffirefly Project**, a Condensed Matter Computational Physics Wo
 
 ### Why use Ffirefly?
 Scenario: Professor X wants to run some calculations to determine the ground state of a material, and lacks an algorithm ready-to-run. Professor X has 3 options: \
-1) Learn the algorithm/theory, code it from scratch, and then integrate it into their code
-2) Find a package that performs this computation, become familiar with it, and then integrate it into their code
-3) Use Ffirefly, with prewritten calculations, and near-automatic code integration
+1) Learn the algorithm/theory, code it from scratch, and then integrate it into their code (really slow)
+2) Find a package that performs this computation, become familiar with it, and then integrate it into their code (slow)
+3) Use Ffirefly, with prewritten calculations, and near-automatic code integration (fast)
 
 ### **🔹 Ffirefly's Current Supported Computational Categories**
 - **Bands, Density of States, and Fermi Surface Calculations**
