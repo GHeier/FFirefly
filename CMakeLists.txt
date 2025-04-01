@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(Argo VERSION 1.0 LANGUAGES C CXX Fortran)
+project(Ffirefly VERSION 1.0 LANGUAGES C CXX Fortran)
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -33,8 +33,10 @@ include_directories(${Python3_INCLUDE_DIRS})
 link_directories(${Python3_LIBRARY_DIRS})
 
 # Set Julia include and lib paths
-set(JULIA_INCLUDE_DIR "/home/g/.julia/juliaup/julia-1.11.3+0.x64.linux.gnu/include/julia")
-set(JULIA_LIB_DIR "/home/g/.julia/juliaup/julia-1.11.3+0.x64.linux.gnu/lib")
+#set(JULIA_INCLUDE_DIR "/home/g/.julia/juliaup/julia-1.11.3+0.x64.linux.gnu/include/julia")
+#set(JULIA_LIB_DIR "/home/g/.julia/juliaup/julia-1.11.3+0.x64.linux.gnu/lib")
+set(JULIA_INCLUDE_DIR "/usr/include/julia")
+set(JULIA_LIB_DIR "/usr/lib/libjulia.so")
 
 include_directories(${JULIA_INCLUDE_DIR})
 link_directories(${JULIA_LIB_DIR})
@@ -80,20 +82,20 @@ add_library(objlib_fortran OBJECT ${FORTRAN_SOURCES})
 # ---------------------------
 # SHARED LIBRARY (for Python & Julia) [NO FORTRAN]
 # ---------------------------
-add_library(argo SHARED $<TARGET_OBJECTS:objlib_cpp>)
+add_library(fly SHARED $<TARGET_OBJECTS:objlib_cpp>)
 
 # ---------------------------
 # EXECUTABLE (Standalone) [WITH FORTRAN]
 # ---------------------------
-add_executable(argo.x $<TARGET_OBJECTS:objlib_cpp> $<TARGET_OBJECTS:objlib_fortran>)
+add_executable(fly.x $<TARGET_OBJECTS:objlib_cpp> $<TARGET_OBJECTS:objlib_fortran>)
 
 # ---------------------------
 # LINKING
 # ---------------------------
 
 # Set output directory explicitly
-set_target_properties(argo.x PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+set_target_properties(fly.x PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
 # Link necessary libraries (but NOT the shared library!)
-target_link_libraries(argo.x PRIVATE ${Python3_LIBRARIES} ${LIBS})
-target_link_libraries(argo PRIVATE ${Python3_LIBRARIES} ${LIBS})
+target_link_libraries(fly.x PRIVATE ${Python3_LIBRARIES} ${LIBS})
+target_link_libraries(fly PRIVATE ${Python3_LIBRARIES} ${LIBS})
