@@ -4,7 +4,7 @@ import ast
 #[CONTROL]
 category = 'test'
 calculation = 'test'
-outdir = './output'
+outdir = './'
 prefix = 'sample'
 verbosity = 'low'
 input_data_file = 'input.dat'

@@ -1,11 +1,3 @@
-/*
- * This file contains the definition of the ScalarField and VectorField classes.
- * These classes are used to represent scalar and vector fields, respectively.
- * They are implemented over a mesh of points and values, and can be used to interpolate
- * The mesh is interpolated automatically when the field is created. Ideal for BZ calculations
- *
- * Author: Griffin Heier
- */
 #pragma once
 
 #include <complex>
@@ -15,27 +7,29 @@
 
 using namespace std;
 class Field_C {
-    public:
-        CMF cmf;
+public:
+  CMF cmf;
 
-        Field_C();
-        Field_C(CMF cmf);
-        Field_C(string filename);
+  Field_C();
+  Field_C(CMF cmf);
+  Field_C(string filename);
 
-        complex<float> operator() (Vec point, float w = 0);
-        complex<float> operator() (float w);
+  complex<float> operator()(Vec point, float w = 0);
+  complex<float> operator()(float w);
+  complex<float> operator()(int n, double w);
+  complex<float> operator()(int n, Vec point, float w = 0);
 };
 
 class Field_R {
-    public:
-        CMF cmf;
+public:
+  CMF cmf;
 
-        Field_R();
-        Field_R(CMF cmf);
-        Field_R(string filename);
+  Field_R();
+  Field_R(CMF cmf);
+  Field_R(string filename);
 
-        float operator() (Vec point, float w = 0);
-        float operator() (double w);
+  float operator()(Vec point, float w = 0);
+  float operator()(double w);
+  float operator()(int n, double w);
+  float operator()(int n, Vec point, float w);
 };
-
-extern "C" float test_func(float w);
