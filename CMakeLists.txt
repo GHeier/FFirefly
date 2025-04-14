@@ -22,7 +22,7 @@ include_directories(${CMAKE_SOURCE_DIR})
 # Compiler flags
 set(CMAKE_CXX_FLAGS "-O3 -fopenmp -fPIC")
 set(CMAKE_C_FLAGS "-fopenmp -fPIC")
-set(CMAKE_Fortran_FLAGS "-O3 -fopenmp -L/usr/local/lib -I/usr/local/include -ltetrabz")
+set(CMAKE_Fortran_FLAGS "-O3 -fopenmp -fPIC -L/usr/local/lib -I/usr/local/include -ltetrabz")
 
 # Libraries to link
 set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -ltetrabz -lopenblas -ljulia)
@@ -62,12 +62,15 @@ endforeach()
 # Separate Fortran and C/C++ sources
 set(FORTRAN_SOURCES "")
 set(CPP_SOURCES "")
+set(C_SOURCES "")
 
 foreach(file IN LISTS ALL_SOURCES)
     if(file MATCHES "\\.f90$")
         list(APPEND FORTRAN_SOURCES ${file})
-    else()
+      elseif(file MATCHES "\\.cpp$")
         list(APPEND CPP_SOURCES ${file})
+      elseif(file MATCHES "\\.c$")
+        list(APPEND C_SOURCES ${file})
     endif()
 endforeach()
 
@@ -76,18 +79,19 @@ endforeach()
 # ---------------------------
 
 # Generate object files separately for C/C++ and Fortran
+add_library(objlib_c OBJECT ${C_SOURCES})
 add_library(objlib_cpp OBJECT ${CPP_SOURCES})
 add_library(objlib_fortran OBJECT ${FORTRAN_SOURCES})
 
 # ---------------------------
 # SHARED LIBRARY (for Python & Julia) [NO FORTRAN]
 # ---------------------------
-add_library(fly SHARED $<TARGET_OBJECTS:objlib_cpp>)
+add_library(fly SHARED $<TARGET_OBJECTS:objlib_c> $<TARGET_OBJECTS:objlib_cpp> $<TARGET_OBJECTS:objlib_fortran>)
 
 # ---------------------------
 # EXECUTABLE (Standalone) [WITH FORTRAN]
 # ---------------------------
-add_executable(fly.x $<TARGET_OBJECTS:objlib_cpp> $<TARGET_OBJECTS:objlib_fortran>)
+add_executable(fly.x $<TARGET_OBJECTS:objlib_c> $<TARGET_OBJECTS:objlib_cpp> $<TARGET_OBJECTS:objlib_fortran>)
 
 # ---------------------------
 # LINKING

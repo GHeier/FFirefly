@@ -167,7 +167,7 @@ void make_save_file() {
 
   // Read the symbolic link for the executable
   ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
-  path[len - 7] = '\0';      // Remove the executable name
+  path[len - 5] = '\0';      // Remove the executable name
   strcat(path, "input.cfg"); // Append the input file name
   FILE *file = fopen(path, "w");
   if (file == NULL) {
@@ -388,7 +388,7 @@ void read_c_config(const char *path) {
 void load_c_config() {
   char path[PATH_MAX]; // Buffer to hold the executable path
   ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
-  path[len - 7] = '\0';      // Remove the executable name
+  path[len - 5] = '\0';      // Remove the executable name
   strcat(path, "input.cfg"); // Append the input file name
   make_save_file();
   read_c_config(path);

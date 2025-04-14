@@ -56,6 +56,6 @@ bool bands_tests() {
   bool all_tests[num_tests] = {
       breadwrite_2d(),
   };
-  remove("./sample_bands.dat");
+  // remove("./sample_bands.dat");
   return print_test_results(all_tests, num_tests, "Bands tests");
 }

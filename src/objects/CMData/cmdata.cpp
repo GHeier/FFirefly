@@ -106,7 +106,7 @@ CMData load(string filename) {
     iss >> value;
     Vec f_val(value);
     Vec fi_val(value);
-    complex<Vec> vval = complex<Vec>(f_val, 0);
+    complex<Vec> vval = complex<Vec>(f_val, Vec());
     if (is_complex) {
       iss >> ivalue;
       fi_val = Vec(ivalue);

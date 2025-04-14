@@ -99,7 +99,7 @@ int main() {
   else if (!strcmp(c_category, "test"))
     test();
   else
-    printf("Unknown Category\n\n");
+    printf("Unknown Category\n");
 
   // unload_c_config(); // Free memory allocated for global c variables
   end_python();

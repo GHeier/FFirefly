@@ -1,5 +1,5 @@
 /*
- * This file contains the implementation of the class CMField
+ * This file contains the implementation of the class CMFieldield
  * They interpolate BZ(n+1 dimension) fields
  * They have been implemented to allow for input via a file or a list of points
  * and values. They are constructed to exist over a mesh, so it is ideal for
@@ -23,7 +23,7 @@
 
 using namespace std;
 
-CMF::CMF() {
+CMField::CMField() {
   data = CMData();
   values = vector<vector<complex<Vec>>>();
 
@@ -34,7 +34,7 @@ CMF::CMF() {
   wmax = 0, wmin = 0;
 }
 
-CMF::CMF(CMData &data) {
+CMField::CMField(CMData &data) {
   this->data = data;
   if (data.dimension == 1 or (data.dimension == 0 and data.with_w))
     find_domain_1d(data);
@@ -50,8 +50,8 @@ CMF::CMF(CMData &data) {
   empty_CMData(data);
 }
 
-CMF::CMF(vector<Vec> points, vector<complex<Vec>> values, int dimension,
-         bool with_w, bool with_n, bool is_complex, bool is_vector) {
+CMField::CMField(vector<Vec> points, vector<complex<Vec>> values, int dimension,
+                 bool with_w, bool with_n, bool is_complex, bool is_vector) {
   data =
       CMData(points, values, dimension, with_w, with_n, is_complex, is_vector);
   if (data.dimension == 1 or (data.dimension == 0 and data.with_w))
@@ -91,13 +91,15 @@ void make_values_2d(vector<vector<complex<Vec>>> &values, CMData &data) {
   }
 }
 
-CMF load_CMF(string filename) {
+CMField load_CMField(string filename) {
   CMData data = load(filename);
-  CMF temp(data);
+  CMField temp(data);
   return temp;
 }
 
-void save_CMF(string filename, CMF &field) { save(field.data, filename); }
+void save_CMField(string filename, CMField &field) {
+  save(field.data, filename);
+}
 
 // Function to invert a matrix represented as vector<Vec>
 vector<Vec> invertMatrix(vector<Vec> &matrix, int n) {
@@ -197,7 +199,7 @@ Vec cross_product(Vec a, Vec b) {
   throw runtime_error("Cross product only defined for 2D and 3D vectors.");
 }
 
-void CMF::find_domain_1d(CMData &data) {
+void CMField::find_domain_1d(CMData &data) {
   vector<Vec> domain;
   Vec first = data.points[0];
   int nw = data.w_points.size();
@@ -215,7 +217,7 @@ void CMF::find_domain_1d(CMData &data) {
   inv_domain = invertMatrix(domain, data.dimension);
 }
 
-void CMF::find_domain(CMData &data) {
+void CMField::find_domain(CMData &data) {
   // Define initial number of points
   int section = 0;
   vector<int> section_sizes = {1, 1, 1};
@@ -276,7 +278,7 @@ void CMF::find_domain(CMData &data) {
     nw = section_sizes[3];
 }
 
-complex<Vec> CMF::operator()(float w) {
+complex<Vec> CMField::operator()(float w) {
   if (!data.with_w)
     throw runtime_error("This field does not have a w dimension.");
   if (data.with_n)
@@ -284,7 +286,7 @@ complex<Vec> CMF::operator()(float w) {
   return CMF_search_1d(w, data.w_points, values[0]);
 }
 
-complex<Vec> CMF::operator()(int n, float w) {
+complex<Vec> CMField::operator()(int n, float w) {
   if (!data.with_w)
     throw runtime_error("This field does not have a w dimension.");
   if (!data.with_n)
@@ -294,7 +296,7 @@ complex<Vec> CMF::operator()(int n, float w) {
   return CMF_search_1d(w, data.w_points, values[n - 1]);
 }
 
-complex<Vec> CMF::operator()(Vec point, float w) {
+complex<Vec> CMField::operator()(Vec point, float w) {
   if (w != 0 && !data.with_w)
     throw runtime_error("This field does not have a w dimension.");
   if (data.with_n)
@@ -322,7 +324,7 @@ complex<Vec> CMF::operator()(Vec point, float w) {
   throw runtime_error("Invalid dimension.");
 }
 
-complex<Vec> CMF::operator()(int n, Vec point, float w) {
+complex<Vec> CMField::operator()(int n, Vec point, float w) {
   if (w != 0 && !data.with_w)
     throw runtime_error("This field does not have a w dimension.");
   if (!data.with_n)
