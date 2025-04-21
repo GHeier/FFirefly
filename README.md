@@ -29,8 +29,11 @@ Scenario: Professor X wants to run some calculations to determine the ground sta
 ## **📖 User Guide**  
 The simplest way to use Ffirefly is to create a .cfg input file and run fly.x with the command `fly.x < input_file.cfg`. An example input can be seen in the file `sample.cfg`. Look at this file to understand the proper syntax. Refer to the [User Documentation](./docs/User.md) for a more in depth explanation.
 
-    - `category` indicates the type of calculation to be performed, with a section [CATEGORY_NAME] in the file for inputs specific to that category. 
-    - Prefix is the filename prefix for files read and written by this program. Files are saved in the format 'prefix_filetype.dat', so for instance a density of states calculation would save to 'prefix_dos.dat'.
+    `category` indicates the type of calculation to be performed, 
+    with a section [CATEGORY_NAME] in the file for inputs specific to that category. 
+    Prefix is the filename prefix for files read and written by this program. 
+    Files are saved in the format 'prefix_filetype.dat', so for instance a 
+    density of states calculation would save to 'prefix_dos.dat'.
 
 A python wrapper is available to run multiple sequential calculations. This may also be accomplished in the main executable by the use of '+' signs in between sequential calculation categories in the `category` input line. 
 The python wrapper comes with launchers and data extracters for every calculation type, so it is easy create sets of calculations and extract the data at every step. This can be useful, for instance, to calculate the phase across a range of temperatures and chemical potentials. An example of this can be seen in scripts/eliashberg.py.
