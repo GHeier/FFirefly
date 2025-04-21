@@ -196,12 +196,12 @@ Vec operator*(float multiple, const Vec &input) {
              input.w * multiple, input.area, input.dimension, input.n);
 }
 
-float operator*(const Vec &left, const Vec &right) {
+float operator*(const Vec &left, const Vec &right) { // Dot product
   return left.x * right.x + left.y * right.y + left.z * right.z +
          left.w * right.w;
 }
 
-Vec operator*(vector<vector<float>> &left, Vec right) {
+Vec operator*(vector<vector<float>> &left, Vec right) { // Matrix multiplication
   int dim = left.size() > right.dimension ? right.dimension : left.size();
   Vec result;
   result.dimension = right.dimension;
@@ -289,6 +289,8 @@ bool operator==(const Vec &k, const Vec &q) {
   return k.x == q.x && k.y == q.y && k.z == q.z && k.w == q.w;
 }
 
+// This sort allows w to be used as an extra value for sorting based on whatever
+// is helpful
 bool operator<(const Vec &left, const Vec &right) { return left.w < right.w; }
 
 std::ostream &operator<<(std::ostream &os, const Vec &k) {

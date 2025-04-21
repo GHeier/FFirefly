@@ -1,9 +1,9 @@
 /*
- * This file contains the implementation of the class CMFieldield
- * They interpolate BZ(n+1 dimension) fields
- * They have been implemented to allow for input via a file or a list of points
- * and values. They are constructed to exist over a mesh, so it is ideal for
- * Brillouin Zone calculations.
+ * This file contains the implementation of the class CMField
+ * This class interpolates BZ(n+1 dimension) fields. It has been implemented
+ * to allow for input via a file or a list of points and values. They are
+ * constructed to exist over a mesh, so it is ideal for Brillouin Zone
+ * calculations.
  *
  * Author: Griffin Heier
  */
