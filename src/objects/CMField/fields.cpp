@@ -3,8 +3,16 @@
 
 #include "../vec.hpp"
 
+complex<float> Field_C::operator()(int n, float w) {
+  return complex<float>(cmf(n, w).real().x, cmf(n, w).imag().x);
+}
+
 complex<float> Field_C::operator()(float w) {
   return complex<float>(cmf(w).real().x, cmf(w).imag().x);
+}
+
+complex<float> Field_C::operator()(int n, Vec point, float w) {
+  return complex<float>(cmf(n, point, w).real().x, cmf(n, point, w).imag().x);
 }
 
 complex<float> Field_C::operator()(Vec point, float w) {

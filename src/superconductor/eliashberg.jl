@@ -7,7 +7,7 @@ using .IRMesh
 
 include("../qmodule/src/cpp_imports.jl")
 using .Quasi
-Quasi.load_config!("/home/g/Research/fcode/build/bin/input.cfg")
+Quasi.load_config!("/home/g/Research/ffirefly/build/bin/input.cfg")
 
 using CUDA, FFTW
 using NFFT
@@ -22,10 +22,10 @@ np = pyimport("numpy")
 t2 = time()
 #println("Time to load: ", t2 - t1)
 
-fcode = pyimport("fcode")
+ffirefly = pyimport("ffirefly")
 t3 = time()
-#println("Time to load fcode: ", t3 - t2)
-cfg = fcode.config
+#println("Time to load ffirefly: ", t3 - t2)
+cfg = ffirefly.config
 
 prefix = cfg.prefix
 outdir = cfg.outdir

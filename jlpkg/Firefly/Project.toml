@@ -1,0 +1,5 @@
+name = "Firefly"
+uuid = "226e8b73-0f40-457f-8542-cfe764eb678f"
+version = "0.1.0"
+authors = ["Griffin Heier griffinheier@gmail.com"]
+description = "CMT codebase with universal integration of languages and packages"

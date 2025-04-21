@@ -14,7 +14,7 @@ bool call_julia_func(const char *folder, const char *filename, const char* modul
     ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
     path[len - 17] = '\0';
 
-    strcat(path, "/fcode/");
+    strcat(path, "/ffirefly/");
     strcat(path, folder);
 
     // Add filename to path

@@ -1,4 +1,4 @@
-module fcode
+module ffirefly
     use iso_c_binding
     implicit none
     interface
@@ -285,4 +285,4 @@ contains
         ! End of loading variables
     end subroutine load_f90_config
 
-end module fcode
+end module ffirefly

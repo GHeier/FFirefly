@@ -10,8 +10,8 @@ using PyCall
 include("../qmodule/src/cpp_imports.jl")
 using .Quasi
 
-fcode = pyimport("fcode")
-cfg = fcode.config
+ffirefly = pyimport("ffirefly")
+cfg = ffirefly.config
 
 BZ = cfg.brillouin_zone
 dim = cfg.dimension

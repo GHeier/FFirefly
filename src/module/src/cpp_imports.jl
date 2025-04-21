@@ -1,10 +1,10 @@
-#  g++ -shared -fPIC ../../build/CMakeFiles/fcode.x.dir/fcode/config/load/c_config.c.o ../../build/CMakeFiles/fcode.x.dir/fcode/objects/vec.cpp.o ../../build/CMakeFiles/fcode.x.dir/fcode/hamiltonian/band_structure.cpp.o ../../build/CMakeFiles/fcode.x.dir/fcode/config/load/cpp_config.cpp.o jmodtest.o -o jmodtest.so
+#  g++ -shared -fPIC ../../build/CMakeFiles/ffirefly.x.dir/ffirefly/config/load/c_config.c.o ../../build/CMakeFiles/ffirefly.x.dir/ffirefly/objects/vec.cpp.o ../../build/CMakeFiles/ffirefly.x.dir/ffirefly/hamiltonian/band_structure.cpp.o ../../build/CMakeFiles/ffirefly.x.dir/ffirefly/config/load/cpp_config.cpp.o jmodtest.o -o jmodtest.so
 
 
 module Ffirefly
 export epsilon, load_config!
 
-const libfly = "/home/g/Research/fcode/build/lib/libfly.so"
+const libfly = "/home/g/Research/ffirefly/build/lib/libfly.so"
 
 function epsilon(n::Int, k::Vector{Float64})
     newk = Float32.(k)
@@ -169,6 +169,6 @@ using .Ffirefly
 testcmf = Ffirefly.Field_R("../../../sample_bands.dat")
 println(testcmf(1, [-1.0, -0.6]))
 
-path = "/home/g/Research/fcode/build/bin/input.cfg"
+path = "/home/g/Research/ffirefly/build/bin/input.cfg"
 #load_config!(path)
 #println(epsilon(1, [0.1, 0.2, 0.3]))

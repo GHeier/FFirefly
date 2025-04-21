@@ -1,4 +1,4 @@
-import fcode
+import ffirefly
 import numpy as np
 
 config = {
@@ -39,10 +39,10 @@ def eliashberg(filename):
 
     for i in range(50):
         config['SYSTEM']['Temperature'] = Ti
-        output = fcode.launch(config)
+        output = ffirefly.launch(config)
         print(output)
-        match = fcode.grep(output, "Max phi:")
-        value = fcode.extract_value(match)
+        match = ffirefly.grep(output, "Max phi:")
+        value = ffirefly.extract_value(match)
 
         if i == 0:
             phi_max_initial = value
@@ -67,7 +67,7 @@ eliashberg("Phi_v_T.dat")
 
 """
 
-import fcode
+import ffirefly
 import numpy as np
 from scipy.optimize import brentq
 
@@ -97,9 +97,9 @@ config = {
 
 def get_max_phi(T):
     config['SYSTEM']['Temperature'] = T
-    output = fcode.launch(config)
-    match = fcode.grep(output, "Max phi:")
-    value = fcode.extract_value(match)
+    output = ffirefly.launch(config)
+    match = ffirefly.grep(output, "Max phi:")
+    value = ffirefly.extract_value(match)
     return value
 
 T_list, phi_list = [], []

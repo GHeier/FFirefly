@@ -4,7 +4,7 @@ import numpy as np
 class Field_C_Wrapper:
     def __init__(self):
         # Load the shared library
-        self.lib = CDLL("/home/g/Research/fcode/build/lib/libfcode.so")
+        self.lib = CDLL("/home/g/Research/ffirefly/build/lib/libfcode.so")
         
         # Define function prototypes
         self._setup_function_prototypes()

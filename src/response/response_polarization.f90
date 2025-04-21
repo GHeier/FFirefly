@@ -1,6 +1,6 @@
 module globals
     use, intrinsic :: iso_c_binding  ! Ensure C interoperability
-    use fcode
+    use ffirefly
     implicit none
     real(8), parameter :: pi = 3.1415926535897932384626433832795028841971
     integer :: nb, ne, nge(3), ngw(3), nke, nkw

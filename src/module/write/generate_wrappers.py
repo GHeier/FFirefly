@@ -2,7 +2,7 @@ import ctypes
 from pathlib import Path
 
 # Define the shared library
-lib_path = Path("/home/g/Research/fcode/build/lib/libfly.so")
+lib_path = Path("/home/g/Research/ffirefly/build/lib/libfly.so")
 lib = ctypes.CDLL(str(lib_path))
 
 # Mapping from string to ctypes type

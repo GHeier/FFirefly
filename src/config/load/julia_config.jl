@@ -2,8 +2,8 @@ module Config
 
 using PyCall
 
-fcode = pyimport("fcode")
-cfg = fcode.config
+ffirefly = pyimport("ffirefly")
+cfg = ffirefly.config
 
 # Start variable definitions
 

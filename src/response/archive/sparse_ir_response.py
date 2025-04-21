@@ -5,9 +5,9 @@ from warnings import warn
 import sparse_ir
 import matplotlib.pyplot as plt### System parameters
 
-import fcode
-import fcode.config as cfg
-from fcode import *
+import ffirefly
+import ffirefly.config as cfg
+from ffirefly import *
 
 
 class Mesh:
@@ -261,7 +261,7 @@ def sparse_ir_response():
     n    = 0.85   # electron filling, here per spin per lattice site (n=1: half filling)
     U    = 1      # Hubbard interaction
 
-    e_mesh = fcode.mesh.energy_mesh(cfg.k_mesh)
+    e_mesh = ffirefly.mesh.energy_mesh(cfg.k_mesh)
 ### Numerical parameters
     nk1, nk2, nk3 = cfg.k_mesh
     nk        = nk1*nk2*nk3

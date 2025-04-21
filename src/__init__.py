@@ -1,5 +1,6 @@
-from .fmodule import *
+#from .fmodule import *
 from .config.load import config
+from .module.src.cpp_imports import *
 
 #import julia
 #from julia import FCode
@@ -9,17 +10,17 @@ import re
 import subprocess
 
 file = config.load_config()
-load_c_config(file)
+load_config(file)
 
 def run(cfg_file):
-    folder = "/home/g/Research/fcode/build/bin/"
-    #result = subprocess.run([folder + "fcode.x", cfg_file], capture_output=True, text=True)
+    folder = "/home/g/Research/ffirefly/build/bin/"
+    #result = subprocess.run([folder + "ffirefly.x", cfg_file], capture_output=True, text=True)
     with open(cfg_file, 'r') as f:
-        result = subprocess.run([folder + "fcode.x"], stdin=f, capture_output=True, text=True)
+        result = subprocess.run([folder + "ffirefly.x"], stdin=f, capture_output=True, text=True)
     return result.stdout, result.stderr
 
 def forge(cfg_file, config):
-    folder = "/home/g/Research/fcode/build/bin/"
+    folder = "/home/g/Research/ffirefly/build/bin/"
     with open(cfg_file, 'w') as f:
         for section, values in config.items():
             f.write(f"[{section}]\n")

@@ -25,7 +25,7 @@ Field::Field(int dimension, bool is_complex, bool is_vector) {
 
 py::module Field::init() {
     py::module sys = py::module::import("sys");
-    sys.attr("path").attr("append")("/home/g/Research/fcode/fcode/objects");
+    sys.attr("path").attr("append")("/home/g/Research/ffirefly/ffirefly/objects");
     py::module field_module = py::module::import("field");
     return field_module;
 }

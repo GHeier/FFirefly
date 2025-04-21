@@ -2,7 +2,7 @@ module response_ir
 
 include("../qmodule/src/cpp_imports.jl")
 using .Quasi
-Quasi.load_config!("/home/g/Research/fcode/build/bin/input.cfg")
+Quasi.load_config!("/home/g/Research/ffirefly/build/bin/input.cfg")
 
 include("../objects/mesh.jl")
 using .IRMesh
@@ -11,8 +11,8 @@ import SparseIR: Statistics, value, valueim
 using PyCall
 using Printf
 using Base.Threads
-fcode = pyimport("fcode")
-cfg = fcode.config
+ffirefly = pyimport("ffirefly")
+cfg = ffirefly.config
 
 T = cfg.Temperature
 beta = 1 / T

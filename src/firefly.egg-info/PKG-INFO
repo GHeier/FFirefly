@@ -1,3 +1,11 @@
+Metadata-Version: 2.4
+Name: firefly
+Version: 0.1.0
+Summary: CMT codebase with universal integration of languages and packages
+Author-email: Griffin Heier <griffinheier@gmail.com>
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+
 # Ffirefly
 ## **🚀 Welcome**  
 Welcome to **The Ffirefly Project**, a Condensed Matter Computational Physics Workspace designed to be easy to both use and extend. Users interact via a simple input file and easy python wrappers. Developers can easily extend the codebase by adding new models and solvers in whatever language they prefer. \
