@@ -1,10 +1,10 @@
 #  g++ -shared -fPIC ../../build/CMakeFiles/ffirefly.x.dir/ffirefly/config/load/c_config.c.o ../../build/CMakeFiles/ffirefly.x.dir/ffirefly/objects/vec.cpp.o ../../build/CMakeFiles/ffirefly.x.dir/ffirefly/hamiltonian/band_structure.cpp.o ../../build/CMakeFiles/ffirefly.x.dir/ffirefly/config/load/cpp_config.cpp.o jmodtest.o -o jmodtest.so
 
 
-module Ffirefly
+module Imports
 export epsilon, load_config!
 
-const libfly = "/home/g/Research/ffirefly/build/lib/libfly.so"
+const libfly = abspath(@__FILE__)[1:end-51] * "build/lib/libfly.so"
 
 function epsilon(n::Int, k::Vector{Float64})
     newk = Float32.(k)
@@ -20,7 +20,7 @@ mutable struct Field_C
 end
 
 function Field_C()
-  ptr = ccall((:Field_C_export0, libfly), Ptr{Cvoid})
+    ptr = ccall((:Field_C_export0, libfly), Ptr{Cvoid}, ())
   return Field_C(ptr)
 end
 
@@ -45,7 +45,7 @@ function (self::Field_C)(n, w)::ComplexF32
     return ComplexF32(real_result[], imag_result[])
   end
 
-function (self::Field_C)(k, w=0f0)::ComplexF32
+function (self::Field_C)(k::Vector{Float64}, w=0f0)::ComplexF32
     real_result::Ref{Float32} = Ref(Float32(0.0))
     imag_result::Ref{Float32} = Ref(Float32(0.0))
     newk::Vector{Float32} = Float32.(k)
@@ -55,7 +55,7 @@ function (self::Field_C)(k, w=0f0)::ComplexF32
     return ComplexF32(real_result[], imag_result[])
   end
 
-function (self::Field_C)(n, k, w=0f0)::ComplexF32
+function (self::Field_C)(n, k::Vector{Float64}, w=0f0)::ComplexF32
     real_result::Ref{Float32} = Ref(Float32(0.0))
     imag_result::Ref{Float32} = Ref(Float32(0.0))
     newk::Vector{Float32} = Float32.(k)
@@ -71,23 +71,6 @@ end
 
 function Base.finalize(csf::Field_C)
     destroy!(csf)
-end
-
-function (self::Field_C)(k, w)::ComplexF32
-    real_result::Ref{Float32} = Ref(Float32(0.0))
-    imag_result::Ref{Float32} = Ref(Float32(0.0))
-    newk::Vector{Float32} = Float32.(k)
-    neww = Float32(w)
-    ccall((:Field_C_call, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}, Float32, Cint, Ptr{Float32}, Ptr{Float32}), self.cmf, newk, neww, length(k), real_result, imag_result)
-    return ComplexF32(real_result[], imag_result[])
-end
-
-function (self::Field_C)(w)::ComplexF32
-    real_result::Ref{Float64} = Ref(Float64(0.0))
-    imag_result::Ref{Float64} = Ref(Float64(0.0))
-    neww = Float32(w)
-    ccall((:Field_C_call_w, libfly), Cvoid, (Ptr{Cvoid}, Float64, Ptr{Float64}, Ptr{Float64}), self.cmf, neww, real_result, imag_result)
-    return ComplexF64(real_result[], imag_result[])
 end
 
 function save_field_to_file!(path::String, field)
@@ -118,14 +101,14 @@ function (self::Field_R)(n, w)::Float32
     return ccall((:Field_R_operator_export1, libfly), Cfloat, (Ptr{Cvoid}, Cint, Float32, ), self.ptr, n, neww)
 end
 
-function (self::Field_R)(k, w =0f0)::Float32
+function (self::Field_R)(k::Vector{Float64}, w =0f0)::Float32
     neww = Float32(w)
     newk::Vector{Float32} = Float32.(k)
     len = length(newk)
     return ccall((:Field_R_operator_export2, libfly), Cfloat, (Ptr{Cvoid}, Ptr{Cfloat}, Cint, Float32, ), self.ptr, newk, len, neww)
 end
 
-function (self::Field_R)(n, k, w=0f0)::Float32
+function (self::Field_R)(n, k::Vector{Float64}, w=0f0)::Float32
     neww = Float32(w)
     newk::Vector{Float32} = Float32.(k)
     len = length(k)
@@ -142,7 +125,7 @@ end
 
 end # module Field
 
-using .Ffirefly
+#using .Imports
 
 #println("Testing Field module")
 #println(Field.jtestfunc(2.0))
@@ -166,9 +149,9 @@ using .Ffirefly
 ##println(cmf3(0.0))
 #println(cmf3(1.0))
 
-testcmf = Ffirefly.Field_R("../../../sample_bands.dat")
-println(testcmf(1, [-1.0, -0.6]))
-
-path = "/home/g/Research/ffirefly/build/bin/input.cfg"
+#testcmf = Ffirefly.Field_R("../../../sample_bands.dat")
+#println(testcmf(1, [-1.0, -0.6]))
+#
+#path = "/home/g/Research/FFirefly/build/bin/input.cfg"
 #load_config!(path)
 #println(epsilon(1, [0.1, 0.2, 0.3]))

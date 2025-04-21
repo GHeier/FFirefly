@@ -2,8 +2,12 @@ import ctypes
 from ctypes import c_void_p, c_char_p, c_float, c_int, POINTER
 import numpy as np
 from pathlib import Path
+import os
 
-lib = ctypes.CDLL("/home/g/Research/ffirefly/build/lib/libfly.so")
+current_file_path = os.path.abspath(__file__)
+current_file_path = current_file_path[:-47] + "build/lib/libfly.so"
+
+lib = ctypes.CDLL(current_file_path)
 
 # Begin Functions
 

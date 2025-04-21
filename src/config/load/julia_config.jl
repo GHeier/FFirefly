@@ -2,8 +2,8 @@ module Config
 
 using PyCall
 
-ffirefly = pyimport("ffirefly")
-cfg = ffirefly.config
+firefly = pyimport("firefly")
+cfg = firefly.config
 
 # Start variable definitions
 

@@ -1,5 +1,5 @@
 import numpy as np
-from ffirefly import *
+from firefly import *
 
 class VSolver:
     def __init__(self, mesh, U, n, sigma_init=0, sfc_tol=1e-4, 

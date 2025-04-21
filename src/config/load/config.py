@@ -87,7 +87,7 @@ def load_config():
     import os
 
     current_file = os.path.abspath(__file__)
-    input_file = current_file[:-29] + "build/bin/input.cfg"
+    input_file = current_file[:-39] + "build/bin/input.cfg"
     key, value, section = "", "", ""
     got_dimension = False
     index = 0

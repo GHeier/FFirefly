@@ -7,11 +7,10 @@ using SparseIR
 import SparseIR: Statistics, value, valueim
 using PyCall
 
-include("../qmodule/src/cpp_imports.jl")
-using .Quasi
+using Firefly
 
-ffirefly = pyimport("ffirefly")
-cfg = ffirefly.config
+firefly = pyimport("firefly")
+cfg = firefly.config
 
 BZ = cfg.brillouin_zone
 dim = cfg.dimension

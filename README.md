@@ -15,8 +15,8 @@ Scenario: Professor X wants to run some calculations to determine the ground sta
 - **Self-Energy Calculations**
 - **Superconducting Calculations**
 
-#### [User Documentation](./documentation/User.md)
-#### [Developer Documentation](./documentation/Developer.md)
+#### [User Documentation](./docs/User.md)
+#### [Developer Documentation](./docs/Developer.md)
 
 ### **🔹 Languages Supported**
 - **C/C++** 
@@ -43,13 +43,13 @@ The upside of a package like this is that it grants access to a wide variety of 
 | numpy      | PyCall        | g++      | gfortran   | gcc  |
 | scipy      | CUDA          | Cmake    | libtetrabz |      |
 | matplotlib | FFTW          | BLAS     |            |      |
-| h5py       | Roots         | LAPACK   |            |      |
-|            |               | LAPACKE  |            |      |
-| sparse_ir  | SparseIR      | Ninja    |            |      |
-| pandas     | LinearAlgebra | OpenMP   |            |      |
-|            | Printf        | ccache   |            |      |
+| h5py       | Roots         | openBLAS |            |      |
+| sparse_ir  | SparseIR      | LAPACK   |            |      |
+| pandas     | MPI           | LAPACKE  |            |      |
+|            |               | Ninja    |            |      |
+|            |               | OpenMP   |            |      |
+|            |               | ccache   |            |      |
 |            |               | Boost    |            |      |
-|            |               | openBLAS |            |      |
 |            |               | pybind   |            |      |
 
 

@@ -5,9 +5,7 @@ t1 = time()
 include("../objects/mesh.jl")
 using .IRMesh
 
-include("../qmodule/src/cpp_imports.jl")
-using .Quasi
-Quasi.load_config!("/home/g/Research/ffirefly/build/bin/input.cfg")
+using Firefly
 
 using CUDA, FFTW
 using NFFT
@@ -25,7 +23,7 @@ t2 = time()
 ffirefly = pyimport("ffirefly")
 t3 = time()
 #println("Time to load ffirefly: ", t3 - t2)
-cfg = ffirefly.config
+cfg = Firefly.Config
 
 prefix = cfg.prefix
 outdir = cfg.outdir

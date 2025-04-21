@@ -1,8 +1,8 @@
 module response_ir
 
-include("../qmodule/src/cpp_imports.jl")
-using .Quasi
-Quasi.load_config!("/home/g/Research/ffirefly/build/bin/input.cfg")
+using Firefly
+cfg = Firefly.Config
+#Firefly.load_config!("/home/g/Research/ffirefly/build/bin/input.cfg")
 
 include("../objects/mesh.jl")
 using .IRMesh
@@ -11,8 +11,6 @@ import SparseIR: Statistics, value, valueim
 using PyCall
 using Printf
 using Base.Threads
-ffirefly = pyimport("ffirefly")
-cfg = ffirefly.config
 
 T = cfg.Temperature
 beta = 1 / T
