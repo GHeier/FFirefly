@@ -1,5 +1,4 @@
 name = "Firefly"
-uuid = "226e8b73-0f40-457f-8542-cfe764eb678f"
+uuid = "f0119071-79de-41eb-b75f-69c202aeece9"
+authors = ["Griffin Heier <griffinheier@gmail.com>"]
 version = "0.1.0"
-authors = ["Griffin Heier griffinheier@gmail.com"]
-description = "CMT codebase with universal integration of languages and packages"

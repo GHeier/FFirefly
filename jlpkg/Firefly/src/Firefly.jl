@@ -1,7 +1,5 @@
 module Firefly
 
-function greet()
-    println("are ya ready kids?")
-end
+greet() = print("Hello World! weeee")
 
-end # module
+end # module Firefly
