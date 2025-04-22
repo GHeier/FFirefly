@@ -36,7 +36,7 @@ The simplest way to use Ffirefly is to create a .cfg input file and run fly.x wi
     density of states calculation would save to 'prefix_dos.dat'.
 
 A python wrapper is available to run multiple sequential calculations. This may also be accomplished in the main executable by the use of '+' signs in between sequential calculation categories in the `category` input line. 
-The python wrapper comes with launchers and data extracters for every calculation type, so it is easy create sets of calculations and extract the data at every step. This can be useful, for instance, to calculate the phase across a range of temperatures and chemical potentials. An example of this can be seen in scripts/eliashberg.py.
+The python wrapper comes with launchers and data extracters for every calculation type, so it is easy to create sets of calculations and extract the data at every step. This can be useful, for instance, to calculate the phase across a range of temperatures and chemical potentials. An example of this can be seen in scripts/eliashberg.py.
 
 ---
 
@@ -68,7 +68,7 @@ This package grants access to a wide variety of extremely powerful algorithms wi
 
 
 #### **2️⃣ Build Instructions**  
- - Once the above have been downloaded, simply go to the "scripts" folder and run "./fly-build.sh -vv" to build the code. -v indicates a verbose output, -vv indicates a very verbose output. The first time building, using -vv can be helpful in the event of an error. I recommend setting fly-build.sh to a custom terminal command, so recompilation can be done from outside folders, which can be useful when running tests and material calculations.
+ - Once the above have been downloaded, simply go to the "scripts" folder and run "./fly-build.sh -vv" to build the code. -v indicates a verbose output, -vv indicates a very verbose output. The first time building, using -vv can be helpful in the event of an error. If you are a developer, I recommend setting fly-build.sh to a custom terminal command, so recompilation can be done from outside folders, which can be useful when running tests and material calculations.
  - To ensure Ffirefly has been properly installed, simply run "fly.x". The tests will run, and if all pass then you have downloaded the packages correctly. If not, the package that failed will be listed.
  - Adding tests and re-running this is also an excellent way to test your code while creating projects
 
