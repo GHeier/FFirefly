@@ -1,5 +1,7 @@
 #include <omp.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include "config/load/c_config.h"
@@ -15,6 +17,9 @@
 // Test nodes below
 #include "hamiltonian/tests/all.hpp"
 #include "objects/tests/all.hpp"
+
+#define MAX_TOKENS 10 // Max number of substrings
+#define MAX_LENGTH 50 // Max length of each substring
 
 // Global category calls
 void DOS() {
@@ -76,6 +81,19 @@ int main() {
   load_cpp_config_wrapper(); // Read input to load global cpp variables
   start_python();
 
+  // Handling '+' separated categories for sequential runs
+  char str_copy[MAX_LENGTH];
+  strncpy(str_copy, c_category, MAX_LENGTH); // Copy string safely
+  char *tokens[MAX_TOKENS]; // Array of char pointers to hold the tokens
+  int count = 0;
+
+  char *token = strtok(str_copy, "+");
+  while (token != NULL && count < MAX_TOKENS) {
+    tokens[count] = strdup(token); // Allocate memory and copy token
+    count++;
+    token = strtok(NULL, "+");
+  }
+
   print_banner_bottom();
 
   // Set the number of threads used in parallelization to one less than the
@@ -86,22 +104,29 @@ int main() {
     printf("Number of threads used in CPU parallelization: %d\n",
            num_procs - 1);
 
-  if (!strcmp(c_category, "DOS"))
-    DOS();
-  else if (!strcmp(c_category, "fermi_surface"))
-    fermi_surface();
-  else if (!strcmp(c_category, "response"))
-    response();
-  else if (!strcmp(c_category, "superconductor"))
-    superconductor();
-  else if (!strcmp(c_category, "vertex"))
-    vertex();
-  else if (!strcmp(c_category, "test"))
-    test();
-  else
-    printf("Unknown Category\n");
+  for (int i = 0; i < count; i++) {
+    char *category = tokens[i];
+    if (!strcmp(category, "DOS"))
+      DOS();
+    else if (!strcmp(category, "fermi_surface"))
+      fermi_surface();
+    else if (!strcmp(category, "response"))
+      response();
+    else if (!strcmp(category, "superconductor"))
+      superconductor();
+    else if (!strcmp(category, "vertex"))
+      vertex();
+    else if (!strcmp(category, "test"))
+      test();
+    else
+      printf("Unknown Category\n");
+    exit(1);
+  }
 
   // unload_c_config(); // Free memory allocated for global c variables
+  for (int i = 0; i < count; i++) {
+    free(tokens[i]);
+  }
   end_python();
   printf("\nProgram Complete\n");
   return 0;

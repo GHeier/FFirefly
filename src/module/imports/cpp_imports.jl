@@ -2,7 +2,14 @@
 
 
 module Imports
-export epsilon, load_config!
+
+export epsilon,
+       load_config!,
+       Field_C,
+       Field_R,
+       destroy!,
+       save_field_to_file!,
+       save_data
 
 const libfly = abspath(@__FILE__)[1:end-51] * "build/lib/libfly.so"
 
@@ -25,7 +32,7 @@ function Field_C()
 end
 
 function Field_C(filename::String)
-    ptr = ccall((:load_Field_C, libfly), Ptr{Cvoid}, (Cstring,), filename)
+    ptr = ccall((:Field_C_export2, libfly), Ptr{Cvoid}, (Cstring,), filename)
     return Field_C(ptr)
 end
 
@@ -33,7 +40,7 @@ function (self::Field_C)(w)::ComplexF32
     real_result::Ref{Float32} = Ref(Float32(0.0))
     imag_result::Ref{Float32} = Ref(Float32(0.0))
     neww = Float32(w)
-    ccall((:Field_C_operator_export0, libfly), Cvoid, (Ptr{Cvoid}, Cfloat,), self.ptr, neww)
+    ccall((:Field_C_operator_export0, libfly), Cvoid, (Ptr{Cvoid}, Cfloat, Ptr{Cfloat}, Ptr{Cfloat},), self.ptr, neww, real_result, imag_result)
     return ComplexF32(real_result[], imag_result[])
   end
 
@@ -41,7 +48,7 @@ function (self::Field_C)(n, w)::ComplexF32
     real_result::Ref{Float32} = Ref(Float32(0.0))
     imag_result::Ref{Float32} = Ref(Float32(0.0))
     neww = Float32(w)
-    ccall((:Field_C_operator_export1, libfly), Cvoid, (Ptr{Cvoid}, Cint, Cfloat,), self.ptr, n, neww)
+    ccall((:Field_C_operator_export1, libfly), Cvoid, (Ptr{Cvoid}, Cint, Cfloat, Ptr{Cfloat}, Ptr{Cfloat},), self.ptr, n, neww, real_result, imag_result)
     return ComplexF32(real_result[], imag_result[])
   end
 
@@ -51,7 +58,7 @@ function (self::Field_C)(k::Vector{Float64}, w=0f0)::ComplexF32
     newk::Vector{Float32} = Float32.(k)
     len = length(newk)
     neww = Float32(w)
-    ccall((:Field_C_operator_export2, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}, Cint, Cfloat,), self.ptr, newk, len, neww)
+    ccall((:Field_C_operator_export2, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}, Cint, Cfloat,Ptr{Cfloat}, Ptr{Cfloat},), self.ptr, newk, len, neww, real_result, imag_result)
     return ComplexF32(real_result[], imag_result[])
   end
 
@@ -61,7 +68,7 @@ function (self::Field_C)(n, k::Vector{Float64}, w=0f0)::ComplexF32
     newk::Vector{Float32} = Float32.(k)
     len = length(newk)
     neww = Float32(w)
-    ccall((:Field_C_operator_export3, libfly), Cvoid, (Ptr{Cvoid}, Cint, Ptr{Float32}, Cint, Cfloat,), self.ptr, n, newk, len, neww)
+    ccall((:Field_C_operator_export3, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}, Cint, Cfloat,Ptr{Cfloat}, Ptr{Cfloat},), self.ptr, newk, len, neww, real_result, imag_result)
     return ComplexF32(real_result[], imag_result[])
   end
 
@@ -126,28 +133,6 @@ end
 end # module Field
 
 #using .Imports
-
-#println("Testing Field module")
-#println(Field.jtestfunc(2.0))
-#println("Test passed")
-#
-#file = "/home/g/Research/Materials/Test/test_chi.dat"
-##cmf2 = load_cmf_cs(file)
-#cmf2 = Quasi.Field_C(file)
-#if cmf2 == C_NULL
-#    error("Failed to load CMF_CS from file: ", file)
-#end
-#println(cmf2([-3.07, -3.07], -751.0593))
-#println("Test passed")
-##println(cmf_cs_call(cmf2, [-3.14, -3.14, -3.14], 0.0))
-##cmf3 = load_cmf_cs("/home/g/Research/Materials/Test/DOS.dat")
-#cmf3 = Quasi.Field_R("/home/g/Research/Materials/Test/test_DOS.dat")
-#if cmf3 == C_NULL
-#    error("Failed to load CMF_CS from file: DOS.dat")
-#end
-##println(cmf_cs_call2(cmf3, 0.0))
-##println(cmf3(0.0))
-#println(cmf3(1.0))
 
 #testcmf = Ffirefly.Field_R("../../../sample_bands.dat")
 #println(testcmf(1, [-1.0, -0.6]))

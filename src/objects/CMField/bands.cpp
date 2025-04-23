@@ -14,7 +14,7 @@ Bands::Bands() {
   file_found = false;
   string filename = outdir + prefix + "_bands.dat";
   ifstream file(filename);
-  if (file.is_open()) {
+  if (file.is_open() and !automatic_file_read) {
     Field_R data(filename);
     fields = data;
     file_found = true;

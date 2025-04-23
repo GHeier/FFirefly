@@ -8,6 +8,7 @@
  * Author: Griffin Heier
  */
 #include <algorithm>
+#include <cmath>
 #include <complex>
 #include <fstream>
 #include <iomanip>
@@ -278,6 +279,13 @@ void CMField::find_domain(CMData &data) {
     nw = section_sizes[3];
 }
 
+double fold(double x) {
+  double decimal = x - std::floor(x);
+  return 1 - decimal;
+}
+
+Vec fold_to_first_BZ(Vec p) { return Vec(fold(p.x), fold(p.y), fold(p.z)); }
+
 complex<Vec> CMField::operator()(float w) {
   if (!data.with_w)
     throw runtime_error("This field does not have a w dimension.");
@@ -303,6 +311,7 @@ complex<Vec> CMField::operator()(Vec point, float w) {
     throw runtime_error("This field requires an index to be specified.");
   Vec shifted = point - first;
   Vec p = vec_matrix_multiplication(inv_domain, shifted, data.dimension);
+  p = fold_to_first_BZ(p);
   p.w = w;
   if (!data.with_w) {
     if (data.dimension == 1)
@@ -333,6 +342,7 @@ complex<Vec> CMField::operator()(int n, Vec point, float w) {
     throw out_of_range("Index starts at 1 and is out of bounds.");
   Vec shifted = point - first;
   Vec p = vec_matrix_multiplication(inv_domain, shifted, data.dimension);
+  p = fold_to_first_BZ(p);
   p.w = w;
   if (!data.with_w) {
     if (data.dimension == 1)
@@ -392,6 +402,7 @@ complex<Vec> CMF_search_2d(float x_val, float w_val, int nx,
   // value of f(x_val)
   float x_min = 0, x_max = 1;
   float w_min = w_points[0], w_max = w_points[w_points.size() - 1];
+  int nw = w_points.size();
 
   x_val = sanitize_within_bounds(x_val, x_min, x_max);
   w_val = sanitize_within_bounds(w_val, w_min, w_max);
@@ -420,10 +431,10 @@ complex<Vec> CMF_search_2d(float x_val, float w_val, int nx,
   if (w_rel < 0 || w_rel > 1)
     throw out_of_range("w_rel out of bounds");
 
-  complex<Vec> result = (1 - x_rel) * (1 - w_rel) * f[i * nx + j] +
-                        x_rel * (1 - w_rel) * f[(i + 1) * nx + j] +
-                        (1 - x_rel) * w_rel * f[i * nx + j + 1] +
-                        x_rel * w_rel * f[(i + 1) * nx + j + 1];
+  complex<Vec> result = (1 - x_rel) * (1 - w_rel) * f[i * nw + j] +
+                        x_rel * (1 - w_rel) * f[(i + 1) * nw + j] +
+                        (1 - x_rel) * w_rel * f[i * nw + j + 1] +
+                        x_rel * w_rel * f[(i + 1) * nw + j + 1];
 
   return result;
 }
@@ -441,6 +452,7 @@ complex<Vec> CMF_search_3d(float x_val, float y_val, float w_val, int nx,
   float x_min = 0, x_max = 1;
   float y_min = 0, y_max = 1;
   float w_min = w_points[0], w_max = w_points[w_points.size() - 1];
+  int nw = w_points.size();
 
   x_val = sanitize_within_bounds(x_val, x_min, x_max);
   y_val = sanitize_within_bounds(y_val, y_min, y_max);
@@ -466,7 +478,7 @@ complex<Vec> CMF_search_3d(float x_val, float y_val, float w_val, int nx,
     i--;
   if (j == ny - 1)
     j--;
-  if (k == w_points.size() - 1)
+  if (k == nw - 1)
     k--;
 
   float x_rel = (x_val - x_min) / dx - i;
@@ -480,14 +492,14 @@ complex<Vec> CMF_search_3d(float x_val, float y_val, float w_val, int nx,
     throw out_of_range("w_rel out of bounds");
 
   complex<Vec> result =
-      (1 - x_rel) * (1 - y_rel) * (1 - w_rel) * f[i * nx * nx + j * ny + k] +
-      x_rel * (1 - y_rel) * (1 - w_rel) * f[(i + 1) * nx * nx + j * ny + k] +
-      (1 - x_rel) * y_rel * (1 - w_rel) * f[i * nx * nx + (j + 1) * ny + k] +
-      x_rel * y_rel * (1 - w_rel) * f[(i + 1) * nx * nx + (j + 1) * ny + k] +
-      (1 - x_rel) * (1 - y_rel) * w_rel * f[i * nx * nx + j * ny + k + 1] +
-      x_rel * (1 - y_rel) * w_rel * f[(i + 1) * nx * nx + j * ny + k + 1] +
-      (1 - x_rel) * y_rel * w_rel * f[i * nx * nx + (j + 1) * ny + k + 1] +
-      x_rel * y_rel * w_rel * f[(i + 1) * nx * nx + (j + 1) * ny + k + 1];
+      (1 - x_rel) * (1 - y_rel) * (1 - w_rel) * f[i * ny * nw + j * nw + k] +
+      x_rel * (1 - y_rel) * (1 - w_rel) * f[(i + 1) * ny * nw + j * nw + k] +
+      (1 - x_rel) * y_rel * (1 - w_rel) * f[i * ny * nw + (j + 1) * nw + k] +
+      x_rel * y_rel * (1 - w_rel) * f[(i + 1) * ny * nw + (j + 1) * nw + k] +
+      (1 - x_rel) * (1 - y_rel) * w_rel * f[i * ny * nw + j * nw + k + 1] +
+      x_rel * (1 - y_rel) * w_rel * f[(i + 1) * ny * nw + j * nw + k + 1] +
+      (1 - x_rel) * y_rel * w_rel * f[i * ny * nw + (j + 1) * nw + k + 1] +
+      x_rel * y_rel * w_rel * f[(i + 1) * ny * nw + (j + 1) * nw + k + 1];
 
   return result;
 }
@@ -508,6 +520,7 @@ complex<Vec> CMF_search_4d(float x_val, float y_val, float z_val, float w_val,
   float y_min = 0, y_max = 1;
   float z_min = 0, z_max = 1;
   float w_min = w_points[0], w_max = w_points[w_points.size() - 1];
+  int nw = w_points.size();
 
   x_val = sanitize_within_bounds(x_val, x_min, x_max);
   y_val = sanitize_within_bounds(y_val, y_min, y_max);
@@ -560,37 +573,37 @@ complex<Vec> CMF_search_4d(float x_val, float y_val, float z_val, float w_val,
 
   complex<Vec> result =
       (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * (1 - w_rel) *
-          f[i * nx * nx * nx + j * ny * ny + k * nz + l] +
+          f[i * ny * nz * nw + j * nz * nw + k * nw + l] +
       x_rel * (1 - y_rel) * (1 - z_rel) * (1 - w_rel) *
-          f[(i + 1) * nx * nx * nx + j * ny * ny + k * nz + l] +
+          f[(i + 1) * ny * nz * nw + j * nz * nw + k * nw + l] +
       (1 - x_rel) * y_rel * (1 - z_rel) * (1 - w_rel) *
-          f[i * nx * nx * nx + (j + 1) * ny * ny + k * nz + l] +
+          f[i * ny * nz * nw + (j + 1) * nz * nw + k * nw + l] +
       x_rel * y_rel * (1 - z_rel) * (1 - w_rel) *
-          f[(i + 1) * nx * nx * nx + (j + 1) * ny * ny + k * nz + l] +
+          f[(i + 1) * ny * nz * nw + (j + 1) * nz * nw + k * nw + l] +
       (1 - x_rel) * (1 - y_rel) * z_rel * (1 - w_rel) *
-          f[i * nx * nx * nx + j * ny * ny + (k + 1) * nz + l] +
+          f[i * ny * nz * nw + j * nz * nw + (k + 1) * nw + l] +
       x_rel * (1 - y_rel) * z_rel * (1 - w_rel) *
-          f[(i + 1) * nx * nx * nx + j * ny * ny + (k + 1) * nz + l] +
+          f[(i + 1) * ny * nz * nw + j * nz * nw + (k + 1) * nw + l] +
       (1 - x_rel) * y_rel * z_rel * (1 - w_rel) *
-          f[i * nx * nx * nx + (j + 1) * ny * ny + (k + 1) * nz + l] +
+          f[i * ny * nz * nw + (j + 1) * nz * nw + (k + 1) * nw + l] +
       x_rel * y_rel * z_rel * (1 - w_rel) *
-          f[(i + 1) * nx * nx * nx + (j + 1) * ny * ny + (k + 1) * nz + l] +
+          f[(i + 1) * ny * nz * nw + (j + 1) * nz * nw + (k + 1) * nw + l] +
       (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * w_rel *
-          f[i * nx * nx * nx + j * ny * ny + k * nz + l + 1] +
+          f[i * ny * nz * nw + j * nz * nw + k * nw + l + 1] +
       x_rel * (1 - y_rel) * (1 - z_rel) * w_rel *
-          f[(i + 1) * nx * nx * nx + j * ny * ny + k * nz + l + 1] +
+          f[(i + 1) * ny * nz * nw + j * nz * nw + k * nw + l + 1] +
       (1 - x_rel) * y_rel * (1 - z_rel) * w_rel *
-          f[i * nx * nx * nx + (j + 1) * ny * ny + k * nz + l + 1] +
+          f[i * ny * nz * nw + (j + 1) * nz * nw + k * nw + l + 1] +
       x_rel * y_rel * (1 - z_rel) * w_rel *
-          f[(i + 1) * nx * nx * nx + (j + 1) * ny * ny + k * nz + l + 1] +
+          f[(i + 1) * ny * nz * nw + (j + 1) * nz * nw + k * nw + l + 1] +
       (1 - x_rel) * (1 - y_rel) * z_rel * w_rel *
-          f[i * nx * nx * nx + j * ny * ny + (k + 1) * nz + l + 1] +
+          f[i * ny * nz * nw + j * nz * nw + (k + 1) * nw + l + 1] +
       x_rel * (1 - y_rel) * z_rel * w_rel *
-          f[(i + 1) * nx * nx * nx + j * ny * ny + (k + 1) * nz + l + 1] +
+          f[(i + 1) * ny * nz * nw + j * nz * nw + (k + 1) * nw + l + 1] +
       (1 - x_rel) * y_rel * z_rel * w_rel *
-          f[i * nx * nx * nx + (j + 1) * ny * ny + (k + 1) * nz + l + 1] +
+          f[i * ny * nz * nw + (j + 1) * nz * nw + (k + 1) * nw + l + 1] +
       x_rel * y_rel * z_rel * w_rel *
-          f[(i + 1) * nx * nx * nx + (j + 1) * ny * ny + (k + 1) * nz + l + 1];
+          f[(i + 1) * ny * nz * nw + (j + 1) * nz * nw + (k + 1) * nw + l + 1];
 
   return result;
 }

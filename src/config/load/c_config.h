@@ -15,6 +15,7 @@ extern char* c_prefix; char* get_prefix();
 extern char* c_verbosity; char* get_verbosity();
 extern char* c_input_data_file; char* get_input_data_file();
 extern char* c_output_data_file; char* get_output_data_file();
+extern bool c_automatic_file_read;
 
 //[SYSTEM]
 extern char* c_interaction; char* get_interaction();

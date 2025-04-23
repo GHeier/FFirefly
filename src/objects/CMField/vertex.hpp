@@ -4,16 +4,17 @@
 
 using namespace std;
 
-class Two_Particle_Interaction {
-    public:
-        Field_R field_r;
-        Field_C field_c;
-        bool complex;
-        bool file_found;
+class Vertex {
+public:
+  CMField field;
+  bool file_found;
 
-        Two_Particle_Interaction(bool complex = false);
-        ~Two_Particle_Interaction();
-        float operator()(Vec k, float w = 0);
-        ::complex<float> operator()(Vec k, ::complex<float> w);
+  Vertex();
+  //  ~Vertex();
+  // float operator()(Vec k, float w = 0, string label1 = "", string label2 =
+  // "");
+  complex<float> operator()(Vec k, complex<float> w, string label1 = "",
+                            string label2 = "");
+  complex<float> operator()(Vec k, float w, string label1 = "",
+                            string label2 = "");
 };
-

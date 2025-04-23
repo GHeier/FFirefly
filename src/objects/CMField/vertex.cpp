@@ -1,31 +1,35 @@
 #include "vertex.hpp"
-#include "fields.hpp"
-#include "../../hamiltonian/interaction.hpp"
 #include "../../config/load/cpp_config.hpp"
+#include "../../hamiltonian/interaction.hpp"
+#include "../vec.hpp"
+#include "cmfield.hpp"
+#include "fields.hpp"
+#include <filesystem>
 
 #include <complex>
 
 using namespace std;
+namespace fs = std::filesystem;
 
-Two_Particle_Interaction::Two_Particle_Interaction(bool complex) {
-    if (complex) 
-        field_c = (prefix+"_2PI.dat");
-    else 
-        field_r = (prefix+"_2PI.dat");
+Vertex::Vertex() {
+  string filename = outdir + prefix + "_vertex.dat";
+  if (fs::exists(filename) and !automatic_file_read) {
+    field = load_CMField(outdir + prefix + "_vertex.dat");
     file_found = true;
+  } else {
+    file_found = false;
+  }
 }
 
-float Two_Particle_Interaction::operator()(Vec k, float w) {
-    if (!file_found) return V(k, w);
-    if (complex) 
-        throw runtime_error("Error: frequency is real, but 2PI is complex");
-    return field_r(k, w);
+complex<float> Vertex::operator()(Vec k, float w, string label1,
+                                  string label2) {
+  if (!file_found)
+    return complex<float>(V(k, imag(w), label1, label2), 0);
+  complex<Vec> val = field(k, w);
+  return complex<float>(val.real().x, val.imag().x);
 }
 
-complex<float> Two_Particle_Interaction::operator()(Vec k, ::complex<float> w) {
-    //if (!file_found) return V(k);
-    if (!complex) 
-        throw runtime_error("Error: frequency is complex, but 2PI is real");
-    return field_c(k, imag(w));
+complex<float> Vertex::operator()(Vec k, complex<float> w, string label1,
+                                  string label2) {
+  return operator()(k, imag(w), label1, label2);
 }
-

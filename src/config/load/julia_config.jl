@@ -15,6 +15,7 @@ prefix::String = cfg.prefix
 verbosity::String = cfg.verbosity
 input_data_file::String = cfg.input_data_file
 output_data_file::String = cfg.output_data_file
+automatic_file_read::Bool = cfg.automatic_file_read
 
 #[SYSTEM]
 interaction::String = cfg.interaction

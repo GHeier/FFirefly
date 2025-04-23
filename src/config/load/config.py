@@ -9,6 +9,7 @@ prefix = 'sample'
 verbosity = 'low'
 input_data_file = 'input.dat'
 output_data_file = 'output.dat'
+automatic_file_read = True
 
 #[SYSTEM]
 interaction = 'none'
@@ -127,6 +128,9 @@ def load_config():
             if "output_data_file" in key:
                 global output_data_file
                 output_data_file = value
+            if "automatic_file_read" in key:
+                global automatic_file_read
+                automatic_file_read = value == 'true'
 
 #[SYSTEM]
             if "interaction" in key:

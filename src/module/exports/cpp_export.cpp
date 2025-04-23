@@ -3,8 +3,10 @@
 #include "../../config/load/c_config.h"
 #include "../../config/load/cpp_config.hpp"
 #include "../../hamiltonian/band_structure.hpp"
+#include "../../objects/CMField/bands.hpp"   // Include CMF class
 #include "../../objects/CMField/cmfield.hpp" // Include CMF class
 #include "../../objects/CMField/fields.hpp"  // Include CMF class
+#include "../../objects/CMField/vertex.hpp"  // Include CMF class
 #include "../../objects/vec.hpp"
 
 extern "C" float epsilon_export0(int n, float *k, int size) {
@@ -21,6 +23,9 @@ extern "C" void load_config_export0(const char *filename) {
 }
 
 extern "C" {
+
+Bands *Bands_export0() { return new Bands(); }
+Vertex *Vertex_export0() { return new Vertex(); }
 
 Field_C *Field_C_export0() { return new Field_C(); }
 Field_C *Field_C_export1(CMField cmf) { return new Field_C(cmf); }

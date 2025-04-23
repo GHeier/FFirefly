@@ -1,14 +1,16 @@
 #pragma once
 
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "../objects/vec.hpp"
 
-
 float f_singlet(float x, float T);
 float f_singlet_integral(float T);
-float f(vector<Vec> k, float T, const unordered_map<float, vector<vector<vector<float>>> > &cube_map);
-float get_Tc(vector<Vec> k, const unordered_map<float, vector<vector<vector<float>>> > &cube_map);
+float get_Tc_FS_only(double eig);
+float f(vector<Vec> k, float T,
+        const unordered_map<float, vector<vector<vector<float>>>> &cube_map);
+float get_Tc(
+    vector<Vec> k,
+    const unordered_map<float, vector<vector<vector<float>>>> &cube_map);
 float coupling_calc(vector<Vec> &FS, float T);
-

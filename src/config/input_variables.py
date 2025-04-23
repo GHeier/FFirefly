@@ -17,7 +17,8 @@ ALL = {
         'prefix': 'sample',
         'verbosity': 'low',
         'input_data_file': 'input.dat',
-        'output_data_file': 'output.dat'
+        'output_data_file': 'output.dat',
+        'automatic_file_read': True
     },
     'SYSTEM': {
         'interaction': 'none',

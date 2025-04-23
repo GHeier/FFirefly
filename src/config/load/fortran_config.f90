@@ -36,6 +36,8 @@ module ffirefly
     character(len=50) :: verbosity
     character(len=50) :: input_data_file
     character(len=50) :: output_data_file
+    logical(c_bool), bind(C, name="c_automatic_file_read") :: c_automatic_file_read
+    logical :: automatic_file_read
 
 ![SYSTEM]
     character(len=50) :: interaction
@@ -145,6 +147,7 @@ module ffirefly
             type(c_ptr) :: get_output_data_file
     end function get_output_data_file
 
+
 ![SYSTEM]
         function get_interaction() bind(C)
             use iso_c_binding
@@ -236,6 +239,7 @@ contains
         verbosity = get_string(get_verbosity())
         input_data_file = get_string(get_input_data_file())
         output_data_file = get_string(get_output_data_file())
+        automatic_file_read = c_automatic_file_read
 
 ![SYSTEM]
         interaction = get_string(get_interaction())

@@ -87,7 +87,11 @@ void bcs() {
     m_size = matrix_size_from_freq_FS(freq_FS);
 
   Matrix P(m_size);
-  create_P(P, FS);
+  if (FS_only)
+    create_P(P, FS);
+  else {
+    create_P_freq(P, freq_FS, T);
+  }
   float f = f_singlet_integral(T);
   cout << "F-integral value: " << f << endl;
 
@@ -98,6 +102,11 @@ void bcs() {
   // Sort solutions with highest eigenvalue/eigenvector pair first
   cout << "Sorting Eigenvectors..." << endl;
   sort(solutions, solutions + num_eigenvalues_to_save, descending_eigenvalues);
+  cout << "Max eigenvalue: " << solutions[0].eigenvalue << endl;
+  if (FS_only) {
+    cout << "Calculated Critical Temperature: "
+         << get_Tc_FS_only(solutions[0].eigenvalue) << endl;
+  }
   cout << "Sorted Eigenvectors\n";
   if (FS_only)
     vector_to_wave(FS, solutions);

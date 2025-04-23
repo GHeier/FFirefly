@@ -18,6 +18,7 @@ string prefix;
 string verbosity;
 string input_data_file;
 string output_data_file;
+bool automatic_file_read;
 
 //[SYSTEM]
 string interaction;
@@ -79,6 +80,7 @@ extern "C" void load_cpp_config() {
     verbosity = c_verbosity;
     input_data_file = c_input_data_file;
     output_data_file = c_output_data_file;
+    automatic_file_read = c_automatic_file_read;
 
 //[SYSTEM]
     interaction = c_interaction;

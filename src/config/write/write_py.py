@@ -76,9 +76,9 @@ def write_py(ALL):
     add_lines(ALL, file_path, start_set_phrase, end_set_phrase, format_set_line)
     replace_comments(file_path)
     print(f"Successfully updated the file '{file_path}'.")
-    file_path = '../fmodule.cpp'
-    add_lines(ALL, file_path, start_module_phrase, end_module_phrase, format_module_line)
-    print(f"Successfully updated the file '{file_path}'.")
+    #file_path = '../fmodule.cpp'
+    #add_lines(ALL, file_path, start_module_phrase, end_module_phrase, format_module_line)
+    #print(f"Successfully updated the file '{file_path}'.")
     file_path = '../__init__.py'
     add_lines(ALL, file_path, start_init_phrase, end_init_phrase, format_init_line)
     replace_comments(file_path)

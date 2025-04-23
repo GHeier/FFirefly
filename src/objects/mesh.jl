@@ -9,8 +9,7 @@ using PyCall
 
 using Firefly
 
-firefly = pyimport("firefly")
-cfg = firefly.config
+cfg = Firefly.Config
 
 BZ = cfg.brillouin_zone
 dim = cfg.dimension

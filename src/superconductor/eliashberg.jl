@@ -1,26 +1,27 @@
 module Eliashberg
 println("Started Julia")
+using Firefly
 
 t1 = time()
 include("../objects/mesh.jl")
 using .IRMesh
 
-using Firefly
 
 using CUDA, FFTW
-using NFFT
-using Plots
+using MPI
+#using NFFT
+#using Plots
 using Roots
 using SparseIR
 import SparseIR: Statistics, value, valueim, MatsubaraSampling64F, TauSampling64
-using Base.Threads, JLD
+using Base.Threads
+#using JLD
 using LinearAlgebra, Printf, PyCall
 np = pyimport("numpy")
 
 t2 = time()
 #println("Time to load: ", t2 - t1)
 
-ffirefly = pyimport("ffirefly")
 t3 = time()
 #println("Time to load ffirefly: ", t3 - t2)
 cfg = Firefly.Config
@@ -136,7 +137,6 @@ function fill_V_arr(iw, frequency_dependence, V_obj)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:length(iw)
         q = get_kvec(i, j, k)
         w = iw[l]
-        println("q: ", q, " w: ", w)
         Vw_arr[l, i, j, k] = V_obj(q, imag(w))
     end
     #Vw_arr .= Vw_arr .+ paper2_V.(iw)
@@ -300,7 +300,7 @@ function eliashberg_global()
     IR_tol = 1e-5
     scf_tol = 1e-4
 
-    vertex = Quasi.Field_C(outdir * prefix * "_2PI.dat")
+    vertex = Firefly.Field_C(outdir * prefix * "_vertex.dat")
 
     frequency_dependence = true
     if frequency_dependence
@@ -368,10 +368,8 @@ function eliashberg_global()
             update_fourier_transform!(F_arr, G_arr, V_arr, phi_arr, Z_arr, chi_arr, iw, sigma)
         end
 
-        #phierr = round(sum(abs.(prev_phi_arr - phi_arr)) / (nw * nx * ny * nz),digits=8)
-        phierr = maximum(abs.(phi_arr - prev_phi_arr))
+        phierr = minimum((maximum(real.(phi_arr - prev_phi_arr)), maximum(real.(phi_arr + prev_phi_arr))))
         max_phi = round(maximum(abs.(phi_arr)), digits=6)
-        #print("Iteration $i: Max Phi = $max_phi, mu = $mu, Error = $phierr           \r")
         print("Iteration $i: MaxPhi = $max_phi              Error = $phierr           \r")
 
         if abs(phierr) < scf_tol || max_phi < 1e-10

@@ -1,22 +1,24 @@
-import ffirefly
+import firefly
 import numpy as np
+from scipy.interpolate import interp1d
 
 config = {
         'CONTROL': {
             'category': 'superconductor',
             'method': 'eliashberg',
-            'prefix': 'first',
+            'prefix': 'sample',
             },
         'SYSTEM': {
             'interaction': 'FLEX',
             'dimension': 2,
-            'fermi_energy': -1.0,
+            'fermi_energy': -1.2,
             'Temperature': 0.0001,
-            'onsite_U': 4.0,
+            'onsite_U': 3.0,
             'nbnd': 1,
+            'ibrav': 1,
             },
         'MESH': {
-            'k_mesh': [100, 100, 100],
+            'k_mesh': [650, 650, 650],
             'q_mesh': [10, 10, 10],
             'w_pts': 30000
             },
@@ -29,40 +31,60 @@ config = {
             },
         }
 
+def get_slope_diff(x_data, y_data):
+    f_interp = interp1d(x_data, y_data, kind='cubic', fill_value='extrapolate')
+    x3 = x_data[-1]
+    x2 = x_data[-2]
+    x1 = x_data[-3]
+    y3 = f_interp(x3)
+    y2 = f_interp(x2)
+    y1 = f_interp(x1)
+
+    m23 = (y3 - y2) / (x3 - x2)
+    m12 = (y2 - y1) / (x2 - x1)
+    return m23 - m12
+
+def update_dT(T_list, phi_list, dT):
+    m = abs(get_slope_diff(T_list, phi_list)) + 1e-4
+    r = max(5e-2 / m * dT, 1e-4)
+    r = min(r, 5e-2)
+    return r
+
 def eliashberg(filename):
-    Ti = 1e-4
+    Ti = 1.0e-4
     Tf = 1.0
-    phi_max_initial = 0
+    dT = 1e-3
     flatline = True
     T_list, phi_list = [], []
     print("Temperature, Max phi")
 
     for i in range(50):
         config['SYSTEM']['Temperature'] = Ti
-        output = ffirefly.launch(config)
-        print(output)
-        match = ffirefly.grep(output, "Max phi:")
-        value = ffirefly.extract_value(match)
+        output, error = firefly.launch(config)
+        #if(len(error) > 0):
+        #    print("Error occured")
+        #    print(error)
+        #    print("Error lines found: ", len(error))
+        match = firefly.grep(output, "Max phi:")
+        value = firefly.extract_value(match)
 
-        if i == 0:
-            phi_max_initial = value
-        print(round(Ti, 6), round(value, 6))
+        print(f"{Ti:.5f} {value:.5f}")
+        #print(dT)
 
         T_list.append(Ti)
         phi_list.append(value)
-        if phi_max_initial * 0.9 < value:
-            Ti += 5e-4
-        else:
-            Ti += 5e-5
-            if flatline:
-                Ti -= 5e-4
-            flatline = False
-        if Ti > Tf or value < phi_max_initial * 0.1:
+
+        if i > 2:
+            dT = update_dT(T_list, phi_list, dT)
+        Ti += dT
+        if value < 3e-4 or Ti > Tf:
             break
+
     data = np.array([T_list, phi_list])
     header = "Temperature Max_phi"
     np.savetxt(filename, data, delimiter=" ", header=header, fmt="%d")
 
+print("Fermi_energy: ", config['SYSTEM']['fermi_energy'])
 eliashberg("Phi_v_T.dat")
 
 """

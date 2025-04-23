@@ -51,7 +51,8 @@ CMData::CMData(string filename) { *this = load(filename); }
 CMData load(string filename) {
   ifstream file(filename);
   if (!file.is_open()) {
-    throw runtime_error("Failed to open the file.");
+    string base_err = "Failed to open teh file: ";
+    throw runtime_error(base_err + filename);
   }
   string line;
   int ind = 0;

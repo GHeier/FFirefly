@@ -15,9 +15,9 @@ current_file = os.path.abspath(__file__)
 folder = current_file[:-25] + "build/bin/"
 
 def run(cfg_file):
-    #result = subprocess.run([folder + "ffirefly.x", cfg_file], capture_output=True, text=True)
+    #result = subprocess.run([folder + "fly.x", cfg_file], capture_output=True, text=True)
     with open(cfg_file, 'r') as f:
-        result = subprocess.run([folder + "ffirefly.x"], stdin=f, capture_output=True, text=True)
+        result = subprocess.run([folder + "fly.x"], stdin=f, capture_output=True, text=True)
     return result.stdout, result.stderr
 
 def forge(cfg_file, config):
@@ -44,7 +44,8 @@ def launch(config):
     cfg_file = "temp.cfg"
     forge(cfg_file, config)
     output, error = run(cfg_file)
-    subprocess.run(["rm", cfg_file])
+    if os.path.exists(cfg_file):
+        subprocess.run(["rm", cfg_file])
     return output, error
 
 def grep(output, phrase):
