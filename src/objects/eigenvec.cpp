@@ -8,6 +8,7 @@
 
 #include <bits/stdc++.h>
 #include <ctime>
+#include <iostream>
 #include <memory>
 
 #include "../config/load/cpp_config.hpp"
@@ -27,14 +28,14 @@ Eigenvector::Eigenvector(int size, bool random) {
     this->size = size;
     eigenvector = make_unique<float[]>(size);
     if (random) {
-        srand(time(0)); 
+        srand(time(0));
         for (int i = 0; i < size; i++) {
             this->eigenvector[i] = (float)rand() / RAND_MAX;
         }
     }
 }
 
-Eigenvector::Eigenvector(const Eigenvector& other) {
+Eigenvector::Eigenvector(const Eigenvector &other) {
     this->size = other.size;
     this->eigenvalue = other.eigenvalue;
     eigenvector = make_unique<float[]>(size);
@@ -43,7 +44,7 @@ Eigenvector::Eigenvector(const Eigenvector& other) {
     }
 }
 
-Eigenvector Eigenvector::operator=(const Eigenvector& other) {
+Eigenvector Eigenvector::operator=(const Eigenvector &other) {
     if (this != &other) {
         size = other.size;
         eigenvalue = other.eigenvalue;
@@ -55,25 +56,23 @@ Eigenvector Eigenvector::operator=(const Eigenvector& other) {
     return *this;
 }
 
-float& Eigenvector::operator[](int index) {
-    return eigenvector[index];
-}
+float &Eigenvector::operator[](int index) { return eigenvector[index]; }
 
-Eigenvector& Eigenvector::operator+=(const Eigenvector& k) {
+Eigenvector &Eigenvector::operator+=(const Eigenvector &k) {
     for (int i = 0; i < this->size; i++) {
         this->eigenvector[i] += k.eigenvector[i];
     }
     return *this;
 }
 
-Eigenvector& Eigenvector::operator-=(const Eigenvector& k) {
+Eigenvector &Eigenvector::operator-=(const Eigenvector &k) {
     for (int i = 0; i < this->size; i++) {
         this->eigenvector[i] -= k.eigenvector[i];
     }
     return *this;
 }
 
-Eigenvector Eigenvector::operator+(const Eigenvector& k) {
+Eigenvector Eigenvector::operator+(const Eigenvector &k) {
     Eigenvector result(this->size);
     for (int i = 0; i < this->size; i++) {
         result.eigenvector[i] = this->eigenvector[i] + k.eigenvector[i];
@@ -81,7 +80,7 @@ Eigenvector Eigenvector::operator+(const Eigenvector& k) {
     return result;
 }
 
-Eigenvector Eigenvector::operator-(const Eigenvector& k) {
+Eigenvector Eigenvector::operator-(const Eigenvector &k) {
     Eigenvector result(this->size);
     for (int i = 0; i < this->size; i++) {
         result.eigenvector[i] = this->eigenvector[i] - k.eigenvector[i];
@@ -89,14 +88,14 @@ Eigenvector Eigenvector::operator-(const Eigenvector& k) {
     return result;
 }
 
-Eigenvector& Eigenvector::operator*=(float constant) {
+Eigenvector &Eigenvector::operator*=(float constant) {
     for (int i = 0; i < this->size; i++) {
         this->eigenvector[i] *= constant;
     }
     return *this;
 }
 
-Eigenvector& Eigenvector::operator/=(float constant) {
+Eigenvector &Eigenvector::operator/=(float constant) {
     for (int i = 0; i < this->size; i++) {
         this->eigenvector[i] /= constant;
     }
@@ -111,7 +110,7 @@ Eigenvector Eigenvector::operator*(float multiple) {
     return result;
 }
 
-Eigenvector Eigenvector::operator*(const Eigenvector& k) {
+Eigenvector Eigenvector::operator*(const Eigenvector &k) {
     Eigenvector result(this->size);
     for (int i = 0; i < this->size; i++) {
         result.eigenvector[i] = this->eigenvector[i] * k.eigenvector[i];
@@ -127,18 +126,17 @@ Eigenvector Eigenvector::operator/(float multiple) {
     return result;
 }
 
-bool Eigenvector::operator==(const Eigenvector& k) {
+bool Eigenvector::operator==(const Eigenvector &k) {
     for (int i = 0; i < this->size; i++) {
-        if (this->eigenvector[i] != k.eigenvector[i]) return false;
+        if (this->eigenvector[i] != k.eigenvector[i])
+            return false;
     }
     return true;
 }
 
-bool Eigenvector::operator!=(const Eigenvector& k) {
-    return !(*this == k);
-}
+bool Eigenvector::operator!=(const Eigenvector &k) { return !(*this == k); }
 
-bool Eigenvector::operator<(const Eigenvector& k) {
+bool Eigenvector::operator<(const Eigenvector &k) {
     return this->eigenvalue < k.eigenvalue;
 }
 
@@ -157,11 +155,11 @@ void Eigenvector::normalize() {
     }
 }
 
-bool descending_eigenvalues(const Eigenvector& left, const Eigenvector& right) {
+bool descending_eigenvalues(const Eigenvector &left, const Eigenvector &right) {
     return left.eigenvalue > right.eigenvalue;
 }
 
-float dot(const Eigenvector& left, const Eigenvector& right) {
+float dot(const Eigenvector &left, const Eigenvector &right) {
     float sum = 0;
     for (int i = 0; i < left.size; i++) {
         sum += left.eigenvector[i] * right.eigenvector[i];
@@ -169,13 +167,13 @@ float dot(const Eigenvector& left, const Eigenvector& right) {
     return sum;
 }
 
-std::ostream& operator<<(std::ostream& os, const Eigenvector& k) {
+std::ostream &operator<<(std::ostream &os, const Eigenvector &k) {
     os << "[";
     for (int i = 0; i < k.size; i++) {
         os << k.eigenvector[i];
-        if (i != k.size - 1) os << ", ";
+        if (i != k.size - 1)
+            os << ", ";
     }
     os << "]";
     return os;
 }
-

@@ -5,6 +5,7 @@ import ast
 category = 'test'
 calculation = 'test'
 outdir = './'
+indir = './'
 prefix = 'sample'
 verbosity = 'low'
 input_data_file = 'input.dat'
@@ -116,6 +117,9 @@ def load_config():
             if "outdir" in key:
                 global outdir
                 outdir = value
+            if "indir" in key:
+                global indir
+                indir = value
             if "prefix" in key:
                 global prefix
                 prefix = value

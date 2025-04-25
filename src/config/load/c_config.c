@@ -1,8 +1,11 @@
+#include <errno.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "c_config.h"
@@ -16,6 +19,8 @@ char *c_calculation = "test";
 char *get_calculation() { return c_calculation; }
 char *c_outdir = "./";
 char *get_outdir() { return c_outdir; }
+char *c_indir = "./";
+char *get_indir() { return c_indir; }
 char *c_prefix = "sample";
 char *get_prefix() { return c_prefix; }
 char *c_verbosity = "low";
@@ -244,6 +249,8 @@ void read_c_config(const char *path) {
                 set_string(&c_calculation, value);
             } else if (strstr(key, "outdir") != NULL) {
                 set_string(&c_outdir, value);
+            } else if (strstr(key, "indir") != NULL) {
+                set_string(&c_indir, value);
             } else if (strstr(key, "prefix") != NULL) {
                 set_string(&c_prefix, value);
             } else if (strstr(key, "verbosity") != NULL) {
@@ -252,6 +259,13 @@ void read_c_config(const char *path) {
                 set_string(&c_input_data_file, value);
             } else if (strstr(key, "output_data_file") != NULL) {
                 set_string(&c_output_data_file, value);
+            } else if (strstr(key, "automatic_file_read") != NULL) {
+                strip_single_quotes(value);
+                if (strcmp(value, "true") == 0) {
+                    c_automatic_file_read = true;
+                } else {
+                    c_automatic_file_read = false;
+                }
             }
 
             //[SYSTEM]
@@ -385,6 +399,12 @@ void read_c_config(const char *path) {
         temp_dir[outdir_length + 1] = '\0';
         c_outdir = temp_dir;
     }
+    int result = mkdir_p(c_outdir, 0755);
+    if (result != 0)
+        printf("Could not make outdir directory\n");
+    result = mkdir_p(c_indir, 0755);
+    if (result != 0)
+        printf("Could not make indir directory\n");
 }
 
 void load_c_config() {
@@ -403,6 +423,7 @@ void unload_c_config() {
     free(c_category);
     free(c_calculation);
     free(c_outdir);
+    free(c_indir);
     free(c_prefix);
     free(c_verbosity);
     free(c_input_data_file);
@@ -462,4 +483,45 @@ bool print_test_results(bool all_tests[], int num_tests,
                    test_name);
         return false;
     }
+}
+int mkdir_p(const char *path, mode_t mode) {
+    char *tmp = strdup(path);
+    char *p = NULL;
+    size_t len;
+    int status = 0;
+
+    if (tmp == NULL)
+        return -1;
+
+    len = strlen(tmp);
+    if (len == 0) {
+        free(tmp);
+        return -1;
+    }
+
+    if (tmp[len - 1] == '/')
+        tmp[len - 1] = '\0';
+
+    for (p = tmp + 1; *p; p++) {
+        if (*p == '/') {
+            *p = '\0';
+            if (mkdir(tmp, mode) != 0) {
+                if (errno != EEXIST) {
+                    status = -1;
+                    break;
+                }
+            }
+            *p = '/';
+        }
+    }
+
+    if (status == 0) {
+        if (mkdir(tmp, mode) != 0) {
+            if (errno != EEXIST)
+                status = -1;
+        }
+    }
+
+    free(tmp);
+    return status;
 }

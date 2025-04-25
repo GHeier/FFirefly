@@ -14,6 +14,7 @@ using namespace std;
 string category;
 string calculation;
 string outdir;
+string indir;
 string prefix;
 string verbosity;
 string input_data_file;
@@ -76,6 +77,7 @@ extern "C" void load_cpp_config() {
     category = c_category;
     calculation = c_calculation;
     outdir = c_outdir;
+    indir = c_indir;
     prefix = c_prefix;
     verbosity = c_verbosity;
     input_data_file = c_input_data_file;

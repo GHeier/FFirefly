@@ -11,6 +11,7 @@ using namespace std;
 extern string category;
 extern string calculation;
 extern string outdir;
+extern string indir;
 extern string prefix;
 extern string verbosity;
 extern string input_data_file;

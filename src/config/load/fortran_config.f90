@@ -32,6 +32,7 @@ module ffirefly
     character(len=50) :: category
     character(len=50) :: calculation
     character(len=50) :: outdir
+    character(len=50) :: indir
     character(len=50) :: prefix
     character(len=50) :: verbosity
     character(len=50) :: input_data_file
@@ -130,6 +131,10 @@ module ffirefly
             use iso_c_binding
             type(c_ptr) :: get_outdir
     end function get_outdir
+        function get_indir() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_indir
+    end function get_indir
         function get_prefix() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_prefix
@@ -235,6 +240,7 @@ contains
         category = get_string(get_category())
         calculation = get_string(get_calculation())
         outdir = get_string(get_outdir())
+        indir = get_string(get_indir())
         prefix = get_string(get_prefix())
         verbosity = get_string(get_verbosity())
         input_data_file = get_string(get_input_data_file())

@@ -11,6 +11,7 @@ cfg = firefly.config
 category::String = cfg.category
 calculation::String = cfg.calculation
 outdir::String = cfg.outdir
+indir::String = cfg.indir
 prefix::String = cfg.prefix
 verbosity::String = cfg.verbosity
 input_data_file::String = cfg.input_data_file
