@@ -6,9 +6,6 @@
  *
  * Author: Griffin Heier
  */
-#include <Python.h>
-#include <julia.h>
-
 #include <iomanip>
 #include <iostream>
 #include <stdio.h>
@@ -19,16 +16,12 @@
 #include <omp.h>
 
 #include "../algorithms/linear_algebra.hpp"
-#include "../config/load/c_config.h"
 #include "../config/load/cpp_config.hpp"
 #include "../config/load/jl_interface.h"
-#include "../config/load/py_interface.h"
 #include "../hamiltonian/band_structure.hpp"
-#include "../hamiltonian/interaction.hpp"
 #include "../objects/eigenvec.hpp"
 #include "../objects/matrix.hpp"
 #include "../objects/vec.hpp"
-#include "../response/susceptibility.hpp"
 #include "cfg.hpp"
 #include "matrix_creation.hpp"
 #include "save_data.hpp"
@@ -37,22 +30,6 @@
 #include "utilities.hpp"
 
 using namespace std;
-
-/**
- * Example wrapper function below
- * This is how to connect your code to main.c
- * main.c will import {categoryname}_wrapper and run it
- * Make sure to handle incorrect input values
- */
-extern "C" void superconductor_wrapper() {
-    printv("Running superconductor_wrapper\n");
-    if (method == "bcs")
-        bcs();
-    else if (method == "eliashberg")
-        eliashberg();
-    else
-        cout << "Method " << method << " not recognized" << endl;
-}
 
 void bcs() {
     cout << "Calculating Fermi Surface..." << endl;
@@ -69,6 +46,7 @@ void bcs() {
 
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
     float DOS = get_DOS(FS);
+    printf("DOS: %f\n", DOS);
     assert(FS.size() > 10);
     save_FS(FS);
 
@@ -103,6 +81,7 @@ void bcs() {
     cout << "Sorting Eigenvectors..." << endl;
     sort(solutions, solutions + num_eigenvalues_to_save,
          descending_eigenvalues);
+
     printf("Max eigenvalue: %f\n", solutions[0].eigenvalue);
     if (FS_only) {
         double calc_Tc = get_Tc_FS_only(solutions[0].eigenvalue);

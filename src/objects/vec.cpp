@@ -297,7 +297,7 @@ bool operator==(const Vec &k, const Vec &q) {
 // is helpful
 bool operator<(const Vec &left, const Vec &right) { return left.w < right.w; }
 
-std::ostream &operator<<(std::ostream &os, const Vec &k) {
+ostream &operator<<(std::ostream &os, const Vec &k) {
     if (k.dimension == 1)
         os << k.x;
     if (k.dimension == 2)

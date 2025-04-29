@@ -1,6 +1,6 @@
+#include "../config/load/cpp_config.hpp"
 #include <math.h>
 #include <vector>
-#include "../config/load/cpp_config.hpp"
 
 int n = k_mesh[0];
 int m = q_mesh[0];
@@ -31,4 +31,3 @@ void load_cpp_cfg() {
     k_max = M_PI;
     dim = dimension;
 }
-

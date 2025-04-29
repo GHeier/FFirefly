@@ -73,4 +73,4 @@ complex<Vec> operator-(const Vec &left, const complex<Vec> &right);
 bool operator==(const Vec &k, const Vec &q);
 /// Comparison operator for Vec, sorting them by area
 bool operator<(const Vec &left, const Vec &right);
-std::ostream &operator<<(std::ostream &os, const Vec &k);
+ostream &operator<<(std::ostream &os, const Vec &k);

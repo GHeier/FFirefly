@@ -50,7 +50,7 @@ const beta = 1/cfg.Temperature
 println("Beta: ", beta)
 const pi = π
 
-wD = 0.1
+wD = cfg.bcs_cutoff_frequency
 
 function to_IBZ(k)
     tolerance = 1e-10  # small tolerance to account for floating-point errors
@@ -60,24 +60,6 @@ function to_IBZ(k)
     q .+= 1e-4
     q .= ifelse.(q .> π, q .- 1e-4, q)
     return q
-end
-
-#function epsilon(k)
-#    if dim == 2
-#        return k[1]^2 + k[2]^2
-#        return -2 * (cos(k[1]) + cos(k[2]))
-#    end
-#    return -2 * (cos(k[1]) + cos(k[2]) + cos(k[3]))
-#end
-
-function V(k1, k2, w)
-    qm = k1 - k2
-    qm = to_IBZ(qm)
-    qm .= round.(qm, digits=6)
-    iw = round(imag(w), digits=6)
-    Xm = Susceptibility(qm, iw)
-    Vm = U^2 * Xm / (1 - U*Xm) + U^3 * Xm^2 / (1 - U^2 * Xm^2)
-    return Vm
 end
 
 function get_kvec(i, j, k)
@@ -183,9 +165,11 @@ function condense_to_F_and_G!(phi, Z, chi, F_arr, G_arr, iw, sigma, mu, projecti
     end
 end
 
-function condense_to_F_and_G!(phi, Z, chi, F_arr, G_arr, iw, sigma, mu, e_arr)
+function condense_to_F_and_G!(phi, Z, chi, F_arr, G_arr, iw, sigma, mu, e_arr, frequency_dependence)
     F_arr .= -phi ./ (-(Z.*iw).^2 .+ phi.^2 .+ (e_arr .+ chi .- mu).^2)
-    F_arr .= F_arr .* ifelse.(abs.(e_arr .- mu) .> wD, 0.0, 1.0)
+    if frequency_dependence
+        F_arr .= F_arr .* ifelse.(abs.(e_arr .- mu) .> wD, 0.0, 1.0)
+    end
     G_arr .= -(iw .* Z .+ e_arr .+ chi .- mu) ./ (-(Z.*iw).^2 .+ phi.^2 .+ (e_arr .+ chi .- mu).^2)
 end
 
@@ -300,9 +284,10 @@ function eliashberg_global()
     IR_tol = 1e-5
     scf_tol = 1e-4
 
-    vertex = Firefly.Field_C(outdir * prefix * "_vertex.dat")
+    #vertex = Firefly.Field_C(outdir * prefix * "_vertex.dat")
+    vertex = Firefly.Vertex()
 
-    frequency_dependence = true
+    frequency_dependence = false
     if frequency_dependence
         println("Creating IRMesh")
         global mesh = IR_Mesh(IR_tol)
@@ -350,7 +335,7 @@ function eliashberg_global()
     F_arr = Array{ComplexF32}(undef, nw, nx, ny, nz)
     G_arr = Array{ComplexF32}(undef, nw, nx, ny, nz)
     #condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, mu, projection)
-    condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, mu, e_4d)
+    condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, mu, e_4d, frequency_dependence)
 
     #Ne = round(get_number_of_electrons(G_arr), digits=6)
 
@@ -368,7 +353,7 @@ function eliashberg_global()
             update_fourier_transform!(F_arr, G_arr, V_arr, phi_arr, Z_arr, chi_arr, iw, sigma)
         end
 
-        phierr = minimum((maximum(real.(phi_arr - prev_phi_arr)), maximum(real.(phi_arr + prev_phi_arr))))
+        phierr = minimum((maximum(abs.(real.(phi_arr - prev_phi_arr))), maximum(abs.(real.(phi_arr + prev_phi_arr)))))
         max_phi = round(maximum(abs.(phi_arr)), digits=6)
         print("Iteration $i: MaxPhi = $max_phi              Error = $phierr           \r")
 
@@ -382,7 +367,7 @@ function eliashberg_global()
         prev_phi_arr = copy(phi_arr)
         #global mu = find_chemical_potential(mu, phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, Ne, projection)
         #condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, mu, projection)
-        condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, mu, e_4d)
+        condense_to_F_and_G!(phi_arr, Z_arr, chi_arr, F_arr, G_arr, iw, sigma, mu, e_4d, frequency_dependence)
     end
 
     max_phi = maximum(abs.(phi_arr))
@@ -707,7 +692,7 @@ end
 
 @inline function F_mod(iw, e, phi)
     val = phi / (-iw^2 + phi^2 + e^2)
-    if abs(e) < 0.1
+    if abs(e) < 0.01
         return val
     else
         return val * 0.0
@@ -734,7 +719,7 @@ function get_transformed_V()
     V = zeros(Float32, nw, nx, ny)
     #V .= V .+ ifelse.(abs.(e_3d) .> wD, 0.0, 10.0)
     #V .= V .+ V_gpu.(iv, e_3d, 0.2, 10.0)
-    V .= V .+ 5.0
+    V .= V .+ 1.0
     return fft(V)
 end
 
@@ -750,7 +735,7 @@ function energy_fastest()
     end
     e = epsilon.(1, kpts) .- mu
     println("Filling V array")
-    V = ones(Float64, nx, ny, nz) .* 5.0 #.* ifelse.(abs.(e) .> 0.1, 0.0, 1.0)
+    V = ones(Float64, nx, ny, nz) .* 1.0 #.* ifelse.(abs.(e) .> 0.1, 0.0, 1.0)
     V_rt = fft(V)
     println("Starting iterations")
 
@@ -759,7 +744,7 @@ function energy_fastest()
     iterations = 20
     for i in 1:iterations
         nonzero_values = 0
-        F = phi ./ (2 .* (phi.^2 .+ e.^2).^0.5) .* ifelse.(abs.(e) .> 0.1, 0.0, 1.0)
+        F = phi ./ (2 .* (phi.^2 .+ e.^2).^0.5) .* ifelse.(abs.(e) .> 0.01, 0.0, 1.0)
         F_rt = fft(F)
         phi_rt = F_rt .* V_rt
         result = fftshift(ifft(phi_rt)) / (nk)
@@ -767,6 +752,37 @@ function energy_fastest()
         println("Max val: ", maximum(abs.(phi)))
     end
     println("Expected final: 0.032")
+end
+
+function fermi_dirac(e)
+    return 1 / (1 + exp(beta * e))
+end
+
+function energy_integral(D)
+    dos = Firefly.Field_R(outdir * prefix * "_DOS.dat")
+    emin = -wD 
+    emax = wD
+    npts = 100000
+    sum = 0
+    for i in 1:npts
+        e = emin + (emax - emin) * (i-1) / npts
+        e = e - mu
+        v = (e^2 + D^2)^0.5
+        if (v < 0)
+            println(v)
+            println(e)
+            println(D)
+        end
+        sum += dos(e) * fermi_dirac(-v) / (2 * v)
+    end
+    sum *= (emax - emin) / npts
+    return sum
+end
+
+function energy_finite_T()
+    D_guess = 0.0001
+    #D_solution = find_zero(energy_integral, D_guess)
+    println("D=", D_guess, ", 1=", energy_integral(D_guess))
 end
 
 function fastest()
@@ -845,7 +861,7 @@ function energy_2sum()
     println("nk: ", nk)
 
     lambda = 1.0
-    wD = 0.1
+    wD = 0.01
 
     println("Starting CPU sum")
     result::Float64 = 0.0
@@ -856,7 +872,7 @@ function energy_2sum()
         end
     end
     println("Result: ", result / nk)
-    println("Expected: ", 0.0216)
+    println("Expected: ", 2 * wD * 0.125)
     return nothing
 end
 
@@ -920,10 +936,11 @@ end
 
 
 function eliashberg_node()
+    energy_finite_T()
     #energy_2sum()
     #energy_fastest()
     #fastest()
-    eliashberg_global()
+    #eliashberg_global()
     return
 end
 

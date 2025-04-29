@@ -167,13 +167,13 @@ float dot(const Eigenvector &left, const Eigenvector &right) {
     return sum;
 }
 
-std::ostream &operator<<(std::ostream &os, const Eigenvector &k) {
-    os << "[";
-    for (int i = 0; i < k.size; i++) {
-        os << k.eigenvector[i];
-        if (i != k.size - 1)
-            os << ", ";
-    }
-    os << "]";
-    return os;
-}
+// std::ostream &operator<<(std::ostream &os, const Eigenvector &k) {
+//     os << "[";
+//     for (int i = 0; i < k.size; i++) {
+//         os << k.eigenvector[i];
+//         if (i != k.size - 1)
+//             os << ", ";
+//     }
+//     os << "]";
+//     return os;
+// }

@@ -162,21 +162,21 @@ bool Matrix::operator==(const Matrix &k) {
     return true;
 }
 
-std::ostream &operator<<(std::ostream &os, const Matrix &k) {
-    for (int i = 0; i < k.size; i++) {
-        for (int j = 0; j < k.size; j++) {
-            os << k.vals[i * k.size + j] << " ";
-        }
-        os << endl;
-    }
-    return os;
-}
-
-std::istream &operator>>(std::istream &is, Matrix &k) {
-    for (int i = 0; i < k.size; i++) {
-        for (int j = 0; j < k.size; j++) {
-            is >> k.vals[i * k.size + j];
-        }
-    }
-    return is;
-}
+// std::ostream &operator<<(std::ostream &os, const Matrix &k) {
+//     for (int i = 0; i < k.size; i++) {
+//         for (int j = 0; j < k.size; j++) {
+//             os << k.vals[i * k.size + j] << " ";
+//         }
+//         os << endl;
+//     }
+//     return os;
+// }
+//
+// std::istream &operator>>(std::istream &is, Matrix &k) {
+//     for (int i = 0; i < k.size; i++) {
+//         for (int j = 0; j < k.size; j++) {
+//             is >> k.vals[i * k.size + j];
+//         }
+//     }
+//     return is;
+// }

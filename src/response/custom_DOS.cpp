@@ -1,6 +1,6 @@
-#include <fstream>
 #include "../config/load/cpp_config.hpp"
 #include "../hamiltonian/band_structure.hpp"
+#include <fstream>
 
 void get_band_min_max(float &emin, float &emax) {
     int z_num = 200;
@@ -12,12 +12,15 @@ void get_band_min_max(float &emin, float &emax) {
     for (int i = 0; i < 200; i++) {
         for (int j = 0; j < 200; j++) {
             for (int k = 0; k < z_num; k++) {
-                Vec kvec(1.0 * i / k_mesh[0] - 0.5, 1.0 * j / k_mesh[1] - 0.5, 1.0 * k / k_mesh[2] - 0.5);
+                Vec kvec(1.0 * i / 200 - 0.5, 1.0 * j / 200 - 0.5,
+                         1.0 * k / 200 - 0.5);
                 kvec = brillouin_zone * kvec;
                 for (int n = 1; n <= nbnd; n++) {
                     float e = epsilon(n, kvec);
-                    if (emin > e) emin = e;
-                    if (emax < e) emax = e;
+                    if (emin > e)
+                        emin = e;
+                    if (emax < e)
+                        emax = e;
                 }
             }
         }
@@ -31,7 +34,8 @@ extern "C" void surface_sum() {
     get_band_min_max(emin, emax);
     float dx = (emax - emin) / w_pts;
     vector<float> dos_list;
-    printf("Calculating DOS from %.5f to %.5f with %d points\n", emin, emax, w_pts);
+    printf("Calculating DOS from %.5f to %.5f with %d points\n", emin, emax,
+           w_pts);
     printf("Spacing is %.5f\n", dx);
     ofstream file(outdir + prefix + "_DOS.dat");
     file << "# w f" << endl;

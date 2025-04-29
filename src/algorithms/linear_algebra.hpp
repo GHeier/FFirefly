@@ -2,15 +2,13 @@
 
 #include <vector>
 
-#include "../config/load/cpp_config.hpp"
-#include "../objects/vec.hpp"
-#include "../objects/matrix.hpp"
 #include "../objects/eigenvec.hpp"
+#include "../objects/matrix.hpp"
 
-using std::vector;
+using namespace std;
 
 // LAPACK functions
-//extern "C" {
+// extern "C" {
 //    void dgeev_( char* jobvl, char* jobvr, int* n, float* a,
 //                int* lda, float* wr, float* wi, float* vl, int* ldvl,
 //                float* vr, int* ldvr, float* work, int* lwork, int* info );
@@ -20,8 +18,8 @@ using std::vector;
 //}
 
 /**
- * @brief Calculates up to the first two leading eigenvectors of a matrix using the power 
- * iteration method.
+ * @brief Calculates up to the first two leading eigenvectors of a matrix using
+ * the power iteration method.
  *
  * @param A The matrix to calculate the eigenvectors of.
  * @param error The error tolerance for the power iteration method.
@@ -32,7 +30,8 @@ using std::vector;
 vector<Eigenvector> power_iteration(Matrix A, float error);
 
 /**
- * @brief Calculates the leading positive eigenvalue/eigenvector of a matrix using the power iteration method.
+ * @brief Calculates the leading positive eigenvalue/eigenvector of a matrix
+ * using the power iteration method.
  *
  * @param A The matrix to calculate the eigenvectors of.
  *
@@ -51,7 +50,8 @@ Eigenvector power_iteration(Matrix &A);
 void lapack_diagonalization(Matrix &A, Eigenvector *eigenvectors);
 
 /**
- * @brief Calculates the first n eigenvectors of a matrix using the LAPACK library.
+ * @brief Calculates the first n eigenvectors of a matrix using the LAPACK
+ * library.
  *
  * @param A The matrix to calculate the eigenvectors of.
  * @param eigenvectors The eigenvectors to store the results in.
@@ -59,5 +59,3 @@ void lapack_diagonalization(Matrix &A, Eigenvector *eigenvectors);
  * @return nothing.
  */
 void lapack_hermitian_diagonalization(Matrix &A, Eigenvector *eigenvectors);
-
-

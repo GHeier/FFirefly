@@ -12,7 +12,7 @@
 #include "hamiltonian/vertex.hpp"
 #include "response/DOS.h"
 #include "response/response.h"
-#include "superconductor/superconductor.hpp"
+#include "superconductor/node.hpp"
 
 // Test nodes below
 #include "hamiltonian/tests/all.hpp"
@@ -23,111 +23,111 @@
 
 // Global category calls
 void DOS() {
-  printf("Starting DOS Calculation\n\n");
-  DOS_spectrum();
+    printf("Starting DOS Calculation\n\n");
+    DOS_spectrum();
 }
 
 void fermi_surface() {
-  printf("Starting Fermi Surface Calculation\n\n");
-  save_FS();
+    printf("Starting Fermi Surface Calculation\n\n");
+    save_FS();
 }
 
 void response() {
-  printf("Starting Response Calculation\n\n");
-  response_wrapper();
+    printf("Starting Response Calculation\n\n");
+    response_wrapper();
 }
 
 void vertex() {
-  printf("Starting Vertex Calculation\n\n");
-  vertex_wrapper();
+    printf("Starting Vertex Calculation\n\n");
+    vertex_wrapper();
 }
 
 void superconductor() {
-  printf("Starting Superconductor Calculation\n\n");
-  superconductor_wrapper();
+    printf("Starting Superconductor Calculation\n\n");
+    superconductor_wrapper();
 }
 
 void print_banner_top() {
-  printf("╔══════════════════════════════════════╗\n");
-  printf("║       🚀 FFirefly Launching...       ║\n");
+    printf("╔══════════════════════════════════════╗\n");
+    printf("║       🚀 FFirefly Launching...       ║\n");
 }
 
 void print_banner_bottom() {
-  time_t now = time(NULL);
-  struct tm *t = localtime(&now);
-  char time_str[16];
-  strftime(time_str, sizeof(time_str), "%H:%M:%S", t);
-  printf("║        Launched at %s          ║\n", time_str);
-  printf("╚══════════════════════════════════════╝\n");
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    char time_str[16];
+    strftime(time_str, sizeof(time_str), "%H:%M:%S", t);
+    printf("║        Launched at %s          ║\n", time_str);
+    printf("╚══════════════════════════════════════╝\n");
 }
 
 // Global test calls
 void test() {
-  printf("Starting Test Calculations\n");
+    printf("Starting Test Calculations\n");
 
-  int num_tests = 2;
+    int num_tests = 2;
 
-  bool all_tests[num_tests];
-  all_tests[0] = hamiltonian_tests();
-  all_tests[1] = object_tests();
+    bool all_tests[num_tests];
+    all_tests[0] = hamiltonian_tests();
+    all_tests[1] = object_tests();
 
-  print_test_results(all_tests, num_tests, "tests");
+    print_test_results(all_tests, num_tests, "tests");
 }
 
 int main() {
-  print_banner_top();
+    print_banner_top();
 
-  load_c_config();           // Read input to load global c variables
-  load_cpp_config_wrapper(); // Read input to load global cpp variables
-  start_python();
+    load_c_config();           // Read input to load global c variables
+    load_cpp_config_wrapper(); // Read input to load global cpp variables
+    start_python();
 
-  // Handling '+' separated categories for sequential runs
-  char str_copy[MAX_LENGTH];
-  strncpy(str_copy, c_category, MAX_LENGTH); // Copy string safely
-  char *tokens[MAX_TOKENS]; // Array of char pointers to hold the tokens
-  int count = 0;
+    // Handling '+' separated categories for sequential runs
+    char str_copy[MAX_LENGTH];
+    strncpy(str_copy, c_category, MAX_LENGTH); // Copy string safely
+    char *tokens[MAX_TOKENS]; // Array of char pointers to hold the tokens
+    int count = 0;
 
-  char *token = strtok(str_copy, "+");
-  while (token != NULL && count < MAX_TOKENS) {
-    tokens[count] = strdup(token); // Allocate memory and copy token
-    count++;
-    token = strtok(NULL, "+");
-  }
+    char *token = strtok(str_copy, "+");
+    while (token != NULL && count < MAX_TOKENS) {
+        tokens[count] = strdup(token); // Allocate memory and copy token
+        count++;
+        token = strtok(NULL, "+");
+    }
 
-  print_banner_bottom();
+    print_banner_bottom();
 
-  // Set the number of threads used in parallelization to one less than the
-  // maximum
-  int num_procs = omp_get_num_procs();
-  omp_set_num_threads(num_procs - 1);
-  if (!strcmp(c_verbosity, "high"))
-    printf("Number of threads used in CPU parallelization: %d\n",
-           num_procs - 1);
+    // Set the number of threads used in parallelization to one less than the
+    // maximum
+    int num_procs = omp_get_num_procs();
+    omp_set_num_threads(num_procs - 1);
+    if (!strcmp(c_verbosity, "high"))
+        printf("Number of threads used in CPU parallelization: %d\n",
+               num_procs - 1);
 
-  for (int i = 0; i < count; i++) {
-    char *category = tokens[i];
-    if (!strcmp(category, "DOS"))
-      DOS();
-    else if (!strcmp(category, "fermi_surface"))
-      fermi_surface();
-    else if (!strcmp(category, "response"))
-      response();
-    else if (!strcmp(category, "superconductor"))
-      superconductor();
-    else if (!strcmp(category, "vertex"))
-      vertex();
-    else if (!strcmp(category, "test"))
-      test();
-    else
-      printf("Unknown Category\n");
-    exit(1);
-  }
+    for (int i = 0; i < count; i++) {
+        char *category = tokens[i];
+        if (!strcmp(category, "DOS"))
+            DOS();
+        else if (!strcmp(category, "fermi_surface"))
+            fermi_surface();
+        else if (!strcmp(category, "response"))
+            response();
+        else if (!strcmp(category, "superconductor"))
+            superconductor();
+        else if (!strcmp(category, "vertex"))
+            vertex();
+        else if (!strcmp(category, "test"))
+            test();
+        else
+            printf("Unknown Category\n");
+        exit(1);
+    }
 
-  // unload_c_config(); // Free memory allocated for global c variables
-  for (int i = 0; i < count; i++) {
-    free(tokens[i]);
-  }
-  end_python();
-  printf("\nProgram Complete\n");
-  return 0;
+    // unload_c_config(); // Free memory allocated for global c variables
+    for (int i = 0; i < count; i++) {
+        free(tokens[i]);
+    }
+    end_python();
+    printf("\nProgram Complete\n");
+    return 0;
 }

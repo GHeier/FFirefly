@@ -5,6 +5,7 @@ module Imports
 
 export epsilon,
        load_config!,
+       Vertex,
        Field_C,
        Field_R,
        destroy!,
@@ -21,6 +22,25 @@ end
 function load_config!(path::String)
     ccall((:load_config_export0, libfly), Cvoid, (Cstring,), path)
 end
+
+mutable struct Vertex 
+    ptr::Ptr{Cvoid}
+end
+
+function Vertex()
+    ptr = ccall((:Vertex_export0, libfly), Ptr{Cvoid}, ())
+  return Vertex(ptr)
+end
+
+function (self::Vertex)(k::Vector{Float64}, w=0f0)::ComplexF32
+    real_result::Ref{Float32} = Ref(Float32(0.0))
+    imag_result::Ref{Float32} = Ref(Float32(0.0))
+    newk::Vector{Float32} = Float32.(k)
+    len = length(newk)
+    neww = Float32(w)
+    ccall((:Vertex_operator_export0, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}, Cint, Cfloat,Ptr{Cfloat}, Ptr{Cfloat},), self.ptr, newk, len, neww, real_result, imag_result)
+    return ComplexF32(real_result[], imag_result[])
+  end
 
 mutable struct Field_C
     ptr::Ptr{Cvoid}

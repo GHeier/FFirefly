@@ -24,7 +24,7 @@ void create_P(Matrix &P, vector<Vec> &k) {
     cout << "Creating P Matrix\n";
     for (int i = 0; i < P.size; i++) {
         Vec k1 = k[i];
-        // #pragma omp parallel for
+#pragma omp parallel for
         for (int j = 0; j < P.size; j++) {
             Vec k2 = k[j];
             P(i, j) = (float)(-pow(k1.area / vp(k1.n, k1), 0.5) *
@@ -45,7 +45,6 @@ void create_P(Matrix &P, vector<Vec> &k) {
 void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T) {
     Vertex V_func;
     cout << "Creating P Matrix with frequency\n";
-    printf("size of k: %d\n", k.size());
     for (int i = 0; i < k.size(); i++) {
 
         int ind1 = 0;
@@ -54,41 +53,28 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T) {
 
         for (int j = 0; j < k[i].size(); j++) {
             Vec k1 = k[i][j];
+            float d1 = k1.area / vp(k1.n, k1);
+            float w1 = wc * points[l - 1][i];
+            float fde1 = f_singlet(w1, T) * weights[l - 1][i];
             for (int x = 0; x < k.size(); x++) {
 
                 int ind2 = 0;
                 for (int temp = 0; temp < x; temp++)
                     ind2 += k[temp].size();
 
-                // #pragma omp parallel for
+#pragma omp parallel for
                 for (int y = 0; y < k[x].size(); y++) {
                     Vec k2 = k[x][y];
-                    float d1 = k1.area / vp(k1.n, k1);
                     float d2 = k2.area / vp(k2.n, k2);
+                    float w2 = wc * points[l - 1][x];
                     // f * d_epsilon
-                    float w1 = wc * points[l - 1][x];
-                    float w2 = wc * points[l - 1][i];
-                    float fde1 = f_singlet(w1, T); // * weights[l - 1][i];
-                    float fde2 = f_singlet(w2, T); // * weights[l - 1][x];
+                    float fde2 = f_singlet(w2, T) * weights[l - 1][x];
 
-                    // d1 = 1.0;
-                    // d2 = 1.0;
-                    // fde1 = 1.0;
-                    // fde2 = 1.0;
                     double V_int = (V_func(k1 - k2, w1 - w2).real() +
                                     V_func(k1 + k2, w1 + w2).real()) /
                                    2.0;
                     double prefactor = pow(d1 * d2 * fde1 * fde2, 0.5);
-                    P(ind1 + j, ind2 + y) =
-                        (float)(-prefactor * V_int * weights[l - 1][x]);
-
-                    // P(ind1 + j, ind2 + y) =
-                    //     (float)(-d1 * d2 * pow(fde1 * fde2, 0.5) *
-                    //             (V_func(k1 - k2, w1 - w2, "up",
-                    //             "down").real() +
-                    //              V_func(k1 + k2, w1 + w2, "up", "down")
-                    //                  .real())) /
-                    //     2.0;
+                    P(ind1 + j, ind2 + y) = (float)(-prefactor * V_int);
                 }
             }
             string message =
@@ -97,10 +83,7 @@ void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T) {
         }
     }
     cout << "P Matrix Created\n";
-
-    // return P * 2 * wc / (l * k_size);
     P *= wc * (1 / pow(2 * M_PI, dim));
-    // P *= (2 / pow(2 * M_PI, dim));
 }
 
 int matrix_size_from_freq_FS(vector<vector<Vec>> &freq_FS) {

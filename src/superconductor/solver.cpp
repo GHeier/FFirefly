@@ -45,8 +45,8 @@ float f_singlet_integral(float T) {
 }
 
 float get_Tc_FS_only(double eig) {
-    float lower = 0.00001f; // Define appropriate lower bound
-    float upper = 1.0f;     // Define appropriate upper bound
+    float lower = 0.000001f; // Define appropriate lower bound
+    float upper = 1.0f;      // Define appropriate upper bound
     // printf("T=0.00001 : f = %f\n", f_singlet_integral(0.00001));
     // printf("T=1.0 : f = %f\n", f_singlet_integral(1.0));
 
@@ -60,7 +60,7 @@ float get_Tc_FS_only(double eig) {
         }, // root function
         lower, upper,
         [](float l, float u) {
-            return (u - l) < 0.0001f;
+            return (u - l) < 0.000001f;
         } // termination condition
     );
 
