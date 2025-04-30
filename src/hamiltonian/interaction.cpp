@@ -30,7 +30,7 @@ __attribute__((visibility("default"))) float V(const Vec q, float w,
     }
 }
 
-float potential_const() { return -5; }
+float potential_const() { return -1; }
 
 float potential_test(Vec k1, string spin1, string spin2) {
     Vec q1 = k1;

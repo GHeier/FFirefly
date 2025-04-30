@@ -738,25 +738,36 @@ function energy_fastest()
     V = ones(Float64, nx, ny, nz) .* 1.0 #.* ifelse.(abs.(e) .> 0.1, 0.0, 1.0)
     V_rt = fft(V)
     println("Starting iterations")
+    dos = Firefly.Field_R(outdir * prefix * "_DOS.dat")
 
-    println("Expected initial: 0.054")
+    initial = dos(mu) * asinh(wD)
+    println("Expected initial: ", initial)
     #sumval = 0.00018
-    iterations = 20
+    iterations = 100
+    diff = 0
     for i in 1:iterations
-        nonzero_values = 0
-        F = phi ./ (2 .* (phi.^2 .+ e.^2).^0.5) .* ifelse.(abs.(e) .> 0.01, 0.0, 1.0)
+        F = phi ./ (2 .* (phi.^2 .+ e.^2).^0.5) .* ifelse.(abs.(e) .> wD, 0.0, 1.0)
         F_rt = fft(F)
         phi_rt = F_rt .* V_rt
         result = fftshift(ifft(phi_rt)) / (nk)
         phi = result
-        println("Max val: ", maximum(abs.(phi)))
+        diff = abs(diff - maximum(abs.(phi)))
+        if (i-1) % 5 == 0
+            println(i, ": Max val: ", maximum(abs.(phi)))
+        end
     end
-    println("Expected final: 0.032")
+    println("Diff: ", diff)
+    final = wD / sinh(1 / dos(mu))
+    println("Expected final: ", final)
 end
 
-function fermi_dirac(e)
-    return 1 / (1 + exp(beta * e))
+function func_gap_int(E, T)
+    if abs(E) < 0.0001
+        return 1 / (4 * T)
+    end
+    return tanh(E / (2 * T)) / (2 * E)
 end
+
 
 function energy_integral(D)
     dos = Firefly.Field_R(outdir * prefix * "_DOS.dat")
@@ -764,25 +775,31 @@ function energy_integral(D)
     emax = wD
     npts = 100000
     sum = 0
+    T = cfg.Temperature
     for i in 1:npts
-        e = emin + (emax - emin) * (i-1) / npts
-        e = e - mu
-        v = (e^2 + D^2)^0.5
-        if (v < 0)
-            println(v)
-            println(e)
-            println(D)
-        end
-        sum += dos(e) * fermi_dirac(-v) / (2 * v)
+        e = emin + (emax - emin) * (i-1) / (npts - 1)
+        E = (e^2 + D^2)^0.5
+        f = func_gap_int(E, T)
+        sum += dos(e + mu) * f
+        #println(func_gap_int(E, T))
+        #sum += dos(e)
     end
     sum *= (emax - emin) / npts
     return sum
 end
 
 function energy_finite_T()
-    D_guess = 0.0001
-    #D_solution = find_zero(energy_integral, D_guess)
-    println("D=", D_guess, ", 1=", energy_integral(D_guess))
+    D= 0.001
+    dos = Firefly.Field_R(outdir * prefix * "_DOS.dat")
+    sample_f = func_gap_int(D, cfg.Temperature)
+    println("DOS = ", dos(mu))
+    println("calculated = ", energy_integral(D))
+    println("theory = ", dos(mu) * asinh(wD / D))
+    println("debug_estimate = ", 2 * wD * dos(mu) * sample_f)
+    #for i in 1:10
+    #    D = i * D_init
+    #    println("D=", D, ", 1=", energy_integral(D))
+    #end
 end
 
 function fastest()
@@ -861,7 +878,8 @@ function energy_2sum()
     println("nk: ", nk)
 
     lambda = 1.0
-    wD = 0.01
+    wD = cfg.bcs_cutoff_frequency
+    dos = Firefly.Field_R(outdir * prefix * "_DOS.dat")
 
     println("Starting CPU sum")
     result::Float64 = 0.0
@@ -872,7 +890,7 @@ function energy_2sum()
         end
     end
     println("Result: ", result / nk)
-    println("Expected: ", 2 * wD * 0.125)
+    println("Expected: ", 2 * wD * dos(mu))
     return nothing
 end
 
@@ -937,10 +955,11 @@ end
 
 function eliashberg_node()
     energy_finite_T()
-    #energy_2sum()
-    #energy_fastest()
+    energy_2sum()
+    energy_fastest()
     #fastest()
     #eliashberg_global()
+    println("k_mesh: ", cfg.k_mesh)
     return
 end
 
