@@ -822,7 +822,9 @@ function fastest()
     V_rt = get_transformed_V()
     println("Starting iterations")
 
-    println("Expected initial: 0.054")
+    dos = Firefly.Field_R(outdir * prefix * "_DOS.dat")
+    initial = dos(mu) * asinh(wD)
+    println("Expected initial: ", initial)
     iterations = 8
     for i in 1:iterations
         F = F_mod.(iw_3d, e_3d, phi_3d)
@@ -832,7 +834,8 @@ function fastest()
         println("Max val: ", maximum(abs.(result)))
         phi_3d = result
     end
-    println("Expected final: 0.032")
+    final = wD / sinh(1 / dos(mu))
+    println("Expected final: ", final)
 end
 
 @inline function V_gpu(iv, e, wD, lambda)
@@ -952,11 +955,62 @@ function gpu_eliashberg()
     readline()
 end
 
+function element_convolution(A, B, mesh)
+    A_t = wn_to_tau(mesh, Fermionic(), A)
+    B_t = wn_to_tau(mesh, Fermionic(), B)
+    temp = A_t .* B_t
+    return tau_to_wn(mesh, Fermionic(), temp)
+end
+
+function conv_k_sum(F::Matrix{Vector{ComplexF64}}, G::Matrix{Vector{ComplexF64}}, mesh)
+    nw, nk = size(B)
+    P = Matrix{ComplexF64}(nw, nk)
+    for i in 1:nw, j in 1:nk
+        Gw = G[j]
+        sum = 0
+        for k in 1:nk
+            Fw = F[j, k]
+            sum += element_convolution(Fw, Gw, mesh)
+        end
+        P[i, j] = sum[1:end]
+    end
+    return P 
+end
+
+function test_conv_k_sum()
+    mesh = IR_Mesh()
+    fnw, bnw = mesh.fnw, mesh.bnw
+    F = Array{Vector{ComplexF64}, 2}
+    G = Vector{Vector{ComplexF64}}
+    iw = Array{ComplexF32}(undef, fnw)
+    iv = Array{ComplexF32}(undef, bnw)
+    for i in 1:fnw iw[i] = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta) end
+    for i in 1:bnw iv[i] = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[i], beta) end
+
+    kvecs = Vector{Vector{Float64}}(nx * ny)
+    klen = length(kvecs)
+    for i in 1:nx, j in 1:ny 
+        kvecs[i * ny + j] = get_kvec(i, j, 1)
+    end
+
+    for i in 1:fnw, j in 1:klen
+        e = epsilon(1, kvecs[j])
+        G[j] = 1 / (iw[i] - e)
+    end
+    for i in 1:bnw, j in 1:klen, k in 1:klen
+        q = kvecs[j] - kvecs[k]
+        A[i, j * klen + k] = 1 / (iv[i] - epsilon(1, q))
+    end
+
+    C = conv_k_sum(A, B, mesh)
+end
+
 
 function eliashberg_node()
     energy_finite_T()
     energy_2sum()
     energy_fastest()
+    test_conv_k_sum()
     #fastest()
     #eliashberg_global()
     println("k_mesh: ", cfg.k_mesh)
