@@ -48,6 +48,8 @@ module ffirefly
     integer :: ibrav
     integer(c_int), bind(C, name="c_nbnd") :: c_nbnd
     integer :: nbnd
+    integer(c_int), bind(C, name="c_natoms") :: c_natoms
+    integer :: natoms
     real(c_float), bind(C, name="c_fermi_energy") :: c_fermi_energy
     real :: fermi_energy
     real(c_float), bind(C, name="c_Temperature") :: c_Temperature
@@ -70,6 +72,11 @@ module ffirefly
 ![BRILLOUIN_ZONE]
     real(c_float), bind(C, name="c_brillouin_zone") :: c_brillouin_zone(3,3)
     real :: brillouin_zone(3,3)
+
+![ATOMIC_POSITIONS]
+    character(len=50) :: atom
+    real(c_float), bind(C, name="c_position") :: c_position(3)
+    real :: position(3)
 
 ![BANDS]
     character(len=50) :: band(50,50)
@@ -165,6 +172,7 @@ module ffirefly
 
 
 
+
 ![MESH]
 
 
@@ -174,6 +182,13 @@ module ffirefly
 
 
 ![BRILLOUIN_ZONE]
+
+
+![ATOMIC_POSITIONS]
+        function get_atom() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_atom
+    end function get_atom
 
 
 ![BANDS]
@@ -252,6 +267,7 @@ contains
         dimension = c_dimension
         ibrav = c_ibrav
         nbnd = c_nbnd
+        natoms = c_natoms
         fermi_energy = c_fermi_energy
         Temperature = c_Temperature
         onsite_U = c_onsite_U
@@ -266,6 +282,10 @@ contains
 
 ![BRILLOUIN_ZONE]
         brillouin_zone = c_brillouin_zone
+
+![ATOMIC_POSITIONS]
+        atom = get_string(get_atom())
+        position = c_position
 
 ![BANDS]
         band = get_string(get_band())

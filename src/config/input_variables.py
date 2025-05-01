@@ -26,6 +26,7 @@ ALL = {
         "dimension": 3,
         "ibrav": 0,
         "nbnd": 0,
+        "natoms": 0,
         "fermi_energy": 0.0,
         "Temperature": 0.0,
         "onsite_U": 0.0,
@@ -39,6 +40,7 @@ ALL = {
             [0.0, 0.0, 2 * np.pi],
         ]
     },
+    "ATOMIC_POSITIONS": {"atom": "X", "position": [0.0, 0.0, 0.0]},
     "BANDS": {
         "band": "fermi_gas",
         "eff_mass": 1.0,

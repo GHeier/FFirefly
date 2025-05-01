@@ -26,6 +26,7 @@ string interaction;
 int dimension;
 int ibrav;
 int nbnd;
+int natoms;
 float fermi_energy;
 float Temperature;
 float onsite_U;
@@ -40,6 +41,12 @@ vector<vector<float>> cell(3, vector<float>(3));
 
 //[BRILLOUIN_ZONE]
 vector<vector<float>> brillouin_zone(3, vector<float>(3));
+
+//[ATOMIC_POSITIONS]
+vector<string> atom;
+
+vector<vector<float>> position;
+
 
 //[BANDS]
 vector<string> band;
@@ -89,6 +96,7 @@ extern "C" void load_cpp_config() {
     dimension = c_dimension;
     ibrav = c_ibrav;
     nbnd = c_nbnd;
+    natoms = c_natoms;
     fermi_energy = c_fermi_energy;
     Temperature = c_Temperature;
     onsite_U = c_onsite_U;
@@ -103,6 +111,10 @@ extern "C" void load_cpp_config() {
 
 //[BRILLOUIN_ZONE]
     for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) brillouin_zone[i][j] = c_brillouin_zone[i][j];
+
+//[ATOMIC_POSITIONS]
+    for (int i = 0; i < natoms; i++) atom.push_back(c_atom[i]);
+    for (int i = 0; i < natoms; i++) position.push_back(vector<float>(c_position[i], c_position[i] + 3));
 
 //[BANDS]
     for (int i = 0; i < nbnd; i++) band.push_back(c_band[i]);

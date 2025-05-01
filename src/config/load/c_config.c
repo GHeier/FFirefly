@@ -13,30 +13,31 @@
 // Global Variables are listed below, with their default values
 
 //[CONTROL]
-char *c_category = "test";
-char *get_category() { return c_category; }
-char *c_calculation = "test";
-char *get_calculation() { return c_calculation; }
-char *c_outdir = "./";
-char *get_outdir() { return c_outdir; }
-char *c_indir = "./";
-char *get_indir() { return c_indir; }
-char *c_prefix = "sample";
-char *get_prefix() { return c_prefix; }
-char *c_verbosity = "low";
-char *get_verbosity() { return c_verbosity; }
-char *c_input_data_file = "input.dat";
-char *get_input_data_file() { return c_input_data_file; }
-char *c_output_data_file = "output.dat";
-char *get_output_data_file() { return c_output_data_file; }
+char* c_category = "test";
+char* get_category() {return c_category;}
+char* c_calculation = "test";
+char* get_calculation() {return c_calculation;}
+char* c_outdir = "./";
+char* get_outdir() {return c_outdir;}
+char* c_indir = "./";
+char* get_indir() {return c_indir;}
+char* c_prefix = "sample";
+char* get_prefix() {return c_prefix;}
+char* c_verbosity = "low";
+char* get_verbosity() {return c_verbosity;}
+char* c_input_data_file = "input.dat";
+char* get_input_data_file() {return c_input_data_file;}
+char* c_output_data_file = "output.dat";
+char* get_output_data_file() {return c_output_data_file;}
 bool c_automatic_file_read = true;
 
 //[SYSTEM]
-char *c_interaction = "none";
-char *get_interaction() { return c_interaction; }
+char* c_interaction = "none";
+char* get_interaction() {return c_interaction;}
 int c_dimension = 3;
 int c_ibrav = 0;
 int c_nbnd = 0;
+int c_natoms = 0;
 float c_fermi_energy = 0.0;
 float c_Temperature = 0.0;
 float c_onsite_U = 0.0;
@@ -50,15 +51,16 @@ int c_w_pts = 100;
 float c_cell[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
 
 //[BRILLOUIN_ZONE]
-float c_brillouin_zone[3][3] = {{6.283185307179586, 0.0, 0.0},
-                                {0.0, 6.283185307179586, 0.0},
-                                {0.0, 0.0, 6.283185307179586}};
+float c_brillouin_zone[3][3] = {{6.283185307179586, 0.0, 0.0}, {0.0, 6.283185307179586, 0.0}, {0.0, 0.0, 6.283185307179586}};
+
+//[ATOMIC_POSITIONS]
+char** c_atom = (char*[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+char** get_atom() {return (char**)c_atom;}
+float c_position[50][3] = {0};
 
 //[BANDS]
-char **c_band = (char *[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-char **get_band() { return (char **)c_band; }
+char** c_band = (char*[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+char** get_band() {return (char**)c_band;}
 float c_eff_mass[50];
 float c_t0[50];
 float c_t1[50];
@@ -73,14 +75,14 @@ float c_t9[50];
 float c_t10[50];
 
 //[SUPERCONDUCTOR]
-char *c_method = "none";
-char *get_method() { return c_method; }
+char* c_method = "none";
+char* get_method() {return c_method;}
 bool c_FS_only = true;
 float c_bcs_cutoff_frequency = 0.05;
 int c_num_eigenvalues_to_save = 1;
 int c_frequency_pts = 5;
-char *c_projections = "";
-char *get_projections() { return c_projections; }
+char* c_projections = "";
+char* get_projections() {return c_projections;}
 
 //[RESPONSE]
 bool c_dynamic = false;
@@ -198,6 +200,7 @@ void read_c_config(const char *path) {
     char section[50];
     int row = 0;
     int n = 0;
+    int atom_ind = 0;
     bool got_dimension = false;
     bool got_bz = false;
     bool got_nbnd = false;
@@ -230,7 +233,18 @@ void read_c_config(const char *path) {
         if (strstr(section, "BRILLOUIN_ZONE") != NULL && strlen(line) > 1) {
             sscanf(line, "%f %f %f", &c_brillouin_zone[row][0],
                    &c_brillouin_zone[row][1], &c_brillouin_zone[row][2]);
-            row++;
+            atom_ind++;
+            // Stop reading after filling 3 rows
+            if (line[0] == '\0') {
+                section[0] = '\0';
+                continue;
+            }
+        }
+        if (strstr(section, "ATOMIC_POSITIONS") != NULL && strlen(line) > 1) {
+            char temp;
+            sscanf(line, "%c %f %f %f", &temp, &c_position[atom_ind][0],
+                   &c_position[atom_ind][1], &c_position[atom_ind][2]);
+            set_string(&c_atom[atom_ind], &temp);
             // Stop reading after filling 3 rows
             if (row == 3) {
                 section[0] = '\0';
@@ -242,24 +256,32 @@ void read_c_config(const char *path) {
 
             // Read in variable values from the config file
 
-            //[CONTROL]
+//[CONTROL]
             if (strstr(key, "category") != NULL) {
                 set_string(&c_category, value);
-            } else if (strstr(key, "calculation") != NULL) {
+            }
+            else if (strstr(key, "calculation") != NULL) {
                 set_string(&c_calculation, value);
-            } else if (strstr(key, "outdir") != NULL) {
+            }
+            else if (strstr(key, "outdir") != NULL) {
                 set_string(&c_outdir, value);
-            } else if (strstr(key, "indir") != NULL) {
+            }
+            else if (strstr(key, "indir") != NULL) {
                 set_string(&c_indir, value);
-            } else if (strstr(key, "prefix") != NULL) {
+            }
+            else if (strstr(key, "prefix") != NULL) {
                 set_string(&c_prefix, value);
-            } else if (strstr(key, "verbosity") != NULL) {
+            }
+            else if (strstr(key, "verbosity") != NULL) {
                 set_string(&c_verbosity, value);
-            } else if (strstr(key, "input_data_file") != NULL) {
+            }
+            else if (strstr(key, "input_data_file") != NULL) {
                 set_string(&c_input_data_file, value);
-            } else if (strstr(key, "output_data_file") != NULL) {
+            }
+            else if (strstr(key, "output_data_file") != NULL) {
                 set_string(&c_output_data_file, value);
-            } else if (strstr(key, "automatic_file_read") != NULL) {
+            }
+            else if (strstr(key, "automatic_file_read") != NULL) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
                     c_automatic_file_read = true;
@@ -268,91 +290,119 @@ void read_c_config(const char *path) {
                 }
             }
 
-            //[SYSTEM]
+//[SYSTEM]
             else if (strstr(key, "interaction") != NULL) {
                 set_string(&c_interaction, value);
-            } else if (strstr(key, "dimension") != NULL) {
+            }
+            else if (strstr(key, "dimension") != NULL) {
                 c_dimension = atoi(value);
-                got_dimension = true;
-            } else if (strstr(key, "ibrav") != NULL) {
+                 got_dimension = true;
+            }
+            else if (strstr(key, "ibrav") != NULL) {
                 c_ibrav = atoi(value);
-            } else if (strstr(key, "nbnd") != NULL) {
+            }
+            else if (strstr(key, "nbnd") != NULL) {
                 c_nbnd = atoi(value);
-                got_nbnd = true;
-            } else if (strstr(key, "fermi_energy") != NULL) {
+                 got_nbnd = true;
+            }
+            else if (strstr(key, "natoms") != NULL) {
+                c_natoms = atoi(value);
+            }
+            else if (strstr(key, "fermi_energy") != NULL) {
                 c_fermi_energy = atof(value);
-            } else if (strstr(key, "Temperature") != NULL) {
+            }
+            else if (strstr(key, "Temperature") != NULL) {
                 c_Temperature = atof(value);
-            } else if (strstr(key, "onsite_U") != NULL) {
+            }
+            else if (strstr(key, "onsite_U") != NULL) {
                 c_onsite_U = atof(value);
             }
 
-            //[MESH]
+//[MESH]
             else if (strstr(key, "k_mesh") != NULL) {
-                sscanf(line, " k_mesh = %d %d %d", &c_k_mesh[0], &c_k_mesh[1],
-                       &c_k_mesh[2]);
-            } else if (strstr(key, "q_mesh") != NULL) {
-                sscanf(line, " q_mesh = %d %d %d", &c_q_mesh[0], &c_q_mesh[1],
-                       &c_q_mesh[2]);
-            } else if (strstr(key, "w_pts") != NULL) {
+                sscanf(line, " k_mesh = %d %d %d", &c_k_mesh[0], &c_k_mesh[1], &c_k_mesh[2]);
+            }
+            else if (strstr(key, "q_mesh") != NULL) {
+                sscanf(line, " q_mesh = %d %d %d", &c_q_mesh[0], &c_q_mesh[1], &c_q_mesh[2]);
+            }
+            else if (strstr(key, "w_pts") != NULL) {
                 c_w_pts = atoi(value);
             }
 
-            //[CELL]
+//[CELL]
 
-            //[BRILLOUIN_ZONE]
+//[BRILLOUIN_ZONE]
 
-            //[BANDS]
+//[ATOMIC_POSITIONS]
+
+//[BANDS]
             else if (strstr(key, "band") != NULL) {
-                n = atoi(key + 4) - 1;
+                n = atoi(key + 4)-1;
                 set_string(&c_band[n], value);
-            } else if (strstr(key, "eff_mass") != NULL) {
+            }
+            else if (strstr(key, "eff_mass") != NULL) {
                 c_eff_mass[n] = atof(value);
-            } else if (strstr(key, "t0") != NULL) {
+            }
+            else if (strstr(key, "t0") != NULL) {
                 c_t0[n] = atof(value);
-            } else if (strstr(key, "t1") != NULL) {
+            }
+            else if (strstr(key, "t1") != NULL) {
                 c_t1[n] = atof(value);
-            } else if (strstr(key, "t2") != NULL) {
+            }
+            else if (strstr(key, "t2") != NULL) {
                 c_t2[n] = atof(value);
-            } else if (strstr(key, "t3") != NULL) {
+            }
+            else if (strstr(key, "t3") != NULL) {
                 c_t3[n] = atof(value);
-            } else if (strstr(key, "t4") != NULL) {
+            }
+            else if (strstr(key, "t4") != NULL) {
                 c_t4[n] = atof(value);
-            } else if (strstr(key, "t5") != NULL) {
+            }
+            else if (strstr(key, "t5") != NULL) {
                 c_t5[n] = atof(value);
-            } else if (strstr(key, "t6") != NULL) {
+            }
+            else if (strstr(key, "t6") != NULL) {
                 c_t6[n] = atof(value);
-            } else if (strstr(key, "t7") != NULL) {
+            }
+            else if (strstr(key, "t7") != NULL) {
                 c_t7[n] = atof(value);
-            } else if (strstr(key, "t8") != NULL) {
+            }
+            else if (strstr(key, "t8") != NULL) {
                 c_t8[n] = atof(value);
-            } else if (strstr(key, "t9") != NULL) {
+            }
+            else if (strstr(key, "t9") != NULL) {
                 c_t9[n] = atof(value);
-            } else if (strstr(key, "t10") != NULL) {
+            }
+            else if (strstr(key, "t10") != NULL) {
                 c_t10[n] = atof(value);
             }
 
-            //[SUPERCONDUCTOR]
+//[SUPERCONDUCTOR]
             else if (strstr(key, "method") != NULL) {
                 set_string(&c_method, value);
-            } else if (strstr(key, "FS_only") != NULL) {
+            }
+            else if (strstr(key, "FS_only") != NULL) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
                     c_FS_only = true;
                 } else {
                     c_FS_only = false;
                 }
-            } else if (strstr(key, "bcs_cutoff_frequency") != NULL) {
+            }
+            else if (strstr(key, "bcs_cutoff_frequency") != NULL) {
                 c_bcs_cutoff_frequency = atof(value);
-            } else if (strstr(key, "num_eigenvalues_to_save") != NULL) {
+            }
+            else if (strstr(key, "num_eigenvalues_to_save") != NULL) {
                 c_num_eigenvalues_to_save = atoi(value);
-            } else if (strstr(key, "frequency_pts") != NULL) {
+            }
+            else if (strstr(key, "frequency_pts") != NULL) {
                 c_frequency_pts = atoi(value);
-            } else if (strstr(key, "projections") != NULL) {
+            }
+            else if (strstr(key, "projections") != NULL) {
                 set_string(&c_projections, value);
             }
 
-            //[RESPONSE]
+//[RESPONSE]
             else if (strstr(key, "dynamic") != NULL) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
@@ -418,36 +468,127 @@ void load_c_config() {
 
 void unload_c_config() {
     // Unload the config file
-
-    //[CONTROL]
-    free(c_category);
-    free(c_calculation);
-    free(c_outdir);
-    free(c_indir);
-    free(c_prefix);
-    free(c_verbosity);
-    free(c_input_data_file);
-    free(c_output_data_file);
-
-    //[SYSTEM]
-    free(c_interaction);
-
-    //[MESH]
-
-    //[CELL]
-
-    //[BRILLOUIN_ZONE]
-
-    //[BANDS]
-    free(c_band);
-
-    //[SUPERCONDUCTOR]
-    free(c_method);
-
-    free(c_projections);
-
-    //[RESPONSE]
-
+    //
+    ////[CONTROL]
+    //    free(c_category);
+    //    free(c_calculation);
+    //    free(c_outdir);
+    //    free(c_indir);
+    //    free(c_prefix);
+    //    free(c_verbosity);
+    //    free(c_input_data_file);
+    //    free(c_output_data_file);
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_automatic_file_read[i]);
+    //    }
+    //
+    ////[SYSTEM]
+    //    free(c_interaction);
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_dimension[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_ibrav[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_nbnd[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_fermi_energy[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_Temperature[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_onsite_U[i]);
+    //    }
+    //
+    ////[MESH]
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_k_mesh[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_q_mesh[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_w_pts[i]);
+    //    }
+    //
+    ////[CELL]
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_cell[i]);
+    //    }
+    //
+    ////[BRILLOUIN_ZONE]
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_brillouin_zone[i]);
+    //    }
+    //
+    ////[ATOMIC_POSITIONS]
+    //    free(c_atom);
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_position[i]);
+    //    }
+    //
+    ////[BANDS]
+    //    free(c_band);
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_eff_mass[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_t0[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_t1[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_t2[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_t3[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_t4[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_t5[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_t6[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_t7[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_t8[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_t9[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_t10[i]);
+    //    }
+    //
+    ////[SUPERCONDUCTOR]
+    //    free(c_method);
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_FS_only[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_bcs_cutoff_frequency[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_num_eigenvalues_to_save[i]);
+    //    }
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_frequency_pts[i]);
+    //    }
+    //    free(c_projections);
+    //
+    ////[RESPONSE]
+    //    for (int i = 0; i < 50; i++) {
+    //        free(c_dynamic[i]);
+    //    }
     // End of unloading the config file
 }
 

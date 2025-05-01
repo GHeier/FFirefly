@@ -8,30 +8,22 @@
 // Global Variables are listed below, with their default values
 
 //[CONTROL]
-extern char *c_category;
-char *get_category();
-extern char *c_calculation;
-char *get_calculation();
-extern char *c_outdir;
-char *get_outdir();
-extern char *c_indir;
-char *get_indir();
-extern char *c_prefix;
-char *get_prefix();
-extern char *c_verbosity;
-char *get_verbosity();
-extern char *c_input_data_file;
-char *get_input_data_file();
-extern char *c_output_data_file;
-char *get_output_data_file();
+extern char* c_category; char* get_category();
+extern char* c_calculation; char* get_calculation();
+extern char* c_outdir; char* get_outdir();
+extern char* c_indir; char* get_indir();
+extern char* c_prefix; char* get_prefix();
+extern char* c_verbosity; char* get_verbosity();
+extern char* c_input_data_file; char* get_input_data_file();
+extern char* c_output_data_file; char* get_output_data_file();
 extern bool c_automatic_file_read;
 
 //[SYSTEM]
-extern char *c_interaction;
-char *get_interaction();
+extern char* c_interaction; char* get_interaction();
 extern int c_dimension;
 extern int c_ibrav;
 extern int c_nbnd;
+extern int c_natoms;
 extern float c_fermi_energy;
 extern float c_Temperature;
 extern float c_onsite_U;
@@ -47,9 +39,12 @@ extern float c_cell[3][3];
 //[BRILLOUIN_ZONE]
 extern float c_brillouin_zone[3][3];
 
+//[ATOMIC_POSITIONS]
+extern char** c_atom; char** get_atom();
+extern float c_position[50][3];
+
 //[BANDS]
-extern char **c_band;
-char **get_band();
+extern char** c_band; char** get_band();
 extern float c_eff_mass[50];
 extern float c_t0[50];
 extern float c_t1[50];
@@ -64,14 +59,12 @@ extern float c_t9[50];
 extern float c_t10[50];
 
 //[SUPERCONDUCTOR]
-extern char *c_method;
-char *get_method();
+extern char* c_method; char* get_method();
 extern bool c_FS_only;
 extern float c_bcs_cutoff_frequency;
 extern int c_num_eigenvalues_to_save;
 extern int c_frequency_pts;
-extern char *c_projections;
-char *get_projections();
+extern char* c_projections; char* get_projections();
 
 //[RESPONSE]
 extern bool c_dynamic;

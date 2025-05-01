@@ -23,6 +23,7 @@ interaction::String = cfg.interaction
 dimension::Int = cfg.dimension
 ibrav::Int = cfg.ibrav
 nbnd::Int = cfg.nbnd
+natoms::Int = cfg.natoms
 fermi_energy::Float64 = cfg.fermi_energy
 Temperature::Float64 = cfg.Temperature
 onsite_U::Float64 = cfg.onsite_U
@@ -37,6 +38,10 @@ cell::Array{Float64} = cfg.cell
 
 #[BRILLOUIN_ZONE]
 brillouin_zone::Array{Float64} = cfg.brillouin_zone
+
+#[ATOMIC_POSITIONS]
+atom::String = cfg.atom
+position::Array{Float64} = cfg.position
 
 #[BANDS]
 band::Vector{String} = cfg.band

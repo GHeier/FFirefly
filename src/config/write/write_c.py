@@ -52,11 +52,13 @@ def format_var_line(key, value, section):
             size = len(value)
             array_type = "float" if any(isinstance(x, float) for x in value) else "int"
             array_elements = ", ".join(map(str, value))
+            if section == "ATOMIC_POSITIONS":
+                return f"{array_type} c_{key}[50][{size}] = {{0}};"
             return f"{array_type} c_{key}[{size}] = {{{array_elements}}};"
     else:
         if isinstance(value, str):
             # Handle strings
-            if section == "BANDS":
+            if section == "BANDS" or section == "ATOMIC_POSITIONS":
                 return (
                     f"char** c_{key} = (char*[]){{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};\n"
                     f"char** get_{key}() {{return (char**)c_{key};}}"
@@ -66,13 +68,13 @@ def format_var_line(key, value, section):
             )
         elif isinstance(value, bool):
             # Handle booleans
-            if section == "BANDS":
+            if section == "BANDS" or section == "ATOMIC_POSITIONS":
                 return f"bool c_{key}[50];"
             return f"bool c_{key} = {'true' if value else 'false'};"
         else:
             # Handle other scalar values
             value_type = "float" if isinstance(value, float) else "int"
-            if section == "BANDS":
+            if section == "BANDS" or section == "ATOMIC_POSITIONS":
                 return f"{value_type} c_{key}[50];"
             return f"{value_type} c_{key} = {value};"
 
@@ -82,13 +84,17 @@ def format_func_line(key, value, section):
     if key == "category":
         el = ""
     index = ""
-    if section == "BANDS":
+    if section == "BANDS" or section == "ATOMIC_POSITIONS":
         index = "[n]"
-    if section == "CELL" or section == "BRILLOUIN_ZONE":
+    if (
+        section == "CELL"
+        or section == "BRILLOUIN_ZONE"
+        or section == "ATOMIC_POSITIONS"
+    ):
         return ""
 
     if type(value) == str:
-        if key == "band":
+        if key == "band" or key == "atom":
             return f'            {el}if (strstr(key, "{key}") != NULL) {{\n                n = atoi(key + 4)-1;\n                set_string(&c_{key}{index}, value);\n            }}'
         return f'            {el}if (strstr(key, "{key}") != NULL) {{\n                set_string(&c_{key}, value);\n            }}'
     elif type(value) == int:
@@ -115,10 +121,10 @@ def format_func_line(key, value, section):
 
 def format_header_line(key, value, section):
     index = ""
-    if section == "BANDS":
+    if section == "BANDS" or section == "ATOMIC_POSITIONS":
         index = "[50]"
     if type(value) == str:
-        if key == "band":
+        if key == "band" or key == "atom":
             return f"extern char** c_{key}; char** get_{key}();"
         return f"extern char* c_{key}; char* get_{key}();"
     elif type(value) == int:
@@ -148,7 +154,7 @@ def format_header_line(key, value, section):
 def format_unload_line(key, value, section):
     if type(value) == str:
         return f"    free(c_{key});"
-    if key == "band":
+    if key == "band" or "atom":
         return f"    for (int i = 0; i < 50; i++) {{\n        free(c_{key}[i]);\n    }}"
     return ""
 
@@ -212,8 +218,8 @@ def write_c(ALL):
     file_path = "load/c_config.c"
     add_lines(ALL, file_path, start_phrase, end_phrase, format_var_line)
     add_lines(ALL, file_path, start_func_phrase, end_func_phrase, format_func_line)
-    add_lines(
-        ALL, file_path, start_unload_phrase, end_unload_phrase, format_unload_line
-    )
+    # add_lines(
+    #    ALL, file_path, start_unload_phrase, end_unload_phrase, format_unload_line
+    # )
     remove_multiple_empty_lines(file_path)
     print(f"Successfully updated the file '{file_path}'.")

@@ -23,6 +23,7 @@ extern string interaction;
 extern int dimension;
 extern int ibrav;
 extern int nbnd;
+extern int natoms;
 extern float fermi_energy;
 extern float Temperature;
 extern float onsite_U;
@@ -37,6 +38,12 @@ extern vector<vector<float>> cell;
 
 //[BRILLOUIN_ZONE]
 extern vector<vector<float>> brillouin_zone;
+
+//[ATOMIC_POSITIONS]
+extern vector<string> atom;
+
+extern vector<vector<float>> position;
+
 
 //[BANDS]
 extern vector<string> band;

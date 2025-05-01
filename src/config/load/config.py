@@ -17,6 +17,7 @@ interaction = 'none'
 dimension = 3
 ibrav = 0
 nbnd = 0
+natoms = 0
 fermi_energy = 0.0
 Temperature = 0.0
 onsite_U = 0.0
@@ -31,6 +32,10 @@ cell = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
 
 #[BRILLOUIN_ZONE]
 brillouin_zone = [[6.283185307179586, 0.0, 0.0], [0.0, 6.283185307179586, 0.0], [0.0, 0.0, 6.283185307179586]]
+
+#[ATOMIC_POSITIONS]
+atom = 'X'
+position = [0.0, 0.0, 0.0]
 
 #[BANDS]
 band = []
@@ -150,6 +155,9 @@ def load_config():
             if "nbnd" in key:
                 global nbnd
                 nbnd = int(value)
+            if "natoms" in key:
+                global natoms
+                natoms = int(value)
             if "fermi_energy" in key:
                 global fermi_energy
                 fermi_energy = float(value)
@@ -182,6 +190,14 @@ def load_config():
                 global brillouin_zone
                 brillouin_zone.append([float(line.split()[i]) for i in range(3)])
                 index += 1
+
+#[ATOMIC_POSITIONS]
+            if "atom" in key:
+                global atom
+                atom = value
+            if "position" in key:
+                global position
+                position = [float(value.split()[i]) for i in range(3)]
 
 #[BANDS]
             if "band" in key:
