@@ -5,15 +5,6 @@ letters = "abcdefghijklmnopqrstu"
 variables = {"Vec": "v"}
 
 
-def write_export_include(INPUTS, lines):
-    include_list = []
-    for x in INPUTS:
-        include_list.append(x)
-    remove_lines_between_phrases(lines, "// Begin include", "// End include")
-    add_lines_between_phrases(lines, include_list, "// Begin include", "// End include")
-    return lines
-
-
 def arg_cpp_to_c(arg, name):
     if arg == "Vec":
         return ["float*", "int"]
@@ -92,7 +83,19 @@ def create_func(name, args, num):
     return lines
 
 
+def write_export_include(INPUTS, lines):
+    include_list = []
+    for x in INPUTS:
+        include_list.append(x)
+    base.remove_lines_between_phrases(lines, "// Begin include", "// End include")
+    base.add_lines_between_phrases(
+        lines, include_list, "// Begin include", "// End include"
+    )
+    return lines
+
+
 def write_export_func(INPUTS, lines):
+    newlines = []
     for file, func in INPUTS.items():
         i = 0
         prev_name = ""
@@ -107,11 +110,18 @@ def write_export_func(INPUTS, lines):
                 i = 0
             prev_name = name
             print(line)
-            lines.append(line)
+            newlines.append(line)
+    base.remove_lines_between_phrases(lines, "// Begin functions", "// End functions")
+    base.add_lines_between_phrases(
+        lines, newlines, "// Begin functions", "// End functions"
+    )
     return lines
 
 
 def write_export(INPUTS):
     with open("exports/cpp_export.cpp", "r") as file:
         lines = file.readlines()
-    write_export_func(INPUTS, lines)
+    lines = write_export_include(INPUTS, lines)
+    lines = write_export_func(INPUTS, lines)
+    with open("exports/cpp_export.cpp", "w") as file:
+        file.writelines(lines)
