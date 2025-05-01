@@ -2,7 +2,7 @@ import ctypes
 from pathlib import Path
 
 # Define the shared library
-lib_path = Path("/home/g/Research/ffirefly/build/lib/libfly.so")
+lib_path = Path("/home/g/Research/FFirefly/build/lib/libfly.so")
 lib = ctypes.CDLL(str(lib_path))
 
 # Mapping from string to ctypes type
@@ -18,16 +18,12 @@ type_map = {
 
 # List of function definitions
 functions = [
+    {"name": "load_config_export0", "args": ["c_char_p"], "return": "None"},
     {
-        "name": "load_config_julia",
-        "args": ["c_char_p"],
-        "return": "None"
-    },
-    {
-        "name": "epsilon_julia",
+        "name": "epsilon_export0",
         "args": ["c_int", "POINTER(c_float)", "c_int"],
-        "return": "c_float"
-    }
+        "return": "c_float",
+    },
 ]
 
 # Generate wrappers
@@ -37,6 +33,7 @@ for f in functions:
     func.restype = type_map[f["return"]]
     globals()[f["name"]] = func
 
+
 def generate_python_function(name, arg_names):
     args_str = ", ".join(arg_names)
     call_args = ", ".join(arg_names)
@@ -44,6 +41,7 @@ def generate_python_function(name, arg_names):
 def {name}_py({args_str}):
     return {name}({call_args})
 """
+
 
 # Example usage
 for f in functions:

@@ -6,7 +6,7 @@ t1 = time()
 include("../objects/mesh.jl")
 using .IRMesh
 
-
+using Printf
 using CUDA, FFTW
 using MPI
 #using NFFT
@@ -959,58 +959,77 @@ function element_convolution(A, B, mesh)
     A_t = wn_to_tau(mesh, Fermionic(), A)
     B_t = wn_to_tau(mesh, Fermionic(), B)
     temp = A_t .* B_t
-    return tau_to_wn(mesh, Fermionic(), temp)
+    return tau_to_wn(mesh, Bosonic(), temp)
 end
 
-function conv_k_sum(F::Matrix{Vector{ComplexF64}}, G::Matrix{Vector{ComplexF64}}, mesh)
-    nw, nk = size(B)
-    P = Matrix{ComplexF64}(nw, nk)
-    for i in 1:nw, j in 1:nk
+function conv_sum(F::Array{Vector{ComplexF64}}, G::Vector{Vector{ComplexF64}}, mesh)
+    nk = length(G)
+    fnw = mesh.fnw
+    bnw = mesh.bnw
+    P = [zeros(ComplexF64, bnw) for _ in 1:nk]  # P is Vector{Vector{ComplexF64}}
+    for i in 1:fnw, j in 1:nk
         Gw = G[j]
-        sum = 0
+        sum = zeros(ComplexF64, bnw)
         for k in 1:nk
             Fw = F[j, k]
             sum += element_convolution(Fw, Gw, mesh)
         end
-        P[i, j] = sum[1:end]
+        P[j] = sum
     end
     return P 
 end
 
-function test_conv_k_sum()
+function chi_convsum()
     mesh = IR_Mesh()
     fnw, bnw = mesh.fnw, mesh.bnw
-    F = Array{Vector{ComplexF64}, 2}
-    G = Vector{Vector{ComplexF64}}
     iw = Array{ComplexF32}(undef, fnw)
     iv = Array{ComplexF32}(undef, bnw)
     for i in 1:fnw iw[i] = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta) end
     for i in 1:bnw iv[i] = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[i], beta) end
 
-    kvecs = Vector{Vector{Float64}}(nx * ny)
+    kvecs = Vector{Vector{Float64}}(undef, nx * ny)
     klen = length(kvecs)
     for i in 1:nx, j in 1:ny 
-        kvecs[i * ny + j] = get_kvec(i, j, 1)
+        kvecs[(i - 1) * ny + j] = get_kvec(i, j, 1)
     end
 
-    for i in 1:fnw, j in 1:klen
-        e = epsilon(1, kvecs[j])
-        G[j] = 1 / (iw[i] - e)
+    F = [zeros(ComplexF64, fnw) for _ in 1:klen, _ in 1:klen]
+    G = [zeros(ComplexF64, fnw) for _ in 1:klen]
+    for j in 1:klen
+        e = epsilon(1, kvecs[j]) - mu
+        for i in 1:fnw
+            G[j][i] = 1 / (iw[i] - e)
+        end
     end
-    for i in 1:bnw, j in 1:klen, k in 1:klen
+    for i in 1:fnw, j in 1:klen, k in 1:klen
         q = kvecs[j] - kvecs[k]
-        A[i, j * klen + k] = 1 / (iv[i] - epsilon(1, q))
+        F[j, k][i] = 1 / (iw[i] - epsilon(1, q) - mu)
     end
 
-    C = conv_k_sum(A, B, mesh)
+    P = conv_sum(F, G, mesh)
+    open("convsum.dat", "w") do io
+        println(io, "kx             ky             w             Re(f)            Im(f)")
+        for i in 1:length(P), j in 1:length(P[1])
+            kvec = kvecs[i]
+            w = iv[j]
+            temp = P[i][j]
+            println(io, 
+                @sprintf("%.6f", kvec[1]), "    ",
+                @sprintf("%.6f", kvec[2]), "    ",
+                @sprintf("%.6f", imag(w)), "    ",
+                @sprintf("%.6f", real(temp)), "    ",
+                @sprintf("%.6f", imag(temp))
+            )
+        end
+    end
 end
 
 
 function eliashberg_node()
-    energy_finite_T()
-    energy_2sum()
-    energy_fastest()
-    test_conv_k_sum()
+    #energy_finite_T()
+    #energy_2sum()
+    #energy_fastest()
+    chi_convsum()
     #fastest()
     #eliashberg_global()
     println("k_mesh: ", cfg.k_mesh)
