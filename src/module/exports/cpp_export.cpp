@@ -1,94 +1,82 @@
 #include <string>
 
-// Begin include
 #include "../../config/load/c_config.h"
 #include "../../config/load/cpp_config.hpp"
+// Begin include
 #include "../../hamiltonian/band_structure.hpp"
-#include "../../objects/CMField/bands.hpp"   // Include CMF class
-#include "../../objects/CMField/cmfield.hpp" // Include CMF class
-#include "../../objects/CMField/fields.hpp"  // Include CMF class
-#include "../../objects/CMField/vertex.hpp"  // Include CMF class
+#include "../../objects/CMField/bands.hpp"
+#include "../../objects/CMField/vertex.hpp"
+#include "../../objects/CMField/fields.hpp"
 // End include
 #include "../../objects/vec.hpp"
-
-extern "C" float epsilon_export0(int n, float *k, int size) {
-    Vec kvec;
-    for (int i = 0; i < size; i++) {
-        kvec(i) = k[i];
-    }
-    return epsilon(n, kvec);
-}
 
 extern "C" void load_config_export0(const char *filename) {
     read_c_config(filename);
     load_cpp_config();
 }
 
+// Begin functions
+extern "C" float epsilon_export0(int a, float* b, int c) {
+    Vec v(b, c);
+    return epsilon(a, v);
+}
+extern "C" Bands* Bands_export0() {
+    return new Bands();
+}
+extern "C" Vertex* Vertex_export0() {
+    return new Vertex();
+}
+extern "C" Field_R* Field_R_export0() {
+    return new Field_R();
+}
+extern "C" Field_R* Field_R_export1(char* a) {
+    return new Field_R(a);
+}
+extern "C" float Field_R_operator_export0(Field_R* a, float b) {
+    return a->operator()(b);
+}
+extern "C" float Field_R_operator_export1(Field_R* a, int b, float c) {
+    return a->operator()(b, c);
+}
+extern "C" float Field_R_operator_export2(Field_R* a, float* b, int c, float d) {
+    Vec v(b, c);
+    return a->operator()(v, d);
+}
+extern "C" float Field_R_operator_export3(Field_R* a, int b, float* c, int d, float e) {
+    Vec v(c, d);
+    return a->operator()(b, v, e);
+}
+extern "C" Field_C* Field_C_export0() {
+    return new Field_C();
+}
+extern "C" Field_C* Field_C_export1(char* a) {
+    return new Field_C(a);
+}
+extern "C" void Field_C_operator_export0(Field_C* a, float b, float* c, float* d) {
+    complex<float> r = a->operator()(b);
+    *c = real(r);
+    *d = imag(r);
+}
+extern "C" void Field_C_operator_export1(Field_C* a, int b, float c, float* d, float* e) {
+    complex<float> r = a->operator()(b, c);
+    *d = real(r);
+    *e = imag(r);
+}
+extern "C" void Field_C_operator_export2(Field_C* a, float* b, int c, float d, float* e, float* f) {
+    Vec v(b, c);
+    complex<float> r = a->operator()(v, d);
+    *e = real(r);
+    *f = imag(r);
+}
+extern "C" void Field_C_operator_export3(Field_C* a, int b, float* c, int d, float e, float* f, float* g) {
+    Vec v(c, d);
+    complex<float> r = a->operator()(b, v, e);
+    *f = real(r);
+    *g = imag(r);
+}
+// End functions
+
 extern "C" {
-
-Bands *Bands_export0() { return new Bands(); }
-Vertex *Vertex_export0() { return new Vertex(); }
-
-void Vertex_operator_export0(Vertex *obj, const float *point, int len, float w,
-                             float *real_result, float *imag_result) {
-    Vec v(point, len);
-    complex<float> r = obj->operator()(v, w);
-    *real_result = real(r);
-    *imag_result = imag(r);
-}
-
-Field_C *Field_C_export0() { return new Field_C(); }
-Field_C *Field_C_export1(CMField cmf) { return new Field_C(cmf); }
-Field_C *Field_C_export2(const char *filename) { return new Field_C(filename); }
-
-Field_R *Field_R_export0() { return new Field_R(); }
-Field_R *Field_R_export1(CMField cmf) { return new Field_R(cmf); }
-Field_R *Field_R_export2(const char *filename) { return new Field_R(filename); }
-
-void Field_C_operator_export0(Field_C *obj, float w, float *real_result,
-                              float *imag_result) {
-    complex<float> r = obj->operator()(w);
-    *real_result = real(r);
-    *imag_result = imag(r);
-}
-void Field_C_operator_export1(Field_C *obj, int n, float w, float *real_result,
-                              float *imag_result) {
-    complex<float> r = obj->operator()(n, w);
-    *real_result = real(r);
-    *imag_result = imag(r);
-}
-void Field_C_operator_export2(Field_C *obj, const float *point, int len,
-                              float w, float *real_result, float *imag_result) {
-    Vec v(point, len);
-    complex<float> r = obj->operator()(v, w);
-    *real_result = real(r);
-    *imag_result = imag(r);
-}
-void Field_C_operator_export3(Field_C *obj, int n, const float *point, int len,
-                              float w, float *real_result, float *imag_result) {
-    Vec v(point, len);
-    complex<float> r = obj->operator()(n, v, w);
-    *real_result = real(r);
-    *imag_result = imag(r);
-}
-
-float Field_R_operator_export0(Field_R *obj, float w) {
-    return obj->operator()(w);
-}
-float Field_R_operator_export1(Field_R *obj, int n, float w) {
-    return obj->operator()(n, w);
-}
-float Field_R_operator_export2(Field_R *obj, const float *point, int len,
-                               float w) {
-    Vec v(point, len);
-    return obj->operator()(v, w);
-}
-float Field_R_operator_export3(Field_R *obj, int n, const float *point, int len,
-                               float w) {
-    Vec v(point, len);
-    return obj->operator()(n, v, w);
-}
-
 // Create a new CMF instance and return a pointer
 CMField *create_CMField() { return new CMField(); }
 

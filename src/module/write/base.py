@@ -1,3 +1,6 @@
+from collections import defaultdict
+
+
 def remove_lines_between_phrases(lines, start, end):
     updated_lines = []
     add_lines = True
