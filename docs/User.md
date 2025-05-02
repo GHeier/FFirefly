@@ -2,7 +2,7 @@
 
 ---
 #### 🔸 CONTROL
-    cateogry - options listed below
+    category - options listed below
     method - options listed below
     outdir - where data is saved
     indir - where data is read
@@ -29,12 +29,18 @@
     3x3 reciprocal lattice vectors (implicitly defined if given CELL)
 
 #### 🔸 BANDS
+
+    FORMAT:
+
     nbnd bands are listed in the format of:
         band1 = 'band_name'
             var = value
         band2 = 'band_name'
             var = value
         ...
+    
+    VARIABLES:
+
     band_names - 'fermi_gas', 'tight_binding'
         fermi_gas vars
             eff_mass
@@ -70,18 +76,18 @@
 ---
 
 #### 🔸 `response`
-- **Purpose**: Computes bare susceptibility.
-- **Options**:
-  - `method`:  
-    - `sparse_ir` – Uses sparse Matsubara frequencies (finite T; requires dense k-grid)  
-    - `libtetrabz` – Uses analytic tetrahedra integration (0 K; allows sparse grid)  
-    - ⚠️ *If you encounter "STOP NESTING", adjust the k-grid size.*
-  - `dynamic`:  
-    - `true` – Calculate and save data for finite $\omega$  
-    - `false` – Only compute at $\omega = 0$
-  - `wpts`:  
-    - Number of Matsubara frequencies.  
-    - `wpts = 1` calculates only at $i\omega = 0$.
+! **Purpose**: Computes bare susceptibility.
+! **Options**:
+  ! `method`:  
+    ! `sparse_ir` – Uses sparse Matsubara frequencies (finite T; requires dense k-grid)  
+    ! `libtetrabz` – Uses analytic tetrahedra integration (0 K; allows sparse grid)  
+    ! ⚠️ *If you encounter "STOP NESTING", adjust the k-grid size.*
+  ! `dynamic`:  
+    ! `true` – Calculate and save data for finite $\omega$  
+    ! `false` – Only compute at $\omega = 0$
+  ! `wpts`:  
+    ! Number of Matsubara frequencies.  
+    ! `wpts = 1` calculates only at $i\omega = 0$.
 
 ---
 
