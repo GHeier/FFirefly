@@ -6,13 +6,14 @@ from typing import Any
 def create_python_function(INPUTS):
     lines = []
 
+    # === Type Maps ===
     type_map = {
         "int": "ctypes.c_int",
         "float": "ctypes.c_float",
         "double": "ctypes.c_double",
         "string": "ctypes.c_char_p",
         "ptr": "ctypes.c_void_p",
-        "complex<float>": "ctypes.c_float * 2",
+        "complex<float>": "ctypes.c_float * 2",  # special handling
         "None": "None",
     }
 
@@ -31,32 +32,40 @@ def create_python_function(INPUTS):
         "float": "float",
         "double": "float",
         "int": "int",
+        "complex<float>": "complex",
     }
 
-    classes = {}
-    functions = []
+    def parse_arg(arg):
+        if "=" in arg:
+            t, default = arg.split("=")
+            return t.strip(), default.strip()
+        return arg.strip(), None
 
-    for file, func_list in INPUTS.items():
-        for base_name, sig in func_list:
-            ret_type, *arg_types = sig
-            entry = {
-                "name": base_name,
-                "ret_type": ret_type,
-                "arg_types": arg_types,
-            }
-            if ret_type == "ptr":
-                if base_name not in classes:
-                    classes[base_name] = {"constructors": [], "methods": []}
-                classes[base_name]["constructors"].append(entry)
-            elif "_operator" in base_name:
-                class_name = base_name.split("_operator")[0]
-                if class_name in classes:
-                    classes[class_name]["methods"].append(entry)
-            else:
-                functions.append(entry)
+    def split_inputs(INPUTS):
+        classes = {}
+        functions = []
+        for file, func_list in INPUTS.items():
+            for base_name, sig in func_list:
+                ret_type, *raw_args = sig
+                parsed_args = [parse_arg(a) for a in raw_args]
+                entry = {
+                    "name": base_name,
+                    "ret_type": ret_type,
+                    "arg_types": parsed_args,
+                }
+                if ret_type == "ptr":
+                    if base_name not in classes:
+                        classes[base_name] = {"constructors": [], "methods": []}
+                    classes[base_name]["constructors"].append(entry)
+                elif "_operator" in base_name:
+                    class_name = base_name.split("_operator")[0]
+                    if class_name in classes:
+                        classes[class_name]["methods"].append(entry)
+                else:
+                    functions.append(entry)
+        return functions, classes
 
-    # Free functions
-    for entry in functions:
+    def emit_free_function(entry):
         base_name = entry["name"]
         arg_types = entry["arg_types"]
         ret_type = entry["ret_type"]
@@ -66,32 +75,33 @@ def create_python_function(INPUTS):
         annotations = []
         call_args = []
 
-        param_index = 0
-        for t in arg_types:
-            name = f"arg{param_index}"
+        for i, (t, default) in enumerate(arg_types):
+            name = f"arg{i}"
             if t == "Vec":
-                expanded_arg_ctypes.extend(
-                    ["ctypes.POINTER(ctypes.c_float)", "ctypes.c_int"]
-                )
+                expanded_arg_ctypes += [
+                    "ctypes.POINTER(ctypes.c_float)",
+                    "ctypes.c_int",
+                ]
                 annotations.append(f"{name}: list[float]")
-                call_args.append(
-                    f"{name}_array.ctypes.data_as(ctypes.POINTER(ctypes.c_float))"
-                )
-                call_args.append(f"len({name})")
+                call_args += [
+                    f"{name}_array.ctypes.data_as(ctypes.POINTER(ctypes.c_float))",
+                    f"len({name})",
+                ]
             else:
                 expanded_arg_ctypes.append(type_map[t])
-                annotations.append(f"{name}: {friendly_names[t]}")
+                arg_decl = f"{name}: {friendly_names[t]}"
+                if default:
+                    arg_decl += f" = {default}"
+                annotations.append(arg_decl)
                 call_args.append(name)
-            param_index += 1
 
         lines.append(f"lib.{func_name}.argtypes = [{', '.join(expanded_arg_ctypes)}]\n")
-        lines.append(f"lib.{func_name}.restype = {type_map[ret_type]}\n")
-        lines.append("\n")
+        lines.append(f"lib.{func_name}.restype = {type_map[ret_type]}\n\n")
 
         lines.append(
             f"def {base_name}({', '.join(annotations)}) -> {return_type_map.get(ret_type, 'Any')}:\n"
         )
-        for i, t in enumerate(arg_types):
+        for i, (t, _) in enumerate(arg_types):
             if t == "Vec":
                 lines.append(f"    arg{i}_array = np.array(arg{i}, dtype=np.float32)\n")
         if ret_type != "None":
@@ -101,91 +111,129 @@ def create_python_function(INPUTS):
             lines.append(f"    lib.{func_name}({', '.join(call_args)})\n")
         lines.append("\n")
 
-    # Class-based objects
-    for class_name, defs in classes.items():
-        constructors = defs["constructors"]
-        methods = defs["methods"]
-
+    def emit_constructor_bindings(class_name, constructors):
         for i, ctor in enumerate(constructors):
             func = f"{class_name}_export{i}"
-            arg_ctypes = [type_map[t] for t in ctor["arg_types"]]
+            arg_ctypes = [type_map[t] for t, _ in ctor["arg_types"]]
             lines.append(f"lib.{func}.argtypes = [{', '.join(arg_ctypes)}]\n")
-            lines.append(f"lib.{func}.restype = ctypes.c_void_p\n")
+            lines.append("lib.func.restype = ctypes.c_void_p\n".replace("func", func))
         if constructors:
             lines.append("\n")
 
+    def emit_method_bindings(class_name, methods):
         for i, method in enumerate(methods):
             func = f"{class_name}_operator_export{i}"
-            expanded = []
-            for t in method["arg_types"]:
+            ret_type = method["ret_type"]
+            arg_types = method["arg_types"]
+
+            if arg_types and arg_types[0][0] == "ptr":
+                arg_types = arg_types[1:]
+
+            arg_list = []
+
+            for t, _ in arg_types:
                 if t == "Vec":
-                    expanded.extend(["ctypes.POINTER(ctypes.c_float)", "ctypes.c_int"])
+                    arg_list += ["ctypes.POINTER(ctypes.c_float)", "ctypes.c_int"]
                 else:
-                    expanded.append(type_map[t])
+                    arg_list.append(type_map[t])
+
+            if ret_type == "complex<float>":
+                arg_list += [
+                    "ctypes.POINTER(ctypes.c_float)",
+                    "ctypes.POINTER(ctypes.c_float)",
+                ]
             lines.append(
-                f"lib.{func}.argtypes = [ctypes.c_void_p, {', '.join(expanded)}]\n"
+                f"lib.{func}.argtypes = [ctypes.c_void_p, {', '.join(arg_list)}]\n"
             )
-            lines.append(f"lib.{func}.restype = ctypes.c_float\n")
+            lines.append(
+                f"lib.{func}.restype = {'None' if ret_type == 'complex<float>' else type_map[ret_type]}\n"
+            )
         if methods:
             lines.append("\n")
 
+    def emit_class(class_name, constructors, methods):
         lines.append(f"class {class_name}:\n")
         lines.append("    def __init__(self, filename=None):\n")
         if any(len(c["arg_types"]) == 0 for c in constructors):
-            lines.append(f"        if filename is None:\n")
+            lines.append("        if filename is None:\n")
             lines.append(f"            self.ptr = lib.{class_name}_export0()\n")
         if any(
-            len(c["arg_types"]) == 1 and c["arg_types"][0] == "string"
+            len(c["arg_types"]) == 1 and c["arg_types"][0][0] == "string"
             for c in constructors
         ):
-            lines.append(f"        else:\n")
+            lines.append("        else:\n")
             lines.append(
                 f"            self.ptr = lib.{class_name}_export1(ctypes.c_char_p(filename.encode('utf-8')))\n"
             )
         lines.append("        if not self.ptr:\n")
         lines.append(
-            f"            raise RuntimeError('Failed to initialize {class_name}')\n"
+            f"            raise RuntimeError('Failed to initialize {class_name}')\n\n"
         )
-        lines.append("\n")
 
         lines.append("    def __call__(self, *args):\n")
         for i, method in enumerate(methods):
+            ret_type = method["ret_type"]
             arg_types = method["arg_types"]
-            cond = []
-            pre = []
-            call = []
+            if arg_types and arg_types[0][0] == "ptr":
+                arg_types = arg_types[1:]
+
+            # Count required arguments
+            required = 0
+            for t, default in reversed(arg_types):
+                if default is None:
+                    break
+                required += 1
+            min_args = len(arg_types) - required
+            max_args = len(arg_types)
+
+            cond = [f"len(args) >= {min_args}", f"len(args) <= {max_args}"]
+            pre, call = [], []
             argc = 0
 
-            for j, t in enumerate(arg_types):
+            for j, (t, default) in enumerate(arg_types):
+                name = f"arg{argc}"
                 if t == "float":
-                    cond.append(f"isinstance(args[{j}], (int, float))")
-                    pre.append(f"        arg{argc} = ctypes.c_float(args[{j}])")
-                    call.append(f"arg{argc}")
+                    if default:
+                        pre.append(
+                            f"{name} = ctypes.c_float(args[{j}]) if len(args) > {j} else ctypes.c_float({default})"
+                        )
+                    else:
+                        cond.append(f"isinstance(args[{j}], (int, float))")
+                        pre.append(f"{name} = ctypes.c_float(args[{j}])")
+                    call.append(name)
                     argc += 1
                 elif t == "int":
                     cond.append(f"isinstance(args[{j}], int)")
-                    pre.append(f"        arg{argc} = ctypes.c_int(args[{j}])")
-                    call.append(f"arg{argc}")
+                    pre.append(f"{name} = ctypes.c_int(args[{j}])")
+                    call.append(name)
                     argc += 1
                 elif t == "Vec":
                     cond.append(f"isinstance(args[{j}], (list, tuple))")
                     pre.append(
-                        f"        arg{argc} = (ctypes.c_float * len(args[{j}]))(*[float(x) for x in args[{j}]])"
+                        f"{name} = (ctypes.c_float * len(args[{j}]))(*[float(x) for x in args[{j}]])"
                     )
-                    pre.append(f"        arg{argc+1} = ctypes.c_int(len(args[{j}]))")
-                    call.extend([f"arg{argc}", f"arg{argc+1}"])
+                    pre.append(f"{name}_len = ctypes.c_int(len(args[{j}]))")
+                    call.extend([name, f"{name}_len"])
                     argc += 2
-                else:
-                    cond.append("True")
 
-            cond_str = " and ".join(cond)
-            lines.append(f"        if len(args) == {len(arg_types)} and {cond_str}:\n")
-            lines.extend(line + "\n" for line in pre)
             lines.append(
-                f"            return lib.{class_name}_operator_export{i}(self.ptr, {', '.join(call)})\n"
+                f"        # Overload for args={len(arg_types)}, required={min_args}\n"
             )
-        lines.append("        raise TypeError('Invalid arguments to __call__')\n")
-        lines.append("\n")
+            lines.append(f"        if {' and '.join(cond)}:\n")
+            if ret_type == "complex<float>":
+                lines.append("            real = ctypes.c_float()\n")
+                lines.append("            imag = ctypes.c_float()\n")
+                lines.extend([f"            {line}\n" for line in pre])
+                lines.append(
+                    f"            lib.{class_name}_operator_export{i}(self.ptr, {', '.join(call)}, ctypes.byref(real), ctypes.byref(imag))\n"
+                )
+                lines.append("            return complex(real.value, imag.value)\n")
+            else:
+                lines.extend([f"            {line}\n" for line in pre])
+                lines.append(
+                    f"            return lib.{class_name}_operator_export{i}(self.ptr, {', '.join(call)})\n"
+                )
+        lines.append("        raise TypeError('Invalid arguments to __call__')\n\n")
 
         lines.append("    def __del__(self):\n")
         lines.append("        try:\n")
@@ -193,45 +241,17 @@ def create_python_function(INPUTS):
         lines.append("            destroy.argtypes = [ctypes.c_void_p]\n")
         lines.append("            destroy(self.ptr)\n")
         lines.append("        except AttributeError:\n")
-        lines.append("            pass\n")
-        lines.append("\n")
+        lines.append("            pass\n\n")
+
+    # === Main Generation ===
+    functions, classes = split_inputs(INPUTS)
+
+    for f in functions:
+        emit_free_function(f)
+
+    for class_name, defs in classes.items():
+        emit_constructor_bindings(class_name, defs["constructors"])
+        emit_method_bindings(class_name, defs["methods"])
+        emit_class(class_name, defs["constructors"], defs["methods"])
 
     return lines
-
-
-# Python function wrapper generator
-# def generate_python_function(name, arg_names):
-#    args_str = ", ".join(arg_names)
-#    call_args = ", ".join(arg_names)
-#    return f"""
-# def {name}_py({args_str}):
-#    return {name}({call_args})
-# """
-#
-#
-# def create_function(INPUTS):
-#    # Convert to flat list of functions
-#    functions = []
-#    for file, funcs in INPUTS.items():
-#        for name, args in funcs:
-#            functions.append(
-#                {
-#                    "name": f"{name}_export0",  # Assuming suffix _export0, adjust if needed
-#                    "args": args,
-#                    "return": (
-#                        "float" if name == "epsilon" else "None"
-#                    ),  # Basic heuristic
-#                }
-#            )
-#
-#    # Generate ctypes wrappers
-#    for f in functions:
-#        func = getattr(lib, f["name"])
-#        func.argtypes = [type_map[arg] for arg in f["args"]]
-#        func.restype = type_map[f["return"]]
-#        globals()[f["name"]] = func
-#
-#    # Print example Python function wrappers
-#    for f in functions:
-#        arg_names = [f"arg{i}" for i in range(len(f["args"]))]
-#        print(generate_python_function(f["name"], arg_names))

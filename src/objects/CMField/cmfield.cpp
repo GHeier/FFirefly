@@ -281,13 +281,16 @@ void CMField::find_domain(CMData &data) {
 }
 
 double fold(double x) {
-    printf("to_fold: %f\n", x);
+    // return x;
     double decimal = x - std::floor(x);
-    printf("folded: %f\n", 1 - decimal);
-    return 1 - decimal;
+    return decimal;
 }
 
-Vec fold_to_first_BZ(Vec p) { return Vec(fold(p.x), fold(p.y), fold(p.z)); }
+void fold_to_first_BZ(Vec &p) {
+    p.x = fold(p.x);
+    p.y = fold(p.y);
+    p.z = fold(p.z);
+}
 
 complex<Vec> CMField::operator()(float w) {
     if (!data.with_w)
@@ -314,7 +317,7 @@ complex<Vec> CMField::operator()(Vec point, float w) {
         throw runtime_error("This field requires an index to be specified.");
     Vec shifted = point - first;
     Vec p = vec_matrix_multiplication(inv_domain, shifted, data.dimension);
-    p = fold_to_first_BZ(p);
+    fold_to_first_BZ(p);
     p.w = w;
     if (!data.with_w) {
         if (data.dimension == 1)
@@ -345,7 +348,7 @@ complex<Vec> CMField::operator()(int n, Vec point, float w) {
         throw out_of_range("Index starts at 1 and is out of bounds.");
     Vec shifted = point - first;
     Vec p = vec_matrix_multiplication(inv_domain, shifted, data.dimension);
-    p = fold_to_first_BZ(p);
+    fold_to_first_BZ(p);
     p.w = w;
     if (!data.with_w) {
         if (data.dimension == 1)

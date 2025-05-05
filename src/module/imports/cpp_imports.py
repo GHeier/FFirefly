@@ -65,13 +65,13 @@ lib.Field_R_export0.restype = ctypes.c_void_p
 lib.Field_R_export1.argtypes = [ctypes.c_char_p]
 lib.Field_R_export1.restype = ctypes.c_void_p
 
-lib.Field_R_operator_export0.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_float]
+lib.Field_R_operator_export0.argtypes = [ctypes.c_void_p, ctypes.c_float]
 lib.Field_R_operator_export0.restype = ctypes.c_float
-lib.Field_R_operator_export1.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_float]
+lib.Field_R_operator_export1.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_float]
 lib.Field_R_operator_export1.restype = ctypes.c_float
-lib.Field_R_operator_export2.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_float]
+lib.Field_R_operator_export2.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_float]
 lib.Field_R_operator_export2.restype = ctypes.c_float
-lib.Field_R_operator_export3.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_float]
+lib.Field_R_operator_export3.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_float]
 lib.Field_R_operator_export3.restype = ctypes.c_float
 
 class Field_R:
@@ -84,24 +84,28 @@ class Field_R:
             raise RuntimeError('Failed to initialize Field_R')
 
     def __call__(self, *args):
-        if len(args) == 2 and True and isinstance(args[1], (int, float)):
-        arg0 = ctypes.c_float(args[1])
+        # Overload for args=1, required=1
+        if len(args) >= 1 and len(args) <= 1 and isinstance(args[0], (int, float)):
+            arg0 = ctypes.c_float(args[0])
             return lib.Field_R_operator_export0(self.ptr, arg0)
-        if len(args) == 3 and True and isinstance(args[1], int) and isinstance(args[2], (int, float)):
-        arg0 = ctypes.c_int(args[1])
-        arg1 = ctypes.c_float(args[2])
+        # Overload for args=2, required=2
+        if len(args) >= 2 and len(args) <= 2 and isinstance(args[0], int) and isinstance(args[1], (int, float)):
+            arg0 = ctypes.c_int(args[0])
+            arg1 = ctypes.c_float(args[1])
             return lib.Field_R_operator_export1(self.ptr, arg0, arg1)
-        if len(args) == 3 and True and isinstance(args[1], (list, tuple)) and isinstance(args[2], (int, float)):
-        arg0 = (ctypes.c_float * len(args[1]))(*[float(x) for x in args[1]])
-        arg1 = ctypes.c_int(len(args[1]))
-        arg2 = ctypes.c_float(args[2])
-            return lib.Field_R_operator_export2(self.ptr, arg0, arg1, arg2)
-        if len(args) == 4 and True and isinstance(args[1], int) and isinstance(args[2], (list, tuple)) and isinstance(args[3], (int, float)):
-        arg0 = ctypes.c_int(args[1])
-        arg1 = (ctypes.c_float * len(args[2]))(*[float(x) for x in args[2]])
-        arg2 = ctypes.c_int(len(args[2]))
-        arg3 = ctypes.c_float(args[3])
-            return lib.Field_R_operator_export3(self.ptr, arg0, arg1, arg2, arg3)
+        # Overload for args=2, required=1
+        if len(args) >= 1 and len(args) <= 2 and isinstance(args[0], (list, tuple)):
+            arg0 = (ctypes.c_float * len(args[0]))(*[float(x) for x in args[0]])
+            arg0_len = ctypes.c_int(len(args[0]))
+            arg2 = ctypes.c_float(args[1]) if len(args) > 1 else ctypes.c_float(0.0)
+            return lib.Field_R_operator_export2(self.ptr, arg0, arg0_len, arg2)
+        # Overload for args=3, required=2
+        if len(args) >= 2 and len(args) <= 3 and isinstance(args[0], int) and isinstance(args[1], (list, tuple)):
+            arg0 = ctypes.c_int(args[0])
+            arg1 = (ctypes.c_float * len(args[1]))(*[float(x) for x in args[1]])
+            arg1_len = ctypes.c_int(len(args[1]))
+            arg3 = ctypes.c_float(args[2]) if len(args) > 2 else ctypes.c_float(0.0)
+            return lib.Field_R_operator_export3(self.ptr, arg0, arg1, arg1_len, arg3)
         raise TypeError('Invalid arguments to __call__')
 
     def __del__(self):
@@ -117,14 +121,14 @@ lib.Field_C_export0.restype = ctypes.c_void_p
 lib.Field_C_export1.argtypes = [ctypes.c_char_p]
 lib.Field_C_export1.restype = ctypes.c_void_p
 
-lib.Field_C_operator_export0.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_float]
-lib.Field_C_operator_export0.restype = ctypes.c_float
-lib.Field_C_operator_export1.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_float]
-lib.Field_C_operator_export1.restype = ctypes.c_float
-lib.Field_C_operator_export2.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_float]
-lib.Field_C_operator_export2.restype = ctypes.c_float
-lib.Field_C_operator_export3.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_float]
-lib.Field_C_operator_export3.restype = ctypes.c_float
+lib.Field_C_operator_export0.argtypes = [ctypes.c_void_p, ctypes.c_float, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+lib.Field_C_operator_export0.restype = None
+lib.Field_C_operator_export1.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_float, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+lib.Field_C_operator_export1.restype = None
+lib.Field_C_operator_export2.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_float, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+lib.Field_C_operator_export2.restype = None
+lib.Field_C_operator_export3.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_float, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+lib.Field_C_operator_export3.restype = None
 
 class Field_C:
     def __init__(self, filename=None):
@@ -136,24 +140,40 @@ class Field_C:
             raise RuntimeError('Failed to initialize Field_C')
 
     def __call__(self, *args):
-        if len(args) == 2 and True and isinstance(args[1], (int, float)):
-        arg0 = ctypes.c_float(args[1])
-            return lib.Field_C_operator_export0(self.ptr, arg0)
-        if len(args) == 3 and True and isinstance(args[1], int) and isinstance(args[2], (int, float)):
-        arg0 = ctypes.c_int(args[1])
-        arg1 = ctypes.c_float(args[2])
-            return lib.Field_C_operator_export1(self.ptr, arg0, arg1)
-        if len(args) == 3 and True and isinstance(args[1], (list, tuple)) and isinstance(args[2], (int, float)):
-        arg0 = (ctypes.c_float * len(args[1]))(*[float(x) for x in args[1]])
-        arg1 = ctypes.c_int(len(args[1]))
-        arg2 = ctypes.c_float(args[2])
-            return lib.Field_C_operator_export2(self.ptr, arg0, arg1, arg2)
-        if len(args) == 4 and True and isinstance(args[1], int) and isinstance(args[2], (list, tuple)) and isinstance(args[3], (int, float)):
-        arg0 = ctypes.c_int(args[1])
-        arg1 = (ctypes.c_float * len(args[2]))(*[float(x) for x in args[2]])
-        arg2 = ctypes.c_int(len(args[2]))
-        arg3 = ctypes.c_float(args[3])
-            return lib.Field_C_operator_export3(self.ptr, arg0, arg1, arg2, arg3)
+        # Overload for args=1, required=1
+        if len(args) >= 1 and len(args) <= 1 and isinstance(args[0], (int, float)):
+            real = ctypes.c_float()
+            imag = ctypes.c_float()
+            arg0 = ctypes.c_float(args[0])
+            lib.Field_C_operator_export0(self.ptr, arg0, ctypes.byref(real), ctypes.byref(imag))
+            return complex(real.value, imag.value)
+        # Overload for args=2, required=2
+        if len(args) >= 2 and len(args) <= 2 and isinstance(args[0], int) and isinstance(args[1], (int, float)):
+            real = ctypes.c_float()
+            imag = ctypes.c_float()
+            arg0 = ctypes.c_int(args[0])
+            arg1 = ctypes.c_float(args[1])
+            lib.Field_C_operator_export1(self.ptr, arg0, arg1, ctypes.byref(real), ctypes.byref(imag))
+            return complex(real.value, imag.value)
+        # Overload for args=2, required=1
+        if len(args) >= 1 and len(args) <= 2 and isinstance(args[0], (list, tuple)):
+            real = ctypes.c_float()
+            imag = ctypes.c_float()
+            arg0 = (ctypes.c_float * len(args[0]))(*[float(x) for x in args[0]])
+            arg0_len = ctypes.c_int(len(args[0]))
+            arg2 = ctypes.c_float(args[1]) if len(args) > 1 else ctypes.c_float(0.0)
+            lib.Field_C_operator_export2(self.ptr, arg0, arg0_len, arg2, ctypes.byref(real), ctypes.byref(imag))
+            return complex(real.value, imag.value)
+        # Overload for args=3, required=2
+        if len(args) >= 2 and len(args) <= 3 and isinstance(args[0], int) and isinstance(args[1], (list, tuple)):
+            real = ctypes.c_float()
+            imag = ctypes.c_float()
+            arg0 = ctypes.c_int(args[0])
+            arg1 = (ctypes.c_float * len(args[1]))(*[float(x) for x in args[1]])
+            arg1_len = ctypes.c_int(len(args[1]))
+            arg3 = ctypes.c_float(args[2]) if len(args) > 2 else ctypes.c_float(0.0)
+            lib.Field_C_operator_export3(self.ptr, arg0, arg1, arg1_len, arg3, ctypes.byref(real), ctypes.byref(imag))
+            return complex(real.value, imag.value)
         raise TypeError('Invalid arguments to __call__')
 
     def __del__(self):

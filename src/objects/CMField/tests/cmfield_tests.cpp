@@ -26,7 +26,6 @@ bool interp_test_2d() {
     bool is_vector = false;
     bool with_w = false;
     bool with_n = false;
-    printf("...\n");
 
     for (int i = 0; i <= pnts; i++) {
         for (int j = 0; j <= pnts; j++) {
@@ -48,8 +47,8 @@ bool interp_test_2d() {
     bool test2 = fabs(r2 - 2.0) < 1e-2;
     bool test3 = fabs(r3 - 0.0) < 1e-2;
 
-    printf("\nExpected: 1.0, 2.0, 0.0\n");
-    printf("Got: %f, %f, %f\n\n", r1, r2, r3);
+    // printf("\nExpected: 1.0, 2.0, 0.0\n");
+    // printf("Got: %f, %f, %f\n\n", r1, r2, r3);
 
     return test1 && test2 && test3;
 }
@@ -91,8 +90,8 @@ bool interp_test_2d_complex() {
     bool test2 = fabs(r2.real() - 2.0) < 1e-2;
     bool test3 = fabs(r3.real() - 0.0) < 1e-2;
 
-    printf("Expected: 1.0, 2.0, 0.0\n");
-    printf("Got: %f, %f, %f\n\n", r1.real(), r2.real(), r3.real());
+    // printf("Expected: 1.0, 2.0, 0.0\n");
+    // printf("Got: %f, %f, %f\n\n", r1.real(), r2.real(), r3.real());
 
     return test1 && test2 && test3;
 }
@@ -126,8 +125,8 @@ bool interp_test_3d() {
     float r2 = field(Vec(1.0, 1.0, 1.0)).real()(0);
     float r3 = field(Vec(0.0, 0.0, 0.0)).real()(0);
 
-    printf("\nExpected: 1.5, 3.0, 0.0\n");
-    printf("Got: %f, %f, %f\n\n", r1, r2, r3);
+    // printf("\nExpected: 1.5, 3.0, 0.0\n");
+    // printf("Got: %f, %f, %f\n\n", r1, r2, r3);
 
     bool test1 = fabs(r1 - 1.5) < 1e-2;
     bool test2 = fabs(r2 - 3.0) < 1e-2;
@@ -171,12 +170,12 @@ bool interp_test_3d_complex() {
     complex<float> r2 = complex<float>(rv2(0), iv2(0));
     complex<float> r3 = complex<float>(rv3(0), iv3(0));
 
-    printf("Expected: 1.5, 3.0, 0.0\n");
+    // printf("Expected: 1.5, 3.0, 0.0\n");
 
     bool test1 = fabs(r1.real() - 1.5) < 1e-2;
     bool test2 = fabs(r2.real() - 3.0) < 1e-2;
     bool test3 = fabs(r3.real() - 0.0) < 1e-2;
-    printf("Got: %f, %f, %f\n", r1.real(), r2.real(), r3.real());
+    // printf("Got: %f, %f, %f\n", r1.real(), r2.real(), r3.real());
 
     return test1 && test2 && test3;
 }

@@ -43,8 +43,15 @@ def type_convert_lines(a, i):
     return lines
 
 
+def filter_default_args(args):
+    arguments = []
+    for x in args:
+        arguments.append(x.split("=")[0])
+    return arguments
+
+
 def create_declaration(name, args, num):
-    arguments = copy.copy(args)
+    arguments = filter_default_args(args)
 
     if arguments[0] == "complex<float>":
         arguments.append("float*")
@@ -53,7 +60,7 @@ def create_declaration(name, args, num):
 
     line = 'extern "C" '
     a = arg_cpp_to_c(arguments[0], name)
-    line += a + " "
+    line += str(a) + " "
     line += name + "_export" + str(num)
     line += "("
     i = 1
@@ -65,7 +72,7 @@ def create_declaration(name, args, num):
             arguments.insert(i, a[0])
             arguments.insert(i + 1, a[1])
             a = a[0]
-        line += a + " " + letters[i - 1]
+        line += str(a) + " " + letters[i - 1]
         if i != len(arguments) - 1:
             line += ", "
         i += 1
