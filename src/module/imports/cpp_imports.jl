@@ -5,11 +5,11 @@ const libfly = abspath(@__FILE__)[1:end-51] * "build/lib/libfly.so"
 export load_config!
 
 # Begin Functions
-export Bands, Field_C, Field_C, Field_R, Field_R, Vertex, epsilon
+export Bands, Field_C, Field_R, Vertex, epsilon
 
-function epsilon(arg0::Int, arg1::Vector{Float64})::Cfloat
+function epsilon(arg0::Int, arg1::Vector{Float64})
     newarg1 = Float32.(arg1)
-    return ccall((:epsilon_export0, libfly), Cfloat, (Cint, Ptr{Cfloat}, Cint), arg0, newarg1, length(arg1))
+    return ccall((:epsilon_export0, libfly), Float32, (Cint, Ptr{Float32}, Cint), arg0, newarg1, length(arg1))
 end
 
 mutable struct Bands
@@ -34,6 +34,16 @@ function Vertex()
     return Vertex(ptr)
 end
 
+function (self::Vertex)(arg0::Vector{Float64}, arg1=0.0, arg2::String="'up'", arg3::String="'up'")::ComplexF32
+    newarg0 = Float32.(arg0)
+    lenarg0 = length(arg0)
+    newarg1 = Float32(arg1)
+    real = Ref{Float32}()
+    imag = Ref{Float32}()
+    ccall((:Vertex_operator_export0, libfly), Nothing, (Ptr{Cvoid}, Ptr{Float32}, Cint, Float32, Cstring, Cstring, Ptr{Float32}, Ptr{Float32}), self.ptr, newarg0, lenarg0, newarg1, arg2, arg3, real, imag)
+    return complex(real[], imag[])
+end
+
 function Base.finalize(obj::Vertex)
     destroy!(obj)
 end
@@ -52,28 +62,28 @@ function Field_R(filename::String)
     return Field_R(ptr)
 end
 
-function (self::Field_R)(arg0::Float32)::Cfloat
-    newarg0 = Cfloat(arg0)
-    return ccall((:Field_R_operator_export0, libfly), Cfloat, (Ptr{Cvoid}, Cfloat), self.ptr, newarg0)
+function (self::Field_R)(arg0)::Float32
+    newarg0 = Float32(arg0)
+    return ccall((:Field_R_operator_export0, libfly), Float32, (Ptr{Cvoid}, Float32), self.ptr, newarg0)
 end
 
-function (self::Field_R)(arg0::Int, arg1::Float32)::Cfloat
-    newarg1 = Cfloat(arg1)
-    return ccall((:Field_R_operator_export1, libfly), Cfloat, (Ptr{Cvoid}, Cint, Cfloat), self.ptr, arg0, newarg1)
+function (self::Field_R)(arg0::Int, arg1)::Float32
+    newarg1 = Float32(arg1)
+    return ccall((:Field_R_operator_export1, libfly), Float32, (Ptr{Cvoid}, Cint, Float32), self.ptr, arg0, newarg1)
 end
 
-function (self::Field_R)(arg0::Vector{Float64}, arg1::Float32 = 0.0)::Cfloat
+function (self::Field_R)(arg0::Vector{Float64}, arg1=0.0)::Float32
     newarg0 = Float32.(arg0)
-    len = length(arg0)
-    newarg1 = Cfloat(arg1)
-    return ccall((:Field_R_operator_export2, libfly), Cfloat, (Ptr{Cvoid}, Ptr{Cfloat}, Cint, Cfloat), self.ptr, newarg0, len, newarg1)
+    lenarg0 = length(arg0)
+    newarg1 = Float32(arg1)
+    return ccall((:Field_R_operator_export2, libfly), Float32, (Ptr{Cvoid}, Ptr{Float32}, Cint, Float32), self.ptr, newarg0, lenarg0, newarg1)
 end
 
-function (self::Field_R)(arg0::Int, arg1::Vector{Float64}, arg2::Float32 = 0.0)::Cfloat
+function (self::Field_R)(arg0::Int, arg1::Vector{Float64}, arg2=0.0)::Float32
     newarg1 = Float32.(arg1)
-    len = length(arg1)
-    newarg2 = Cfloat(arg2)
-    return ccall((:Field_R_operator_export3, libfly), Cfloat, (Ptr{Cvoid}, Cint, Ptr{Cfloat}, Cint, Cfloat), self.ptr, arg0, newarg1, len, newarg2)
+    lenarg1 = length(arg1)
+    newarg2 = Float32(arg2)
+    return ccall((:Field_R_operator_export3, libfly), Float32, (Ptr{Cvoid}, Cint, Ptr{Float32}, Cint, Float32), self.ptr, arg0, newarg1, lenarg1, newarg2)
 end
 
 function Base.finalize(obj::Field_R)
@@ -94,40 +104,40 @@ function Field_C(filename::String)
     return Field_C(ptr)
 end
 
-function (self::Field_C)(arg0::Float32)::ComplexF32
-    newarg0 = Cfloat(arg0)
-    re = Ref{Cfloat}()
-    im = Ref{Cfloat}()
-    ccall((:Field_C_operator_export0, libfly), Nothing, (Ref{Cfloat}, Ref{Cfloat}, Ptr{Cvoid}, Cfloat), re, im, self.ptr, newarg0)
-    return ComplexF32(re[], im[])
+function (self::Field_C)(arg0)::ComplexF32
+    newarg0 = Float32(arg0)
+    real = Ref{Float32}()
+    imag = Ref{Float32}()
+    ccall((:Field_C_operator_export0, libfly), Nothing, (Ptr{Cvoid}, Float32, Ptr{Float32}, Ptr{Float32}), self.ptr, newarg0, real, imag)
+    return complex(real[], imag[])
 end
 
-function (self::Field_C)(arg0::Int, arg1::Float32)::ComplexF32
-    newarg1 = Cfloat(arg1)
-    re = Ref{Cfloat}()
-    im = Ref{Cfloat}()
-    ccall((:Field_C_operator_export1, libfly), Nothing, (Ref{Cfloat}, Ref{Cfloat}, Ptr{Cvoid}, Cint, Cfloat), re, im, self.ptr, arg0, newarg1)
-    return ComplexF32(re[], im[])
+function (self::Field_C)(arg0::Int, arg1)::ComplexF32
+    newarg1 = Float32(arg1)
+    real = Ref{Float32}()
+    imag = Ref{Float32}()
+    ccall((:Field_C_operator_export1, libfly), Nothing, (Ptr{Cvoid}, Cint, Float32, Ptr{Float32}, Ptr{Float32}), self.ptr, arg0, newarg1, real, imag)
+    return complex(real[], imag[])
 end
 
-function (self::Field_C)(arg0::Vector{Float64}, arg1::Float32 = 0.0)::ComplexF32
+function (self::Field_C)(arg0::Vector{Float64}, arg1=0.0)::ComplexF32
     newarg0 = Float32.(arg0)
-    len = length(arg0)
-    newarg1 = Cfloat(arg1)
-    re = Ref{Cfloat}()
-    im = Ref{Cfloat}()
-    ccall((:Field_C_operator_export2, libfly), Nothing, (Ref{Cfloat}, Ref{Cfloat}, Ptr{Cvoid}, Ptr{Cfloat}, Cint, Cfloat), re, im, self.ptr, newarg0, len, newarg1)
-    return ComplexF32(re[], im[])
+    lenarg0 = length(arg0)
+    newarg1 = Float32(arg1)
+    real = Ref{Float32}()
+    imag = Ref{Float32}()
+    ccall((:Field_C_operator_export2, libfly), Nothing, (Ptr{Cvoid}, Ptr{Float32}, Cint, Float32, Ptr{Float32}, Ptr{Float32}), self.ptr, newarg0, lenarg0, newarg1, real, imag)
+    return complex(real[], imag[])
 end
 
-function (self::Field_C)(arg0::Int, arg1::Vector{Float64}, arg2::Float32 = 0.0)::ComplexF32
+function (self::Field_C)(arg0::Int, arg1::Vector{Float64}, arg2=0.0)::ComplexF32
     newarg1 = Float32.(arg1)
-    len = length(arg1)
-    newarg2 = Cfloat(arg2)
-    re = Ref{Cfloat}()
-    im = Ref{Cfloat}()
-    ccall((:Field_C_operator_export3, libfly), Nothing, (Ref{Cfloat}, Ref{Cfloat}, Ptr{Cvoid}, Cint, Ptr{Cfloat}, Cint, Cfloat), re, im, self.ptr, arg0, newarg1, len, newarg2)
-    return ComplexF32(re[], im[])
+    lenarg1 = length(arg1)
+    newarg2 = Float32(arg2)
+    real = Ref{Float32}()
+    imag = Ref{Float32}()
+    ccall((:Field_C_operator_export3, libfly), Nothing, (Ptr{Cvoid}, Cint, Ptr{Float32}, Cint, Float32, Ptr{Float32}, Ptr{Float32}), self.ptr, arg0, newarg1, lenarg1, newarg2, real, imag)
+    return complex(real[], imag[])
 end
 
 function Base.finalize(obj::Field_C)

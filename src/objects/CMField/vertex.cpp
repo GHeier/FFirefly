@@ -12,24 +12,24 @@ using namespace std;
 namespace fs = std::filesystem;
 
 Vertex::Vertex() {
-  string filename = outdir + prefix + "_vertex.dat";
-  if (fs::exists(filename) and !automatic_file_read) {
-    field = load_CMField(outdir + prefix + "_vertex.dat");
-    file_found = true;
-  } else {
-    file_found = false;
-  }
+    string filename = outdir + prefix + "_vertex.dat";
+    if (fs::exists(filename) and !automatic_file_read) {
+        field = load_CMField(outdir + prefix + "_vertex.dat");
+        file_found = true;
+    } else {
+        file_found = false;
+    }
 }
 
 complex<float> Vertex::operator()(Vec k, float w, string label1,
                                   string label2) {
-  if (!file_found)
-    return complex<float>(V(k, imag(w), label1, label2), 0);
-  complex<Vec> val = field(k, w);
-  return complex<float>(val.real().x, val.imag().x);
+    if (!file_found)
+        return complex<float>(V(k, imag(w), label1, label2), 0);
+    complex<Vec> val = field(k, w);
+    return complex<float>(val.real().x, val.imag().x);
 }
 
 complex<float> Vertex::operator()(Vec k, complex<float> w, string label1,
                                   string label2) {
-  return operator()(k, imag(w), label1, label2);
+    return operator()(k, imag(w), label1, label2);
 }

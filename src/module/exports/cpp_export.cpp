@@ -26,6 +26,12 @@ extern "C" Bands* Bands_export0() {
 extern "C" Vertex* Vertex_export0() {
     return new Vertex();
 }
+extern "C" void Vertex_operator_export0(Vertex* a, float* b, int c, float d, char* e, char* f, float* g, float* h) {
+    Vec v(b, c);
+    complex<float> r = a->operator()(v, d, e, f);
+    *g = real(r);
+    *h = imag(r);
+}
 extern "C" Field_R* Field_R_export0() {
     return new Field_R();
 }

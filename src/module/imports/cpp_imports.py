@@ -42,6 +42,9 @@ class Bands:
 lib.Vertex_export0.argtypes = []
 lib.Vertex_export0.restype = ctypes.c_void_p
 
+lib.Vertex_operator_export0.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_float, ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+lib.Vertex_operator_export0.restype = None
+
 class Vertex:
     def __init__(self, filename=None):
         if filename is None:
@@ -50,6 +53,17 @@ class Vertex:
             raise RuntimeError('Failed to initialize Vertex')
 
     def __call__(self, *args):
+        # Overload for args=4, required=1
+        if len(args) >= 1 and len(args) <= 4:
+            real = ctypes.c_float()
+            imag = ctypes.c_float()
+            arg0 = (ctypes.c_float * len(args[0]))(*[float(x) for x in args[0]])
+            arg0_len = ctypes.c_int(len(args[0]))
+            arg2 = ctypes.c_float(args[1]) if len(args) > 1 else ctypes.c_float(0.0)
+            arg3 = ctypes.c_char_p(args[2].encode('utf-8')) if len(args) > 2 else ctypes.c_char_p(b'up')
+            arg4 = ctypes.c_char_p(args[3].encode('utf-8')) if len(args) > 3 else ctypes.c_char_p(b'up')
+            lib.Vertex_operator_export0(self.ptr, arg0, arg0_len, arg2, arg3, arg4, ctypes.byref(real), ctypes.byref(imag))
+            return complex(real.value, imag.value)
         raise TypeError('Invalid arguments to __call__')
 
     def __del__(self):
@@ -94,13 +108,13 @@ class Field_R:
             arg1 = ctypes.c_float(args[1])
             return lib.Field_R_operator_export1(self.ptr, arg0, arg1)
         # Overload for args=2, required=1
-        if len(args) >= 1 and len(args) <= 2 and isinstance(args[0], (list, tuple)):
+        if len(args) >= 1 and len(args) <= 2:
             arg0 = (ctypes.c_float * len(args[0]))(*[float(x) for x in args[0]])
             arg0_len = ctypes.c_int(len(args[0]))
             arg2 = ctypes.c_float(args[1]) if len(args) > 1 else ctypes.c_float(0.0)
             return lib.Field_R_operator_export2(self.ptr, arg0, arg0_len, arg2)
         # Overload for args=3, required=2
-        if len(args) >= 2 and len(args) <= 3 and isinstance(args[0], int) and isinstance(args[1], (list, tuple)):
+        if len(args) >= 2 and len(args) <= 3 and isinstance(args[0], int):
             arg0 = ctypes.c_int(args[0])
             arg1 = (ctypes.c_float * len(args[1]))(*[float(x) for x in args[1]])
             arg1_len = ctypes.c_int(len(args[1]))
@@ -156,7 +170,7 @@ class Field_C:
             lib.Field_C_operator_export1(self.ptr, arg0, arg1, ctypes.byref(real), ctypes.byref(imag))
             return complex(real.value, imag.value)
         # Overload for args=2, required=1
-        if len(args) >= 1 and len(args) <= 2 and isinstance(args[0], (list, tuple)):
+        if len(args) >= 1 and len(args) <= 2:
             real = ctypes.c_float()
             imag = ctypes.c_float()
             arg0 = (ctypes.c_float * len(args[0]))(*[float(x) for x in args[0]])
@@ -165,7 +179,7 @@ class Field_C:
             lib.Field_C_operator_export2(self.ptr, arg0, arg0_len, arg2, ctypes.byref(real), ctypes.byref(imag))
             return complex(real.value, imag.value)
         # Overload for args=3, required=2
-        if len(args) >= 2 and len(args) <= 3 and isinstance(args[0], int) and isinstance(args[1], (list, tuple)):
+        if len(args) >= 2 and len(args) <= 3 and isinstance(args[0], int):
             real = ctypes.c_float()
             imag = ctypes.c_float()
             arg0 = ctypes.c_int(args[0])

@@ -747,7 +747,7 @@ function energy_fastest()
     initial = dos(mu) * asinh(wD)
     println("Expected initial: ", initial)
     #sumval = 0.00018
-    iterations = 100
+    iterations = 1
     diff = 0
     for i in 1:iterations
         F = phi ./ (2 .* (phi .^ 2 .+ e .^ 2) .^ 0.5) .* ifelse.(abs.(e) .> wD, 0.0, 1.0)
@@ -959,28 +959,112 @@ function gpu_eliashberg()
     readline()
 end
 
-function element_convolution(A, B, mesh)
+function element_convolution_F(A, B, mesh)
+    A_t = wn_to_tau(mesh, Bosonic(), A)
+    B_t = wn_to_tau(mesh, Fermionic(), B)
+    temp = A_t .* B_t
+    return tau_to_wn(mesh, Fermionic(), temp)
+end
+
+function element_convolution_B(A, B, mesh)
     A_t = wn_to_tau(mesh, Fermionic(), A)
     B_t = wn_to_tau(mesh, Fermionic(), B)
     temp = A_t .* B_t
     return tau_to_wn(mesh, Bosonic(), temp)
 end
 
-function conv_sum(F::Array{Vector{ComplexF64}}, G::Vector{Vector{ComplexF64}}, mesh)
+function element_convolution_const(A, B)
+    A_t = fft(A)
+    B_t = fft(B)
+    temp = A_t .* B_t
+    return (ifft(temp) / (beta))
+end
+
+# particle_type is of resultant particle. So if a boson is returned, it is bosonic
+function conv_sum(F::Array{Vector{ComplexF64}}, G::Vector{Vector{ComplexF64}}, mesh, particle_type)
     nk = length(G)
     fnw = mesh.fnw
     bnw = mesh.bnw
     P = [zeros(ComplexF64, bnw) for _ in 1:nk]  # P is Vector{Vector{ComplexF64}}
-    for i in 1:fnw, j in 1:nk
+    for j in 1:nk
         Gw = G[j]
         sum = zeros(ComplexF64, bnw)
         for k in 1:nk
             Fw = F[j, k]
-            sum += element_convolution(Fw, Gw, mesh)
+            if particle_type == "B" || particle_type == "Bosonic"
+                sum += element_convolution_B(Fw, Gw, mesh)
+            elseif particle_type == "F" || particle_type == "Fermionic"
+                sum += element_convolution_F(Fw, Gw, mesh)
+            else
+                println("No particle type given.")
+                exit()
+            end
         end
         P[j] = sum
     end
     return P
+end
+
+function conv_sum_const(F::Array{Vector{ComplexF64}}, G::Vector{Vector{ComplexF64}})
+    nk = length(G)
+    P = [zeros(ComplexF64, nw) for _ in 1:nk]  # P is Vector{Vector{ComplexF64}}
+    for j in 1:nk
+        Gw = G[j]
+        sum = zeros(ComplexF64, nw)
+        for k in 1:nk
+            Fw = F[j, k]
+            sum += element_convolution_const(Fw, Gw)
+        end
+        P[j] = sum
+    end
+    return P
+end
+
+function partial_convolution(V, phi, iw, iv, kvecs)
+    nk = length(phi)
+    fnw = length(iw)
+    bnw = length(iv)
+    P = [zeros(ComplexF64, fnw) for _ in 1:nk]  # P is Vector{Vector{ComplexF64}}
+    Vw = zeros(ComplexF64, bnw)
+    Fw = zeros(ComplexF64, fnw)
+
+    println("Number of Julia threads: ", Threads.nthreads())
+    for i in 1:nk
+        phiw = phi[i]
+        Fw .= phiw ./ (-iw .^ 2 + phiw .^ 2 .+ (epsilon(1, kvecs[i]))^2)
+        k1 = kvecs[i]
+        @threads for j in 1:nk
+            dk = kvecs[j] - k1
+            Vw .= ones(ComplexF64, bnw)
+            #Vw .= [V(dk, iv[k]) for k in 1:bnw]
+            X = element_convolution_const(Vw, Fw)
+            P[j] += X
+        end
+    end
+    return P / (nx * ny * nz)
+end
+
+function bcs_convsum()
+    iw = Array{ComplexF32}(undef, nw)
+    iv = Array{ComplexF32}(undef, nw)
+    for i in 1:nw
+        n = -nw / 2 + i - 1
+        iw[i] = Complex(0.0, (2 * n - 1) * pi / beta)
+        iv[i] = Complex(0.0, 2 * n * pi / beta)
+    end
+
+    kvecs = Vector{Vector{Float64}}(undef, nx * ny * nz)
+    klen = length(kvecs)
+    for i in 1:nx, j in 1:ny
+        kvecs[(i-1)*ny+j] = get_kvec(i, j, 1)
+    end
+    phi = [ones(ComplexF64, nw) for _ in 1:klen]
+    #V = Firefly.Vertex()
+    V = ones(ComplexF64, nw)
+
+    P = partial_convolution(V, phi, iw, iv, kvecs)
+    println(typeof(P))
+    println(maximum([maximum(abs.(real.(p))) for p in P]))
 end
 
 function chi_convsum()
@@ -1014,8 +1098,7 @@ function chi_convsum()
         F[j, k][i] = 1 / (iw[i] - epsilon(1, q) - mu)
     end
 
-    P = conv_sum(F, G, mesh) / (nx * ny * nz)
-    println("5")
+    P = conv_sum(F, G, mesh, "B") / (nx * ny * nz)
     open("convsum.dat", "w") do io
         println(io, "kx             ky             w             Re(f)            Im(f)")
         for i in 1:length(P), j in 1:length(P[1])
@@ -1037,8 +1120,9 @@ end
 function eliashberg_node()
     #energy_finite_T()
     #energy_2sum()
-    #energy_fastest()
-    chi_convsum()
+    energy_fastest()
+    #chi_convsum()
+    bcs_convsum()
     #fastest()
     #eliashberg_global()
     println("k_mesh: ", cfg.k_mesh)

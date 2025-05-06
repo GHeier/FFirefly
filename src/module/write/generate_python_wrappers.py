@@ -203,15 +203,37 @@ def create_python_function(INPUTS):
                     call.append(name)
                     argc += 1
                 elif t == "int":
-                    cond.append(f"isinstance(args[{j}], int)")
-                    pre.append(f"{name} = ctypes.c_int(args[{j}])")
+                    if default:
+                        pre.append(
+                            f"{name} = ctypes.c_int(args[{j}]) if len(args) > {j} else ctypes.c_int({default})"
+                        )
+                    else:
+                        cond.append(f"isinstance(args[{j}], int)")
+                        pre.append(f"{name} = ctypes.c_int(args[{j}])")
+                    call.append(name)
+                    argc += 1
+                elif t == "string":
+                    if default:
+                        pre.append(
+                            f"{name} = ctypes.c_char_p(args[{j}].encode('utf-8')) if len(args) > {j} else ctypes.c_char_p(b{default})"
+                        )
+                    else:
+                        cond.append(f"isinstance(args[{j}], str)")
+                        pre.append(
+                            f"{name} = ctypes.c_char_p(args[{j}].encode('utf-8'))"
+                        )
                     call.append(name)
                     argc += 1
                 elif t == "Vec":
-                    cond.append(f"isinstance(args[{j}], (list, tuple))")
-                    pre.append(
-                        f"{name} = (ctypes.c_float * len(args[{j}]))(*[float(x) for x in args[{j}]])"
-                    )
+                    if default:
+                        cond.append(f"isinstance(args[{j}], (list, tuple))")
+                        pre.append(
+                            f"{name} = (ctypes.c_float * len(args[{j}]))(*[float(x) for x in args[{j}]]) if len(args) > {j} else ctypes.c_float * len(args[{j}]))(*{default})"
+                        )
+                    else:
+                        pre.append(
+                            f"{name} = (ctypes.c_float * len(args[{j}]))(*[float(x) for x in args[{j}]])"
+                        )
                     pre.append(f"{name}_len = ctypes.c_int(len(args[{j}]))")
                     call.extend([name, f"{name}_len"])
                     argc += 2

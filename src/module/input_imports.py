@@ -7,6 +7,10 @@ INPUTS = {
     ],
     "objects/CMField/vertex.hpp": [
         ("Vertex", ["ptr"]),
+        (
+            "Vertex_operator",
+            ["complex<float>", "ptr", "Vec", "float=0.0", "string='up'", "string='up'"],
+        ),
     ],
     "objects/CMField/fields.hpp": [
         ("Field_R", ["ptr"]),

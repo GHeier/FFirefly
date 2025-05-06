@@ -2,20 +2,13 @@ def create_julia_function(INPUTS):
     lines = []
     exports = []
 
-    def parse_arg(arg):
-        if "=" in arg:
-            t, default = arg.split("=")
-            return t.strip(), default.strip()
-        return arg.strip(), None
-
     type_map = {
         "int": "Cint",
-        "float": "Cfloat",
-        "double": "Cdouble",
+        "float": "Float32",
+        "double": "Float64",
         "string": "Cstring",
         "ptr": "Ptr{Cvoid}",
-        "complex<float>": "Nothing",  # returned via Ref
-        "Vec": ("Ptr{Cfloat}", "Cint"),
+        "complex<float>": "ComplexF32",
         "None": "Nothing",
     }
 
@@ -25,166 +18,170 @@ def create_julia_function(INPUTS):
         "double": "Float64",
         "string": "String",
         "ptr": "Ptr{Cvoid}",
-        "complex<float>": "ComplexF32",
         "Vec": "Vector{Float64}",
+        "complex<float>": "ComplexF32",
     }
 
-    classes = {}
-    functions = []
+    def parse_arg(arg):
+        if "=" in arg:
+            t, default = arg.split("=")
+            return t.strip(), default.strip()
+        return arg.strip(), None
 
-    for file, func_list in INPUTS.items():
-        for base_name, sig in func_list:
-            ret_type, *raw_args = sig
-            parsed_args = [parse_arg(a) for a in raw_args]
-            entry = {
-                "name": base_name,
-                "ret_type": ret_type,
-                "arg_types": parsed_args,
-            }
-            if ret_type == "ptr":
-                if base_name not in classes:
-                    classes[base_name] = {"constructors": [], "methods": []}
-                classes[base_name]["constructors"].append(entry)
-                exports.append(base_name)
-            elif "_operator" in base_name:
-                class_name = base_name.split("_operator")[0]
-                if class_name in classes:
-                    classes[class_name]["methods"].append(entry)
-            else:
-                functions.append(entry)
-                exports.append(base_name)
+    def split_inputs(INPUTS):
+        classes = {}
+        functions = []
+        for file, func_list in INPUTS.items():
+            for base_name, sig in func_list:
+                ret_type, *raw_args = sig
+                parsed_args = [parse_arg(a) for a in raw_args]
+                entry = {
+                    "name": base_name,
+                    "ret_type": ret_type,
+                    "arg_types": parsed_args,
+                }
+                if ret_type == "ptr":
+                    if base_name not in classes:
+                        classes[base_name] = {"constructors": [], "methods": []}
+                    classes[base_name]["constructors"].append(entry)
+                    exports.append(base_name)
+                elif "_operator" in base_name:
+                    class_name = base_name.split("_operator")[0]
+                    if class_name in classes:
+                        classes[class_name]["methods"].append(entry)
+                else:
+                    functions.append(entry)
+                    exports.append(base_name)
+        return functions, classes
 
-    lines.append(f"export {', '.join(sorted(exports))}\n\n")
-
-    # Free functions
-    for entry in functions:
+    def emit_free_function(entry):
         name = entry["name"]
-        ret_type = entry["ret_type"]
-        arg_types = entry["arg_types"]
+        ret = entry["ret_type"]
+        args = entry["arg_types"]
 
         jl_args = []
-        ccall_args = []
         ccall_types = []
+        ccall_vals = []
         pre = []
 
-        for i, (t, default) in enumerate(arg_types):
+        for i, (t, default) in enumerate(args):
             var = f"arg{i}"
             if t == "Vec":
                 jl_args.append(f"{var}::Vector{{Float64}}")
                 pre.append(f"    new{var} = Float32.({var})")
-                ccall_types.extend(["Ptr{Cfloat}", "Cint"])
-                ccall_args.extend([f"new{var}", f"length({var})"])
+                ccall_types.extend(["Ptr{Float32}", "Cint"])
+                ccall_vals.extend([f"new{var}", f"length({var})"])
             else:
-                base = julia_types[t]
-                jl = f"{var}::{base}"
-                if default:
-                    jl += f" = {default}"
-                jl_args.append(jl)
+                jl_args.append(
+                    f"{var}::{julia_types[t]}" + (f"={default}" if default else "")
+                )
                 ccall_types.append(type_map[t])
-                ccall_args.append(var)
+                ccall_vals.append(var)
 
-        if ret_type == "complex<float>":
-            lines.append(f"function {name}({', '.join(jl_args)})::ComplexF32\n")
-            lines.extend([p + "\n" for p in pre])
-            lines.append("    re = Ref{Cfloat}()\n")
-            lines.append("    im = Ref{Cfloat}()\n")
-            lines.append(
-                f"    ccall((:{name}_export0, libfly), Nothing, (Ref{{Cfloat}}, Ref{{Cfloat}}, {', '.join(ccall_types)}), re, im, {', '.join(ccall_args)})\n"
-            )
-            lines.append("    return ComplexF32(re[], im[])\n")
-            lines.append("end\n\n")
-        else:
-            jl_ret = type_map[ret_type]
-            lines.append(f"function {name}({', '.join(jl_args)})::{jl_ret}\n")
-            lines.extend([p + "\n" for p in pre])
-            lines.append(
-                f"    return ccall((:{name}_export0, libfly), {jl_ret}, ({', '.join(ccall_types)}), {', '.join(ccall_args)})\n"
-            )
-            lines.append("end\n\n")
-
-    # Classes
-    for cls, defs in classes.items():
-        lines.append(f"mutable struct {cls}\n")
-        lines.append("    ptr::Ptr{Cvoid}\n")
+        lines.append(f"function {name}({', '.join(jl_args)})\n")
+        lines.extend(pre)
+        lines.append(
+            f"\n    return ccall((:{name}_export0, libfly), {type_map[ret]}, ({', '.join(ccall_types)}), {', '.join(ccall_vals)})\n"
+        )
         lines.append("end\n\n")
 
-        # Constructors
-        for i, ctor in enumerate(defs["constructors"]):
+    def emit_class(class_name, constructors, methods):
+        lines.append(f"mutable struct {class_name}\n    ptr::Ptr{{Cvoid}}\nend\n\n")
+
+        for i, ctor in enumerate(constructors):
             args = ctor["arg_types"]
-            cname = f"{cls}_export{i}"
+            fname = f"{class_name}_export{i}"
             if not args:
-                lines.append(f"function {cls}()\n")
-                lines.append(f"    ptr = ccall((:{cname}, libfly), Ptr{{Cvoid}}, ())\n")
-                lines.append(f"    return {cls}(ptr)\n")
-                lines.append("end\n\n")
-            elif args == [("string", None)]:
-                lines.append(f"function {cls}(filename::String)\n")
                 lines.append(
-                    f"    ptr = ccall((:{cname}, libfly), Ptr{{Cvoid}}, (Cstring,), filename)\n"
+                    f"function {class_name}()\n    ptr = ccall((:{fname}, libfly), Ptr{{Cvoid}}, ())\n    return {class_name}(ptr)\nend\n\n"
                 )
-                lines.append(f"    return {cls}(ptr)\n")
-                lines.append("end\n\n")
+            elif args == [("string", None)]:
+                lines.append(
+                    f"function {class_name}(filename::String)\n    ptr = ccall((:{fname}, libfly), Ptr{{Cvoid}}, (Cstring,), filename)\n    return {class_name}(ptr)\nend\n\n"
+                )
 
-        # Operator overloads (call-style)
-        for i, method in enumerate(defs["methods"]):
-            ret_type = method["ret_type"]
-            method_args = method["arg_types"]
-            if method_args and method_args[0][0] == "ptr":
-                method_args = method_args[1:]
+        for i, method in enumerate(methods):
+            args = method["arg_types"]
+            ret = method["ret_type"]
 
-            jl_args = [f"self::{cls}"]
-            ccall_args = ["self.ptr"]
+            if args and args[0][0] == "ptr":
+                args = args[1:]
+
+            jl_args = []
             ccall_types = ["Ptr{Cvoid}"]
+            ccall_vals = ["self.ptr"]
             pre = []
 
-            for j, (t, default) in enumerate(method_args):
+            # Default logic
+            min_args = 0
+            for j, (_, default) in enumerate(args):
+                if default is not None:
+                    min_args = j
+                    for _, d in args[j:]:
+                        if d is None:
+                            raise ValueError("Non-default argument after default one")
+                    break
+            else:
+                min_args = len(args)
+
+            for j, (t, default) in enumerate(args):
                 var = f"arg{j}"
                 if t == "float":
-                    jl = f"{var}::Float32"
-                    if default:
-                        jl += f" = {default}"
-                    jl_args.append(jl)
-                    pre.append(f"    new{var} = Cfloat({var})")
-                    ccall_types.append("Cfloat")
-                    ccall_args.append(f"new{var}")
+                    jl_args.append(f"{var}" + (f"={default}" if default else ""))
+                    pre.append(f"    new{var} = Float32({var})")
+                    ccall_types.append("Float32")
+                    ccall_vals.append(f"new{var}")
                 elif t == "int":
-                    jl_args.append(f"{var}::Int")
+                    jl_args.append(f"{var}::Int" + (f"={default}" if default else ""))
                     ccall_types.append("Cint")
-                    ccall_args.append(var)
+                    ccall_vals.append(var)
+                elif t == "string":
+                    jl_args.append(
+                        f"{var}::String" + (f'="{default}"' if default else "")
+                    )
+                    ccall_types.append("Cstring")
+                    ccall_vals.append(var)
                 elif t == "Vec":
                     jl_args.append(f"{var}::Vector{{Float64}}")
                     pre.append(f"    new{var} = Float32.({var})")
-                    pre.append(f"    len = length({var})")
-                    ccall_types.extend(["Ptr{Cfloat}", "Cint"])
-                    ccall_args.extend([f"new{var}", "len"])
+                    pre.append(f"    len{var} = length({var})")
+                    ccall_types.extend(["Ptr{Float32}", "Cint"])
+                    ccall_vals.extend([f"new{var}", f"len{var}"])
 
-            mname = f"{cls}_operator_export{i}"
+            if ret == "complex<float>":
+                pre.append("    real = Ref{Float32}()")
+                pre.append("    imag = Ref{Float32}()")
+                ccall_types += ["Ptr{Float32}", "Ptr{Float32}"]
+                ccall_vals += ["real", "imag"]
 
-            if ret_type == "complex<float>":
+            # Call operator override
+            lines.append(
+                f"function (self::{class_name})({', '.join(jl_args)})::{type_map[ret] if ret != 'complex<float>' else 'ComplexF32'}\n"
+            )
+            lines.extend([line + "\n" for line in pre])
+            if ret == "complex<float>":
                 lines.append(
-                    f"function ({jl_args[0]})({', '.join(jl_args[1:])})::ComplexF32\n"
+                    f"    ccall((:{class_name}_operator_export{i}, libfly), Nothing, ({', '.join(ccall_types)}), {', '.join(ccall_vals)})\n"
                 )
-                lines.extend([p + "\n" for p in pre])
-                lines.append("    re = Ref{Cfloat}()\n")
-                lines.append("    im = Ref{Cfloat}()\n")
-                lines.append(
-                    f"    ccall((:{mname}, libfly), Nothing, (Ref{{Cfloat}}, Ref{{Cfloat}}, {', '.join(ccall_types)}), re, im, {', '.join(ccall_args)})\n"
-                )
-                lines.append("    return ComplexF32(re[], im[])\n")
-                lines.append("end\n\n")
+                lines.append("    return complex(real[], imag[])\n")
             else:
-                jl_ret = type_map[ret_type]
                 lines.append(
-                    f"function ({jl_args[0]})({', '.join(jl_args[1:])})::{jl_ret}\n"
+                    f"    return ccall((:{class_name}_operator_export{i}, libfly), {type_map[ret]}, ({', '.join(ccall_types)}), {', '.join(ccall_vals)})\n"
                 )
-                lines.extend([p + "\n" for p in pre])
-                lines.append(
-                    f"    return ccall((:{mname}, libfly), {jl_ret}, ({', '.join(ccall_types)}), {', '.join(ccall_args)})\n"
-                )
-                lines.append("end\n\n")
+            lines.append("end\n\n")
 
-        lines.append(f"function Base.finalize(obj::{cls})\n")
-        lines.append("    destroy!(obj)\n")
-        lines.append("end\n\n")
+        lines.append(
+            f"function Base.finalize(obj::{class_name})\n    destroy!(obj)\nend\n\n"
+        )
+
+    # === Main Flow ===
+    functions, classes = split_inputs(INPUTS)
+
+    lines.append(f"export {', '.join(sorted(set(exports)))}\n\n")
+
+    for f in functions:
+        emit_free_function(f)
+    for cname, defs in classes.items():
+        emit_class(cname, defs["constructors"], defs["methods"])
 
     return lines
