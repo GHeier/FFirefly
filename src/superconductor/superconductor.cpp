@@ -116,3 +116,13 @@ void eliashberg() {
     call_julia_func(folder.c_str(), filename.c_str(), module.c_str(),
                     function.c_str());
 }
+
+void debug() {
+    string folder = "superconductor/";
+    string filename = "debug";
+    string module = "Test";
+    string function = "test";
+    // call_python_func(folder.c_str(), filename.c_str(), function.c_str());
+    call_julia_func(folder.c_str(), filename.c_str(), module.c_str(),
+                    function.c_str());
+}

@@ -11,7 +11,7 @@ using CUDA, FFTW
 using MPI
 #using NFFT
 #using Plots
-using Roots
+using Roots, Statistics
 using SparseIR
 import SparseIR: Statistics, value, valueim, MatsubaraSampling64F, TauSampling64
 using Base.Threads
@@ -976,29 +976,115 @@ end
 function element_convolution_const(A, B)
     A_t = fft(A)
     B_t = fft(B)
-    temp = A_t .* B_t
-    return (ifft(temp) / (beta))
+    temp = A_t .* reverse(B_t)
+    return fftshift(ifft(temp)) / beta
 end
 
+function get_iw_iv_mesh(particle_type)
+    method = 1
+    if particle_type == "F" || particle_type == "Fermionic"
+        method = 2
+    elseif particle_type == "B" || particle_type == "Bosonic"
+        method = 3
+    end
+    fnw = nw
+    bnw = nw
+    if method > 1
+        mesh = IR_Mesh()
+        fnw = mesh.fnw
+        bnw = mesh.bnw
+        iw = Array{ComplexF64}(undef, fnw)
+        iv = Array{ComplexF64}(undef, bnw)
+        for i in 1:fnw
+            iw[i] = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta)
+        end
+        for i in 1:bnw
+            iv[i] = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[i], beta)
+        end
+    else
+        mesh = 1
+        iw = Array{ComplexF64}(undef, nw)
+        iv = Array{ComplexF64}(undef, nw)
+        for i in 1:nw
+            n = -nw / 2 + i - 1
+            iw[i] = Complex(0.0, (2 * n - 1) * pi / beta)
+            iv[i] = Complex(0.0, 2 * n * pi / beta)
+        end
+    end
+    return iw, iv, mesh
+end
+
+
 # particle_type is of resultant particle. So if a boson is returned, it is bosonic
-function conv_sum(F::Array{Vector{ComplexF64}}, G::Vector{Vector{ComplexF64}}, mesh, particle_type)
-    nk = length(G)
-    fnw = mesh.fnw
-    bnw = mesh.bnw
-    P = [zeros(ComplexF64, bnw) for _ in 1:nk]  # P is Vector{Vector{ComplexF64}}
+function conv_sum(particle_type, kvecs, func1, func2)
+    iw, iv, mesh = get_iw_iv_mesh(particle_type)
+    nk = length(kvecs)
+    fnw = length(iw)
+    bnw = length(iv)
+    println(fnw)
+    println(bnw)
+
+    println("2)")
+    P = [zeros(ComplexF64, bnw) for _ in 1:nk]
+    Gw = zeros(ComplexF64, fnw)
+    Fw = zeros(ComplexF64, fnw)
+    if particle_type == "F" || particle_type == "Fermionic"
+        P = [zeros(ComplexF64, fnw) for _ in 1:nk]
+        #Gw = zeros(ComplexF64, fnw)
+        Fw = zeros(ComplexF64, bnw)
+    end
+
+    println("3)")
     for j in 1:nk
-        Gw = G[j]
+        k1 = kvecs[j]
+        #Gw .= 1 ./ (iw .- epsilon(1, k1) .+ mu)
+        if particle_type == "F" || particle_type == "Fermionic"
+            Gw .= func1(k1, iw)
+        end
+
+        println("4")
         sum = zeros(ComplexF64, bnw)
         for k in 1:nk
-            Fw = F[j, k]
+            q = kvecs[k] - k1
+            #Fw .= 1 ./ (iw .- epsilon(1, q) .+ mu)
+            if particle_type == "B" || particle_type == "Bosonic"
+                Fw .= func2(q, iv)
+            end
+
+            println("5")
             if particle_type == "B" || particle_type == "Bosonic"
                 sum += element_convolution_B(Fw, Gw, mesh)
             elseif particle_type == "F" || particle_type == "Fermionic"
                 sum += element_convolution_F(Fw, Gw, mesh)
             else
-                println("No particle type given.")
-                exit()
+                sum += element_convolution_const(Fw, Gw)
             end
+        end
+        print(j, " out of ", nk, "\r")
+        P[j] = sum
+    end
+    return P
+end
+
+function conv_sum_eli(kvecs, interaction, phi, Z, chi, iw, iv, mesh)
+    nk = length(kvecs)
+    fnw = length(iw)
+    bnw = length(iv)
+
+    Gw = zeros(ComplexF64, fnw)
+    P = [zeros(ComplexF64, fnw) for _ in 1:nk]
+    Fw = zeros(ComplexF64, bnw)
+
+    for j in 1:nk
+        k1 = kvecs[j]
+        Gw .= F_eliashberg(phi[j], Z[j], chi[j], iw, epsilon(1, k1))
+
+        sum = zeros(ComplexF64, fnw)
+        for k in 1:nk
+            q = kvecs[k] - k1
+            Fw .= get_V(interaction, q, iw, iv)
+
+            sum += element_convolution_F(Fw, Gw, mesh)
         end
         P[j] = sum
     end
@@ -1031,7 +1117,8 @@ function partial_convolution(V, phi, iw, iv, kvecs)
     println("Number of Julia threads: ", Threads.nthreads())
     for i in 1:nk
         phiw = phi[i]
-        Fw .= phiw ./ (-iw .^ 2 + phiw .^ 2 .+ (epsilon(1, kvecs[i]))^2)
+        e = epsilon(1, kvecs[i]) - mu
+        Fw .= abs(e) < wD ? phiw ./ (-iw .^ 2 .+ phiw .^ 2 .+ e^2) : 0
         k1 = kvecs[i]
         @threads for j in 1:nk
             dk = kvecs[j] - k1
@@ -1065,40 +1152,92 @@ function bcs_convsum()
     P = partial_convolution(V, phi, iw, iv, kvecs)
     println(typeof(P))
     println(maximum([maximum(abs.(real.(p))) for p in P]))
+    println(P[0][0], P[14][15])
+end
+
+function F_eliashberg(phi, Z, chi, iw, e)
+    theta = phi .^ 2 .+ (Z .* iw) .^ 2 + (chi .+ e) .^ 2
+    return phi ./ theta
+end
+
+function get_V(V, k::Vector{Float64}, w, v)
+    l = length(imag.(v))
+    temp = Vector{ComplexF64}(undef, l)
+    for i in 1:l
+        val = 0
+        if abs(w[i]) < wD && abs(v[i]) < wD
+            val = 1
+        end
+        temp[i] = val
+    end
+    return temp
+    return [V(k, imag(w[i])) for i in 1:l]
+end
+
+function get_max_phi(phi)
+    max_real = -Inf
+    for vec in phi
+        for z in vec
+            r = real(z)
+            if r > max_real
+                max_real = r
+            end
+        end
+    end
+    return max_real
+end
+
+function get_min_phi(phi)
+    min_real = Inf
+    for vec in phi
+        for z in vec
+            r = real(z)
+            if r < min_real
+                min_real = r
+            end
+        end
+    end
+    return min_real
+end
+
+function eliashberg_convsum()
+    interaction = Firefly.Vertex()
+    kvecs = Vector{Vector{Float64}}(undef, nx * ny)
+    for i in 1:nx, j in 1:ny
+        kvecs[(i-1)*ny+j] = get_kvec(i, j, 1)
+    end
+    nk = length(kvecs)
+
+    iw, iv, mesh = get_iw_iv_mesh("F")
+    fnw = length(iw)
+    phi = [ones(ComplexF64, fnw) for _ in 1:nk]
+    Z = [ones(ComplexF64, fnw) for _ in 1:nk]
+    chi = [zeros(ComplexF64, fnw) for _ in 1:nk]
+
+    iterations = 1
+    for _ in 1:iterations
+        phi = conv_sum_eli(kvecs, interaction, phi, Z, chi, iw, iv, mesh) / (nk)
+        println("Max_Phi: ", get_max_phi(phi))
+    end
+    println("Max phi: ", get_max_phi(phi))
+    println("Min phi: ", get_min_phi(phi))
+end
+
+function greens_function(k, iw)
+    e = epsilon(1, k) - mu
+    return 1 ./ (iw .- e)
 end
 
 function chi_convsum()
-    mesh = IR_Mesh()
-    fnw, bnw = mesh.fnw, mesh.bnw
-    iw = Array{ComplexF32}(undef, fnw)
-    iv = Array{ComplexF32}(undef, bnw)
-    for i in 1:fnw
-        iw[i] = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta)
-    end
-    for i in 1:bnw
-        iv[i] = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[i], beta)
-    end
-
     kvecs = Vector{Vector{Float64}}(undef, nx * ny)
-    klen = length(kvecs)
     for i in 1:nx, j in 1:ny
         kvecs[(i-1)*ny+j] = get_kvec(i, j, 1)
     end
 
-    F = [zeros(ComplexF64, fnw) for _ in 1:klen, _ in 1:klen]
-    G = [zeros(ComplexF64, fnw) for _ in 1:klen]
-    for j in 1:klen
-        e = epsilon(1, kvecs[j]) - mu
-        for i in 1:fnw
-            G[j][i] = 1 / (iw[i] - e)
-        end
-    end
-    for i in 1:fnw, j in 1:klen, k in 1:klen
-        q = kvecs[j] - kvecs[k]
-        F[j, k][i] = 1 / (iw[i] - epsilon(1, q) - mu)
-    end
-
-    P = conv_sum(F, G, mesh, "B") / (nx * ny * nz)
+    iw, iv, mesh = get_iw_iv_mesh("")
+    P = conv_sum("", kvecs, greens_function, greens_function) / (nx * ny * nz)
+    println("shape of P: ", size(P), " ", length(P), " ", length(P[1]))
+    println(length(kvecs), " ", length(iv))
     open("convsum.dat", "w") do io
         println(io, "kx             ky             w             Re(f)            Im(f)")
         for i in 1:length(P), j in 1:length(P[1])
@@ -1116,13 +1255,107 @@ function chi_convsum()
     end
 end
 
+function chi_conv_test()
+    println("1")
+    kvecs = Vector{Vector{Float64}}(undef, nx * ny)
+    for i in 1:nx, j in 1:ny
+        kvecs[(i-1)*ny+j] = get_kvec(i, j, 1)
+    end
+    println("2")
+    iw, iv, mesh = get_iw_iv_mesh("")
+    println("3")
+    println(size(iw))
+    fnw = length(iw)
+    gkio = Array{ComplexF64}(undef, fnw, nx, ny, nz)
+    for ix in 1:nx, iy in 1:ny, iw in 1:basis.fnw, iz in 1:nz
+        iv::ComplexF64 = valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[iw], beta)
+        e = epsilon(1, kvec[(i-1)*ny+j])
+        gkio[iw, ix, iy, iz] = 1.0 / (iv - e + mu)
+    end
+    println("4")
+    grit = fft(gkio)
+    println("5")
+    crit = Array{ComplexF64}(undef, nw, nx, ny, nz)
+    for ix in 1:nx, iy in 1:ny, iz in 1:nz, it in 1:basis.bntau
+        crit[it, ix, iy, iz] = grit[it, ix, iy, iz] * grit[basis.bntau-it+1, ix, iy, iz]
+    end
+    println("6")
+    ckio = fftshift(ifft(crit)) / (beta * nx * ny * nz)
+    println("7")
+    open("chi.dat", "w") do io
+        println(io, "kx             ky             w             Re(f)            Im(f)")
+        for i in 1:nw, j in 1:nx, k in 1:ny, l in 1:nz
+            kvec = kvecs[(i-1)*ny+j]
+            w = iv[i]
+            temp = ckio[i, j, k, l]
+            println(io,
+                @sprintf("%.6f", kvec[1]), "    ",
+                @sprintf("%.6f", kvec[2]), "    ",
+                @sprintf("%.6f", imag(w)), "    ",
+                @sprintf("%.6f", real(temp)), "    ",
+                @sprintf("%.6f", imag(temp))
+            )
+        end
+    end
+end
+
+function square_well_test()
+    iw, iv, mesh = get_iw_iv_mesh("F")
+    bnw, fnw = mesh.bnw, mesh.fnw
+    V = Array{ComplexF64}(undef, bnw)
+    F = Array{ComplexF64}(undef, fnw)
+
+    a = 0.5
+    w = 0.01
+    for i in 1:bnw
+        x = iv[i]
+        V[i] = 0.5 * (tanh((x + a) / w) - tanh((x - a) / w))
+    end
+    for i in 1:fnw
+        x = iw[i]
+        F[i] = 0.5 * (tanh((x + a) / w) - tanh((x - a) / w))
+    end
+
+    Vt = wn_to_tau(mesh, Bosonic(), V)
+    Ft = wn_to_tau(mesh, Fermionic(), F)
+    temp = Vt .* Ft
+    result = tau_to_wn(mesh, Fermionic(), temp)
+    r_result = real.(result)
+    println("max: ", maximum(r_result))
+    println("min: ", minimum(r_result))
+    println("avg: ", mean(r_result))
+
+    V = Array{ComplexF64}(undef, nw)
+    F = Array{ComplexF64}(undef, nw)
+
+    a = 0.5
+    w = 0.01
+    for i in 1:nw
+        n = -nw / 2 + i - 1
+        iw = Complex(0.0, (2 * n - 1) * pi / beta)
+        iv = Complex(0.0, (2 * n) * pi / beta)
+        V[i] = 0.5 * (tanh((iv + a) / w) - tanh((iv - a) / w))
+        F[i] = 0.5 * (tanh((iw + a) / w) - tanh((iw - a) / w))
+    end
+
+
+    Vt = fft(V)
+    Ft = fft(F)
+    result = fftshift(ifft(Vt .* Ft)) / beta
+    r_result = real.(result)
+    println("max: ", maximum(r_result))
+    println("min: ", minimum(r_result))
+    println("avg: ", mean(r_result))
+end
 
 function eliashberg_node()
     #energy_finite_T()
     #energy_2sum()
-    energy_fastest()
+    #energy_fastest()
+    #chi_conv_test()
     #chi_convsum()
-    bcs_convsum()
+    #square_well_test()
+    eliashberg_convsum()
     #fastest()
     #eliashberg_global()
     println("k_mesh: ", cfg.k_mesh)

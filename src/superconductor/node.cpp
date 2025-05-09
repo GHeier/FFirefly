@@ -17,6 +17,8 @@ extern "C" void superconductor_wrapper() {
         bcs();
     else if (method == "eliashberg")
         eliashberg();
+    else if (method == "debug")
+        debug();
     else
         cout << "Method " << method << " not recognized" << endl;
 }

@@ -3,36 +3,28 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 config = {
-        'CONTROL': {
-            'category': 'superconductor',
-            'method': 'eliashberg',
-            'prefix': 'sample',
-            },
-        'SYSTEM': {
-            'interaction': 'FLEX',
-            'dimension': 2,
-            'fermi_energy': -1.2,
-            'Temperature': 0.0001,
-            'onsite_U': 3.0,
-            'nbnd': 1,
-            'ibrav': 1,
-            },
-        'MESH': {
-            'k_mesh': [650, 650, 650],
-            'q_mesh': [10, 10, 10],
-            'w_pts': 30000
-            },
-        'BANDS': {
-            'band1': 'tight_binding',
-            't0': 1.0
-            },
-        'SUPERCONDUCTOR': {
-            'projections': 's'
-            },
-        }
+    "CONTROL": {
+        "category": "superconductor",
+        "method": "eliashberg",
+        "prefix": "sample",
+    },
+    "SYSTEM": {
+        "interaction": "FLEX",
+        "dimension": 2,
+        "fermi_energy": -0.3,
+        "Temperature": 0.0001,
+        "onsite_U": 3.0,
+        "nbnd": 1,
+        "ibrav": 1,
+    },
+    "MESH": {"k_mesh": [650, 650, 650], "q_mesh": [10, 10, 10], "w_pts": 30000},
+    "BANDS": {"band1": "tight_binding", "t0": 1.0},
+    "SUPERCONDUCTOR": {"projections": "s"},
+}
+
 
 def get_slope_diff(x_data, y_data):
-    f_interp = interp1d(x_data, y_data, kind='cubic', fill_value='extrapolate')
+    f_interp = interp1d(x_data, y_data, kind="cubic", fill_value="extrapolate")
     x3 = x_data[-1]
     x2 = x_data[-2]
     x1 = x_data[-3]
@@ -44,11 +36,13 @@ def get_slope_diff(x_data, y_data):
     m12 = (y2 - y1) / (x2 - x1)
     return m23 - m12
 
+
 def update_dT(T_list, phi_list, dT):
     m = abs(get_slope_diff(T_list, phi_list)) + 1e-4
     r = max(5e-2 / m * dT, 1e-4)
     r = min(r, 5e-2)
     return r
+
 
 def eliashberg(filename):
     Ti = 1.0e-4
@@ -59,9 +53,9 @@ def eliashberg(filename):
     print("Temperature, Max phi")
 
     for i in range(50):
-        config['SYSTEM']['Temperature'] = Ti
+        config["SYSTEM"]["Temperature"] = Ti
         output, error = firefly.launch(config)
-        #if(len(error) > 0):
+        # if(len(error) > 0):
         #    print("Error occured")
         #    print(error)
         #    print("Error lines found: ", len(error))
@@ -69,7 +63,7 @@ def eliashberg(filename):
         value = firefly.extract_value(match)
 
         print(f"{Ti:.5f} {value:.5f}")
-        #print(dT)
+        # print(dT)
 
         T_list.append(Ti)
         phi_list.append(value)
@@ -84,7 +78,8 @@ def eliashberg(filename):
     header = "Temperature Max_phi"
     np.savetxt(filename, data, delimiter=" ", header=header, fmt="%d")
 
-print("Fermi_energy: ", config['SYSTEM']['fermi_energy'])
+
+print("Fermi_energy: ", config["SYSTEM"]["fermi_energy"])
 eliashberg("Phi_v_T.dat")
 
 """
