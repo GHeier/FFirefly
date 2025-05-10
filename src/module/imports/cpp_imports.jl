@@ -21,6 +21,12 @@ function Bands()
     return Bands(ptr)
 end
 
+function (self::Bands)(arg0::Int, arg1::Vector{Float64})::Float32
+    newarg1 = Float32.(arg1)
+    lenarg1 = length(arg1)
+    return ccall((:Bands_operator_export0, libfly), Float32, (Ptr{Cvoid}, Cint, Ptr{Float32}, Cint), self.ptr, arg0, newarg1, lenarg1)
+end
+
 function Base.finalize(obj::Bands)
     destroy!(obj)
 end

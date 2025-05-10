@@ -9,6 +9,75 @@ current_file_path = current_file_path[:-47] + "build/lib/libfly.so"
 
 lib = ctypes.CDLL(current_file_path)
 
+
+class Vec(ctypes.Structure):
+    _fields_ = [
+        ("x", ctypes.c_float),
+        ("y", ctypes.c_float),
+        ("z", ctypes.c_float),
+        ("w", ctypes.c_float),
+        ("area", ctypes.c_float),
+        ("dimension", ctypes.c_int),
+        ("n", ctypes.c_int),
+    ]
+
+
+CALLBACKFUNC = ctypes.CFUNCTYPE(ctypes.c_float, Vec)
+
+
+class Surface:
+    faces: list[list[float]] = []
+
+    def __init__(self, func=None, s_val=None):
+        if func is not None and s_val is not None:
+            self._callback = CALLBACKFUNC(func)  # keep reference alive
+            lib.Surface_export0.argtypes = [CALLBACKFUNC, ctypes.c_float]
+            lib.Surface_export0.restype = ctypes.c_void_p
+            self.ptr = lib.Surface_export0(self._callback, ctypes.c_float(s_val))
+        else:
+            raise ValueError("Must provide func and s_val")
+
+        if not self.ptr:
+            raise RuntimeError("Failed to initialize Surface")
+
+        # Load 'faces' field from C++
+        count = ctypes.c_int()
+        lib.Surface_num_faces_export0.argtypes = [ctypes.c_void_p]
+        lib.Surface_num_faces_export0.restype = ctypes.c_int
+
+        n = lib.Surface_num_faces_export0(self.ptr)
+        lens = (ctypes.c_int * n)()
+        total_len = 3 * len(lens)
+        buf = (ctypes.c_float * total_len)()
+
+        lib.Surface_var_faces_export0.argtypes = [
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_float),
+            ctypes.POINTER(ctypes.c_int),
+            ctypes.POINTER(ctypes.c_int),
+        ]
+        lib.Surface_var_faces_export0.restype = None
+        lib.Surface_var_faces_export0(self.ptr, buf, lens, ctypes.c_int(n))
+
+        offset = 0
+        result = []
+        for i in range(n):
+            sub = [buf[offset + j] for j in range(lens[i])]
+            result.append(sub)
+            offset += lens[i]
+        self.faces = result
+
+    def __call__(self, *args):
+        raise TypeError("Invalid arguments to __call__")
+
+    def __del__(self):
+        try:
+            lib.destroy.argtypes = [ctypes.c_void_p]
+            lib.destroy(self.ptr)
+        except AttributeError:
+            pass
+
+
 # Begin Functions
 lib.epsilon_export0.argtypes = [ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int]
 lib.epsilon_export0.restype = ctypes.c_float
@@ -21,6 +90,9 @@ def epsilon(arg0: int, arg1: list[float]) -> float:
 lib.Bands_export0.argtypes = []
 lib.Bands_export0.restype = ctypes.c_void_p
 
+lib.Bands_operator_export0.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int]
+lib.Bands_operator_export0.restype = ctypes.c_float
+
 class Bands:
     def __init__(self, filename=None):
         if filename is None:
@@ -29,6 +101,12 @@ class Bands:
             raise RuntimeError('Failed to initialize Bands')
 
     def __call__(self, *args):
+        # Overload for args=2, required=2
+        if len(args) >= 2 and len(args) <= 2 and isinstance(args[0], int):
+            arg0 = ctypes.c_int(args[0])
+            arg1 = (ctypes.c_float * len(args[1]))(*[float(x) for x in args[1]])
+            arg1_len = ctypes.c_int(len(args[1]))
+            return lib.Bands_operator_export0(self.ptr, arg0, arg1, arg1_len)
         raise TypeError('Invalid arguments to __call__')
 
     def __del__(self):

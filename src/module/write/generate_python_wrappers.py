@@ -24,7 +24,10 @@ def create_python_function(INPUTS):
         "string": "str",
         "ptr": "Any",
         "Vec": "list[float]",
+        "vector<float>": "list[float]",
         "complex<float>": "complex",
+        "vector<Vec>": "list[list[float]]",
+        "vector<vector<float>>": "list[list[float]]",
     }
 
     return_type_map = {
@@ -41,21 +44,44 @@ def create_python_function(INPUTS):
             return t.strip(), default.strip()
         return arg.strip(), None
 
+    # Makes inputs into classes and functions
+    # Classes are based on returning ptr, functions are added to them if they contain "_operator"
     def split_inputs(INPUTS):
         classes = {}
         functions = []
+
         for file, func_list in INPUTS.items():
             for base_name, sig in func_list:
                 ret_type, *raw_args = sig
                 parsed_args = [parse_arg(a) for a in raw_args]
+
+                if "_var_" in base_name:
+                    # e.g. Surface_var_faces -> class: Surface, var: faces
+                    class_name, var_name = base_name.split("_var_", 1)
+                    if class_name not in classes:
+                        classes[class_name] = {
+                            "constructors": [],
+                            "methods": [],
+                            "variables": [],
+                        }
+                    classes[class_name].setdefault("variables", []).append(
+                        (var_name, ret_type)
+                    )
+                    continue
+
                 entry = {
                     "name": base_name,
                     "ret_type": ret_type,
                     "arg_types": parsed_args,
                 }
+
                 if ret_type == "ptr":
                     if base_name not in classes:
-                        classes[base_name] = {"constructors": [], "methods": []}
+                        classes[base_name] = {
+                            "constructors": [],
+                            "methods": [],
+                            "variables": [],
+                        }
                     classes[base_name]["constructors"].append(entry)
                 elif "_operator" in base_name:
                     class_name = base_name.split("_operator")[0]
@@ -63,6 +89,7 @@ def create_python_function(INPUTS):
                         classes[class_name]["methods"].append(entry)
                 else:
                     functions.append(entry)
+
         return functions, classes
 
     def emit_free_function(entry):
@@ -77,7 +104,7 @@ def create_python_function(INPUTS):
 
         for i, (t, default) in enumerate(arg_types):
             name = f"arg{i}"
-            if t == "Vec":
+            if t == "Vec" or t == "vector<float>":
                 expanded_arg_ctypes += [
                     "ctypes.POINTER(ctypes.c_float)",
                     "ctypes.c_int",
@@ -87,6 +114,27 @@ def create_python_function(INPUTS):
                     f"{name}_array.ctypes.data_as(ctypes.POINTER(ctypes.c_float))",
                     f"len({name})",
                 ]
+            elif t == "vector<Vec>" or t == "vector<vector<float>>":
+                expanded_arg_ctypes += [
+                    "ctypes.POINTER(ctypes.c_float)",
+                    "ctypes.POINTER(ctypes.c_int)",
+                    "ctypes.c_int",
+                ]
+                annotations.append(f"{name}: list[list[float]]")
+                call_args.append(f"{name}_flat_arr")
+                call_args.append(f"{name}_len_arr")
+                call_args.append(f"len(len_{name})")
+                lines.append(f"    flat_{name} = []\n")
+                lines.append(f"    len_{name} = []\n")
+                lines.append(f"    for vec in {name}:\n")
+                lines.append(f"        flat_{name}.extend(vec)\n")
+                lines.append(f"        len_{name}.append(len(vec))\n")
+                lines.append(
+                    f"    {name}_flat_arr = (ctypes.c_float * len(flat_{name}))(*flat_{name})\n"
+                )
+                lines.append(
+                    f"    {name}_len_arr = (ctypes.c_int * len(len_{name}))(*len_{name})\n"
+                )
             else:
                 expanded_arg_ctypes.append(type_map[t])
                 arg_decl = f"{name}: {friendly_names[t]}"
@@ -102,7 +150,7 @@ def create_python_function(INPUTS):
             f"def {base_name}({', '.join(annotations)}) -> {return_type_map.get(ret_type, 'Any')}:\n"
         )
         for i, (t, _) in enumerate(arg_types):
-            if t == "Vec":
+            if t == "Vec" or t == "vector<float>":
                 lines.append(f"    arg{i}_array = np.array(arg{i}, dtype=np.float32)\n")
         if ret_type != "None":
             lines.append(f"    result = lib.{func_name}({', '.join(call_args)})\n")
@@ -132,7 +180,7 @@ def create_python_function(INPUTS):
             arg_list = []
 
             for t, _ in arg_types:
-                if t == "Vec":
+                if t == "Vec" or t == "vector<float>":
                     arg_list += ["ctypes.POINTER(ctypes.c_float)", "ctypes.c_int"]
                 else:
                     arg_list.append(type_map[t])
@@ -153,6 +201,22 @@ def create_python_function(INPUTS):
 
     def emit_class(class_name, constructors, methods):
         lines.append(f"class {class_name}:\n")
+        # Emit class variables from Surface_var_xxx
+        for var_name, var_type in defs.get("variables", []):
+            if var_type == "vector<Vec>" or var_type == "vector<vector<float>>":
+                py_type = "list[list[float]]"
+                init_val = "[]"
+            elif var_type == "Vec" or var_type == "vector<float>":
+                py_type = "list[float]"
+                init_val = "[]"
+            elif var_type in friendly_names:
+                py_type = friendly_names[var_type]
+                init_val = "None"
+            else:
+                py_type = "Any"
+                init_val = "None"
+            lines.append(f"    {var_name}: {py_type} = {init_val}\n")
+
         lines.append("    def __init__(self, filename=None):\n")
         if any(len(c["arg_types"]) == 0 for c in constructors):
             lines.append("        if filename is None:\n")
@@ -165,6 +229,41 @@ def create_python_function(INPUTS):
             lines.append(
                 f"            self.ptr = lib.{class_name}_export1(ctypes.c_char_p(filename.encode('utf-8')))\n"
             )
+
+        for var_name, var_type in defs.get("variables", []):
+            export_func = f"{class_name}_var_{var_name}_export0"
+            lines.append(f"        # Load variable '{var_name}' from C++\n")
+            lines.append(f"        count = ctypes.c_int()\n")
+            lines.append(f"        lib.{export_func}.restype = None\n")
+            lines.append(
+                f"        lib.{export_func}.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_int), ctypes.c_int]\n"
+            )
+            lines.append(f"        # First call to get number of vectors\n")
+            lines.append(
+                f"        lib.{export_func}(self.ptr, None, None, ctypes.byref(count))\n"
+            )
+            lines.append(f"        n = count.value\n")
+            lines.append(f"        # Allocate buffers\n")
+            lines.append(f"        lens = (ctypes.c_int * n)()\n")
+            lines.append(f"        total_len = 0\n")
+            lines.append(
+                f"        lib.{export_func}(self.ptr, None, lens, ctypes.c_int(n))\n"
+            )
+            lines.append(f"        for i in range(n):\n")
+            lines.append(f"            total_len += lens[i]\n")
+            lines.append(f"        buf = (ctypes.c_float * total_len)()\n")
+            lines.append(
+                f"        lib.{export_func}(self.ptr, buf, lens, ctypes.c_int(n))\n"
+            )
+            lines.append(f"        offset = 0\n")
+            lines.append(f"        result = []\n")
+            lines.append(f"        for i in range(n):\n")
+            lines.append(
+                f"            sub = [buf[offset + j] for j in range(lens[i])]\n"
+            )
+            lines.append(f"            result.append(sub)\n")
+            lines.append(f"            offset += lens[i]\n")
+            lines.append(f"        self.{var_name} = result\n\n")
         lines.append("        if not self.ptr:\n")
         lines.append(
             f"            raise RuntimeError('Failed to initialize {class_name}')\n\n"
@@ -224,7 +323,7 @@ def create_python_function(INPUTS):
                         )
                     call.append(name)
                     argc += 1
-                elif t == "Vec":
+                elif t == "Vec" or t == "vector<float>":
                     if default:
                         cond.append(f"isinstance(args[{j}], (list, tuple))")
                         pre.append(

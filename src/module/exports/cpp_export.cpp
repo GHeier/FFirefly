@@ -2,6 +2,7 @@
 
 #include "../../config/load/c_config.h"
 #include "../../config/load/cpp_config.hpp"
+#include "../../objects/surfaces.hpp"
 // Begin include
 #include "../../hamiltonian/band_structure.hpp"
 #include "../../objects/CMField/bands.hpp"
@@ -15,6 +16,27 @@ extern "C" void load_config_export0(const char *filename) {
     load_cpp_config();
 }
 
+static float (*user_callback)(Vec);
+
+float call_func_adapter(Vec k) { return user_callback(k); }
+
+extern "C" Surface *Surface_export0(float (*func)(Vec), float s_val) {
+    user_callback = func;
+    return new Surface(call_func_adapter, s_val);
+}
+
+extern "C" int Surface_num_faces_export0(Surface *a) { return a->faces.size(); }
+extern "C" void Surface_var_faces_export0(Surface *a, float *b, int *c,
+                                          int *d) {
+    *d = a->faces.size();
+    for (int i = 0; i < *d; i++) {
+        c[i] = a->faces[i].dimension;
+        for (int j = 0; j < c[i]; j++) {
+            b[i * c[i] + j] = a->faces[i](j);
+        }
+    }
+}
+
 // Begin functions
 extern "C" float epsilon_export0(int a, float* b, int c) {
     Vec v(b, c);
@@ -22,6 +44,10 @@ extern "C" float epsilon_export0(int a, float* b, int c) {
 }
 extern "C" Bands* Bands_export0() {
     return new Bands();
+}
+extern "C" float Bands_operator_export0(Bands* a, int b, float* c, int d) {
+    Vec v(c, d);
+    return a->operator()(b, v);
 }
 extern "C" Vertex* Vertex_export0() {
     return new Vertex();

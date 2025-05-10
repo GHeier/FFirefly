@@ -4,6 +4,10 @@ INPUTS = {
     ],
     "objects/CMField/bands.hpp": [
         ("Bands", ["ptr"]),
+        (
+            "Bands_operator",
+            ["float", "ptr", "int", "Vec"],
+        ),
     ],
     "objects/CMField/vertex.hpp": [
         ("Vertex", ["ptr"]),
@@ -12,6 +16,10 @@ INPUTS = {
             ["complex<float>", "ptr", "Vec", "float=0.0", "string='up'", "string='up'"],
         ),
     ],
+    # "objects/surfaces.hpp": [
+    #    ("Surface", ["ptr", "func", "float"]),
+    #    ("Surface_var_faces", ["vector<Vec>"]),
+    # ],
     "objects/CMField/fields.hpp": [
         ("Field_R", ["ptr"]),
         ("Field_R", ["ptr", "string"]),
@@ -32,7 +40,7 @@ INPUTS = {
 
 from write import write_export, write_import
 
-write_export.write_export(INPUTS)
+write_export.write_export_funcs(INPUTS)
 print("Successfully wrote export files")
 write_import.write_import(INPUTS)
 print("Successfully wrote import files")

@@ -7,10 +7,15 @@ variables = {"Vec": "v"}
 
 
 def arg_cpp_to_c(arg, name):
-    if arg == "Vec":
+    if arg == "vector" or arg == "Vec":
         return ["float*", "int"]
-    if arg == "vector":
-        return [""]
+    if (
+        arg == "vector"
+        or arg == "Vec"
+        or arg == "vector<Vec>"
+        or arg == "vector<vector<float>>"
+    ):
+        return ""
     if arg == "string":
         return "char*"
     if arg == "ptr":
@@ -30,16 +35,6 @@ def type_convert_lines(a, i):
             + letters[i]
             + ");"
         )
-    if a == "vector":
-        lines.append(
-            "    Vec "
-            + variables["Vec"]
-            + "("
-            + letters[i - 1]
-            + ", "
-            + letters[i]
-            + ");"
-        )
     return lines
 
 
@@ -50,16 +45,25 @@ def filter_default_args(args):
     return arguments
 
 
-def create_declaration(name, args, num):
+def create_declaration(name, args, ret, num):
     arguments = filter_default_args(args)
 
-    if arguments[0] == "complex<float>":
-        arguments.append("float*")
-        arguments.append("float*")
-        arguments[0] = "void"
-
     line = 'extern "C" '
-    a = arg_cpp_to_c(arguments[0], name)
+    if ret == "complex<float>":
+        arguments.append("float*")
+        arguments.append("float*")
+        ret = "void"
+    if ret == "Vec" or ret == "vector<float>":
+        arguments.append("float*")
+        arguments.append("int*")
+        ret = "void"
+    if ret == "vector<Vec>" or ret == "vector<vector<float>>":
+        arguments.append("float*")
+        arguments.append("int*")
+        arguments.append("int*")
+        ret = "void"
+
+    a = arg_cpp_to_c(ret, name)
     line += str(a) + " "
     line += name + "_export" + str(num)
     line += "("
@@ -80,7 +84,7 @@ def create_declaration(name, args, num):
     return line
 
 
-def create_func(name, args, num):
+def create_func(name, args, ret, num):
     lines = []
     i = 1
     if "operator" in name:
@@ -132,20 +136,68 @@ def write_export_include(INPUTS, lines):
     return lines
 
 
+""" Class Creation -------------
+    elif "_" in name:
+        var = str(name.split("_", 2)[-1])
+        if "vector<vector<float>>" in args[0]:
+            line = (
+                "    *d = a->"
+                + var
+                + ".size();\n    for (int i = 0; i < *d; i++) {\n        c[i] = a->"
+                + var
+                + "[i].size();\n        for (int j = 0; j < c[i]; j++) {\n            b[i * c[i] + j] = a->"
+                + var
+                + "[i][j];\n        }\n    }\n"
+            )
+        elif "vector<Vec>" in args[0]:
+            line = (
+                "    *d = a->"
+                + var
+                + ".size();\n    for (int i = 0; i < *d; i++) {\n        c[i] = a->"
+                + var
+                + "[i].dimension;\n        for (int j = 0; j < c[i]; j++) {\n            b[i * c[i] + j] = a->"
+                + var
+                + "[i](j);\n        }\n    }\n"
+            )
+        elif "vector<float>" in args[0]:
+            line = (
+                "    *d = a->"
+                + var
+                + ".size();\n    for (int i = 0; i < *d; i++) {\n        b[i] = a->"
+                + var
+                + "[i];\n        }\n"
+            )
+        elif "Vec" in args[0]:
+            line = (
+                "    for (int i = 0; i < a->"
+                + var
+                + ".dimension; i++) {\n        b[i] = a->"
+                + var
+                + "(i);\n        c[i] = a->"
+                + var
+                + ".dimension;\n    }\n"
+            )
+        else:
+            line = "    return a->" + var + ";\n"
+"""
+
+
 def write_export_func(INPUTS, lines):
     newlines = []
-    for file, funcs in INPUTS.items():
+    for funcs in INPUTS.items():
         seen = defaultdict(int)
         i = 0
-        for name, args in funcs:
-            i = seen[name]
-            seen[name] += 1
-            line = create_declaration(name, args, i) + "\n"
-            func_lines = create_func(name, args, i)
-            for l in func_lines:
-                line += l + "\n"
-            prev_name = name
-            newlines.append(line)
+        name = funcs[0]
+        args = funcs[1]["args"]
+        ret = funcs[1]["return"]
+        i = seen[name]
+        seen[name] += 1
+        line = create_declaration(name, args, ret, i) + "\n"
+        func_lines = create_func(name, args, ret, i)
+        for l in func_lines:
+            line += l + "\n"
+        prev_name = name
+        newlines.append(line)
     lines = base.remove_lines_between_phrases(
         lines, "// Begin functions", "// End functions"
     )
@@ -155,11 +207,15 @@ def write_export_func(INPUTS, lines):
     return lines
 
 
-def write_export(INPUTS):
+def write_export_funcs(INPUTS, FILES):
     input = copy.copy(INPUTS)
     with open("exports/cpp_export.cpp", "r") as file:
         lines = file.readlines()
-    lines = write_export_include(input, lines)
+    lines = write_export_include(FILES, lines)
     lines = write_export_func(input, lines)
-    with open("exports/cpp_export.cpp", "w") as file:
-        file.writelines(lines)
+    # with open("exports/cpp_export.cpp", "w") as file:
+    #    file.writelines(lines)
+
+
+def write_export_classes(INPUTS):
+
