@@ -4,11 +4,10 @@ from . import base
 import copy
 
 
-def write_py_import(INPUT):
-    input = copy.copy(INPUT)
+def write_py_import(funcs, classes):
     with open("imports/cpp_imports.py", "r") as file:
         lines = file.readlines()
-    newlines = generate_python_wrappers.create_python_function(INPUT)
+    newlines = generate_python_wrappers.create_python_function(funcs, classes)
     lines = base.remove_lines_between_phrases(
         lines, "# Begin Functions", "# End Functions"
     )
@@ -34,6 +33,6 @@ def write_jl_import(INPUT):
         file.writelines(lines)
 
 
-def write_import(INPUT):
-    write_py_import(INPUT)
-    write_jl_import(INPUT)
+def write_import(funcs, classes):
+    write_py_import(funcs, classes)
+    # write_jl_import(INPUT)

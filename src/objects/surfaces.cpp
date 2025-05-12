@@ -274,7 +274,7 @@ vector<Vec> tetrahedron_method(function<float(Vec k)> func, float s_val) {
 }
 
 bool is_between(float a, float b, float c) {
-    return (a < b and b < c) or (c < b and b < a);
+    return (a <= b and b <= c) or (c <= b and b <= a);
 }
 
 vector<Vec> get_endpoints(vector<Vec> points, function<float(Vec k)> func,
@@ -314,7 +314,7 @@ vector<Vec> get_endpoints(vector<Vec> points, function<float(Vec k)> func,
     } else if (is_between(ep1, s_val, ep4) and
                is_between(ep4, s_val, ep3)) { // Case 6
         return_points[0] = (k4 - k1) * (s_val - ep1) / (ep4 - ep1) + k1;
-        return_points[1] = (k3 - k4) * (s_val - ep4) / (ep4 - ep1) + k4;
+        return_points[1] = (k3 - k4) * (s_val - ep4) / (ep3 - ep4) + k4;
     } else {
         printf("Surface error: No case found\n");
         exit(1);
@@ -324,11 +324,12 @@ vector<Vec> get_endpoints(vector<Vec> points, function<float(Vec k)> func,
 
 vector<Vec> tetrahedron_method_2D(function<float(Vec k)> func, float s_val) {
     vector<Vec> FS;
-    for (int i = 0; i < k_mesh[0]; i++) {
+    for (int i = 0; i < k_mesh[0] and 1 == 2; i++) {
         for (int j = 0; j < k_mesh[1]; j++) {
             vector<Vec> points = points_from_indices_2d(func, i, j, 0, k_mesh);
             if (not surface_inside_cube(s_val, points))
                 continue;
+            printf("added something\n");
             vector<Vec> endpoints = get_endpoints(points, func, s_val);
             Vec k_point = (endpoints[0] + endpoints[1]) / 2;
             float L = (endpoints[0] - endpoints[1]).norm();
@@ -338,6 +339,9 @@ vector<Vec> tetrahedron_method_2D(function<float(Vec k)> func, float s_val) {
             FS.push_back(k_point);
         }
     }
+    Vec temp(1.0, 2.0, 3.0);
+    printf("func: %f\n", func(temp));
+    printf("FS size: %d\n", FS.size());
     return FS;
 }
 
@@ -363,6 +367,7 @@ pair<int, int> get_index_and_length(float L, float U,
 }
 
 Surface tetrahedron_surface(function<float(Vec k)> func, float s_val) {
+    printf("Called tetrahedron surface\n");
     vector<vector<float>> tetrahedrons{{1, 2, 3, 5}, {1, 3, 4, 5},
                                        {2, 5, 6, 3}, {4, 5, 8, 3},
                                        {5, 8, 7, 3}, {5, 6, 7, 3}};
@@ -371,6 +376,8 @@ Surface tetrahedron_surface(function<float(Vec k)> func, float s_val) {
     if (dimension == 2) {
         vector<Vec> temp = tetrahedron_method_2D(func, s_val);
         surf.faces = temp;
+        printf("K_mesh: %d %d %d\n", k_mesh[0], k_mesh[1], k_mesh[2]);
+        printf("Surf size: %d\n", surf.faces.size());
         return surf;
     }
     int z_num = k_mesh[2];
@@ -422,7 +429,11 @@ Surface tetrahedron_surface(function<float(Vec k)> func, float s_val) {
     return surf;
 }
 Surface::Surface(function<float(Vec k)> func, float s_val) {
+    printf("Called Surface\n");
     Surface surf = tetrahedron_surface(func, s_val);
+    printf("Called tetra\n");
     faces = surf.faces;
     vertices = surf.vertices;
+    printf("num faces: %d\n", faces.size());
+    printf("num vertices: %d\n", vertices.size());
 }

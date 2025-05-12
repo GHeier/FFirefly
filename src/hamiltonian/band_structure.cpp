@@ -91,7 +91,6 @@ Vec fermi_velocity_fermi_gas(int n, Vec k) {
 
 // Cubic Lattice
 float epsilon_SC(int n, Vec k) {
-    printf("hiya\n");
     float val = 0.0;
     for (int i = 0; i < dimension; i++) {
         val += -2 * t0[n] * cos(k(i));

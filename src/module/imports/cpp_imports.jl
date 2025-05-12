@@ -2,7 +2,141 @@
 module Imports
 
 const libfly = abspath(@__FILE__)[1:end-51] * "build/lib/libfly.so"
-export load_config!
+export load_config!, Vec, Surface, get_faces
+
+# Struct for Vec
+
+# Vec class
+mutable struct Vec
+    ptr::Ptr{Cvoid}
+    x::Float32
+    y::Float32
+    z::Float32
+    w::Float32
+    area::Float32
+    dimension::Int32
+    n::Int32
+
+    function Vec(args...)
+        ptr = C_NULL
+        if length(args) == 0
+            ptr = ccall((:Vec_export0, libfly), Ptr{Cvoid}, ())
+        elseif length(args) >= 1 && (args[1] isa Float32 || args[1] isa Float64)
+            x = Float64(args[1])
+            y = length(args) > 1 ? Float64(args[2]) : 0
+            z = length(args) > 2 ? Float64(args[3]) : 0
+            w = length(args) > 3 ? Float64(args[4]) : 0
+            area = length(args) > 4 ? Float64(args[5]) : 0
+            dimension = length(args) > 5 ? args[6] : 3
+            n = length(args) > 6 ? args[7] : 0
+            ptr = ccall((:Vec_export1, libfly), Ptr{Cvoid},
+                        (Cfloat, Cfloat, Cfloat, Cfloat, Cfloat, Cint, Cint),
+                        x, y, z, w, area, dimension, n)
+        end
+
+        if ptr == C_NULL
+            error("Failed to initialize Vec")
+        end
+
+        x = ccall((:Vec_x_export0, libfly), Cfloat, (Ptr{Cvoid},), ptr)
+        y = ccall((:Vec_y_export0, libfly), Cfloat, (Ptr{Cvoid},), ptr)
+        z = ccall((:Vec_z_export0, libfly), Cfloat, (Ptr{Cvoid},), ptr)
+        w = ccall((:Vec_w_export0, libfly), Cfloat, (Ptr{Cvoid},), ptr)
+        area = ccall((:Vec_area_export0, libfly), Cfloat, (Ptr{Cvoid},), ptr)
+        dimension = ccall((:Vec_dimension_export0, libfly), Cint, (Ptr{Cvoid},), ptr)
+        n = ccall((:Vec_n_export0, libfly), Cint, (Ptr{Cvoid},), ptr)
+
+        new(ptr, x, y, z, w, area, dimension, n)
+    end
+
+    function finalize(v::Vec)
+        try
+            ccall((:destroy, libfly), Cvoid, (Ptr{Cvoid},), v.ptr)
+        catch
+        end
+    end
+end
+
+# Utility functions
+function string_to_vec(s::String)
+    return ccall((:string_to_vec_export0, libfly), Ptr{Cvoid}, (Cstring,), s)
+end
+
+function unpack_string(s::String)
+    return ccall((:unpack_string_export0, libfly), Ptr{Cvoid}, (Cstring,), s)
+end
+
+function vec_to_string(vec::Vector{Float32})
+    return unsafe_string(ccall((:vec_to_string_export0, libfly), Cstring,
+                               (Ptr{Cfloat}, Cint), vec, length(vec)))
+end
+
+function round_(n::Int)
+    return ccall((:round_export0, libfly), Ptr{Cvoid}, (Cint,), n)
+end
+
+function norm()
+    return ccall((:norm_export0, libfly), Cfloat, ())
+end
+
+mutable struct Surface
+    handle::Ptr{Cvoid}
+end
+
+const _userfunc_registry = IdDict{Ptr{Cvoid}, Function}()
+function _dispatch_callback(k::Vec)::Float32
+    func = _userfunc_registry[current_callback_key[]]
+    return func(k)
+end
+
+# mutable pointer key to identify current callback
+const current_callback_key = Ref{Ptr{Cvoid}}(C_NULL)
+
+const _trampoline = @cfunction(_dispatch_callback, Float32, (Vec,))
+function Surface(userfunc::Function, s_val)
+    s_val = Float32(s_val)
+    key = Base.unsafe_convert(Ptr{Cvoid}, Ref(userfunc))  # unique key
+    _userfunc_registry[key] = userfunc
+    current_callback_key[] = key
+
+    handle = ccall((:Surface_export0, libfly), Ptr{Cvoid},
+                   (Ptr{Cvoid}, Float32), _trampoline, s_val)
+
+    return Surface(handle)
+end
+
+function get_faces(surf::Surface)::Vector{Vector{Float32}}
+    # Step 1: Get number of faces
+    n_faces = ccall((:Surface_num_faces_export0, libfly), Cint,
+                    (Ptr{Cvoid},), surf.handle)
+    @show n_faces
+
+    if n_faces <= 0
+        return []
+    end
+
+    # Step 2: Prepare buffers
+    lens = Vector{Cint}(undef, n_faces)
+    total_len = 3 * n_faces  # Adjust if needed based on your data shape
+    buf = Vector{Cfloat}(undef, total_len)
+    n_faces_ref = Ref{Cint}(n_faces)
+
+    # Step 3: Call C++ function
+    ccall((:Surface_var_faces_export0, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Cfloat}, Ptr{Cint}, Ptr{Cint}),
+          surf.handle, buf, lens, n_faces_ref)
+    # Step 4: Reconstruct nested vector
+    result = Vector{Vector{Float32}}()
+    offset = 0
+    for i in 1:n_faces
+        len = lens[i]
+        push!(result, buf[offset+1 : offset+len])
+        offset += len
+    end
+
+    return result
+end
+
 
 # Begin Functions
 export Bands, Field_C, Field_R, Vertex, epsilon

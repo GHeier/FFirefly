@@ -2,30 +2,44 @@ import ctypes
 import numpy as np
 from typing import Any
 
+letters = "abcdefghijklmnopq"
 
-def create_python_function(INPUTS):
+
+def create_python_function(global_funcs, classes):
     lines = []
 
     # === Type Maps ===
     type_map = {
+        "bool": "ctypes.c_bool",
         "int": "ctypes.c_int",
         "float": "ctypes.c_float",
         "double": "ctypes.c_double",
         "string": "ctypes.c_char_p",
         "ptr": "ctypes.c_void_p",
+        "Vec": "ctypes.c_void_p",
+        "const Vec": "ctypes.c_void_p",
+        "vector<float>": "ctypes.c_void_p",
+        "const float": "ctypes.c_float",
+        "complex<Vec>": "ctypes.c_void_p * 2",
+        "const complex<Vec>": "ctypes.c_void_p * 2",
         "complex<float>": "ctypes.c_float * 2",  # special handling
         "None": "None",
     }
 
     friendly_names = {
+        "bool": "bool",
         "int": "int",
         "float": "float",
+        "const float": "float",
         "double": "float",
         "string": "str",
-        "ptr": "Any",
-        "Vec": "list[float]",
+        "ptr": "any",
+        "Vec": "Vec",
+        "const Vec": "Vec",
         "vector<float>": "list[float]",
         "complex<float>": "complex",
+        "complex<Vec>": "(Vec, Vec)",
+        "const complex<Vec>": "(Vec, Vec)",
         "vector<Vec>": "list[list[float]]",
         "vector<vector<float>>": "list[list[float]]",
     }
@@ -46,49 +60,54 @@ def create_python_function(INPUTS):
 
     # Makes inputs into classes and functions
     # Classes are based on returning ptr, functions are added to them if they contain "_operator"
-    def split_inputs(INPUTS):
+
+    def split_inputs(global_funcs, class_fields):
         classes = {}
         functions = []
 
-        for file, func_list in INPUTS.items():
-            for base_name, sig in func_list:
-                ret_type, *raw_args = sig
-                parsed_args = [parse_arg(a) for a in raw_args]
-
-                if "_var_" in base_name:
-                    # e.g. Surface_var_faces -> class: Surface, var: faces
-                    class_name, var_name = base_name.split("_var_", 1)
-                    if class_name not in classes:
-                        classes[class_name] = {
-                            "constructors": [],
-                            "methods": [],
-                            "variables": [],
-                        }
-                    classes[class_name].setdefault("variables", []).append(
-                        (var_name, ret_type)
-                    )
-                    continue
+        for name, overloads in global_funcs.items():
+            for overload in overloads:
+                if overload["return"] == "explicit":
+                    overload["return"] = "ptr"
+                ret_type = overload["return"]
+                arg_types = [(arg.strip(), None) for arg in overload["args"]]
 
                 entry = {
-                    "name": base_name,
+                    "name": name,
                     "ret_type": ret_type,
-                    "arg_types": parsed_args,
+                    "arg_types": arg_types,
                 }
 
-                if ret_type == "ptr":
-                    if base_name not in classes:
-                        classes[base_name] = {
-                            "constructors": [],
-                            "methods": [],
-                            "variables": [],
-                        }
-                    classes[base_name]["constructors"].append(entry)
-                elif "_operator" in base_name:
-                    class_name = base_name.split("_operator")[0]
+                if name in class_fields:
+                    # This is either a constructor or method
+                    if ret_type == "ptr":
+                        if name not in classes:
+                            classes[name] = {
+                                "constructors": [],
+                                "methods": [],
+                                "fields": class_fields[name],
+                            }
+                        classes[name]["constructors"].append(entry)
+                    else:
+                        # This might be a static method returning the class
+                        functions.append(entry)
+                elif "_operator" in name:
+                    class_name = name.split("_operator")[0]
                     if class_name in classes:
                         classes[class_name]["methods"].append(entry)
+                    else:
+                        classes[class_name] = {
+                            "constructors": [],
+                            "methods": [entry],
+                            "fields": {},
+                        }
                 else:
                     functions.append(entry)
+
+        # Include class field-only definitions (no constructor yet)
+        for cname, fields in class_fields.items():
+            if cname not in classes:
+                classes[cname] = {"constructors": [], "methods": [], "fields": fields}
 
         return functions, classes
 
@@ -147,7 +166,7 @@ def create_python_function(INPUTS):
         lines.append(f"lib.{func_name}.restype = {type_map[ret_type]}\n\n")
 
         lines.append(
-            f"def {base_name}({', '.join(annotations)}) -> {return_type_map.get(ret_type, 'Any')}:\n"
+            f"def {base_name}({', '.join(annotations)}) -> {return_type_map.get(ret_type, 'any')}:\n"
         )
         for i, (t, _) in enumerate(arg_types):
             if t == "Vec" or t == "vector<float>":
@@ -199,7 +218,7 @@ def create_python_function(INPUTS):
         if methods:
             lines.append("\n")
 
-    def emit_class(class_name, constructors, methods):
+    def emit_class(class_name, constructors, methods, fields):
         lines.append(f"class {class_name}:\n")
         # Emit class variables from Surface_var_xxx
         for var_name, var_type in defs.get("variables", []):
@@ -213,61 +232,58 @@ def create_python_function(INPUTS):
                 py_type = friendly_names[var_type]
                 init_val = "None"
             else:
-                py_type = "Any"
+                py_type = "any"
                 init_val = "None"
             lines.append(f"    {var_name}: {py_type} = {init_val}\n")
 
-        lines.append("    def __init__(self, filename=None):\n")
-        if any(len(c["arg_types"]) == 0 for c in constructors):
-            lines.append("        if filename is None:\n")
-            lines.append(f"            self.ptr = lib.{class_name}_export0()\n")
-        if any(
-            len(c["arg_types"]) == 1 and c["arg_types"][0][0] == "string"
-            for c in constructors
-        ):
-            lines.append("        else:\n")
-            lines.append(
-                f"            self.ptr = lib.{class_name}_export1(ctypes.c_char_p(filename.encode('utf-8')))\n"
-            )
+        arglines = []
+        callines = []
+        for i in range(len(constructors)):
+            c = constructors[i]
+            alength = len(c["arg_types"])
 
-        for var_name, var_type in defs.get("variables", []):
-            export_func = f"{class_name}_var_{var_name}_export0"
-            lines.append(f"        # Load variable '{var_name}' from C++\n")
-            lines.append(f"        count = ctypes.c_int()\n")
-            lines.append(f"        lib.{export_func}.restype = None\n")
-            lines.append(
-                f"        lib.{export_func}.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_int), ctypes.c_int]\n"
+            next_constructor = False
+            argline = "if len(args) == "
+            calline = ""
+            if i > 0:
+                argline = "el" + argline
+            argline += str(alength)
+            if alength > 0:
+                for ai in range(alength):
+                    if c["arg_types"][ai][0] not in friendly_names:
+                        next_constructor = True
+                        break
+                    argline += f" and isinstance(args[{ai}], {friendly_names[c['arg_types'][ai][0]]}):\n"
+                    calline += letters[ai] + ", "
+            else:
+                argline += ":\n"
+            if next_constructor:
+                continue
+            calline = calline[:-2]
+            arglines.append(argline)
+            callines.append(calline)
+
+        field_lines = []
+        for vname, vtype in fields.items():
+            fline = (
+                f"        self.{vname} = lib.{class_name}_{vname}_export0(self.ptr)\n"
             )
-            lines.append(f"        # First call to get number of vectors\n")
+            field_lines.append(fline)
+
+        lines.append(f"    def __init__(self, *args):\n")
+        for i in range(len(arglines)):
+            l = arglines[i]
+            calline = callines[i]
+            lines.append(f"        {l}")
             lines.append(
-                f"        lib.{export_func}(self.ptr, None, None, ctypes.byref(count))\n"
+                f"            self.ptr = lib.{class_name}_export{i}({calline})\n"
             )
-            lines.append(f"        n = count.value\n")
-            lines.append(f"        # Allocate buffers\n")
-            lines.append(f"        lens = (ctypes.c_int * n)()\n")
-            lines.append(f"        total_len = 0\n")
+            lines.append("            if not self.ptr:\n")
             lines.append(
-                f"        lib.{export_func}(self.ptr, None, lens, ctypes.c_int(n))\n"
+                f"                raise RuntimeError('Failed to initialize {class_name}')\n\n"
             )
-            lines.append(f"        for i in range(n):\n")
-            lines.append(f"            total_len += lens[i]\n")
-            lines.append(f"        buf = (ctypes.c_float * total_len)()\n")
-            lines.append(
-                f"        lib.{export_func}(self.ptr, buf, lens, ctypes.c_int(n))\n"
-            )
-            lines.append(f"        offset = 0\n")
-            lines.append(f"        result = []\n")
-            lines.append(f"        for i in range(n):\n")
-            lines.append(
-                f"            sub = [buf[offset + j] for j in range(lens[i])]\n"
-            )
-            lines.append(f"            result.append(sub)\n")
-            lines.append(f"            offset += lens[i]\n")
-            lines.append(f"        self.{var_name} = result\n\n")
-        lines.append("        if not self.ptr:\n")
-        lines.append(
-            f"            raise RuntimeError('Failed to initialize {class_name}')\n\n"
-        )
+        for f in field_lines:
+            lines.append(f)
 
         lines.append("    def __call__(self, *args):\n")
         for i, method in enumerate(methods):
@@ -365,7 +381,7 @@ def create_python_function(INPUTS):
         lines.append("            pass\n\n")
 
     # === Main Generation ===
-    functions, classes = split_inputs(INPUTS)
+    functions, classes = split_inputs(global_funcs, classes)
 
     for f in functions:
         emit_free_function(f)
@@ -373,6 +389,6 @@ def create_python_function(INPUTS):
     for class_name, defs in classes.items():
         emit_constructor_bindings(class_name, defs["constructors"])
         emit_method_bindings(class_name, defs["methods"])
-        emit_class(class_name, defs["constructors"], defs["methods"])
+        emit_class(class_name, defs["constructors"], defs["methods"], defs["fields"])
 
     return lines

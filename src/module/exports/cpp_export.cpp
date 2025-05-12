@@ -2,14 +2,19 @@
 
 #include "../../config/load/c_config.h"
 #include "../../config/load/cpp_config.hpp"
+#include "../../objects/CMField/cmfield.hpp"
+#include "../../objects/CMField/fields.hpp"
 #include "../../objects/surfaces.hpp"
 // Begin include
-#include "../../hamiltonian/band_structure.hpp"
-#include "../../objects/CMField/bands.hpp"
-#include "../../objects/CMField/vertex.hpp"
-#include "../../objects/CMField/fields.hpp"
-// End include
 #include "../../objects/vec.hpp"
+// End include
+
+void vector_to_ptr(vector<float> r, float *a, int *b) {
+    *b = r.size();
+    for (int i = 0; i < *b; i++) {
+        a[i] = r[i];
+    }
+}
 
 extern "C" void load_config_export0(const char *filename) {
     read_c_config(filename);
@@ -36,75 +41,65 @@ extern "C" void Surface_var_faces_export0(Surface *a, float *b, int *c,
         }
     }
 }
+// Begin Class gets
+extern "C" float Vec_x_export0(Vec* a) {
+    return a->x;
+}
+extern "C" float Vec_y_export0(Vec* a) {
+    return a->y;
+}
+extern "C" float Vec_z_export0(Vec* a) {
+    return a->z;
+}
+extern "C" float Vec_w_export0(Vec* a) {
+    return a->w;
+}
+extern "C" float Vec_area_export0(Vec* a) {
+    return a->area;
+}
+extern "C" int Vec_dimension_export0(Vec* a) {
+    return a->dimension;
+}
+extern "C" int Vec_n_export0(Vec* a) {
+    return a->n;
+}
+// End Class gets
+
+// Begin Class functions
+// End Class functions
 
 // Begin functions
-extern "C" float epsilon_export0(int a, float* b, int c) {
-    Vec v(b, c);
-    return epsilon(a, v);
+extern "C" Vec* string_to_vec_export0(Vec* a, char* b) {
+    Vec* result = new Vec(string_to_vec(b));
+    return result;
 }
-extern "C" Bands* Bands_export0() {
-    return new Bands();
+extern "C" void unpack_string_export0(Vec* a, char* b, float* c, int* d) {
+    vector<float> result = unpack_string(b);
 }
-extern "C" float Bands_operator_export0(Bands* a, int b, float* c, int d) {
-    Vec v(c, d);
-    return a->operator()(b, v);
+extern "C" char* vec_to_string_export0(Vec* a) {
+    return strdup(vec_to_string(*a).c_str());
 }
-extern "C" Vertex* Vertex_export0() {
-    return new Vertex();
+extern "C" Vec* Vec_export0() {
+    return new Vec();
 }
-extern "C" void Vertex_operator_export0(Vertex* a, float* b, int c, float d, char* e, char* f, float* g, float* h) {
-    Vec v(b, c);
-    complex<float> r = a->operator()(v, d, e, f);
-    *g = real(r);
-    *h = imag(r);
+extern "C" Vec* Vec_export1(float a, float b, float c, float d, float e, int f, int g) {
+    return new Vec(a, b, c, d, e, f, g);
 }
-extern "C" Field_R* Field_R_export0() {
-    return new Field_R();
+extern "C" Vec* Vec_export2(vector<float> a) {
+    return new Vec(a);
 }
-extern "C" Field_R* Field_R_export1(char* a) {
-    return new Field_R(a);
+extern "C" Vec* Vec_export3(const float a, int b) {
+    return new Vec(a, b);
 }
-extern "C" float Field_R_operator_export0(Field_R* a, float b) {
+extern "C" float operator_export0(Vec* a, int b) {
     return a->operator()(b);
 }
-extern "C" float Field_R_operator_export1(Field_R* a, int b, float c) {
-    return a->operator()(b, c);
+extern "C" Vec* round_export0(Vec* a, int b) {
+    Vec* result = new Vec(round(b));
+    return result;
 }
-extern "C" float Field_R_operator_export2(Field_R* a, float* b, int c, float d) {
-    Vec v(b, c);
-    return a->operator()(v, d);
-}
-extern "C" float Field_R_operator_export3(Field_R* a, int b, float* c, int d, float e) {
-    Vec v(c, d);
-    return a->operator()(b, v, e);
-}
-extern "C" Field_C* Field_C_export0() {
-    return new Field_C();
-}
-extern "C" Field_C* Field_C_export1(char* a) {
-    return new Field_C(a);
-}
-extern "C" void Field_C_operator_export0(Field_C* a, float b, float* c, float* d) {
-    complex<float> r = a->operator()(b);
-    *c = real(r);
-    *d = imag(r);
-}
-extern "C" void Field_C_operator_export1(Field_C* a, int b, float c, float* d, float* e) {
-    complex<float> r = a->operator()(b, c);
-    *d = real(r);
-    *e = imag(r);
-}
-extern "C" void Field_C_operator_export2(Field_C* a, float* b, int c, float d, float* e, float* f) {
-    Vec v(b, c);
-    complex<float> r = a->operator()(v, d);
-    *e = real(r);
-    *f = imag(r);
-}
-extern "C" void Field_C_operator_export3(Field_C* a, int b, float* c, int d, float e, float* f, float* g) {
-    Vec v(c, d);
-    complex<float> r = a->operator()(b, v, e);
-    *f = real(r);
-    *g = imag(r);
+extern "C" float norm_export0(Vec* a) {
+    return a->norm();
 }
 // End functions
 
