@@ -28,7 +28,7 @@ class Vec {
     int n = 1;
 
     Vec();
-    Vec(float _x, float _y = 0, float _z = 0, float _w = 0, float _area = 0, int _dimension = 3, int _n = 1);
+    explicit Vec(float _x, float _y = 0, float _z = 0, float _w = 0, float _area = 0, int _dimension = 3, int _n = 1);
     Vec(vector<float> input);
     Vec(const float *points, int len);
     float &operator()(int i);

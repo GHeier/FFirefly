@@ -287,7 +287,7 @@ function eliashberg_global()
     #vertex = Firefly.Field_C(outdir * prefix * "_vertex.dat")
     vertex = Firefly.Vertex()
 
-    frequency_dependence = false
+    frequency_dependence = true
     if frequency_dependence
         println("Creating IRMesh")
         global mesh = IR_Mesh(IR_tol)
@@ -1355,9 +1355,9 @@ function eliashberg_node()
     #chi_conv_test()
     #chi_convsum()
     #square_well_test()
-    eliashberg_convsum()
+    #eliashberg_convsum()
     #fastest()
-    #eliashberg_global()
+    eliashberg_global()
     println("k_mesh: ", cfg.k_mesh)
     return
 end

@@ -4,7 +4,10 @@
 #include "../../config/load/cpp_config.hpp"
 #include "../../objects/CMField/cmfield.hpp"
 #include "../../objects/CMField/fields.hpp"
+#include "../../objects/CMField/vertex.hpp"
+#include "../../objects/CMField/bands.hpp"
 #include "../../objects/surfaces.hpp"
+#include "../../hamiltonian/band_structure.hpp"
 // Begin include
 #include "../../objects/vec.hpp"
 // End include
@@ -14,6 +17,14 @@ void vector_to_ptr(vector<float> r, float *a, int *b) {
     for (int i = 0; i < *b; i++) {
         a[i] = r[i];
     }
+}
+
+extern "C" float epsilon_export0(int n, float *k, int size) {
+    Vec kvec;
+    for (int i = 0; i < size; i++) {
+        kvec(i) = k[i];
+    }
+    return epsilon(n, kvec);
 }
 
 extern "C" void load_config_export0(const char *filename) {

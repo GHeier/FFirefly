@@ -192,14 +192,14 @@ function Vertex()
     return Vertex(ptr)
 end
 
-function (self::Vertex)(arg0::Vector{Float64}, arg1=0.0, arg2::String="'up'", arg3::String="'up'")::ComplexF32
-    newarg0 = Float32.(arg0)
-    lenarg0 = length(arg0)
-    newarg1 = Float32(arg1)
-    real = Ref{Float32}()
-    imag = Ref{Float32}()
-    ccall((:Vertex_operator_export0, libfly), Nothing, (Ptr{Cvoid}, Ptr{Float32}, Cint, Float32, Cstring, Cstring, Ptr{Float32}, Ptr{Float32}), self.ptr, newarg0, lenarg0, newarg1, arg2, arg3, real, imag)
-    return complex(real[], imag[])
+function (self::Vertex)(k::Vector{Float64}, w=0f0)::ComplexF32
+    real_result::Ref{Float32} = Ref(Float32(0.0))
+    imag_result::Ref{Float32} = Ref(Float32(0.0))
+    newk::Vector{Float32} = Float32.(k)
+    len = length(newk)
+    neww = Float32(w)
+    ccall((:Vertex_operator_export0, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}, Cint, Cfloat,Ptr{Cfloat}, Ptr{Cfloat},), self.ptr, newk, len, neww, real_result, imag_result)
+    return ComplexF32(real_result[], imag_result[])
 end
 
 function Base.finalize(obj::Vertex)
@@ -298,11 +298,19 @@ function (self::Field_C)(arg0::Int, arg1::Vector{Float64}, arg2=0.0)::ComplexF32
     return complex(real[], imag[])
 end
 
+function destroy!(csf::Field_C)
+    ccall((:destroy_Field_C, libfly), Cvoid, (Ptr{Cvoid},), csf.cmf)
+end
+
 function Base.finalize(obj::Field_C)
     destroy!(obj)
 end
 
 # End Functions
+
+function save_field_to_file!(path::String, field)
+    ccall((:cmf_save, libfly), Cvoid, (Cstring, Ptr{Cvoid}), path, field.cmf)
+end
 
 function save_data(path::String, points, data, dimension, with_w, is_complex, is_vector)
     ccall((:save_data, libfly), Cvoid, (Cstring, Ptr{Float64}, Ptr{Float64}, Cint, Cint, Cint, Cint), path, points, data, dimension, with_w, is_complex, is_vector)
