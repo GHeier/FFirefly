@@ -4,6 +4,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "module/exports/temp.hpp"
+
 #include "config/load/c_config.h"
 #include "config/load/py_interface.h"
 
@@ -95,6 +97,7 @@ int main() {
     }
 
     print_banner_bottom();
+    print_vec_layout();
 
     // Set the number of threads used in parallelization to one less than the
     // maximum

@@ -19,7 +19,10 @@ using namespace std;
 
 class Vec {
   public:
-    float x, y, z, w;
+    float x;
+    float y;
+    float z;
+    float w;
     float area = 0;
     int dimension = 3;
     int n = 1;

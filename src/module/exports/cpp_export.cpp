@@ -21,14 +21,23 @@ extern "C" void load_config_export0(const char *filename) {
     load_cpp_config();
 }
 
-static float (*user_callback)(Vec);
+typedef float (*callback_t)(Vec*);
 
-float call_func_adapter(Vec k) { return user_callback(k); }
+static callback_t user_callback = nullptr;
 
-extern "C" Surface *Surface_export0(float (*func)(Vec), float s_val) {
-    user_callback = func;
-    return new Surface(call_func_adapter, s_val);
+float call_func_adapter(Vec* k) {
+    return user_callback(k);
 }
+extern "C" Surface* Surface_export0(callback_t func, float s_val) {
+    user_callback = func;
+    return new Surface([](Vec k) {
+        return call_func_adapter(&k);  // Pass pointer to callback
+    }, s_val);
+}
+//extern "C" Surface* Surface_export0(float (*func)(Vec), float s_val) {
+//    user_callback = func;
+//    return new Surface(call_func_adapter, s_val);
+//}
 
 extern "C" int Surface_num_faces_export0(Surface *a) { return a->faces.size(); }
 extern "C" void Surface_var_faces_export0(Surface *a, float *b, int *c,
@@ -104,6 +113,70 @@ extern "C" float norm_export0(Vec* a) {
 // End functions
 
 extern "C" {
+
+Bands *Bands_export0() { return new Bands(); }
+Vertex *Vertex_export0() { return new Vertex(); }
+
+void Vertex_operator_export0(Vertex *obj, const float *point, int len, float w,
+                             float *real_result, float *imag_result) {
+    Vec v(point, len);
+    complex<float> r = obj->operator()(v, w);
+    *real_result = real(r);
+    *imag_result = imag(r);
+}
+
+Field_C *Field_C_export0() { return new Field_C(); }
+Field_C *Field_C_export1(CMField cmf) { return new Field_C(cmf); }
+Field_C *Field_C_export2(const char *filename) { return new Field_C(filename); }
+
+Field_R *Field_R_export0() { return new Field_R(); }
+Field_R *Field_R_export1(CMField cmf) { return new Field_R(cmf); }
+Field_R *Field_R_export2(const char *filename) { return new Field_R(filename); }
+
+void Field_C_operator_export0(Field_C *obj, float w, float *real_result,
+                              float *imag_result) {
+    complex<float> r = obj->operator()(w);
+    *real_result = real(r);
+    *imag_result = imag(r);
+}
+void Field_C_operator_export1(Field_C *obj, int n, float w, float *real_result,
+                              float *imag_result) {
+    complex<float> r = obj->operator()(n, w);
+    *real_result = real(r);
+    *imag_result = imag(r);
+}
+void Field_C_operator_export2(Field_C *obj, const float *point, int len,
+                              float w, float *real_result, float *imag_result) {
+    Vec v(point, len);
+    complex<float> r = obj->operator()(v, w);
+    *real_result = real(r);
+    *imag_result = imag(r);
+}
+void Field_C_operator_export3(Field_C *obj, int n, const float *point, int len,
+                              float w, float *real_result, float *imag_result) {
+    Vec v(point, len);
+    complex<float> r = obj->operator()(n, v, w);
+    *real_result = real(r);
+    *imag_result = imag(r);
+}
+
+float Field_R_operator_export0(Field_R *obj, float w) {
+    return obj->operator()(w);
+}
+float Field_R_operator_export1(Field_R *obj, int n, float w) {
+    return obj->operator()(n, w);
+}
+float Field_R_operator_export2(Field_R *obj, const float *point, int len,
+                               float w) {
+    Vec v(point, len);
+    return obj->operator()(v, w);
+}
+float Field_R_operator_export3(Field_R *obj, int n, const float *point, int len,
+                               float w) {
+    Vec v(point, len);
+    return obj->operator()(n, v, w);
+}
+
 // Create a new CMF instance and return a pointer
 CMField *create_CMField() { return new CMField(); }
 

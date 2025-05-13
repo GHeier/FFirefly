@@ -3,8 +3,25 @@ module Imports
 
 const libfly = abspath(@__FILE__)[1:end-51] * "build/lib/libfly.so"
 export load_config!, Vec, Surface, get_faces
+export epsilon,
+       Vertex,
+       Field_C,
+       Field_R,
+       destroy!,
+       save_field_to_file!,
+       save_data
 
 # Struct for Vec
+struct RawVec
+    x::Float32
+    y::Float32
+    z::Float32
+    w::Float32
+    area::Float32
+    dimension::Int32
+    n::Int32
+end
+
 
 # Vec class
 mutable struct Vec
@@ -83,16 +100,17 @@ mutable struct Surface
     handle::Ptr{Cvoid}
 end
 
+const VecPtr = Ptr{Vec}
 const _userfunc_registry = IdDict{Ptr{Cvoid}, Function}()
-function _dispatch_callback(k::Vec)::Float32
+const current_callback_key = Ref{Ptr{Cvoid}}(C_NULL)
+
+function _dispatch_callback(ptr::Ptr{RawVec})::Float32
+    k = unsafe_load(ptr)
     func = _userfunc_registry[current_callback_key[]]
     return func(k)
 end
 
-# mutable pointer key to identify current callback
-const current_callback_key = Ref{Ptr{Cvoid}}(C_NULL)
-
-const _trampoline = @cfunction(_dispatch_callback, Float32, (Vec,))
+const _trampoline = @cfunction(_dispatch_callback, Float32, (Ptr{RawVec},))
 function Surface(userfunc::Function, s_val)
     s_val = Float32(s_val)
     key = Base.unsafe_convert(Ptr{Cvoid}, Ref(userfunc))  # unique key
@@ -100,7 +118,7 @@ function Surface(userfunc::Function, s_val)
     current_callback_key[] = key
 
     handle = ccall((:Surface_export0, libfly), Ptr{Cvoid},
-                   (Ptr{Cvoid}, Float32), _trampoline, s_val)
+                (Ptr{Cvoid}, Cfloat), _trampoline, s_val)
 
     return Surface(handle)
 end
