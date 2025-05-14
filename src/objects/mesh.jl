@@ -57,7 +57,7 @@ function Mesh(
         dimension = 0
         nk = 0
     end
-    println("nk = ", nk, " dimension = ", dimension)
+    println("IRMesh: nk = ", nk, " dimension = ", dimension)
 
     # lowest Matsubara frequency index
     iw0_f = findall(x->x==FermionicFreq(1), IR_basis_set.smpl_wn_f.sampling_points)[1]

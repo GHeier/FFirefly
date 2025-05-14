@@ -4,9 +4,9 @@ module Imports
 const libfly = abspath(@__FILE__)[1:end-51] * "build/lib/libfly.so"
 export load_config!, Vec, Surface, get_faces
 export epsilon,
-       Vertex,
-       Field_C,
-       Field_R,
+       #Vertex,
+       #Field_C,
+       #Field_R,
        destroy!,
        save_field_to_file!,
        save_data
@@ -127,7 +127,6 @@ function get_faces(surf::Surface)::Vector{Vector{Float32}}
     # Step 1: Get number of faces
     n_faces = ccall((:Surface_num_faces_export0, libfly), Cint,
                     (Ptr{Cvoid},), surf.handle)
-    @show n_faces
 
     if n_faces <= 0
         return []
@@ -176,6 +175,19 @@ end
 function (self::Bands)(arg0::Int, arg1::Vector{Float64})::Float32
     newarg1 = Float32.(arg1)
     lenarg1 = length(arg1)
+    return ccall((:Bands_operator_export0, libfly), Float32, (Ptr{Cvoid}, Cint, Ptr{Float32}, Cint), self.ptr, arg0, newarg1, lenarg1)
+end
+
+function (self::Bands)(arg0::Int, arg1::RawVec)::Float32
+    lenarg1 = arg1.dimension
+    newarg1 = zeros(Float32, lenarg1)
+    newarg1[1] = arg1.x
+    if lenarg1 > 1 
+        newarg1[2] = arg1.y
+        if lenarg1 > 2 
+            newarg1[3] = arg1.z
+        end 
+    end
     return ccall((:Bands_operator_export0, libfly), Float32, (Ptr{Cvoid}, Cint, Ptr{Float32}, Cint), self.ptr, arg0, newarg1, lenarg1)
 end
 
@@ -320,7 +332,7 @@ function load_config!(path::String)
     ccall((:load_config_export0, libfly), Cvoid, (Cstring,), path)
 end
 
-end # module Field
+end # module Imports
 
 #using .Imports
 

@@ -68,3 +68,56 @@ def grep(output, phrase):
 def extract_value(string):
     match = re.search(r"[-+]?\d*\.?\d+", string)  # Regex for both integers and floats
     return float(match.group())
+
+
+def parse_value(value):
+    value = value.strip().strip("'\"")  # remove quotes
+    # Try to convert to appropriate data type
+    if value.lower() in {"true", "false"}:
+        return value.lower() == "true"
+    try:
+        return int(value)
+    except ValueError:
+        pass
+    try:
+        return float(value)
+    except ValueError:
+        pass
+    return value
+
+def parse_list_value(value):
+    return [int(x) for x in value.split()]
+
+def unpack(file_path):
+    config = {}
+    current_section = None
+    current_subkey = None
+
+    with open(file_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+
+            if line.startswith("[") and line.endswith("]"):
+                section = line[1:-1].strip()
+                config[section] = {}
+                current_section = section
+                current_subkey = None
+            elif "=" in line:
+                key, value = map(str.strip, line.split("=", 1))
+                value = parse_value(value)
+
+                # Handle special case for k_mesh and q_mesh
+                if key in ("k_mesh", "q_mesh"):
+                    config[current_section][key] = parse_list_value(value if isinstance(value, str) else str(value))
+                else:
+                    config[current_section][key] = value
+                    current_subkey = key
+            elif current_subkey:  # nested key under previous key
+                if isinstance(config[current_section][current_subkey], dict) is False:
+                    config[current_section][current_subkey] = { 'type': config[current_section][current_subkey] }
+                sub_key, sub_value = map(str.strip, line.split("=", 1))
+                config[current_section][sub_key] = parse_value(sub_value)
+
+    return config

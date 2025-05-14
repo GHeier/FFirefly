@@ -126,6 +126,11 @@ extern "C" float norm_export0(Vec* a) {
 extern "C" {
 
 Bands *Bands_export0() { return new Bands(); }
+float Bands_operator_export0(Bands *obj, int n, const float *point, int len) {
+    Vec v(point, len);
+    return obj->operator()(n, v);
+}
+
 Vertex *Vertex_export0() { return new Vertex(); }
 
 void Vertex_operator_export0(Vertex *obj, const float *point, int len, float w,
