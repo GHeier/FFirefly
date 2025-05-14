@@ -94,36 +94,48 @@ end
 
 
 function fill_Z_chi!(sigma, iw, Z, chi)
+    for l in 1:num_surfaces
+        iw_2d = reshape(iw, 1, length(Z[l]))
+        s = sigma[l]
+        s_rev = s[:, end:-1:1]
+        Z[l] = 1.0f0 .- 0.5f0 .* (s .- s_rev) ./ iw_2d
+        chi[l] = 0.5 .* (s .+ s_rev)
+    end
+end
+    
 
-
-function compute!(F, G, V, phi, Z, chi, iw, sigma, e)
+function compute!(V, phi, Z, chi, iw, sigma, e)
     phi, sigma = compute_phi!(phi, Z, chi, iw, e, V)
     fill_Z_chi!(sigma, iw, Z, chi)
 end
 
 
-function eliashberg_convsum()
-    println("Beginning Eliashberg")
-    scf_tol = 1e-4
-
-    println("Getting Bands")
-    band = Firefly.Bands()
-
+function get_surface(num_surfaces)
     println("Calculating Surfaces")
     surface_vals, surface_weights = FastGaussianQuadrature(num_surfaces)
     surfaces = Vector{Firefly.Surface}(undef, num_surfaces)
-    surf_sizes = Vector{Int}(undef, num_surfaces)
     function band_func(k)
         return band(n, k)
     end
     for i in 1:num_surfaces, n in 1:nbnd
         surfaces[i] = Firefly.Surface(band_func, -wc * surface_vals[i])
-        surf_sizes[i] = length(surfaces[i])
     end
-    println("Getting Vertex")
-    vertex = Firefly.Vertex()
-    println("Creating IRMesh")
-    mesh = IR_Mesh()
+    return surfaces
+end
+
+
+function initialize_ep_arr(num_surfaces)
+    println("Initializing epsilon")
+    e = zeros(Float32, num_surfaces)
+    for n in 1:nbnd, i in 1:num_surfaces
+        e[i] = band(n, surfaces[i][0])
+    end
+    e_4d = reshape(e, 1, num_surfaces)
+    return e_4d
+end
+
+
+function get_iw_iv(mesh)
     fnw, bnw, fntau, bntau = mesh.fnw, mesh.bnw, mesh.fntau, mesh.bntau
     println("fnw: ", fnw, ", bnw: ", bnw, ",fntau: ", fntau, ",bntau: ", bntau)
     println("Created IRMesh")
@@ -137,22 +149,18 @@ function eliashberg_convsum()
     end
     println("Fermionic frequency from ", minimum(imag.(iw)), " to ", maximum(imag.(iw)))
     println("Bosonic frequency from ", minimum(imag.(iv)), " to ", maximum(imag.(iv)))
+    return iw, iv 
+end
 
-    println("Initializing epsilon")
-    e = zeros(Float32, num_surfaces)
-    for n in 1:nbnd, i in 1:num_surfaces
-        e[i] = band(n, surfaces[i][0])
-    end
-    e_4d = reshape(e, 1, num_surfaces)
 
-    println("Initializing F and G")
-    # Preallocate the main container
+function initialize()
+    println("Initializing Arrays")
     phi = Vector{Matrix{ComplexF32}}(undef, num_surfaces)
     Z   = Vector{Matrix{ComplexF32}}(undef, num_surfaces)
     chi = Vector{Matrix{ComplexF32}}(undef, num_surfaces)
-    F   = Vector{Matrix{ComplexF32}}(undef, num_surfaces)
-    G   = Vector{Matrix{ComplexF32}}(undef, num_surfaces)
     sigma   = Vector{Matrix{ComplexF32}}(undef, num_surfaces)
+    #F   = Vector{Matrix{ComplexF32}}(undef, num_surfaces)
+    #G   = Vector{Matrix{ComplexF32}}(undef, num_surfaces)
 
     temp = 1e-3 ./ (imag.(iw).^2 .+ 1)  # fnw-length vector
 
@@ -161,24 +169,26 @@ function eliashberg_convsum()
         phi[l]  = repeat(temp', i_len, 1)  # broadcast-friendly
         Z[l]    = ones(ComplexF32, i_len, fnw)
         chi[l]  = ones(ComplexF32, i_len, fnw)
-        F[l]    = zeros(ComplexF32, i_len, fnw)
-        G[l]    = zeros(ComplexF32, i_len, fnw)
         sigma[l]    = zeros(ComplexF32, i_len, fnw)
+        #F[l]    = zeros(ComplexF32, i_len, fnw)
+        #G[l]    = zeros(ComplexF32, i_len, fnw)
 
-        # Example computation using dot-broadcasting
-        fill_F_G!(phi, Z, chi, iw, e_4d, F, G)
+        #fill_F_G!(phi, Z, chi, iw, e_4d, F, G)
     end
 
     println("Initializing V")
     V = fill_V(iw, vertex, surfaces, band)
+    return phi, Z, chi, sigma, V
+end
 
+
+function converge(phi, Z, chi, sigma, V)
+    println("Starting Convergence Loop")
     phierr = 0.0
     prev_phi = copy(phi)
-    println("Starting Convergence Loop")
     iterations = 1000
-    #iterations = 1
     for i in 1:iterations
-        compute!(F, G, V, phi, Z, chi, iw, sigma, e_4d)
+        compute!(V, phi, Z, chi, iw, sigma, e_4d)
 
         phierr = minimum((maximum(abs.(real.(phi - prev_phi))), maximum(abs.(real.(phi + prev_phi)))))
         max_phi = round(maximum(abs.(phi)), digits=6)
@@ -189,20 +199,39 @@ function eliashberg_convsum()
             break
         end
         prev_phi = copy(phi)
-        fill_F_G!(phi, Z, chi, iw, e_4d, F, G)
+        #fill_F_G!(phi, Z, chi, iw, e_4d, F, G)
     end
+    println("Error: ", phierr, "            ")
+    return phi, Z, chi, sigma
+end
+
+
+function eliashberg_convsum()
+    println("Beginning Eliashberg")
+    scf_tol = 1e-4
+
+    println("Getting Bands")
+    band = Firefly.Bands()
+    surfaces = get_surface(num_surfaces)
+
+    println("Getting Vertex")
+    vertex = Firefly.Vertex()
+    println("Creating IRMesh")
+    mesh = IR_Mesh()
+    iw, iv = get_iw_iv(mesh)
+    fnw, bnw = length(iw), length(iv)
+
+    e_4d = initialize_ep_arr(num_surfaces)
+
+    phi, Z, chi, sigma, V = initialize()
+    phi, Z, chi, sigma = converge(phi, Z, chi, sigma, V)
 
     max_phi = maximum(abs.(phi))
     max_Z = maximum(abs.(Z))
 
-    println("Error: ", phierr, "            ")
     println("Max phi: ", max_phi)
     println("Max Z: ", max_Z)
     return
-    end
-
-
-
 end
 
 end # module
