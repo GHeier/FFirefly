@@ -13,11 +13,12 @@ namespace fs = std::filesystem;
 
 Vertex::Vertex() {
     string filename = outdir + prefix + "_vertex.dat";
-    if (fs::exists(filename) and !automatic_file_read) {
+    if (fs::exists(filename) and automatic_file_read) {
         field = load_CMField(outdir + prefix + "_vertex.dat");
         file_found = true;
     } else {
         file_found = false;
+        printf("Vertex File not found. Defaulting to specified interaction\n");
     }
 }
 

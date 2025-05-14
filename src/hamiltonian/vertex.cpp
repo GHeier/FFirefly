@@ -44,4 +44,5 @@ void call_flex() {
     vertex.data.values[i] = complex<Vec>(Vec(V.real()), Vec(0.0));
   }
   save_CMField(outdir + prefix + "_vertex.dat", vertex);
+  printf("Saved to %s\n", outdir + prefix + "_vertex.dat");
 }

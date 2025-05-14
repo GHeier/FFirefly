@@ -253,9 +253,9 @@ function update_fourier_transform!(F, G, V_arr, phi, Z, chi, iw, sigma)
 end
 
 function fill_Z_chi!(iw, sigma, Z, chi)
-    Z .= 1.0
-    chi .= 0.0
-    return
+    #Z .= 1.0
+    #chi .= 0.0
+    #return
     Z .= 1.0 .- 0.5 .* (sigma .- sigma[end:-1:1, :, :, :]) ./ iw
     chi .= 0.5 .* (sigma .+ sigma[end:-1:1, :, :, :])
 end
