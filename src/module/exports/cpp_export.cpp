@@ -61,6 +61,12 @@ extern "C" void Surface_var_faces_export0(Surface *a, float *b, int *c,
         }
     }
 }
+extern "C" void Surface_var_faces_export1(Surface *a, Vec *b) {
+    int d = a->faces.size();
+    for (int i = 0; i < d; i++) {
+        b[i] = a->faces[i];
+    }
+}
 // Begin Class gets
 extern "C" float Vec_x_export0(Vec* a) {
     return a->x;
@@ -129,6 +135,12 @@ Bands *Bands_export0() { return new Bands(); }
 float Bands_operator_export0(Bands *obj, int n, const float *point, int len) {
     Vec v(point, len);
     return obj->operator()(n, v);
+}
+
+Vec* vk_export0(int n, Vec* k, Bands* band) {
+    Vec temp = vk(n, *k, *band);
+    Vec *result = new Vec(temp);
+    return result;
 }
 
 Vertex *Vertex_export0() { return new Vertex(); }

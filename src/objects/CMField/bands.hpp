@@ -17,3 +17,5 @@ public:
   float operator()(int n, Vec k);
   float operator()(Vec k);
 };
+
+Vec vk(int n, Vec k, Bands &band);

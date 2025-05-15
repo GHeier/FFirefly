@@ -4,6 +4,8 @@ module Imports
 const libfly = abspath(@__FILE__)[1:end-51] * "build/lib/libfly.so"
 export load_config!, Vec, Surface, get_faces
 export epsilon,
+       vk,
+       norm,
        #Vertex,
        #Field_C,
        #Field_R,
@@ -74,6 +76,13 @@ mutable struct Vec
     end
 end
 
+Base.:+(a::Vec, b::Vec) = Vec(a.x + b.x, a.y + b.y, a.z + b.z)
+Base.:-(a::Vec, b::Vec) = Vec(a.x - b.x, a.y - b.y, a.z - b.z)
+Base.:*(a, b::Vec) = Vec(b.x * a, b.y * a, b.z * a)
+Base.:/(a, b::Vec) = Vec(b.x / a, b.y / a, b.z / a)
+Base.:*(b::Vec, a) = Vec(b.x * a, b.y * a, b.z * a)
+Base.:/(b::Vec, a) = Vec(b.x / a, b.y / a, b.z / a)
+
 # Utility functions
 function string_to_vec(s::String)
     return ccall((:string_to_vec_export0, libfly), Ptr{Cvoid}, (Cstring,), s)
@@ -92,15 +101,16 @@ function round_(n::Int)
     return ccall((:round_export0, libfly), Ptr{Cvoid}, (Cint,), n)
 end
 
-function norm()
-    return ccall((:norm_export0, libfly), Cfloat, ())
+function norm(v::Vec)
+    val = RawVec(v.x, v.y, v.z, v.w, v.area, v.dimension, v.n)
+    return ccall((:norm_export0, libfly), Cfloat, (Ref{RawVec},), val)
 end
 
 mutable struct Surface
     handle::Ptr{Cvoid}
+    faces::Vector{Vec}
 end
 
-const VecPtr = Ptr{Vec}
 const _userfunc_registry = IdDict{Ptr{Cvoid}, Function}()
 const current_callback_key = Ref{Ptr{Cvoid}}(C_NULL)
 
@@ -119,8 +129,9 @@ function Surface(userfunc::Function, s_val)
 
     handle = ccall((:Surface_export0, libfly), Ptr{Cvoid},
                 (Ptr{Cvoid}, Cfloat), _trampoline, s_val)
+    faces = get_faces1(handle)
 
-    return Surface(handle)
+    return Surface(handle, faces)
 end
 
 function get_faces(surf::Surface)::Vector{Vector{Float32}}
@@ -151,6 +162,29 @@ function get_faces(surf::Surface)::Vector{Vector{Float32}}
         offset += len
     end
 
+    return result
+end
+
+function get_faces1(handle::Ptr{Cvoid})::Vector{Vec}
+    # Step 1: Get number of faces
+    n_faces = ccall((:Surface_num_faces_export0, libfly), Cint,
+                    (Ptr{Cvoid},), handle)
+
+    if n_faces <= 0
+        return []
+    end
+
+    # Step 2: Prepare buffers
+    buf = Vector{RawVec}(undef, n_faces)
+    # Step 3: Call C++ function
+    ccall((:Surface_var_faces_export1, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{RawVec}),
+          handle, buf)
+    result = Vector{Vec}(undef, n_faces)
+    for i in 1:n_faces
+        b = buf[i]
+        result[i] = Vec(b.x, b.y, b.z, b.w, b.area, b.dimension, b.n)
+    end
     return result
 end
 
@@ -191,6 +225,14 @@ function (self::Bands)(arg0::Int, arg1::RawVec)::Float32
     return ccall((:Bands_operator_export0, libfly), Float32, (Ptr{Cvoid}, Cint, Ptr{Float32}, Cint), self.ptr, arg0, newarg1, lenarg1)
 end
 
+function vk(n, k::Vec, band::Bands)::Vec
+    nint = Int32(n)
+    newk = RawVec(k.x, k.y, k.z, k.w, k.area, k.dimension, k.n)
+    result = ccall((:vk_export0, libfly), Ptr{RawVec}, (Cint, Ref{RawVec}, Ptr{Cvoid}), nint, newk, band.ptr) 
+    q = unsafe_load(result)
+    return Vec(q.x, q.y, q.z, q.w, q.area, q.dimension, q.n)
+end
+
 function Base.finalize(obj::Bands)
     destroy!(obj)
 end
@@ -208,6 +250,16 @@ function (self::Vertex)(k::Vector{Float64}, w=0f0)::ComplexF32
     real_result::Ref{Float32} = Ref(Float32(0.0))
     imag_result::Ref{Float32} = Ref(Float32(0.0))
     newk::Vector{Float32} = Float32.(k)
+    len = length(newk)
+    neww = Float32(w)
+    ccall((:Vertex_operator_export0, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}, Cint, Cfloat,Ptr{Cfloat}, Ptr{Cfloat},), self.ptr, newk, len, neww, real_result, imag_result)
+    return ComplexF32(real_result[], imag_result[])
+end
+
+function (self::Vertex)(k::Vec, w=0f0)::ComplexF32
+    real_result::Ref{Float32} = Ref(Float32(0.0))
+    imag_result::Ref{Float32} = Ref(Float32(0.0))
+    newk::Vector{Float32} = [k.x, k.y, k.z]
     len = length(newk)
     neww = Float32(w)
     ccall((:Vertex_operator_export0, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}, Cint, Cfloat,Ptr{Cfloat}, Ptr{Cfloat},), self.ptr, newk, len, neww, real_result, imag_result)

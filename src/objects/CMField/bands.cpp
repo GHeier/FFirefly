@@ -1,6 +1,7 @@
 #include "bands.hpp"
 #include "../../config/load/cpp_config.hpp"
 #include "../../hamiltonian/band_structure.hpp"
+#include "../vec.hpp"
 #include "fields.hpp"
 
 #include <fstream>
@@ -35,3 +36,15 @@ float Bands::operator()(int n, Vec k) {
 }
 
 float Bands::operator()(Vec k) { return operator()(1, k); }
+
+
+Vec vk(int n, Vec k, Bands &band) {
+    Vec dk = brillouin_zone * Vec(1e-3, 1e-3, 1e-3);
+    Vec dx = Vec(dk.x);
+    Vec dy = Vec(0, dk.y);
+    Vec dz = Vec(0, 0, dk.z);
+    float dfdx = (band(n, k + dx) - band(n, k - dx)) / (2*dk.x);
+    float dfdy = (band(n, k + dy) - band(n, k - dy)) / (2*dk.y);
+    float dfdz = (band(n, k + dz) - band(n, k - dz)) / (2*dk.z);
+    return Vec(dfdx, dfdy, dfdz);
+}

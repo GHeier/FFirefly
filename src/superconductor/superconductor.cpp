@@ -117,6 +117,16 @@ void eliashberg() {
                     function.c_str());
 }
 
+void linearized_eliashberg() {
+    string folder = "superconductor/";
+    string filename = "linearized_eliashberg";
+    string module = "Linearized_Eliashberg";
+    string function = "eigenvalue_computation";
+    // call_python_func(folder.c_str(), filename.c_str(), function.c_str());
+    call_julia_func(folder.c_str(), filename.c_str(), module.c_str(),
+                    function.c_str());
+}
+
 void debug() {
     string folder = "superconductor/";
     string filename = "eliashberg";

@@ -17,6 +17,8 @@ extern "C" void superconductor_wrapper() {
         bcs();
     else if (method == "eliashberg")
         eliashberg();
+    else if (method == "linearized_eliashberg")
+        linearized_eliashberg();
     else if (method == "debug")
         debug();
     else
