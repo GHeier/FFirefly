@@ -10,6 +10,9 @@ from cycler import cycler
 plt.rcParams["axes.prop_cycle"] = cycler(color=["#9a05fc", "#f00524", "#f0d802"])
 plt.rcParams["lines.linewidth"] = 1.0
 
+plt.rcParams['lines.markersize'] = 5.0
+plt.rcParams["scatter.marker"] = '.'
+
 # plt.rcParams.update(
 #    {
 #        "figure.facecolor": "black",
@@ -36,6 +39,15 @@ def parse_arguments():
     parser.add_argument(
         "--output", type=str, help="Specify output file (use --output=filename)"
     )
+    parser.add_argument(
+        "-s", "--scatter", action="store_true", help="Perform scatter plot"
+    )
+    parser.add_argument(
+        "-G", "--Gap", action="store_true", help="Plot gap over mesh"
+    )
+    parser.add_argument(
+        "-Gs", "--Gap_Surface", action="store_true", help="Plot gap over surface"
+    )
 
     parser.add_argument("files", nargs="*", help="Input file(s)")
 
@@ -50,7 +62,7 @@ def parse_arguments():
         valid_files.append(f)
 
     return {
-        "flags": {"verbose": args.verbose, "output": args.output},
+            "flags": {"verbose": args.verbose, "output": args.output, "scatter": args.scatter},
         "files": valid_files,
     }
 
@@ -69,10 +81,14 @@ if __name__ == "__main__":
     try:
         result = parse_arguments()
         get_flags_from_files(result)
-        # print("Flags:", result['flags'])
-        # print("Files:", result['files'])
+        #print("Flags:", result['flags'])
+        #print("Files:", result['files'])
         if "band" in result["flags"]:
             plot_path.plot_path(result["files"], "GXMG")
+        elif result["flags"]["scatter"]:
+            basic.plot_scatter(result["files"])
+        elif result["flags"]["Gap"]:
+            gap_function.plot_over_mesh(result["files"])
         else:
             basic.plot_basic(result["files"])
 

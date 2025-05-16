@@ -60,9 +60,10 @@ def launch(config):
     return output, error
 
 
-def grep(output, phrase):
-    match = re.search(r".*?" + re.escape(phrase) + r".*", output)
-    return match.group() if match else None
+def grep_number(output, phrase):
+    pattern = re.escape(phrase) + r"\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?|\d+)"
+    match = re.search(pattern, output)
+    return match.group(1)
 
 
 def extract_value(string):
@@ -70,54 +71,97 @@ def extract_value(string):
     return float(match.group())
 
 
-def parse_value(value):
-    value = value.strip().strip("'\"")  # remove quotes
-    # Try to convert to appropriate data type
-    if value.lower() in {"true", "false"}:
-        return value.lower() == "true"
-    try:
-        return int(value)
-    except ValueError:
-        pass
-    try:
-        return float(value)
-    except ValueError:
-        pass
-    return value
-
-def parse_list_value(value):
-    return [int(x) for x in value.split()]
-
-def unpack(file_path):
+def unpack(filename):
     config = {}
     current_section = None
-    current_subkey = None
+    collecting_matrix = False
+    matrix_buffer = []
 
-    with open(file_path, 'r') as f:
+    def parse_value(value):
+        value = value.strip().strip("'\"")
+        if value.lower() in {"true", "false"}:
+            return value.lower() == "true"
+        try:
+            return int(value)
+        except ValueError:
+            pass
+        try:
+            return float(value)
+        except ValueError:
+            pass
+        return value
+
+    def parse_list_value(value):
+        return [int(x) for x in value.split()]
+
+    with open(filename, 'r') as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
 
+            # Section header
             if line.startswith("[") and line.endswith("]"):
+                if collecting_matrix and current_section:
+                    config[current_section]["lattice"] = matrix_buffer
+                    matrix_buffer = []
+                    collecting_matrix = False
+
                 section = line[1:-1].strip()
                 config[section] = {}
                 current_section = section
-                current_subkey = None
-            elif "=" in line:
-                key, value = map(str.strip, line.split("=", 1))
-                value = parse_value(value)
+                continue
 
-                # Handle special case for k_mesh and q_mesh
-                if key in ("k_mesh", "q_mesh"):
-                    config[current_section][key] = parse_list_value(value if isinstance(value, str) else str(value))
+            # Matrix-style lines (no "=")
+            if "=" not in line and current_section:
+                parts = line.split()
+                if all(p.replace('.', '', 1).replace('-', '', 1).isdigit() for p in parts):
+                    if not collecting_matrix:
+                        collecting_matrix = True
+                        matrix_buffer = []
+                    matrix_buffer.append([float(p) for p in parts])
+                    continue
                 else:
-                    config[current_section][key] = value
-                    current_subkey = key
-            elif current_subkey:  # nested key under previous key
-                if isinstance(config[current_section][current_subkey], dict) is False:
-                    config[current_section][current_subkey] = { 'type': config[current_section][current_subkey] }
-                sub_key, sub_value = map(str.strip, line.split("=", 1))
-                config[current_section][sub_key] = parse_value(sub_value)
+                    collecting_matrix = False
+
+            if collecting_matrix and current_section:
+                config[current_section]["lattice"] = matrix_buffer
+                collecting_matrix = False
+                matrix_buffer = []
+
+            # Key-value line
+            if "=" in line:
+                key, value = map(str.strip, line.split("=", 1))
+                if key in ("k_mesh", "q_mesh"):
+                    config[current_section][key] = parse_list_value(value)
+                else:
+                    config[current_section][key] = parse_value(value)
+
+    # Finalize trailing matrix section
+    if collecting_matrix and current_section:
+        config[current_section]["lattice"] = matrix_buffer
+
+    # Apply overrides
+    overrides = {
+        "CONTROL": {
+            "prefix": "sample",
+            "outdir": "./",
+        },
+        "SYSTEM": {
+            "onsite_U": 3.0,
+            "Temperature": 0.0001,
+        },
+        "MESH": {
+            "k_mesh": [60, 60, 60],
+            "q_mesh": [10, 10, 10],
+            "w_pts": 30000,
+        },
+        "SUPERCONDUCTOR": {
+            "projections": "s"
+        }
+    }
+
+    for section, kv in overrides.items():
+        config.setdefault(section, {}).update(kv)
 
     return config

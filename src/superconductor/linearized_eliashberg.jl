@@ -5,8 +5,9 @@ using Firefly
 include("../objects/mesh.jl")
 using .IRMesh
 
-using SparseIR: Statistics, value, valueim, MatsubaraSampling64F, TauSampling64
-using Roots
+using SparseIR
+import SparseIR: Statistics, value, valueim, MatsubaraSampling64F, TauSampling64
+using Roots, LinearAlgebra
 using Base.Threads, MPI
 
 cfg = Firefly.Config
@@ -95,16 +96,69 @@ function Z_convergence!(Z, V_rt, iw, e, mesh)
 end
 
 
+function linearized_eliashberg_loop(phi, Z, iw, V_rt, e, mesh)
+    eig, prev_eig, eig_err = 0, 0, 1
+    while eig_err > 1e-4
+        eig, phi = linearized_eliashberg(phi, Z, iw, V_rt, e, mesh)
+        eig_err = abs(eig - prev_eig)
+        prev_eig = eig
+        println("Eig: ", round(eig, digits=6), " Error: ", round(eig_err, digits=6))
+    end
+    return eig, phi
+end
+
+
 function linearized_eliashberg(phi, Z, iw, V_rt, e, mesh)
     F = -phi ./ ((Z .* iw).^2 .+ e.^2)
     F_rt = kw_to_rtau(F, 'F', mesh)
     temp = V_rt .* F_rt
     result = rtau_to_kw(temp, 'F', mesh)
-    return maximum(abs.(real.(result))) / maximum(abs.(real.(phi))), result
+    result = phi .* result # Resultant eigenvector/value
+    mag = phi .* phi # Normalized gap
+
+    eig = sum(result) / (nk * beta)
+    norm = sum(mag) / (nk * beta)
+    return eig / norm, result ./ norm
+end
+
+
+function linear_index(i, j, k, l, nx, ny, nz, fnw)
+    return l + fnw * (k - 1 + nz * (j - 1 + ny * (i - 1)))
+end
+
+function fill_matrix(F, iw, vertex)
+    fnw = length(iw)
+    len = nk * fnw
+    println("Allocating $(round(len^2 * 16 / 1024^2, digits=2)) MB")
+    matrix = Array{ComplexF32}(undef, len, len)
+
+    for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:fnw
+        kvec1 = get_kvec(i, j, k)
+        w1 = iw[l]
+        ind1 = linear_index(i, j, k, l, nx, ny, nz, fnw)
+        for a in 1:nx, b in 1:ny, c in 1:nz, d in 1:fnw
+            kvec2 = get_kvec(a, b, c)
+            w2 = iw[d]
+            ind2 = linear_index(a, b, c, d, nx, ny, nz, fnw)
+            matrix[ind1, ind2] = vertex(kvec1 - kvec2, w1 - w2) * F[d, a, b, c]
+        end
+    end
+    return matrix
+end
+
+function linearized_eliashberg_diagonalize(Z, iw, vertex, e_4d, mesh)
+    F = -1.0 ./ ((Z .* iw).^2 .+ e_4d.^2)
+    matrix = fill_matrix(F, iw, vertex) 
+    E = eigen(matrix)
+    V = E.vectors
+    println("First 5", E[:5])
+    println("Last 5", E[end-5:end])
+    return E, V
 end
 
 
 function save_gap(phi, iw)
+    println("Saving Gap")
     nw = length(iw)
     filename = outdir * prefix * "_gap.dat"
     open(filename, "w") do io
@@ -115,7 +169,7 @@ function save_gap(phi, iw)
         end
 
 
-        for l in 1:nw, i in 1:nx, j in 1:ny, k in 1:nz
+        for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:nw
             kvec = get_kvec(i, j, k)
             w = iw[l]
             f = phi[l, i, j, k]
@@ -152,10 +206,13 @@ function eigenvalue_computation()
     Z = ones(Complex{Float32}, fnw, nx, ny, nz)
     Z_convergence!(Z, V_rt, iw, e_4d, mesh)
 
-    println("Calculating Eigenvalue and symmetry")
-    phi = ones(Complex{Float32}, fnw, nx, ny, nz)
-    eig, phi = linearized_eliashberg(phi, Z, iw, V_rt, e_4d, mesh)
-    println("Eig: ", eig)
+    #println("Diagonalization to find Eigenvalues and symmetries")
+    #eigs, phis = linearized_eliashberg_diagonalize(Z, iw, V_rt, e_4d, mesh)
+
+    println("Power Iteration to find Eigenvalue and symmetry")
+    phi = rand(Float32, fnw, nx, ny, nz) .+ im * rand(Float32, fnw, nx, ny, nz)
+    eig, phi = linearized_eliashberg_loop(phi, Z, iw, V_rt, e_4d, mesh)
+    println("Final Eig: ", real(eig))
     save_gap(phi, iw)
 end
 
