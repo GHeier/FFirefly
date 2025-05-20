@@ -280,7 +280,7 @@ function Field_R()
 end
 
 function Field_R(filename::String)
-    ptr = ccall((:Field_R_export1, libfly), Ptr{Cvoid}, (Cstring,), filename)
+    ptr = ccall((:Field_R_export2, libfly), Ptr{Cvoid}, (Cstring,), filename)
     return Field_R(ptr)
 end
 

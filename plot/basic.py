@@ -1,14 +1,21 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def plot_basic(files):
+def plot_basic(files, **kwargs):
     datasets = load_data(files)
-    line(datasets)
+    return line(datasets, **kwargs)
 
-def plot_scatter(files):
+def plot_scatter(files, **kwargs):
     datasets = load_data(files)
-    scatter(datasets)
+    return scatter(datasets, **kwargs)
 
+def plot_hist(files, **kwargs):
+    datasets = load_data(files)
+    return hist(datasets, **kwargs)
+
+def plot_bar(files, **kwargs):
+    datasets = load_data(files)
+    return bar(datasets, **kwargs)
 
 def clean_filename(file):
     for ext in [".dat", ".csv", ".txt"]:
@@ -48,32 +55,61 @@ def load_data(files):
     return datasets
 
 
-def line(datasets):
-    """
-    Plot each dataset as a line plot.
-    """
-    plt.figure()
+def line(datasets, **kwargs):
+    fig, ax = plt.subplots()
+
     for x, y, x_label, y_label, label in datasets:
-        plt.plot(x, y, label=label)
-    plt.xlabel(datasets[0][2])
-    plt.ylabel(datasets[0][3])
-    plt.title(f"{datasets[0][4]}")
-    plt.grid(True)
-    plt.legend()
-    plt.show()
+        ax.plot(x, y, label=label, **kwargs)
+
+    ax.set_xlabel(datasets[0][2])
+    ax.set_ylabel(datasets[0][3])
+    ax.set_title(f"{datasets[0][4]}")
+    ax.grid(True)
+    ax.legend()
+
+    return fig, ax
 
 
-def scatter(datasets):
-    """
-    Plot each dataset as a scatter plot.
-    """
-    plt.figure()
+def scatter(datasets, **kwargs):
+    fig, ax = plt.subplots()
+
     for x, y, x_label, y_label, label in datasets:
-        plt.scatter(x, y, label=label)
-        #plt.scatter(x, y, label=label, s = 20, marker='.')
-    plt.xlabel(datasets[0][2])
-    plt.ylabel(datasets[0][3])
-    plt.title(f"{datasets[0][4]}")
-    plt.grid(True)
-    plt.legend()
-    plt.show()
+        ax.scatter(x, y, label=label, **kwargs)
+
+    ax.set_xlabel(datasets[0][2])
+    ax.set_ylabel(datasets[0][3])
+    ax.set_title(f"{datasets[0][4]}")
+    ax.grid(True)
+    ax.legend()
+
+    return fig, ax
+
+
+def hist(datasets, **kwargs):
+    fig, ax = plt.subplots()
+
+    for x, y, x_label, y_label, label in datasets:
+        ax.hist(x, y, label=label, **kwargs)
+
+    ax.set_xlabel(datasets[0][2])
+    ax.set_ylabel(datasets[0][3])
+    ax.set_title(f"{datasets[0][4]}")
+    ax.grid(True)
+    ax.legend()
+
+    return fig, ax
+
+
+def bar(datasets, **kwargs):
+    fig, ax = plt.subplots()
+
+    for x, y, x_label, y_label, label in datasets:
+        ax.bar(x, y, label=label, **kwargs)
+
+    ax.set_xlabel(datasets[0][2])
+    ax.set_ylabel(datasets[0][3])
+    ax.set_title(f"{datasets[0][4]}")
+    ax.grid(True)
+    ax.legend()
+
+    return fig, ax

@@ -72,4 +72,4 @@ def plot_path(files, path):
         ax.text(i, ymin - 1.0, path[i].upper(), ha="center", va="top")
     # fig.patch.set_facecolor('black')
     # ax.set_facecolor('black')              # Axes background
-    plt.show()
+    return fig, ax

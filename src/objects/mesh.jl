@@ -166,7 +166,11 @@ end
 function get_bandwidth()
     maxval = -1000
     minval = 1000
-    for i in 1:200, j in 1:200, k in 1:200
+    nz = 200
+    if dim == 2
+        nz = 1
+    end
+    for i in 1:200, j in 1:200, k in 1:nz
         kvec = BZ * [i / 200, j / 200, k / 200]
         eps = epsilon(1, kvec)
         maxval = max(maxval, eps)

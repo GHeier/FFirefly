@@ -1,11 +1,14 @@
 import plot_path
 import basic
+import gap_function
 
 import argparse
 import sys
+import matplotlib
 import matplotlib.pyplot as plt
 from cycler import cycler
 
+matplotlib.use('module://matplotlib-backend-kitty')  # Kitty terminal
 
 plt.rcParams["axes.prop_cycle"] = cycler(color=["#9a05fc", "#f00524", "#f0d802"])
 plt.rcParams["lines.linewidth"] = 1.0
@@ -62,7 +65,7 @@ def parse_arguments():
         valid_files.append(f)
 
     return {
-            "flags": {"verbose": args.verbose, "output": args.output, "scatter": args.scatter},
+        "flags": {"verbose": args.verbose, "output": args.output, "scatter": args.scatter, "Gap": args.Gap},
         "files": valid_files,
     }
 
@@ -76,6 +79,27 @@ def get_flags_from_files(result):
         if "fermi_surface" in lower_name or "fs" in lower_name or "FS" in lower_name:
             flags["fermi_surface"] = True
 
+def plot_generator(files, plot_type='line', **kwargs):
+    # Create the figure and axis
+    fig, ax = plt.subplots()
+
+    # Select plot type
+    if plot_type == 'line':
+        fig, ax = basic.plot_basic(files, **kwargs)
+    elif plot_type == 'scatter':
+        fig, ax = basic.plot_scatter(files, **kwargs)
+    elif plot_type == 'bar':
+        fig, ax = basic.plot_bar(files, **kwargs)
+    elif plot_type == 'hist':
+        fig, ax = basic.plot_hist(files, **kwargs)
+    elif plot_type == "band":
+        fig, ax = plot_path.plot_path(files, kwargs)
+    else:
+        raise ValueError(f"Unsupported plot type: {plot_type}")
+
+    # Return the figure and axis for further modifications
+    return fig, ax
+
 
 if __name__ == "__main__":
     try:
@@ -83,14 +107,15 @@ if __name__ == "__main__":
         get_flags_from_files(result)
         #print("Flags:", result['flags'])
         #print("Files:", result['files'])
+        plot_type = ''
         if "band" in result["flags"]:
-            plot_path.plot_path(result["files"], "GXMG")
+            plot_type = 'band'
         elif result["flags"]["scatter"]:
-            basic.plot_scatter(result["files"])
+            plot_type = 'scatter'
         elif result["flags"]["Gap"]:
-            gap_function.plot_over_mesh(result["files"])
-        else:
-            basic.plot_basic(result["files"])
+            pass
+        fig, ax = plot_generator(result["files"], plot_type)
+        plt.show()
 
     except Exception as e:
         print(f"Error: {e}")

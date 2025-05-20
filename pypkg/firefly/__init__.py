@@ -60,10 +60,9 @@ def launch(config):
     return output, error
 
 
-def grep_number(output, phrase):
-    pattern = re.escape(phrase) + r"\s*([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?|\d+)"
-    match = re.search(pattern, output)
-    return match.group(1)
+def grep(output, phrase):
+    match = re.search(r".*?" + re.escape(phrase) + r".*", output)
+    return match.group() if match else None
 
 
 def extract_value(string):
@@ -140,28 +139,5 @@ def unpack(filename):
     # Finalize trailing matrix section
     if collecting_matrix and current_section:
         config[current_section]["lattice"] = matrix_buffer
-
-    # Apply overrides
-    overrides = {
-        "CONTROL": {
-            "prefix": "sample",
-            "outdir": "./",
-        },
-        "SYSTEM": {
-            "onsite_U": 3.0,
-            "Temperature": 0.0001,
-        },
-        "MESH": {
-            "k_mesh": [60, 60, 60],
-            "q_mesh": [10, 10, 10],
-            "w_pts": 30000,
-        },
-        "SUPERCONDUCTOR": {
-            "projections": "s"
-        }
-    }
-
-    for section, kv in overrides.items():
-        config.setdefault(section, {}).update(kv)
 
     return config
