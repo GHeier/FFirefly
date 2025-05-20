@@ -159,7 +159,8 @@ Field_C *Field_C_export2(const char *filename) { return new Field_C(filename); }
 
 Field_R *Field_R_export0() { return new Field_R(); }
 Field_R *Field_R_export1(CMField cmf) { return new Field_R(cmf); }
-Field_R *Field_R_export2(const char *filename) { return new Field_R(filename); }
+Field_R *Field_R_export2(const char *filename) { 
+    return new Field_R(filename); }
 
 void Field_C_operator_export0(Field_C *obj, float w, float *real_result,
                               float *imag_result) {
@@ -224,38 +225,38 @@ void destroy_Field_C(Field_C *field) { delete field; }
 
 void destroy_Field_R(Field_R *field) { delete field; }
 
-void get_points(CMField *cmf, vector<Vec> &points) {
+void CMF_points_export0(CMField *cmf, vector<Vec> &points) {
     points = cmf->data.points;
 }
-void get_w_points(CMField *cmf, vector<float> &w_points) {
+void CMF_w_points_export0(CMField *cmf, vector<float> &w_points) {
     w_points = cmf->data.w_points;
 }
-void get_values(CMField *cmf, vector<complex<Vec>> &values) {
+void CMF_values_export0(CMField *cmf, vector<complex<Vec>> &values) {
     values = cmf->data.values;
 }
-void get_domain(CMField *cmf, vector<Vec> &domain) { domain = cmf->domain; }
-void get_inv_domain(CMField *cmf, vector<Vec> &inv_domain) {
+void CMF_domain_export0(CMField *cmf, vector<Vec> &domain) { domain = cmf->domain; }
+void CMF_inv_domain_export0(CMField *cmf, vector<Vec> &inv_domain) {
     inv_domain = cmf->inv_domain;
 }
-void get_first(CMField *cmf, Vec &first) { first = cmf->first; }
-void get_num_points(CMField *cmf, int &nx, int &ny, int &nz, int &nw) {
+void CMF_first_export0(CMField *cmf, Vec &first) { first = cmf->first; }
+void CMF_num_points_export0(CMField *cmf, int &nx, int &ny, int &nz, int &nw) {
     nx = cmf->nx;
     ny = cmf->ny;
     nz = cmf->nz;
     nw = cmf->nw;
 }
-void get_dimension(CMField *cmf, int &dimension) {
+void CMF_dimension_export0(CMField *cmf, int &dimension) {
     dimension = cmf->data.dimension;
 }
-void get_w_max_min(CMField *cmf, float &wmax, float &wmin) {
+void CMF_w_max_min_export0(CMField *cmf, float &wmax, float &wmin) {
     wmax = cmf->wmax;
     wmin = cmf->wmin;
 }
-void get_is_complex(CMField *cmf, bool &is_complex) {
+void CMF_is_complex_export0(CMField *cmf, bool &is_complex) {
     is_complex = cmf->data.is_complex;
 }
-void get_is_vector(CMField *cmf, bool &is_vector) {
+void CMF_is_vector_export0(CMField *cmf, bool &is_vector) {
     is_vector = cmf->data.is_vector;
 }
-void get_with_w(CMField *cmf, bool &with_w) { with_w = cmf->data.with_w; }
+void CMF_with_w_export0(CMField *cmf, bool &with_w) { with_w = cmf->data.with_w; }
 }

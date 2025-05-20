@@ -44,6 +44,8 @@ def load_data(files):
         # Step 2: Read file
         df = pd.read_csv(file, sep=r"\s+", engine="python", header=header)
         columns = df.columns.tolist()
+        if '#' in columns:
+            columns.remove('#')
         x_label = columns[0]
         y_label = columns[1]
         x = df.iloc[:, 0]

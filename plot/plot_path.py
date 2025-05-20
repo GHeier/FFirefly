@@ -32,14 +32,20 @@ def plot_section(field, qi, qf, section):
     x = np.linspace(0, 1, N)
     y = []
 
+    with_n = False
     for n in range(1, nbnd + 1):
         temp = []
         for t in x:
             q = qi + t * (qf - qi)
             q_cart = (BZ @ q).tolist()
-            temp.append(field(n, q_cart))
+            if with_n:
+                temp.append(field(n, q_cart))
+            else:
+                temp.append(field(q_cart))
             # temp.append(fly.epsilon(1, q_cart))
         y.append(temp)
+        if with_n:
+            break
 
     x = np.linspace(section - 1, section, N)
     for n in range(nbnd):

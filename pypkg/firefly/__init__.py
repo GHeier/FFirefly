@@ -1,6 +1,6 @@
+from .plot.fly_plot import sketch
 from .src.config.load import config as config
 from .src.module.imports.cpp_imports import *
-from .plot.fly_plot import sketch
 
 import os
 import re

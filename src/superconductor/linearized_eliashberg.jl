@@ -64,7 +64,7 @@ function fill_V_rt(vertex, iv, mesh)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:bnw
         q = get_kvec(i, j, k)
         w = imag(iv[l])
-        V[l, i, j, k] = vertex(q, w)
+        V[l, i, j, k] = 0.5 * (vertex(q, w) + vertex(-q, w))
     end
     return kw_to_rtau(V, 'B', mesh)
 end
@@ -115,6 +115,7 @@ function Z_convergence!(Z, V_rt, iw, e, mesh)
         Z_err = abs(Z_max_f - Z_max_i)
         Z_max_i = Z_max_f
         println("Z_max: ", Z_max_f)
+        println("Z_min: ", minimum(abs.(real.(Z))))
     end
 end
 
@@ -287,6 +288,11 @@ function eigenvalue_computation()
     #phi = rand(Float32, fnw, nx, ny, nz) .+ im * rand(Float32, fnw, nx, ny, nz)
     phi = ones(fnw, nx, ny, nz)
     eig, phi = linearized_eliashberg_loop(phi, Z, iw, V_rt, e_4d, mesh)
+    if real(eig) < 0 
+        V = rtau_to_kw(V_rt, 'F', mesh) .- eig
+        V_rt = kw_to_rtau(V, 'F', mesh)
+        eig, phi = linearized_eliashberg_loop(phi, Z, iw, V_rt, e_4d, mesh)
+    end
     @printf("Final Eig: %.6f\n", real(eig))
     if !bcs_debug
         save_gap(phi, iw)

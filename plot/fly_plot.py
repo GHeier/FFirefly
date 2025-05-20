@@ -8,7 +8,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from cycler import cycler
 
-matplotlib.use('module://matplotlib-backend-kitty')  # Kitty terminal
+#matplotlib.use('module://matplotlib-backend-kitty')  # Kitty terminal
 
 plt.rcParams["axes.prop_cycle"] = cycler(color=["#9a05fc", "#f00524", "#f0d802"])
 plt.rcParams["lines.linewidth"] = 1.0
@@ -80,8 +80,6 @@ def get_flags_from_files(result):
             flags["fermi_surface"] = True
 
 def sketch(files, plot_type='line', **kwargs):
-    # Create the figure and axis
-    fig, ax = plt.subplots()
 
     # Select plot type
     if plot_type == 'line':
@@ -92,8 +90,8 @@ def sketch(files, plot_type='line', **kwargs):
         fig, ax = basic.plot_bar(files, **kwargs)
     elif plot_type == 'hist':
         fig, ax = basic.plot_hist(files, **kwargs)
-    elif plot_type == "band":
-        fig, ax = plot_path.plot_path(files, kwargs)
+    elif plot_type == "path":
+        fig, ax = plot_path.plot_path(files, **kwargs)
     else:
         raise ValueError(f"Unsupported plot type: {plot_type}")
 
