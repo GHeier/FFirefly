@@ -1,6 +1,6 @@
-import plot_path
-import basic
-import gap_function
+from . import plot_path
+from . import basic
+from . import gap_function
 
 import argparse
 import sys
@@ -79,7 +79,7 @@ def get_flags_from_files(result):
         if "fermi_surface" in lower_name or "fs" in lower_name or "FS" in lower_name:
             flags["fermi_surface"] = True
 
-def plot_generator(files, plot_type='line', **kwargs):
+def sketch(files, plot_type='line', **kwargs):
     # Create the figure and axis
     fig, ax = plt.subplots()
 
@@ -114,7 +114,7 @@ if __name__ == "__main__":
             plot_type = 'scatter'
         elif result["flags"]["Gap"]:
             pass
-        fig, ax = plot_generator(result["files"], plot_type)
+        fig, ax = sketch(result["files"], plot_type)
         plt.show()
 
     except Exception as e:
