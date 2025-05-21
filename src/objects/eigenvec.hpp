@@ -17,17 +17,12 @@ class Eigenvector {
   public:
     int size;
     float eigenvalue;
-    unique_ptr<float[]> eigenvector;
+    vector<float> eigenvector;
 
-    Eigenvector();
-    ~Eigenvector();
-    Eigenvector(int size, bool random = false);
-    Eigenvector(vector<float> eigenvector);
-    Eigenvector(vector<float> eigenvector, float eigenvalue);
+    Eigenvector();                                   // Default constructor
+    Eigenvector(int size, bool random = false);              // Parameterized constructor
 
-    Eigenvector(const Eigenvector &other);
-    Eigenvector operator=(const Eigenvector &other);
-    float &operator[](int index);
+    float& operator[](int index);          
 
     Eigenvector &operator+=(const Eigenvector &k);
     Eigenvector &operator-=(const Eigenvector &k);

@@ -77,6 +77,13 @@ void bcs() {
     Eigenvector *solutions = new Eigenvector[num_eigenvalues_to_save];
     lapack_hermitian_diagonalization(P, solutions);
 
+    Eigenvector top_gap = power_iteration(P);
+    cout << "top gap eig: " << top_gap.eigenvalue << endl;
+    vector<Eigenvector> top_gaps = power_iteration(P, 0.01);
+    for (Eigenvector x : top_gaps) {
+        cout << "eig: " << x.eigenvalue << endl;
+    }
+
     // Sort solutions with highest eigenvalue/eigenvector pair first
     cout << "Sorting Eigenvectors..." << endl;
     sort(solutions, solutions + num_eigenvalues_to_save,

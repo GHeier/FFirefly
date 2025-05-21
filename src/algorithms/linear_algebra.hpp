@@ -27,7 +27,7 @@ using namespace std;
  * @return A vector of eigenvectors.
  */
 
-vector<Eigenvector> power_iteration(Matrix A, float error);
+vector<Eigenvector> power_iteration(Matrix &A, float error);
 
 /**
  * @brief Calculates the leading positive eigenvalue/eigenvector of a matrix

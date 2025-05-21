@@ -83,3 +83,15 @@ In src/ there are folders for each category of calculation, with subfolders as n
 ### **🔹 Documentation**
 When adding a new category, describe what it does and how it works in the User.md file. Include the relevant input and outputs, both datafiles and config variables. 
 
+# TODOS
+ Add testing for 
+    - algorithms
+        - integration
+        - linear_algebra
+    - response
+        - susceptibility
+    - superconductor
+        - bcs
+        - eliashberg
+        - linearized_eliashberg
+    

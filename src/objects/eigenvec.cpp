@@ -16,47 +16,30 @@
 
 using namespace std;
 
+// Default constructor
 Eigenvector::Eigenvector() {
-    this->size = 0;
-    this->eigenvector = nullptr;
-    this->eigenvalue = 0;
+    size = 0;
+    eigenvalue = 0;
+    eigenvector = vector<float>();
 }
 
-Eigenvector::~Eigenvector() {}
-
+// Parameterized constructor
 Eigenvector::Eigenvector(int size, bool random) {
     this->size = size;
-    eigenvector = make_unique<float[]>(size);
+    this->eigenvalue = 0;
+    eigenvector = vector<float>(size);
     if (random) {
-        srand(time(0));
+        std::srand(static_cast<unsigned int>(std::time(nullptr)));
         for (int i = 0; i < size; i++) {
-            this->eigenvector[i] = (float)rand() / RAND_MAX;
+            eigenvector[i] = static_cast<float>(std::rand()) / RAND_MAX;
         }
     }
 }
 
-Eigenvector::Eigenvector(const Eigenvector &other) {
-    this->size = other.size;
-    this->eigenvalue = other.eigenvalue;
-    eigenvector = make_unique<float[]>(size);
-    for (int i = 0; i < size; i++) {
-        this->eigenvector[i] = other.eigenvector[i];
-    }
+// Index operator
+float& Eigenvector::operator[](int index) {
+    return eigenvector[index];
 }
-
-Eigenvector Eigenvector::operator=(const Eigenvector &other) {
-    if (this != &other) {
-        size = other.size;
-        eigenvalue = other.eigenvalue;
-        eigenvector = make_unique<float[]>(size);
-        for (int i = 0; i < size; i++) {
-            this->eigenvector[i] = other.eigenvector[i];
-        }
-    }
-    return *this;
-}
-
-float &Eigenvector::operator[](int index) { return eigenvector[index]; }
 
 Eigenvector &Eigenvector::operator+=(const Eigenvector &k) {
     for (int i = 0; i < this->size; i++) {

@@ -20,10 +20,9 @@ using namespace std;
  * Not optimized, but so fast it doesn't matter
  * Returns eigenvalue and eigenvector
  * NOTE: Technically returns multiple (up to 2) eigenvalues and eigenvectors
- * This is on the off chance that all eigenvalues are positive and nonzero it
- * will return 2 solutions instead of 1
+ * If the top 2 eigenvalues are positive and nonzero it will return 2 solutions instead of 1
  */
-vector<Eigenvector> power_iteration(Matrix A, float error) {
+vector<Eigenvector> power_iteration(Matrix &A, float error) {
     vector<Eigenvector> vals;
     for (int eig_num = 0; eig_num < 5; eig_num++) {
         Eigenvector x(A.size, true);
@@ -32,7 +31,7 @@ vector<Eigenvector> power_iteration(Matrix A, float error) {
         float sum = 0;
 
         int iterations = 0;
-        cout << "Eig Num: " << eig_num << endl;
+        printv("Eig Num: %d\n", eig_num);
         for (int i = 0; diff_mag > error; i++) {
             Eigenvector x_new = A * x;
             x_new.normalize();
@@ -50,11 +49,11 @@ vector<Eigenvector> power_iteration(Matrix A, float error) {
             iterations = i;
             // cout << i << " " << 1000 << " " << i%1000 << endl;
             if (i % 1000 == 0)
-                cout << "Iteration: " << i << " " << dot(x, A * x) << endl;
+                printv("Iteration: %d %f\n", i, dot(x, A * x));
             if (i % 100 == 0 and i > 50000 and dot(x, A * x) < 0)
                 break;
         }
-        cout << "Iterations: " << iterations << endl;
+        printv("Iterations: %d\n", iterations);
         rayleigh = dot(x, A * x) / dot(x, x);
         x.eigenvalue = rayleigh + sum;
 
@@ -72,6 +71,7 @@ vector<Eigenvector> power_iteration(Matrix A, float error) {
     return vals;
 }
 
+// This function is designed to get the eigenvalue accurately, not the eigenvector
 Eigenvector power_iteration(Matrix &A) {
     Eigenvector x(A.size, true);
     float diff_percent = 1;

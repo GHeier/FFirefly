@@ -17,6 +17,7 @@
 // Test nodes below
 #include "hamiltonian/tests/all.hpp"
 #include "objects/tests/all.hpp"
+#include "algorithms/tests/all.hpp"
 
 #define MAX_TOKENS 10 // Max number of substrings
 #define MAX_LENGTH 50 // Max length of each substring
@@ -65,11 +66,12 @@ void print_banner_bottom() {
 void test() {
     printf("Starting Test Calculations\n");
 
-    int num_tests = 2;
+    int num_tests = 3;
 
     bool all_tests[num_tests];
     all_tests[0] = hamiltonian_tests();
     all_tests[1] = object_tests();
+    all_tests[2] = algorithm_tests();
 
     print_test_results(all_tests, num_tests, "tests");
 }

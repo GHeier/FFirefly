@@ -23,9 +23,9 @@ Matrix::Matrix(int size) {
     this->size = size;
     float MB = (float)(this->size * this->size * sizeof(float)) / 1000000;
     if (MB > 1) {
-        printf("Allocating %.0lf MB\n", MB);
+        printv("Allocating %.0lf MB\n", MB);
     } else {
-        printf("Allocating %.3lf MB\n", MB);
+        printv("Allocating %.3lf MB\n", MB);
     }
     this->vals = new float[size * size];
     for (int i = 0; i < size; i++) {
