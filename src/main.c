@@ -78,20 +78,27 @@ int main() {
     print_banner_top();
 
     load_c_config();           // Read input to load global c variables
-    load_cpp_config_wrapper(); // Read input to load global cpp variables
     start_python();
 
     // Handling '+' separated categories for sequential runs
     char str_copy[MAX_LENGTH];
+    char meth_copy[MAX_LENGTH];
     strncpy(str_copy, c_category, MAX_LENGTH); // Copy string safely
-    char *tokens[MAX_TOKENS]; // Array of char pointers to hold the tokens
+    strncpy(meth_copy, c_method, MAX_LENGTH); // Copy string safely
+    char *tokens[MAX_TOKENS];
+    char *meth_tokens[MAX_TOKENS];
     int count = 0;
 
-    char *token = strtok(str_copy, "+");
-    while (token != NULL && count < MAX_TOKENS) {
-        tokens[count] = strdup(token); // Allocate memory and copy token
+    char *saveptr1, *saveptr2;
+    char *token = strtok_r(str_copy, "+", &saveptr1);
+    char *meth_token = strtok_r(meth_copy, "+", &saveptr2);
+
+    while (token != NULL && meth_token != NULL && count < MAX_TOKENS) {
+        tokens[count] = strdup(token);
+        meth_tokens[count] = strdup(meth_token);
         count++;
-        token = strtok(NULL, "+");
+        token = strtok_r(NULL, "+", &saveptr1);
+        meth_token = strtok_r(NULL, "+", &saveptr2);
     }
 
     print_banner_bottom();
@@ -104,8 +111,14 @@ int main() {
         printf("Number of threads used in CPU parallelization: %d\n",
                num_procs - 1);
 
+    /*
+        * ADDING A CATEGORY OCCURS BELOW
+        * FOLLOW THE PATTERN
+    */
     for (int i = 0; i < count; i++) {
         char *category = tokens[i];
+        c_method = meth_tokens[i];
+        load_cpp_config_wrapper(); // Reload input to load current method cpp variable
         if (!strcmp(category, "DOS"))
             DOS();
         else if (!strcmp(category, "fermi_surface"))
@@ -120,7 +133,6 @@ int main() {
             test();
         else
             printf("Unknown Category\n");
-        exit(1);
     }
 
     // unload_c_config(); // Free memory allocated for global c variables
