@@ -18,6 +18,16 @@ float Field_R_operator_export3(Field_R *obj, int n, const float *point, int len,
 
 Field_C *Field_C_export();
 Field_C *Field_C_export1(CMField cmf);
+Field_C *Field_C_export2(const char *filename);
+
+void Field_C_operator_export0(Field_C *obj, float w, float *real_result,
+                              float *imag_result);
+void Field_C_operator_export1(Field_C *obj, int n, float w, float *real_result,
+                              float *imag_result);
+void Field_C_operator_export2(Field_C *obj, const float *point, int len,
+                              float w, float *real_result, float *imag_result);
+void Field_C_operator_export3(Field_C *obj, int n, const float *point, int len,
+                              float w, float *real_result, float *imag_result);
 
 CMField *create_CMField();
 // Load CMField from a file

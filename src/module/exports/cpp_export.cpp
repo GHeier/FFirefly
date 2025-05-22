@@ -5,6 +5,7 @@
 #include "../../objects/CMField/cmfield.hpp"
 #include "../../objects/CMField/fields.hpp"
 #include "../../objects/CMField/vertex.hpp"
+#include "../../objects/CMField/self_energy.hpp"
 #include "../../objects/CMField/bands.hpp"
 #include "../../objects/surfaces.hpp"
 #include "../../hamiltonian/band_structure.hpp"
@@ -146,6 +147,16 @@ Vec* vk_export0(int n, Vec* k, Bands* band) {
 Vertex *Vertex_export0() { return new Vertex(); }
 
 void Vertex_operator_export0(Vertex *obj, const float *point, int len, float w,
+                             float *real_result, float *imag_result) {
+    Vec v(point, len);
+    complex<float> r = obj->operator()(v, w);
+    *real_result = real(r);
+    *imag_result = imag(r);
+}
+
+Self_Energy *Self_Energy_export0() { return new Self_Energy(); }
+
+void Self_Energy_operator_export0(Self_Energy *obj, const float *point, int len, float w,
                              float *real_result, float *imag_result) {
     Vec v(point, len);
     complex<float> r = obj->operator()(v, w);

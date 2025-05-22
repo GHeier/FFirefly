@@ -30,7 +30,7 @@ const wc = cfg.bcs_cutoff_frequency
 
 const beta = 1 / cfg.Temperature
 
-const bcs_debug = false 
+const bcs_debug = true 
 
 if bcs_debug && nw % 2 != 0
     println("Remember to make nw even")
@@ -47,7 +47,16 @@ function square_well_approximate(w)
     return - 0.5 * (tanh((w + wc)/delta) - tanh((w - wc)/delta))
 end
 
-function zero_out_beyond_wc!(A, iw)
+function zero_out_beyond_wc_e!(A, e)
+    nw, nx, ny, nz = size(A)
+    for j in 1:nx, k in 1:ny, l in 1:nz
+        if abs(e[1, j, k, l]) > wc 
+            A[:, j, k, l] .= 0
+        end
+    end
+end
+
+function zero_out_beyond_wc_iw!(A, iw)
     if size(A, 1) != length(iw)
         println("Zero_Out: Incorrect array mapping")
     end
@@ -88,13 +97,14 @@ function get_iw_iv(mesh)
 end
 
 
-function create_energy_mesh(band)
-    e_arr = zeros(Float32, nx, ny, nz)
-    for i in 1:nx, j in 1:ny, k in 1:nz
-        e_arr[i, j, k] = band(1, get_kvec(i, j, k)) - mu
+function create_energy_mesh(band, iv, Sigma)
+    nw = length(iv)
+    e_arr = zeros(ComplexF32, nw, nx, ny, nz)
+    for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:nw
+        kvec = get_kvec(i, j, k)
+        e_arr[l, i, j, k] = band(1, kvec) - mu + Sigma(kvec, imag(iv[l]))
     end
-    e_4d = reshape(e_arr, 1, nx, ny, nz)
-    return e_4d
+    return e_arr
 end
 
 
@@ -103,13 +113,24 @@ function Z_convergence!(Z, V_rt, iw, e, mesh)
     Z_max_i = 0.0
     Z_max_f = 0.0
     while Z_err > 1e-4
+
+        zero_out_beyond_wc_e!(Z, e)
         F = imag.(iw) .* Z ./ ( (imag.(iw) .* Z) .^2 .+ e.^2)
-        F_rt = kw_to_rtau(F, 'F', mesh)
+        if !bcs_debug
+            F_rt = kw_to_rtau(F, 'F', mesh)
+        else
+            F_rt = fft(F)
+        end
 
         temp = V_rt .* F_rt
-        result = rtau_to_kw(temp, 'F', mesh)
+        if !bcs_debug
+            result = rtau_to_kw(temp, 'F', mesh)
+        else
+            result = fftshift(ifft(temp))
+        end
 
         Z .= 1 .- result ./ imag.(iw)
+        zero_out_beyond_wc_e!(Z, e)
 
         Z_max_f = maximum(abs.(real.(Z)))
         Z_err = abs(Z_max_f - Z_max_i)
@@ -120,7 +141,7 @@ function Z_convergence!(Z, V_rt, iw, e, mesh)
 end
 
 
-function linearized_eliashberg_loop(phi, Z, iw, V_rt, e, mesh = 0)
+function linearized_eliashberg_loop(phi, iw, V_rt, e, mesh = 0)
     eig, prev_eig, eig_err = 0, 0, 1
     if bcs_debug
         N = Firefly.Field_R(outdir * prefix * "_DOS.dat")
@@ -129,9 +150,9 @@ function linearized_eliashberg_loop(phi, Z, iw, V_rt, e, mesh = 0)
     end
     while eig_err > 1e-5
         if !bcs_debug
-            eig, phi = linearized_eliashberg(phi, Z, iw, V_rt, e, mesh)
+            eig, phi = linearized_eliashberg(phi, iw, V_rt, e, mesh)
         else
-            eig, phi = linearized_eliashberg_bcs(phi, Z, iw, V_rt, e)
+            eig, phi = linearized_eliashberg_bcs(phi, iw, V_rt, e)
         end
         eig_err = abs(eig - prev_eig)
         prev_eig = eig
@@ -147,8 +168,9 @@ function linearized_eliashberg_loop(phi, Z, iw, V_rt, e, mesh = 0)
 end
 
 
-function linearized_eliashberg(phi, Z, iw, V_rt, e, mesh)
-    F = -phi ./ ((Z .* imag.(iw)).^2 .+ e.^2)
+function linearized_eliashberg(phi, iw, V_rt, e, mesh)
+    F = -phi .* ( 1 ./ (iw .- e)) .* (1 ./ (-iw .- e))
+    #F = -phi ./ ((Z .* imag.(iw)).^2 .+ e.^2)
     F_rt = kw_to_rtau(F, 'F', mesh)
     temp = V_rt .* F_rt
     result = rtau_to_kw(temp, 'F', mesh)
@@ -161,15 +183,18 @@ function linearized_eliashberg(phi, Z, iw, V_rt, e, mesh)
 end
 
 
-function linearized_eliashberg_bcs(phi, Z, iw, V_rt, e)
-    zero_out_beyond_wc!(phi, iw)
+function linearized_eliashberg_bcs(phi, iw, V_rt, e)
+    zero_out_beyond_wc_e!(phi, e)
+    #zero_out_beyond_wc_iw!(phi, iw)
 
-    F = -phi ./ ((Z .* imag.(iw)).^2 .+ e.^2)
+    F = -phi .* ( 1 ./ (iw .- e)) .* (1 ./ (-iw .- e))
+    #F = -phi ./ ((Z .* imag.(iw)).^2 .+ e.^2)
     #F .= -1.0
     F_rt = fft(F)
     temp = V_rt .* F_rt
     result = fftshift(ifft(temp)) / (beta * nk)
-    zero_out_beyond_wc!(result, iw)
+    zero_out_beyond_wc_e!(phi, e)
+    #zero_out_beyond_wc_iw!(result, iw)
 
     result = phi .* result # Resultant eigenvector/value
     mag = phi .* phi # Normalized gap
@@ -272,14 +297,17 @@ function eigenvalue_computation()
 
     println("Getting Bands")
     band = Firefly.Bands()
+    println("Getting Self Energy")
+    Sigma = Self_Energy()
     println("Creating energy mesh")
-    e_4d = create_energy_mesh(band)
+    e = create_energy_mesh(band, iv, sigma)
 
     println("Calculating Z")
-    Z = ones(Complex{Float32}, fnw, nx, ny, nz)
-    if !bcs_debug
-        Z_convergence!(Z, V_rt, iw, e_4d, mesh)
-    end
+    #Z = ones(Complex{Float32}, fnw, nx, ny, nz)
+    #Z_convergence!(Z, V_rt, iw, e_4d, mesh)
+    #if !bcs_debug
+    #    Z_convergence!(Z, V_rt, iw, e_4d, mesh)
+    #end
 
     #println("Diagonalization to find Eigenvalues and symmetries")
     #eigs, phis = linearized_eliashberg_diagonalize(Z, iw, V_rt, e_4d, mesh)
@@ -287,12 +315,12 @@ function eigenvalue_computation()
     println("Power Iteration to find Eigenvalue and symmetry")
     #phi = rand(Float32, fnw, nx, ny, nz) .+ im * rand(Float32, fnw, nx, ny, nz)
     phi = ones(fnw, nx, ny, nz)
-    eig, phi = linearized_eliashberg_loop(phi, Z, iw, V_rt, e_4d, mesh)
-    if real(eig) < 0 
-        V = rtau_to_kw(V_rt, 'F', mesh) .- eig
-        V_rt = kw_to_rtau(V, 'F', mesh)
-        eig, phi = linearized_eliashberg_loop(phi, Z, iw, V_rt, e_4d, mesh)
-    end
+    eig, phi = linearized_eliashberg_loop(phi, iw, V_rt, e, mesh)
+    #if real(eig) < 0 
+    #    V = rtau_to_kw(V_rt, 'F', mesh) .- eig
+    #    V_rt = kw_to_rtau(V, 'F', mesh)
+    #    eig, phi = linearized_eliashberg_loop(phi, Z, iw, V_rt, e_4d, mesh)
+    #end
     @printf("Final Eig: %.6f\n", real(eig))
     if !bcs_debug
         save_gap(phi, iw)
@@ -316,43 +344,5 @@ function get_iw_iv_bcs()
     return iw, iv 
 end
 
-function square_well_test()
-    N = Firefly.Field_R(outdir * prefix * "_DOS.dat")
-    T = 1 / beta
-    nk = nx * ny * nz
-    epts = 1000
-    de = 8 / epts
-    println("Max n: ", (wc / (pi * T) - 1) / 2)
-    phi = ones(ComplexF64, nw)
-    result_phi = zeros(ComplexF64, nw)
-    for k in 1:nw
-        n = -nw / 2 + k
-        iw_n = pi * T * (2 * n + 1)
-        if abs(iw_n) > wc
-            phi[k] = 0
-        end
-    end
-
-    for k in 1:nw
-        sum = 0
-        n = -nw / 2 + k
-        iw_n = pi * T * (2 * n + 1) * im
-        for i in 1:epts, j in 1:nw
-            e = -4 + (i - 1) * de
-            m = -nw / 2 + j
-            iw_m = pi * T * (2 * m + 1) * im
-            V = 1
-            #V = square_well_approximate(imag(iw_n - iw_m))
-            if abs(imag(iw_m)) > wc
-                V = 0
-            end
-            sum += N(e) * V * phi[j] / (imag(iw_m)^2 + (e - mu)^2)
-        end
-        sum *= T * de
-        result_phi[k] = sum
-    end
-    println("Max: ", maximum(real.(result_phi)), " Min: ", minimum(real.(result_phi)))
-    writedlm("phi_nw.dat", real.(result_phi))
-end
 
 end # module

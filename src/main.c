@@ -10,6 +10,7 @@
 // Category nodes below
 #include "hamiltonian/fs.hpp"
 #include "hamiltonian/vertex.hpp"
+#include "hamiltonian/self_energy.hpp"
 #include "response/DOS.h"
 #include "response/response.h"
 #include "superconductor/node.hpp"
@@ -41,6 +42,11 @@ void response() {
 void vertex() {
     printf("Starting Vertex Calculation\n\n");
     vertex_wrapper();
+}
+
+void self_energy() {
+    printf("Starting Self Energy Calculation\n\n");
+    self_energy_wrapper();
 }
 
 void superconductor() {
@@ -113,14 +119,14 @@ int main() {
         printf("Number of threads used in CPU parallelization: %d\n",
                num_procs - 1);
 
+    for (int i = 0; i < count; i++) {
+        char *category = tokens[i];
+        c_method = meth_tokens[i];
+        load_cpp_config_wrapper(); 
     /*
         * ADDING A CATEGORY OCCURS BELOW
         * FOLLOW THE PATTERN
     */
-    for (int i = 0; i < count; i++) {
-        char *category = tokens[i];
-        c_method = meth_tokens[i];
-        load_cpp_config_wrapper(); // Reload input to load current method cpp variable
         if (!strcmp(category, "DOS"))
             DOS();
         else if (!strcmp(category, "fermi_surface"))
@@ -131,6 +137,8 @@ int main() {
             superconductor();
         else if (!strcmp(category, "vertex"))
             vertex();
+        else if (!strcmp(category, "self_energy"))
+            self_energy();
         else if (!strcmp(category, "test"))
             test();
         else

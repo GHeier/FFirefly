@@ -221,13 +221,19 @@ void save_to_file(string filename, vector<Vec> &points,
             // if (point(dimension) < 0)
             //   file << " ";
         }
-        if (point(dimension) >= 0)
-            file << " ";
+        //if (point(dimension) >= 0)
+        //    file << " ";
         if (with_n)
             file << point.n << "     ";
 
+        if (value.real()(0) >= 0)
+            file << " ";
+
         if (is_complex) {
-            file << value.real()(0) << "      " << value.imag()(0) << "      ";
+            file << value.real()(0) << "     ";
+            if (value.imag()(0) >= 0)
+                file << " ";
+            file << value.imag()(0) << "      ";
             if (is_vector and dimension > 1) {
                 file << value.real()(1) << "      " << value.imag()(1)
                      << "      ";
@@ -237,8 +243,6 @@ void save_to_file(string filename, vector<Vec> &points,
                 }
             }
         } else {
-            if (value.real()(0) >= 0)
-                file << " ";
             file << value.real()(0) << "      ";
             if (is_vector and dimension > 1) {
                 file << value.real()(1) << "      ";

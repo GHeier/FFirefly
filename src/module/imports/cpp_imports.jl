@@ -270,6 +270,39 @@ function Base.finalize(obj::Vertex)
     destroy!(obj)
 end
 
+mutable struct Self_Energy
+    ptr::Ptr{Cvoid}
+end
+
+function Self_Energy()
+    ptr = ccall((:Self_Energy_export0, libfly), Ptr{Cvoid}, ())
+    return Self_Energy(ptr)
+end
+
+function (self::Self_Energy)(k::Vector{Float64}, w=0f0)::ComplexF32
+    real_result::Ref{Float32} = Ref(Float32(0.0))
+    imag_result::Ref{Float32} = Ref(Float32(0.0))
+    newk::Vector{Float32} = Float32.(k)
+    len = length(newk)
+    neww = Float32(w)
+    ccall((:Self_Energy_operator_export0, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}, Cint, Cfloat,Ptr{Cfloat}, Ptr{Cfloat},), self.ptr, newk, len, neww, real_result, imag_result)
+    return ComplexF32(real_result[], imag_result[])
+end
+
+function (self::Self_Energy)(k::Vec, w=0f0)::ComplexF32
+    real_result::Ref{Float32} = Ref(Float32(0.0))
+    imag_result::Ref{Float32} = Ref(Float32(0.0))
+    newk::Vector{Float32} = [k.x, k.y, k.z]
+    len = length(newk)
+    neww = Float32(w)
+    ccall((:Self_Energy_operator_export0, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}, Cint, Cfloat,Ptr{Cfloat}, Ptr{Cfloat},), self.ptr, newk, len, neww, real_result, imag_result)
+    return ComplexF32(real_result[], imag_result[])
+end
+
+function Base.finalize(obj::Self_Energy)
+    destroy!(obj)
+end
+
 mutable struct Field_R
     ptr::Ptr{Cvoid}
 end

@@ -13,8 +13,9 @@ cfg = Firefly.Config
 
 BZ = cfg.brillouin_zone
 dim = cfg.dimension
+beta = 1 / cfg.Temperature
 
-export Mesh
+export Mesh, get_iw_iv
 export tau_to_wn, wn_to_tau, k_to_r, r_to_k, kw_to_rtau, rtau_to_kw, IR_Mesh
 
 """
@@ -193,5 +194,24 @@ function IR_Mesh(IR_tol = 1e-10)
     end
     return mesh
 end
+
+
+function get_iw_iv(mesh)
+    fnw, bnw, fntau, bntau = mesh.fnw, mesh.bnw, mesh.fntau, mesh.bntau
+    println("fnw: ", fnw, " bnw: ", bnw, " fntau: ", fntau, " bntau: ", bntau)
+    println("Created IRMesh")
+    iw = Array{ComplexF32}(undef, fnw)
+    iv = Array{ComplexF32}(undef, bnw)
+    for i in 1:fnw
+        iw[i] = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta)
+    end
+    for i in 1:bnw
+        iv[i] = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[i], beta)
+    end
+    println("Fermionic frequency from ", minimum(imag.(iw)), " to ", maximum(imag.(iw)))
+    println("Bosonic frequency from ", minimum(imag.(iv)), " to ", maximum(imag.(iv)))
+    return iw, iv 
+end
+
 
 end

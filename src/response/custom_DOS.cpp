@@ -37,7 +37,8 @@ extern "C" void surface_sum() {
     printf("Calculating DOS from %.5f to %.5f with %d points\n", emin, emax,
            w_pts);
     printf("Spacing is %.5f\n", dx);
-    ofstream file(outdir + prefix + "_DOS.dat");
+    string filename = outdir + prefix + "_DOS.dat";
+    ofstream file(filename);
     file << "# w f" << endl;
     for (float x = emin; x <= emax; x += dx) {
         vector<Vec> FS = get_FS(x);
@@ -47,5 +48,5 @@ extern "C" void surface_sum() {
         int index = (x - emin) / dx;
         cout << "\rDOS Calculations: " << index + 1 << "/" << w_pts;
     }
-    printf("\nCalculation complete\n");
+    printf("\nSaved DOS to %s\n", filename.c_str());
 }
