@@ -75,6 +75,10 @@ void call_flex2() {
                     complex<float> X = chi(q, w);
                     complex<float> val = (U * U * X) / complex<float>(1.0f - U * X) + (U * U * U * X * X) / complex<float>(1.0f - U * U * X * X);
                     values.push_back(complex<Vec>(Vec(val.real()), Vec(val.imag())));
+                    if (abs(U * X) >= 1) {
+                        printf("Geometric series not convergent: U*X = %f\n", U * X.real());
+                        exit(1);
+                    }
                 }
             }
         }

@@ -77,6 +77,7 @@ function get_ckio_ir()
     grit = grit_calc(basis, gkio)
     println("Calculating X(k,iw)")
     ckio = ckio_calc(basis, grit)
+    println("Max χ = ", maximum(real.(ckio)))
     save_ckio_ir(basis, ckio)
 end
 

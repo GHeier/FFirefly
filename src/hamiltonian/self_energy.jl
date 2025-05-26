@@ -88,7 +88,7 @@ function get_G_V(iw, iv)
             V[l, ix, iy, iz] = vertex(kvec, w)
         end
     end
-    zero_out_beyond_wc_e!(G, e)
+    #zero_out_beyond_wc_e!(G, e)
     return G, V
 end
 
@@ -117,20 +117,20 @@ function get_self_energy()
         V_rt .*= G_rt
         sigma = fftshift(p_ifft * V_rt) / (beta * nx * ny * nz)
         #sigma = ones(ComplexF32, nw, nx, ny, nz)
+        N = Field_R(outdir * prefix * "_DOS.dat")
+        println("Predicted BCS sigma = ", 1 * N(mu) * wc / 2)
     else
-        G_rt = kw_to_rtau(G, "F", basis)
-        V_rt = kw_to_rtau(V, "B", basis)
-        V_rt .*= G_rt
-        sigma = rtau_to_kw(V_rt, "B", basis)
+        G_rt = kw_to_rtau(G, 'F', basis)
+        V_rt = kw_to_rtau(V, 'B', basis)
+        temp = V_rt .* G_rt
+        sigma = rtau_to_kw(temp, 'F', basis)
     end
-    N = Field_R(outdir * prefix * "_DOS.dat")
-    println("Predicted BCS sigma = ", 1 * N(mu) * wc / 2)
     println("Max Sigma: ", maximum(real.(sigma)))
     println("Min Sigma: ", minimum(real.(sigma)))
-    #save(iw, sigma)
+    save(iw, sigma)
 end
 
-function save(iv_arr, sigma)
+function save(iw_arr, sigma)
     println("Saving Self Energy")
     open(outdir * prefix * "_self_energy.dat", "w") do f
         if dim == 3
@@ -143,16 +143,16 @@ function save(iv_arr, sigma)
             println("Invalid dimension")
             exit(1)
         end
-        bnw = length(iv_arr)
-        for ix in 1:nx, iy in 1:ny, iz in 1:nz, l in 1:bnw
+        fnw = length(iw_arr)
+        for ix in 1:nx, iy in 1:ny, iz in 1:nz, l in 1:fnw
             kvec = get_kvec(ix - 1, iy - 1, iz - 1)
-            iv = iv_arr[l]
+            iw = iw_arr[l]
             if dim == 3
-                @printf(f, "%f %f %f %f %f %f\n", kvec[1], kvec[2], kvec[3], iv.im, sigma[l,ix,iy,iz].re, sigma[l,ix,iy,iz].im)
+                @printf(f, "%f %f %f %f %f %f\n", kvec[1], kvec[2], kvec[3], iw.im, sigma[l,ix,iy,iz].re, sigma[l,ix,iy,iz].im)
             elseif dim == 2
-                @printf(f, "%f %f %f %f %f\n", kvec[1], kvec[2], iv.im, sigma[l,ix,iy,iz].re, sigma[l,ix,iy,iz].im)
+                @printf(f, "%f %f %f %f %f\n", kvec[1], kvec[2], iw.im, sigma[l,ix,iy,iz].re, sigma[l,ix,iy,iz].im)
             elseif dim == 1
-                @printf(f, "%f %f %f %f\n", kvec[1], iv.im, sigma[l,ix,iy,iz].re, sigma[l,ix,iy,iz].im)
+                @printf(f, "%f %f %f %f\n", kvec[1], iw.im, sigma[l,ix,iy,iz].re, sigma[l,ix,iy,iz].im)
             elseif dim == 3
                 @printf(f, "%f %f %f %f %f\n", kvec[1], kvec[2], kvec[3], sigma[l,ix,iy,iz].re, sigma[l,ix,iy,iz].im)
             elseif dim == 2

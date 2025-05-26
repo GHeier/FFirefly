@@ -1,5 +1,6 @@
 #include <type_traits>
 #include <iostream>
+#include <filesystem>
 #include <math.h>
 #include <string>
 #include <vector>
@@ -7,7 +8,7 @@
 #include "c_config.h"
 
 using namespace std;
-
+namespace fs = std::filesystem;
 // Global Variables are listed below
 
 //[CONTROL]
@@ -142,6 +143,13 @@ extern "C" void load_cpp_config() {
 //[RESPONSE]
     dynamic = c_dynamic;
     // End of Global Functions 
+    if (!isDirectoryExisting(outdir)) {
+        if (fs::create_directory(outdir)) {
+            std::cout << "Directory " << outdir << " created successfully.\n";
+        } else {
+            std::cout << "Failed to create directory " << outdir << "\n";
+        }
+    }
 }
 
 
@@ -176,4 +184,9 @@ void set_t1(int n, float t1_) {
 
 void read_c_config_wrapper(string path) {
     read_c_config(path.c_str());
+}
+
+bool isDirectoryExisting(const std::string& path) {
+    std::filesystem::path dirPath(path);
+    return std::filesystem::exists(dirPath) && std::filesystem::is_directory(dirPath);
 }

@@ -34,17 +34,10 @@ const beta = 1 / cfg.Temperature
 const num_surfaces = 7
 
 
-function get_kvec(i, j, k)
-    temp = BZ * [i / nx - 0.5, j / ny - 0.5, k / nz - 0.5]
-    return temp[1:dim]
-end
-
-
 function get_V(V, q, w)
     l = length(w)
     return [V(q, imag(w[i])) for i in 1:l]
 end
-
 
 
 function get_iw_iv(mesh)
@@ -65,24 +58,23 @@ function get_iw_iv(mesh)
 end
 
 
-function initialize_ep_phi_arr(surfaces, surface_vals, fnw)
+function initialize_ep_phi_arr(surfaces, surface_vals, iw)
+    fnw = length(iw)
+    sigma = Self_Energy()
     println("Initializing epsilon")
-    e_4d = Vector{Float32}(undef, num_surfaces)
+    e_4d = Vector{Matrix{ComplexF32}}(undef, num_surfaces)
     phi = Vector{Matrix{ComplexF32}}(undef, num_surfaces)
     for l in 1:num_surfaces
         i_len = length(surfaces[l])
-        e_4d[l] = surface_vals[l]
+        for i in 1:i_len, f in 1:fnw
+            k = surfaces[l][i]
+            w = iw[f]
+            println(w, " ", k)
+            e_4d[l][i, f] = surface_vals[l] + sigma(k, imag(w))
+        end
         phi[l] = ones(ComplexF32, i_len, fnw)
     end
     return e_4d, phi
-end
-
-
-function fill_F_G!(phi, Z, chi, iw, e, F, G)
-    for l in 1:num_surfaces
-        F[l] .= phi[l] ./ ((imag.(iw)' .* Z[l]).^2 .+ phi[l].^2 .+ (e' .- mu .+ chi[l]).^2)
-        G[l] .= -(iw' .* Z[l] .+ e' .+ chi[l] .- mu) ./ (-(Z[l] .* iw').^2 .+ phi[l].^2 .+ (e' .+ chi[l] .- mu).^2)
-    end
 end
 
 
@@ -100,70 +92,88 @@ function fill_V_arr(iv, vertex, surfaces, band)
 
     V_arr = Matrix{Array{ComplexF32, 3}}(undef, num_surfaces, num_surfaces)
 
-    for s1 in 1:num_surfaces
+    @threads for idx in 1:num_surfaces^2
+    #for idx in 1:num_surfaces^2
+        s1 = fld(idx - 1, num_surfaces) + 1
+        s2 = mod(idx - 1, num_surfaces) + 1
+
         i1 = length(surfaces[s1])
-        for s2 in 1:num_surfaces
-            i2 = length(surfaces[s2])
-            Vblock = Array{ComplexF32}(undef, i1, i2, bnw)
+        i2 = length(surfaces[s2])
+        Vblock = Array{ComplexF32}(undef, i1, i2, bnw)
 
-            @inbounds for i in 1:i1, j in 1:i2
-                k1 = surfaces[s1][i]
-                k2 = surfaces[s2][j]
-                dA = k2.area
-                vk_mag = Firefly.norm(vk(k2.n, k2, band))
-
-                Vblock[i, j, :] = get_V(vertex, k1 - k2, iv) * dA / vk_mag
-            end
-            V_arr[s1, s2] = Vblock
+        @inbounds for i in 1:i1, j in 1:i2
+            k1 = surfaces[s1][i]
+            k2 = surfaces[s2][j]
+            Vblock[i, j, :] = get_V(vertex, k1 - k2, iv) 
         end
+
+        V_arr[s1, s2] = Vblock
     end
 
+    if any(V -> any(isnan, V), V_arr)
+        println("NAN in V_arr")
+        exit()
+    end
     return V_arr
 end
 
 
-function compute_phi(phi, iw, e_4d, V, mesh)
+function get_prefactors(surfaces, band, surface_weights)
+    prefactors = Vector{Vector{Float32}}(undef, num_surfaces)
+    for i in 1:num_surfaces
+        li = size(surfaces[i], 1)
+        tempvec = Vector{Float32}(undef, li)
+        w = surface_weights[i]
+        for j in 1:li
+            kvec = surfaces[i][j]
+            dS = kvec.area
+            vk = Firefly.norm(Firefly.vk(kvec.n, kvec, band))
+            tempvec[j] = w * dS / vk
+        end
+        prefactors[i] = tempvec
+    end
+    return prefactors
+end
+
+
+function compute_phi(phi, iw, e_4d, V, prefactors, mesh)
     P1 = [similar(m) for m in phi]
-    num_k = 0
+    num_surfaces = length(phi)
+
+    num_k_threads = Threads.Atomic{Int}(0)
+
+    println("1")
     for i in 1:num_surfaces
         li = size(phi[i], 1)
-        num_k += li
-        e = e_4d[i]
+
+        println("2")
+        local_sum = 0
         for j in 1:li
+            println("3")
             phiw = phi[i][j, :]
-            Fw = -phiw .* ( 1 ./ (iw .- e)) .* (1 ./ (-iw .- e))
-            b = false
-            for x in Fw
-                b = isnan(x)
-                if b 
-                    break 
-                end
-            end
-            if b
-                println("Fw NAN: ", Fw)
-            end
+            println("4")
+            e = e_4d[i][j, :]
+            println("5")
+            Dw = prefactors[i][j] .* (-phiw) .* (2 ./ (iw .- e)) .* (2 ./ (-iw .- e))
+            println("6")
+
             for a in 1:num_surfaces
                 la = size(phi[a], 1)
                 for b in 1:la
                     Vw = V[i, a][j, b, :]
-                    X1 = element_convolution_F(Vw, Fw, mesh)
-                    b = false
-                    for x in Vw
-                        b = isnan(x)
-                        if b 
-                            break 
-                        end
-                    end
-                    if b
-                        #println("Vw NAN: ", Vw)
-                    end
+                    X1 = element_convolution_F(Vw, Dw, mesh)
                     P1[i][j, :] += X1
                 end
             end
+            local_sum += 1
         end
+
+        atomic_add!(num_k_threads, local_sum)
     end
+
     surf_eigs = [sum(P1[i] .* phi[i]) for i in 1:num_surfaces]
-    eig = sum(surf_eigs) / (num_k * beta)
+    eig = sum(surf_eigs) / (num_k_threads[] * beta)
+
     return eig, P1
 end
 
@@ -174,21 +184,18 @@ function get_surface(num_surfaces, band)
     surfaces = Vector{Vector{Vec}}(undef, num_surfaces)
     for i in 1:num_surfaces, n in 1:nbnd
         function band_func(k)
-            return band(n, k)
+            return band(n, k) - mu
         end
         surfaces[i] = Firefly.Surface(band_func, wc * surface_vals[i]).faces
     end
-    return surfaces, surface_vals * wc
+    return surfaces, surface_vals * wc, surface_weights
 end
 
 
-function linearized_eliashberg_loop(phi, iw, V_rt, e, mesh)
+function linearized_eliashberg_loop(phi, iw, V_rt, e, prefactors, mesh)
     eig, prev_eig, eig_err = 0, 0, 1
     while eig_err > 1e-5
-        println("1")
-        eig, phi = compute_phi(phi, iw, e, V_rt, mesh)
-        println("1")
-        println(eig)
+        eig, phi = compute_phi(phi, iw, e, V_rt, prefactors, mesh)
         eig_err = abs(eig - prev_eig)
         prev_eig = eig
         println("Eig: ", round(eig, digits=6), " Error: ", round(eig_err, digits=6), "   \r")
@@ -200,8 +207,6 @@ end
 
 
 function eigenvalue_computation()
-    println("Started Julia")
-    println("Beginning Computing eigenvalues")
     println("Creating Mesh")
     mesh = IR_Mesh()
     iw, iv = get_iw_iv(mesh)
@@ -209,18 +214,21 @@ function eigenvalue_computation()
 
     println("Getting Bands")
     band = Firefly.Bands()
-    surfaces, surface_vals = get_surface(num_surfaces, band)
+    surfaces, surface_vals, surface_weights = get_surface(num_surfaces, band)
+    println("Creating Integration Prefactors")
+    prefactors = get_prefactors(surfaces, band, surface_weights)
+
     println("Getting Vertex")
     vertex = Firefly.Vertex()
-    println("Creating V(k1, k2, tau)")
+    println("Creating V(k1, k2, iw)")
     V_rt = fill_V_arr(iv, vertex, surfaces, band)
 
 
     println("Creating energy mesh")
-    e_4d, phi = initialize_ep_phi_arr(surfaces, surface_vals, fnw)
+    e_4d, phi = initialize_ep_phi_arr(surfaces, surface_vals, iw)
 
     println("Iteration to find Eigenvalue and symmetry")
-    eig, phi = linearized_eliashberg_loop(phi, iw, V_rt, e_4d, mesh)
+    eig, phi = linearized_eliashberg_loop(phi, iw, V_rt, e_4d, prefactors, mesh)
     @printf("Final Eig: %.6f\n", real(eig))
 end
 

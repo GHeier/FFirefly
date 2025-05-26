@@ -7,6 +7,7 @@ export epsilon,
        vk,
        norm,
        Vertex,
+       Self_Energy,
        Field_C,
        Field_R,
        destroy!,
@@ -234,6 +235,28 @@ function vk(n, k::Vec, band::Bands)::Vec
 end
 
 function Base.finalize(obj::Bands)
+    destroy!(obj)
+end
+
+mutable struct Self_Energy
+    ptr::Ptr{Cvoid}
+end
+
+function Self_Energy()
+    ptr = ccall((:Self_Energy_export0, libfly), Ptr{Cvoid}, ())
+    return Self_Energy(ptr)
+end
+
+function (self::Self_Energy)(arg0::Vector{Float64}, arg1::Float64)::Float32
+    real_result::Ref{Float32} = Ref(Float32(0.0))
+    imag_result::Ref{Float32} = Ref(Float32(0.0))
+    newarg0 = Float32.(arg0)
+    lenarg0 = length(arg0)
+    ccall((:Self_Energy_operator_export0, libfly), ComplexF32, (Ptr{Cvoid}, Ptr{Float32}, Cint, Cfloat, Ptr{Cfloat}, Ptr{Cfloat}), self.ptr, newarg0, lenarg0, arg1, real_result, imag_result)
+    return ComplexF32(real_result[], imag_result[])
+end
+
+function Base.finalize(obj::Self_Energy)
     destroy!(obj)
 end
 

@@ -109,3 +109,4 @@ void printv(const std::string& format, Args... args) {
     if (verbosity == "high") printf(format.c_str(), args...);
 }
 void read_c_config_wrapper(string path);
+bool isDirectoryExisting(const std::string& path);

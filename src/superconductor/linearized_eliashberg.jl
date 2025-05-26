@@ -30,7 +30,7 @@ const wc = cfg.bcs_cutoff_frequency
 
 const beta = 1 / cfg.Temperature
 
-const bcs_debug = true 
+const bcs_debug = false
 
 if bcs_debug && nw % 2 != 0
     println("Remember to make nw even")
@@ -97,12 +97,12 @@ function get_iw_iv(mesh)
 end
 
 
-function create_energy_mesh(band, iv, Sigma)
-    nw = length(iv)
+function create_energy_mesh(band, iw, Sigma)
+    nw = length(iw)
     e_arr = zeros(ComplexF32, nw, nx, ny, nz)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:nw
         kvec = get_kvec(i, j, k)
-        e_arr[l, i, j, k] = band(1, kvec) - mu + Sigma(kvec, imag(iv[l]))
+        e_arr[l, i, j, k] = band(1, kvec) - mu + Sigma(kvec, imag(iw[l]))
     end
     return e_arr
 end
@@ -300,7 +300,7 @@ function eigenvalue_computation()
     println("Getting Self Energy")
     Sigma = Self_Energy()
     println("Creating energy mesh")
-    e = create_energy_mesh(band, iv, sigma)
+    e = create_energy_mesh(band, iw, Sigma)
 
     println("Calculating Z")
     #Z = ones(Complex{Float32}, fnw, nx, ny, nz)
