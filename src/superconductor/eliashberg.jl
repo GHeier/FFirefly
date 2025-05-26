@@ -62,10 +62,11 @@ function fill_V_arr(iw, vertex, surfaces, band)
                 k1 = surfaces[s1][i]
                 k2 = surfaces[s2][j]
                 dA = k2.area
-                vk = norm(Firefly.vk(k2.n, k2, band))
+                vk = Firefly.vk(k2.n, k2, band)
+                dedk = Firefly.norm(vk)
 
                 for f in 1:fnw
-                    Vblock[i, j, f] = get_V(vertex, k1 - k2, iw[f], 0) * dA / vk
+                    Vblock[i, j, f] = get_V(vertex, k1 - k2, iw[f], 0) * dA / dedk
                 end
             end
         end

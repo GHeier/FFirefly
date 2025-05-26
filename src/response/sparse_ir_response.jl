@@ -37,23 +37,42 @@ function get_kvec(ix, iy, iz)
     return kvec
 end
 
+
+function get_iw_iv(mesh)
+    fnw, bnw, fntau, bntau = mesh.fnw, mesh.bnw, mesh.fntau, mesh.bntau
+    println("fnw: ", fnw, " bnw: ", bnw, " fntau: ", fntau, " bntau: ", bntau)
+    println("Created IRMesh")
+    iw = Array{ComplexF32}(undef, fnw)
+    iv = Array{ComplexF32}(undef, bnw)
+    for i in 1:fnw
+        iw[i] = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta)
+    end
+for i in 1:bnw
+        iv[i] = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[i], beta)
+    end
+    println("Fermionic frequency from ", minimum(imag.(iw)), " to ", maximum(imag.(iw)))
+    println("Bosonic frequency from ", minimum(imag.(iv)), " to ", maximum(imag.(iv)))
+    return iw, iv 
+end
+
+
 function get_ckio_ir()
     println("Calculating IR response")
     println("Getting basis")
     basis = IR_Mesh(1e-15)
-    min_iw = valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[1], beta)
-    max_iw = valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[end], beta)
-    println("Min frequency: ", min_iw)
-    println("Max frequency: ", max_iw)
+    iw, iv = get_iw_iv(basis)
     println("Filling bands array")
-    ek = Array{ComplexF64,3}(undef, nx, ny, nz)
+    band = Bands()
+    ek = Array{ComplexF64}(undef, 1, nx, ny, nz)
     for iy in 1:ny, ix in 1:nx, iz in 1:nz
         kvec = get_kvec(ix - 1, iy - 1, iz - 1)
-        ek[ix, iy, iz] = epsilon(1, kvec)
+        ek[1, ix, iy, iz] = band(1, kvec)
     end
+    iw = reshape(iw, :, 1, 1, 1)
+
 
     println("Calculating G(k,iw)")
-    gkio = gkio_calc(basis, ek, mu)
+    gkio = gkio_calc(basis, ek, mu, iw)
     println("Calculating G(r,tau)")
     grit = grit_calc(basis, gkio)
     println("Calculating X(k,iw)")
@@ -61,14 +80,8 @@ function get_ckio_ir()
     save_ckio_ir(basis, ckio)
 end
 
-function gkio_calc(basis, ek::Array{ComplexF64,3}, mu::Float64)
-    gkio = Array{ComplexF64}(undef, basis.fnw, nx, ny, nz)
-    @threads for ix in 1:nx
-        for iy in 1:ny, iw in 1:basis.fnw, iz in 1:nz
-            iv::ComplexF64 = valueim(basis.IR_basis_set.smpl_wn_f.sampling_points[iw], beta)
-            gkio[iw,ix,iy,iz] = 1.0/(iv - ek[ix,iy,iz] + mu)
-        end
-    end
+function gkio_calc(basis, ek::Array{ComplexF64,4}, mu::Float64, iw)
+    gkio = 1.0 ./ (iw .- ek .+ mu)
     return gkio
 end
 
@@ -80,11 +93,7 @@ end
 
 function ckio_calc(basis, grit)
     crit = Array{ComplexF64}(undef, basis.bntau, nx, ny, nz)
-    @threads for ix in 1:nx
-        for iy in 1:ny, iz in 1:nz, it in 1:basis.bntau
-            crit[it,ix,iy,iz] = grit[it,ix,iy,iz] * grit[basis.bntau-it+1,ix,iy,iz]
-        end
-    end
+    crit .= grit .* grit
     # Fourier transform
     ckit = r_to_k(crit, basis)
     ckio = tau_to_wn(basis, Bosonic(), ckit)
@@ -94,44 +103,28 @@ end
 function save_ckio_ir(basis, ckio::Array{ComplexF64,4})
     println("Saving IR response")
     open(outdir * prefix * "_chi.dat", "w") do f
-        if dim == 3 && dynamic == true
-            @printf(f, "# x y z w Re(f) Im(f)\n")
-        elseif dim == 2 && dynamic == true
-            @printf(f, "# x y w Re(f) Im(f)\n")
-        elseif dim == 1 && dynamic == true
-            @printf(f, "# x w Re(f) Im(f)\n")
-        elseif dim == 3 && dynamic == false
-            @printf(f, "# x y z Re(f) Im(f)\n")
-        elseif dim == 2 && dynamic == false
-            @printf(f, "# x y Re(f) Im(f)\n")
-        elseif dim == 1 && dynamic == false
-            @printf(f, "# x Re(f) Im(f)\n")
-        else
-            println("Invalid dimension")
-            exit(1)
+        header, fmt = begin
+            if dim == 3
+                dynamic ? ("# x y z w Re(f) Im(f)\n", (k, iv, v) -> @sprintf("%f %f %f %f %f %f\n", k[1], k[2], k[3], iv.im, real(v), imag(v))) : ("# x y z Re(f) Im(f)\n",        (k, iv, v) -> @sprintf("%f %f %f %f %f\n",   k[1], k[2], k[3], real(v), imag(v)))
+            elseif dim == 2
+                dynamic ? ("# x y w Re(f) Im(f)\n", (k, iv, v) -> @sprintf("%f %f %f %f %f\n",   k[1], k[2], iv.im, real(v), imag(v))) : ("# x y Re(f) Im(f)\n",    (k, iv, v) -> @sprintf("%f %f %f %f\n",     k[1], k[2], real(v), imag(v)))
+            elseif dim == 1
+                dynamic ? ("# x w Re(f) Im(f)\n",   (k, iv, v) -> @sprintf("%f %f %f %f\n",     k[1], iv.im, real(v), imag(v))) : ("# x Re(f) Im(f)\n",      (k, iv, v) -> @sprintf("%f %f %f\n",       k[1], real(v), imag(v)))
+            else
+                error("Invalid dimension: $dim")
+            end
         end
-        for ix in 1:nx, iy in 1:ny, iz in 1:nz, iw in 1:basis.bnw
+
+       print(f, header)
+
+       for ix in 1:nx, iy in 1:ny, iz in 1:nz, iw in 1:basis.bnw
             kvec = get_kvec(ix - 1, iy - 1, iz - 1)
             iv = valueim(basis.IR_basis_set.smpl_wn_b.sampling_points[iw], beta)
-            if dynamic == false && iv.im != 0.0
+            if !dynamic && iv.im != 0.0
                 continue
             end
-            if dim == 3 && dynamic == true
-                @printf(f, "%f %f %f %f %f %f\n", kvec[1], kvec[2], kvec[3], iv.im, ckio[iw,ix,iy,iz].re, ckio[iw,ix,iy,iz].im)
-            elseif dim == 2 && dynamic == true
-                @printf(f, "%f %f %f %f %f\n", kvec[1], kvec[2], iv.im, ckio[iw,ix,iy,iz].re, ckio[iw,ix,iy,iz].im)
-            elseif dim == 1 && dynamic == true
-                @printf(f, "%f %f %f %f\n", kvec[1], iv.im, ckio[iw,ix,iy,iz].re, ckio[iw,ix,iy,iz].im)
-            elseif dim == 3 && dynamic == false
-                @printf(f, "%f %f %f %f %f\n", kvec[1], kvec[2], kvec[3], ckio[iw,ix,iy,iz].re, ckio[iw,ix,iy,iz].im)
-            elseif dim == 2 && dynamic == false
-                @printf(f, "%f %f %f %f\n", kvec[1], kvec[2], ckio[iw,ix,iy,iz].re, ckio[iw,ix,iy,iz].im)
-            elseif dim == 1 && dynamic == false
-                @printf(f, "%f %f %f\n", kvec[1], ckio[iw,ix,iy,iz].re, ckio[iw,ix,iy,iz].im)
-            else
-                println("Invalid dimension")
-                exit(1)
-            end
+            val = ckio[iw, ix, iy, iz]
+            print(f, fmt(kvec, iv, val))
         end
     end
     println("Saved to ", outdir * prefix * "_chi.dat")

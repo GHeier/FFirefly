@@ -1,15 +1,13 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 wc = 0.1
+T = 0.01
 
-def square_well_approximate(w):
-    delta = 0.01
-    return - 0.5 * (np.tanh((w + wc)/delta) - np.tanh((w - wc)/delta))
+n = np.arange(1e7)
+w_n = np.pi * T * (2 * n + 1)
 
-plt.figure()
-warr = np.linspace(-0.5, 0.5, 1000)
-farr = square_well_approximate(warr)
-plt.plot(warr, farr)
-plt.show()
-
+term = np.where(w_n <= wc, 1 / w_n, 0)
+sum = np.sum(term) * np.pi * T * 2
+print(sum)
+sum2 = np.sum(1 / w_n - 1 / (w_n + wc)) * 2 * np.pi * T
+print(sum2)

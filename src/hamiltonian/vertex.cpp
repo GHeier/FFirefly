@@ -48,7 +48,8 @@ void call_flex() {
 }
 
 void call_flex2() {
-    printf("Reading chi\n");
+    string filename = outdir + prefix + "_chi.dat";
+    printf("Reading chi from %s\n", filename.c_str());
     Field_C chi(outdir + prefix + "_chi.dat");
     float U = onsite_U;
     float nx = q_mesh[0], ny = q_mesh[1], nz = q_mesh[2];
@@ -57,6 +58,7 @@ void call_flex2() {
 
     vector<Vec> points;
     vector<float> wpts = chi.cmf.data.w_points;
+    cout << "wpts size: " << wpts.size() << endl;
     vector<complex<Vec>> values;
 
     printf("Computing vertex\n");

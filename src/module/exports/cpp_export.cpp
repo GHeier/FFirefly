@@ -166,7 +166,9 @@ void Self_Energy_operator_export0(Self_Energy *obj, const float *point, int len,
 
 Field_C *Field_C_export0() { return new Field_C(); }
 Field_C *Field_C_export1(CMField cmf) { return new Field_C(cmf); }
-Field_C *Field_C_export2(const char *filename) { return new Field_C(filename); }
+Field_C *Field_C_export2(const char *filename) { 
+    return new Field_C(filename); 
+}
 
 Field_R *Field_R_export0() { return new Field_R(); }
 Field_R *Field_R_export1(CMField cmf) { return new Field_R(cmf); }

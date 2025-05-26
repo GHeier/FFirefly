@@ -6,9 +6,9 @@ export load_config!, Vec, Surface, get_faces
 export epsilon,
        vk,
        norm,
-       #Vertex,
-       #Field_C,
-       #Field_R,
+       Vertex,
+       Field_C,
+       Field_R,
        destroy!,
        save_field_to_file!,
        save_data

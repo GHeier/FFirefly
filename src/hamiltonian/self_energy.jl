@@ -23,6 +23,7 @@ end
 nw = cfg.w_pts
 nbnd = cfg.nbnd
 mu = cfg.fermi_energy
+wc = cfg.bcs_cutoff_frequency
 BZ = cfg.brillouin_zone
 prefix = cfg.prefix
 outdir = cfg.outdir
@@ -55,51 +56,75 @@ function get_iw_iv_bcs()
     return iw, iv 
 end
 
-function get_self_energy()
-    println("Getting vertex")
-    vertex = Vertex()
-    k1 = [0.1, 0.2, 0.3]
-    k2 = [0.2, 0.3, 0.4]
-    is_bcs = false
-    if abs(vertex(k1) - vertex(k2)) < 1e-4 && interaction == "const"
-        iw, iv = get_iw_iv_bcs()
-        fnw, bnw = nw, nw
-        is_bcs = true
-    else
-        println("Getting basis")
-        basis = IR_Mesh(1e-15)
-        fnw, bnw = basis.fnw, basis.bnw
-        iw, iv = get_iw_iv(basis)
-    end
 
-    println("Creating G and V arrays")
-    G = Array{ComplexF64}(undef, fnw, nx, ny, nz)
-    V = Array{ComplexF64}(undef, bnw, nx, ny, nz)
+function zero_out_beyond_wc_e!(A, e)
+    nw, nx, ny, nz = size(A)
+    for j in 1:nx, k in 1:ny, l in 1:nz
+        if abs(e[1, j, k, l]) > wc 
+            A[:, j, k, l] .= 0
+        end
+    end
+end
+
+function get_G_V(iw, iv)
+    fnw = length(iw)
+    bnw = length(iv)
+    G = Array{ComplexF32}(undef, fnw, nx, ny, nz)
+    V = Array{ComplexF32}(undef, bnw, nx, ny, nz)
+    e = Array{ComplexF32}(undef, 1, nx, ny, nz)
     println("Getting bands")
     band = Bands()
-    println("Fill arrays")
+    println("Getting vertex")
+    vertex = Vertex()
+    println("Filling arrays")
     for iy in 1:ny, ix in 1:nx, iz in 1:nz
         kvec = get_kvec(ix - 1, iy - 1, iz - 1)
+        e[1, ix, iy, iz] = band(1, kvec)
         for l in 1:fnw
-            w = imag(iw[l])
-            G[l, ix, iy, iz] = band(1, kvec) 
+            G[l, ix, iy, iz] = 1 / (iw[l] - band(1, kvec) )
         end
         for l in 1:bnw
             w = imag(iv[l])
             V[l, ix, iy, iz] = vertex(kvec, w)
         end
     end
+    zero_out_beyond_wc_e!(G, e)
+    return G, V
+end
+
+function get_self_energy()
+    is_bcs = false
+    if interaction == "const"
+        iw, iv = get_iw_iv_bcs()
+        fnw, bnw = nw, nw
+        is_bcs = true
+        println("Taking const interaction")
+    else
+        println("Getting basis")
+        basis = IR_Mesh()
+        fnw, bnw = basis.fnw, basis.bnw
+        iw, iv = get_iw_iv(basis)
+    end
+
+    G, V = get_G_V(iw, iv)
+    println("Got arrays")
     if is_bcs
-        G_rt = fft(G)
-        V_rt = fft(V)
-        temp = V_rt .* G_rt
-        sigma = fftshift(ifft(temp)) / (beta * nx * ny * nz)
+        p_fft = plan_fft(G)
+        p_ifft = plan_ifft(G)
+
+        G_rt = p_fft * G
+        V_rt = p_fft * V
+        V_rt .*= G_rt
+        sigma = fftshift(p_ifft * V_rt) / (beta * nx * ny * nz)
+        #sigma = ones(ComplexF32, nw, nx, ny, nz)
     else
         G_rt = kw_to_rtau(G, "F", basis)
         V_rt = kw_to_rtau(V, "B", basis)
-        temp = V_rt .* G_rt
-        sigma = rtau_to_kw(temp, "B", basis)
+        V_rt .*= G_rt
+        sigma = rtau_to_kw(V_rt, "B", basis)
     end
+    N = Field_R(outdir * prefix * "_DOS.dat")
+    println("Predicted BCS sigma = ", 1 * N(mu) * wc / 2)
     println("Max Sigma: ", maximum(real.(sigma)))
     println("Min Sigma: ", minimum(real.(sigma)))
     #save(iw, sigma)

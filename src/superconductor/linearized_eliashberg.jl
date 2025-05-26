@@ -173,13 +173,13 @@ function linearized_eliashberg(phi, iw, V_rt, e, mesh)
     #F = -phi ./ ((Z .* imag.(iw)).^2 .+ e.^2)
     F_rt = kw_to_rtau(F, 'F', mesh)
     temp = V_rt .* F_rt
-    result = rtau_to_kw(temp, 'F', mesh)
-    result = phi .* result # Resultant eigenvector/value
+    newphi = rtau_to_kw(temp, 'F', mesh)
+    result = phi .* newphi # Resultant eigenvector/value
     mag = phi .* phi # Normalized gap
 
     eig = sum(result) / (nk * beta)
     norm = sum(mag) / (nk * beta)
-    return eig / norm, result ./ norm
+    return eig / norm, newphi ./ norm
 end
 
 

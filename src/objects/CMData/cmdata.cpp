@@ -50,87 +50,80 @@ CMData::CMData(string filename) { *this = load(filename); }
 
 CMData load(string filename) {
     ifstream file(filename);
-    if (!file.is_open()) {
-        string base_err = "Failed to open the file: ";
-        throw runtime_error(base_err + filename);
+    if (!file) {
+        throw runtime_error("Failed to open file: " + filename);
     }
+
     string line;
-    int ind = 0;
     int dimension = 0;
-    bool w_col = false;
-    bool n_col = false;
-    bool is_complex = false;
-    bool is_vector = false;
+    bool w_col = false, n_col = false, is_complex = false, is_vector = false;
+
     vector<Vec> points;
     vector<complex<Vec>> values;
+
+    // Parse header
+    if (!getline(file, line)) {
+        throw runtime_error("Empty file or read error: " + filename);
+    }
+
+    istringstream header_stream(line);
+    string word;
+    while (header_stream >> word) {
+        if (word == "x" || word == "kx" || word == "y" || word == "ky" || word == "z" || word == "kz")
+            ++dimension;
+        else if (word == "w") w_col = true;
+        else if (word == "n") n_col = true;
+        else if (word == "Re(f)") is_complex = true;
+        else if (word == "fx") is_vector = true;
+        else if (word == "Re(fx)") { is_vector = true; is_complex = true; }
+    }
+
+    const int coord_count = dimension + (w_col ? 1 : 0);
+    float temp;
+
+    // Read data lines
     while (getline(file, line)) {
         istringstream iss(line);
-        if (ind == 0) {
-            string word;
-            while (iss >> word) {
-                if (word == "x" || word == "kx")
-                    dimension++;
-                if (word == "y" || word == "ky")
-                    dimension++;
-                if (word == "z" || word == "kz")
-                    dimension++;
-                if (word == "w")
-                    w_col = true;
-                if (word == "n")
-                    n_col = true;
-                if (word == "Re(f)")
-                    is_complex = true;
-                if (word == "fx")
-                    is_vector = true;
-                if (word == "Re(fx)") {
-                    is_vector = true;
-                    is_complex = true;
-                }
-            }
-            ind++;
-            continue;
-        }
         Vec point;
-        float value;
-        float ivalue;
-        for (int i = 0; i < dimension + w_col; i++) {
-            float temp;
+        for (int i = 0; i < coord_count; ++i) {
             iss >> temp;
             point(i) = temp;
         }
+
         if (n_col) {
-            iss >> ivalue;
-            point.n = ivalue;
+            iss >> temp;
+            point.n = static_cast<int>(temp);
         }
         point.dimension = dimension;
+
         points.push_back(point);
-        iss >> value;
-        Vec f_val(value);
-        Vec fi_val(value);
-        complex<Vec> vval = complex<Vec>(f_val, Vec());
+
+        // Parse value(s)
+        iss >> temp;
+        Vec f_val(temp), fi_val(0.0f);
+
         if (is_complex) {
-            iss >> ivalue;
-            fi_val = Vec(ivalue);
-            vval = complex<Vec>(f_val, fi_val);
+            iss >> temp;
+            fi_val = Vec(temp);
         }
+
         if (is_vector) {
             f_val.dimension = dimension;
             fi_val.dimension = dimension;
-            for (int i = 1; i < dimension; i++) {
-                iss >> value;
-                f_val(i) = value;
+            for (int i = 1; i < dimension; ++i) {
+                iss >> temp;
+                f_val(i) = temp;
                 if (is_complex) {
-                    iss >> ivalue;
-                    fi_val(i) = ivalue;
+                    iss >> temp;
+                    fi_val(i) = temp;
                 }
             }
-            vval = complex<Vec>(f_val, fi_val);
         }
 
-        values.push_back(vval);
+        values.emplace_back(f_val, fi_val);
     }
-    return CMData(points, values, dimension, w_col, n_col, is_complex,
-                  is_vector);
+
+    return CMData(points, values, dimension, w_col, n_col, is_complex, is_vector);
 }
 
 string get_header(int dimension, bool with_w, bool with_n, bool is_complex,
