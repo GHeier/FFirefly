@@ -35,7 +35,7 @@ The Ffirefly project grants access to a wide variety of extremely powerful algor
 | h5py       | Roots         | openBLAS |            |      |
 | sparse_ir  | SparseIR      | LAPACK   |            |      |
 | pandas     | MPI           | LAPACKE  |            |      |
-|            |               | Ninja    |            |      |
+| tbmodels   |               | Ninja    |            |      |
 |            |               | OpenMP   |            |      |
 |            |               | ccache   |            |      |
 |            |               | Boost    |            |      |
