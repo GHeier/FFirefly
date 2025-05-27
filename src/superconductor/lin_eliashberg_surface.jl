@@ -58,20 +58,36 @@ function get_iw_iv(mesh)
 end
 
 
+function get_surface(num_surfaces, band)
+    println("Calculating Surfaces")
+    surface_vals, surface_weights = gausslegendre(num_surfaces)
+    surfaces = Vector{Vector{Vec}}(undef, num_surfaces)
+    for i in 1:num_surfaces, n in 1:nbnd
+        function band_func(k)
+            return band(n, k) - mu
+        end
+        surfaces[i] = Firefly.Surface(band_func, wc * surface_vals[i]).faces
+    end
+    return surfaces, surface_vals * wc, surface_weights
+end
+
+
 function initialize_ep_phi_arr(surfaces, surface_vals, iw)
     fnw = length(iw)
+    println("Getting self-energy")
     sigma = Self_Energy()
     println("Initializing epsilon")
     e_4d = Vector{Matrix{ComplexF32}}(undef, num_surfaces)
     phi = Vector{Matrix{ComplexF32}}(undef, num_surfaces)
     for l in 1:num_surfaces
         i_len = length(surfaces[l])
+        temp = Matrix{ComplexF32}(undef, i_len, fnw)
         for i in 1:i_len, f in 1:fnw
             k = surfaces[l][i]
             w = iw[f]
-            println(w, " ", k)
-            e_4d[l][i, f] = surface_vals[l] + sigma(k, imag(w))
+            temp[i, f] = surface_vals[l]# + sigma(k, imag(w))
         end
+        e_4d[l] = temp
         phi[l] = ones(ComplexF32, i_len, fnw)
     end
     return e_4d, phi
@@ -86,7 +102,25 @@ function element_convolution_F(A, B, mesh)
 end
 
 
-function fill_V_arr(iv, vertex, surfaces, band)
+function get_prefactors(surfaces, band, surface_weights)
+    prefactors = Vector{Vector{Float32}}(undef, num_surfaces)
+    for i in 1:num_surfaces
+        li = size(surfaces[i], 1)
+        tempvec = Vector{Float32}(undef, li)
+        w = surface_weights[i]
+        for j in 1:li
+            kvec = surfaces[i][j]
+            dS = kvec.area
+            vk = Firefly.norm(Firefly.vk(kvec.n, kvec, band))
+            tempvec[j] = w * dS / vk
+        end
+        prefactors[i] = tempvec
+    end
+    return prefactors
+end
+
+
+function fill_V_arr(iv, vertex, surfaces)
     num_surfaces = length(surfaces)
     bnw = length(iv)
 
@@ -118,44 +152,20 @@ function fill_V_arr(iv, vertex, surfaces, band)
 end
 
 
-function get_prefactors(surfaces, band, surface_weights)
-    prefactors = Vector{Vector{Float32}}(undef, num_surfaces)
-    for i in 1:num_surfaces
-        li = size(surfaces[i], 1)
-        tempvec = Vector{Float32}(undef, li)
-        w = surface_weights[i]
-        for j in 1:li
-            kvec = surfaces[i][j]
-            dS = kvec.area
-            vk = Firefly.norm(Firefly.vk(kvec.n, kvec, band))
-            tempvec[j] = w * dS / vk
-        end
-        prefactors[i] = tempvec
-    end
-    return prefactors
-end
-
-
 function compute_phi(phi, iw, e_4d, V, prefactors, mesh)
     P1 = [similar(m) for m in phi]
     num_surfaces = length(phi)
 
     num_k_threads = Threads.Atomic{Int}(0)
 
-    println("1")
     for i in 1:num_surfaces
         li = size(phi[i], 1)
 
-        println("2")
         local_sum = 0
         for j in 1:li
-            println("3")
             phiw = phi[i][j, :]
-            println("4")
             e = e_4d[i][j, :]
-            println("5")
             Dw = prefactors[i][j] .* (-phiw) .* (2 ./ (iw .- e)) .* (2 ./ (-iw .- e))
-            println("6")
 
             for a in 1:num_surfaces
                 la = size(phi[a], 1)
@@ -174,21 +184,11 @@ function compute_phi(phi, iw, e_4d, V, prefactors, mesh)
     surf_eigs = [sum(P1[i] .* phi[i]) for i in 1:num_surfaces]
     eig = sum(surf_eigs) / (num_k_threads[] * beta)
 
-    return eig, P1
-end
-
-
-function get_surface(num_surfaces, band)
-    println("Calculating Surfaces")
-    surface_vals, surface_weights = gausslegendre(num_surfaces)
-    surfaces = Vector{Vector{Vec}}(undef, num_surfaces)
-    for i in 1:num_surfaces, n in 1:nbnd
-        function band_func(k)
-            return band(n, k) - mu
-        end
-        surfaces[i] = Firefly.Surface(band_func, wc * surface_vals[i]).faces
+    if any(x -> any(isnan, x), P1)
+        println("NAN in P1")
+        exit()
     end
-    return surfaces, surface_vals * wc, surface_weights
+    return eig, P1
 end
 
 
@@ -199,7 +199,6 @@ function linearized_eliashberg_loop(phi, iw, V_rt, e, prefactors, mesh)
         eig_err = abs(eig - prev_eig)
         prev_eig = eig
         println("Eig: ", round(eig, digits=6), " Error: ", round(eig_err, digits=6), "   \r")
-        return eig, phi
     end
     println()
     return eig, phi
@@ -217,11 +216,13 @@ function eigenvalue_computation()
     surfaces, surface_vals, surface_weights = get_surface(num_surfaces, band)
     println("Creating Integration Prefactors")
     prefactors = get_prefactors(surfaces, band, surface_weights)
+    println("max prefac: ", maximum(abs.(vcat(prefactors...))))
+    exit()
 
     println("Getting Vertex")
     vertex = Firefly.Vertex()
     println("Creating V(k1, k2, iw)")
-    V_rt = fill_V_arr(iv, vertex, surfaces, band)
+    V_rt = fill_V_arr(iv, vertex, surfaces)
 
 
     println("Creating energy mesh")
@@ -231,5 +232,6 @@ function eigenvalue_computation()
     eig, phi = linearized_eliashberg_loop(phi, iw, V_rt, e_4d, prefactors, mesh)
     @printf("Final Eig: %.6f\n", real(eig))
 end
+
 
 end # module

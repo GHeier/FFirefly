@@ -78,7 +78,16 @@ function get_ckio_ir()
     println("Calculating X(k,iw)")
     ckio = ckio_calc(basis, grit)
     println("Max χ = ", maximum(real.(ckio)))
-    save_ckio_ir(basis, ckio)
+    println("Min χ: ", minimum(real.(ckio)))
+    println("Interpolaing result")
+    if nz > 1
+        itp = interpolate((1:fnw, 1:nx, 1:ny, 1:nz), ckio, Gridded(Linear()))
+    else
+        ckio = repeat(ckio, 1, 1, 1, 2)
+        itp = interpolate((1:fnw, 1:nx, 1:ny, 1:2), ckio, Gridded(Linear()))
+    end
+    println("Interpolated")
+    save_ckio_ir(basis, itp)
 end
 
 function gkio_calc(basis, ek::Array{ComplexF64,4}, mu::Float64, iw)
@@ -101,8 +110,14 @@ function ckio_calc(basis, grit)
     return ckio
 end
 
-function save_ckio_ir(basis, ckio::Array{ComplexF64,4})
+function save_ckio_ir(basis, ckio)
     println("Saving IR response")
+    max_X = -1000
+    min_X = 1000
+    nx, ny, nz = cfg.q_mesh
+    if (dim == 2)
+        nz = 1
+    end
     open(outdir * prefix * "_chi.dat", "w") do f
         header, fmt = begin
             if dim == 3
@@ -125,9 +140,13 @@ function save_ckio_ir(basis, ckio::Array{ComplexF64,4})
                 continue
             end
             val = ckio[iw, ix, iy, iz]
+            max_X = max(real(val), max_X)
+            min_X = min(real(val), min_X)
             print(f, fmt(kvec, iv, val))
         end
     end
+    println("Max χ Saved: ", max_X)
+    println("Min χ Saved: ", min_X)
     println("Saved to ", outdir * prefix * "_chi.dat")
 end
 

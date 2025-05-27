@@ -247,12 +247,25 @@ function Self_Energy()
     return Self_Energy(ptr)
 end
 
-function (self::Self_Energy)(arg0::Vector{Float64}, arg1::Float64)::Float32
-    real_result::Ref{Float32} = Ref(Float32(0.0))
-    imag_result::Ref{Float32} = Ref(Float32(0.0))
+function (self::Self_Energy)(arg0::Vector{Float64}, arg1::Float64)::ComplexF32
+    real_result = Ref{Cfloat}(0.0f0)
+    imag_result = Ref{Cfloat}(0.0f0)
     newarg0 = Float32.(arg0)
-    lenarg0 = length(arg0)
-    ccall((:Self_Energy_operator_export0, libfly), ComplexF32, (Ptr{Cvoid}, Ptr{Float32}, Cint, Cfloat, Ptr{Cfloat}, Ptr{Cfloat}), self.ptr, newarg0, lenarg0, arg1, real_result, imag_result)
+    lenarg0 = length(newarg0)  # use the converted arg
+    ccall((:Self_Energy_operator_export0, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Cfloat}, Cint, Cfloat, Ptr{Cfloat}, Ptr{Cfloat}),
+          self.ptr, newarg0, lenarg0, Float32(arg1), real_result, imag_result)
+    return ComplexF32(real_result[], imag_result[])
+end
+
+function (self::Self_Energy)(arg0::Vec, arg1::Float64)::ComplexF32
+    real_result = Ref{Cfloat}(0.0f0)
+    imag_result = Ref{Cfloat}(0.0f0)
+    newarg0::Vector{Float32} = [arg0.x, arg0.y, arg0.z]
+    lenarg0 = length(newarg0)  # use the converted arg
+    ccall((:Self_Energy_operator_export0, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Cfloat}, Cint, Cfloat, Ptr{Cfloat}, Ptr{Cfloat}),
+          self.ptr, newarg0, lenarg0, Float32(arg1), real_result, imag_result)
     return ComplexF32(real_result[], imag_result[])
 end
 

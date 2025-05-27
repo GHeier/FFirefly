@@ -63,7 +63,7 @@ This wrapper comes with a launcher and data extracters for every calculation typ
 ---
 
 ### **🔹 Plotting**  
-The "plot" folder contains a script, fly-plot.py, which acts as a command-line interface for plotting a given function. This feature is still under development and will allow for easy plotting of results from Ffirefly calculations. It is recommended to make this a custom terminal command so that it can be run from anywhere.
+The "plot" folder contains a script, fly-plot.py, which contains a function called `sketch`. Given a file/files and a plot type, this function returns a figure that can be further modified by the user. It also acts as a command-line interface for plotting a given file with default settings. These two uses allow for easy plotting of results from Ffirefly calculations. It is recommended to make the script a custom terminal command so that quick plots can be made from anywhere.
 
 ---
 
