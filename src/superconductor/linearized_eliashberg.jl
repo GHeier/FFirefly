@@ -73,7 +73,7 @@ function fill_V_rt(vertex, iv, mesh)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:bnw
         q = get_kvec(i, j, k)
         w = imag(iv[l])
-        V[l, i, j, k] = vertex(q, w)
+        V[l, i, j, k] = 0.5 * (vertex(q, w) + vertex(-q, w))
     end
     return kw_to_rtau(V, 'B', mesh)
 end
@@ -115,7 +115,9 @@ function linearized_eliashberg_loop(phi, iw, V_rt, e, mesh = 0)
         initial_expected = log(1.134 * wc * beta) * N(mu)
         println("Initial Expected eig: $initial_expected")
     end
-    while eig_err > 1e-5
+    max_iters = 1000
+    iters = 0
+    while eig_err > 1e-5 && iters < max_iters
         if !bcs_debug
             eig, phi = linearized_eliashberg(phi, iw, V_rt, e, mesh)
         else
@@ -124,6 +126,7 @@ function linearized_eliashberg_loop(phi, iw, V_rt, e, mesh = 0)
         eig_err = abs(eig - prev_eig)
         prev_eig = eig
         println("Eig: ", round(eig, digits=6), " Error: ", round(eig_err, digits=6), "   \n")
+        iters += 1
     end
     println()
     if bcs_debug
@@ -234,9 +237,14 @@ function eigenvalue_computation()
     e = create_energy_mesh(band, iw, Sigma)
 
     println("Power Iteration to find Eigenvalue and symmetry")
-    phi = rand(Float32, fnw, nx, ny, nz) 
+    phi = Array{Float32}(undef, fnw, nx, ny, nz)
+    for i in 1:fnw, j in 1:nx, k in 1:ny, l in 1:nz
+        kvec = get_kvec(j, k, l)
+        phi[i, j, k, l] = cos(kvec[1]) - cos(kvec[2])
+    end
+    #phi = rand(Float32, fnw, nx, ny, nz) 
     #phi = ones(fnw, nx, ny, nz) # Initialize 
-    phi .= phi ./ sum(abs.(phi))^(0.5) # Normalize
+    phi ./= sum(phi.*phi)^(0.5) # Normalize
     eig, phi = linearized_eliashberg_loop(phi, iw, V_rt, e, mesh)
 
     @printf("Final Eig: %.6f\n", real(eig))

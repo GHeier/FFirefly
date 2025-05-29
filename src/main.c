@@ -102,16 +102,20 @@ int main() {
     char *tokens[MAX_TOKENS];
     char *meth_tokens[MAX_TOKENS];
     int count = 0;
+    int mcount = 0;
 
     char *saveptr1, *saveptr2;
     char *token = strtok_r(str_copy, "+", &saveptr1);
     char *meth_token = strtok_r(meth_copy, "+", &saveptr2);
 
-    while (token != NULL && meth_token != NULL && count < MAX_TOKENS) {
+    while (token != NULL && count < MAX_TOKENS) {
         tokens[count] = strdup(token);
-        meth_tokens[count] = strdup(meth_token);
         count++;
         token = strtok_r(NULL, "+", &saveptr1);
+    }
+    while (meth_token != NULL && mcount < MAX_TOKENS) {
+        meth_tokens[mcount] = strdup(meth_token);
+        mcount++;
         meth_token = strtok_r(NULL, "+", &saveptr2);
     }
 
@@ -127,7 +131,10 @@ int main() {
 
     for (int i = 0; i < count; i++) {
         char *category = tokens[i];
-        c_method = meth_tokens[i];
+        int ind = i;
+        if (ind >= mcount)
+            ind = mcount - 1;
+        c_method = meth_tokens[ind];
         load_cpp_config_wrapper(); 
     /*
         * ADDING A CATEGORY OCCURS BELOW

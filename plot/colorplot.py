@@ -9,7 +9,7 @@ def plot_colorgrid(files, **kwargs):
 
 
 def colorplot_field(field, xlim=(-np.pi, np.pi), ylim=(-np.pi, np.pi), resolution=100,
-                    cmap='viridis', title="f(x, y)"):
+                    cmap='bwr', title="f(x, y)"):
     x = np.linspace(*xlim, resolution)
     y = np.linspace(*ylim, resolution)
     X, Y = np.meshgrid(x, y)
