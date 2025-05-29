@@ -11,11 +11,11 @@ void call_python_func(const char *folder, const char *filename,
                       const char *function) {
   char path[PATH_MAX]; // Buffer to hold the executable path
   ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
-  path[len - 17] = '\0';
-  strcat(path, "/ffirefly/");
+  path[len - 16] = '\0';
+  strcat(path, "/src/");
   strcat(path, folder);
   char pycommand[256];
-  // sprintf(pycommand, "import sys; sys.path.append('%s')", path);
+   sprintf(pycommand, "import sys; sys.path.append('%s')", path);
   PyRun_SimpleString(pycommand);
 
   // Try loading your custom module

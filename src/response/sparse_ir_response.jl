@@ -11,6 +11,7 @@ import SparseIR: Statistics, value, valueim
 using PyCall
 using Printf
 using Base.Threads
+using Interpolations
 
 T = cfg.Temperature
 beta = 1 / T
@@ -75,16 +76,16 @@ function get_ckio_ir()
     gkio = gkio_calc(basis, ek, mu, iw)
     println("Calculating G(r,tau)")
     grit = grit_calc(basis, gkio)
-    println("Calculating X(k,iw)")
+    println("Calculating X(k,iv)")
     ckio = ckio_calc(basis, grit)
     println("Max χ = ", maximum(real.(ckio)))
     println("Min χ: ", minimum(real.(ckio)))
     println("Interpolaing result")
     if nz > 1
-        itp = interpolate((1:fnw, 1:nx, 1:ny, 1:nz), ckio, Gridded(Linear()))
+        itp = interpolate((1:basis.bnw, 1:nx, 1:ny, 1:nz), ckio, Gridded(Linear()))
     else
         ckio = repeat(ckio, 1, 1, 1, 2)
-        itp = interpolate((1:fnw, 1:nx, 1:ny, 1:2), ckio, Gridded(Linear()))
+        itp = interpolate((1:basis.bnw, 1:nx, 1:ny, 1:2), ckio, Gridded(Linear()))
     end
     println("Interpolated")
     save_ckio_ir(basis, itp)

@@ -113,27 +113,31 @@ float get_Tc(
     return root;
 }
 
-float coupling_calc(vector<Vec> &FS, float T) {
+vector<float> matrix_proejctions(vector<Vec> &FS, Matrix &P) {
     cout << "Calculating Coupling Constant...\n";
     int size = FS.size();
-    float DOS = get_DOS(FS);
-    // auto cube_map = chi_cube_freq(T, mu);
-    // auto cube = chi_cube(T, mu, DOS, 0);
-    float f_integrated = f_singlet_integral(T);
 
-    float lambda = 0, normalization = 0;
-    auto wave = [](Vec k) { return cos(k(1)) - cos(k(0)); };
+    int num_projs = 2;
+    vector<float> lambda(num_projs, 0.0);
+    vector<float> normalization(num_projs, 0.0);
+    auto d_x2_y2 = [](Vec k) { return cos(k(1)) - cos(k(0)); };
+    auto s = [](Vec k) { return 1.0; };
+
+#pragma omp parallel for
     for (int i = 0; i < size; i++) {
         Vec k1 = FS[i];
         for (int j = 0; j < size; j++) {
             Vec k2 = FS[j];
-            // lambda += - k1.area * k2.area / vp(k1.n, k1) * wave(k1) * V(k1,
-            // k2, T, cube) / vp(k2.n, k2) * wave(k2);
-            lambda += V(k1 - k2) * k1.area * k2.area;
+            lambda[0] += P(i, j) * s(k1) * s(k2);
+            lambda[1] += P(i, j) * d_x2_y2(k1) * d_x2_y2(k2);
         }
-        normalization += pow(wave(k1), 2) * k1.area / vp(k1.n, k1);
+        normalization[0] += pow(s(k1), 2) * k1.area / vp(k1.n, k1);
+        normalization[1] += pow(d_x2_y2(k1), 2) * k1.area / vp(k1.n, k1);
     }
-    cout << "Normalization: " << normalization << endl;
-    cout << "Lambda: " << lambda << endl;
-    return lambda / normalization * (2 / pow(2 * M_PI, 3));
+    vector<float> lambdas;
+    for (int i = 0; i < num_projs; i++) 
+        lambdas.push_back(lambda[i] / normalization[i]);
+    printf("S-wave λ = %.3f\n", lambdas[0]);
+    printf("D-wave λ = %.3f\n", lambdas[1]);
+    return lambdas;
 }

@@ -138,6 +138,14 @@ float Bands_operator_export0(Bands *obj, int n, const float *point, int len) {
     return obj->operator()(n, v);
 }
 
+void Bands_operator_export0_numpy(Bands *obj, int n, const float *points, int num_points, int len, float *output) {
+    for (int i = 0; i < num_points; ++i) {
+        const float* point_row = points + i * len;
+        Vec v(point_row, len);
+        output[i] = obj->operator()(n, v);
+    }
+}
+
 Vec* vk_export0(int n, Vec* k, Bands* band) {
     Vec temp = vk(n, *k, *band);
     Vec *result = new Vec(temp);

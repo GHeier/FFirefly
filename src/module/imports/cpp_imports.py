@@ -314,6 +314,70 @@ class Field_C:
         except AttributeError:
             pass
 
+lib.Bands_export0.restype = c_void_p
+
+lib.Bands_operator_export0.restype = c_float
+lib.Bands_operator_export0.argtypes = [c_void_p, c_int, POINTER(c_float), c_int]
+
+lib.Bands_operator_export0_numpy.restype = None
+lib.Bands_operator_export0_numpy.argtypes = [
+    ctypes.c_void_p,            # Bands* obj
+    ctypes.c_int,               # int n
+    ctypes.POINTER(ctypes.c_float),  # const float* points
+    ctypes.c_int,               # int num_points
+    ctypes.c_int,               # int len
+    ctypes.POINTER(ctypes.c_float)   # float* output
+]
+
+class Bands:
+    def __init__(self):
+        self.ptr = lib.Bands_export0()
+        if not self.ptr:
+            raise RuntimeError('Failed to initialize Bands')
+
+    def __call__(self, *args):
+        # Overload for args=1, required=1
+        if len(args) == 2 and isinstance(args[0], int) and isinstance(args[1], list):
+            n = ctypes.c_int(args[0])
+            k = (ctypes.c_float * len(args[1]))(*[float(x) for x in args[1]])
+            klen = len(args[1])
+            return lib.Bands_operator_export0(self.ptr, n, k, klen)
+        # Numpy call
+        else:
+            if not isinstance(args[1], np.ndarray) or args[1].ndim != 2:
+                raise ValueError("points must be a 2D numpy array")
+            kpts = args[1]
+            if args[1].dtype != np.float32:
+                kpts = args[1].astype(np.float32)
+
+            num_points, klen = kpts.shape
+
+            # Allocate output array
+            output = np.empty(num_points, dtype=np.float32)
+
+            # Convert input and output to ctypes pointers
+            points_ctypes = kpts.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+            output_ctypes = output.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+
+            lib.Bands_operator_export0_numpy(
+                self.ptr,
+                ctypes.c_int(args[0]),
+                points_ctypes,
+                ctypes.c_int(num_points),
+                ctypes.c_int(klen),
+                output_ctypes
+            )
+
+            return output
+
+    def __del__(self):
+        try:
+            destroy = lib.destroy
+            destroy.argtypes = [ctypes.c_void_p]
+            destroy(self.ptr)
+        except AttributeError:
+            pass
+
 # Set up the function signature
 lib.load_config_export0.argtypes = [ctypes.c_char_p]
 lib.load_config_export0.restype = None  # Equivalent to Cvoid

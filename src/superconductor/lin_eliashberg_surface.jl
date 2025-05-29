@@ -31,7 +31,7 @@ const wc = cfg.bcs_cutoff_frequency
 
 const beta = 1 / cfg.Temperature
 
-const num_surfaces = 7
+const num_surfaces = 3
 
 
 function get_V(V, q, w)
@@ -112,9 +112,14 @@ function get_prefactors(surfaces, band, surface_weights)
             kvec = surfaces[i][j]
             dS = kvec.area
             vk = Firefly.norm(Firefly.vk(kvec.n, kvec, band))
-            tempvec[j] = w * dS / vk
+            tempvec[j] = dS / vk
         end
-        prefactors[i] = tempvec
+        prefactors[i] = w .* tempvec ./ (2 * pi)^dim
+
+    end
+    if any(V -> any(isnan, V), prefactors)
+        println("NAN in prefactors")
+        exit()
     end
     return prefactors
 end
@@ -153,7 +158,9 @@ end
 
 
 function compute_phi(phi, iw, e_4d, V, prefactors, mesh)
-    P1 = [similar(m) for m in phi]
+    P = [similar(m) for m in phi]
+    println(size(P))
+    println(size(P[1]))
     num_surfaces = length(phi)
 
     num_k_threads = Threads.Atomic{Int}(0)
@@ -166,13 +173,15 @@ function compute_phi(phi, iw, e_4d, V, prefactors, mesh)
             phiw = phi[i][j, :]
             e = e_4d[i][j, :]
             Dw = prefactors[i][j] .* (-phiw) .* (2 ./ (iw .- e)) .* (2 ./ (-iw .- e))
+            P[i][j, :] = zeros(mesh.fnw)
 
             for a in 1:num_surfaces
                 la = size(phi[a], 1)
                 for b in 1:la
                     Vw = V[i, a][j, b, :]
                     X1 = element_convolution_F(Vw, Dw, mesh)
-                    P1[i][j, :] += X1
+                    P[i][j, :] += X1
+                    #P[i][j, :] += prefactors[i][j] .* ones(mesh.fnw) ./ mesh.fnw
                 end
             end
             local_sum += 1
@@ -181,24 +190,24 @@ function compute_phi(phi, iw, e_4d, V, prefactors, mesh)
         atomic_add!(num_k_threads, local_sum)
     end
 
-    surf_eigs = [sum(P1[i] .* phi[i]) for i in 1:num_surfaces]
-    eig = sum(surf_eigs) / (num_k_threads[] * beta)
-
-    if any(x -> any(isnan, x), P1)
-        println("NAN in P1")
-        exit()
-    end
-    return eig, P1
+    surf_eigs = [sum(P[i] .* phi[i]) for i in 1:num_surfaces]
+    surf_norms = [sum(phi[i] .* phi[i]) for i in 1:num_surfaces]
+    eig = sum(surf_eigs) 
+    norm = sum(surf_norms) 
+    return eig / norm, P ./ norm
 end
 
 
 function linearized_eliashberg_loop(phi, iw, V_rt, e, prefactors, mesh)
     eig, prev_eig, eig_err = 0, 0, 1
+    N = Field_R(outdir * prefix * "_DOS.dat")
+    println("Expected initial : ", 2 * N(mu))
     while eig_err > 1e-5
         eig, phi = compute_phi(phi, iw, e, V_rt, prefactors, mesh)
         eig_err = abs(eig - prev_eig)
         prev_eig = eig
-        println("Eig: ", round(eig, digits=6), " Error: ", round(eig_err, digits=6), "   \r")
+        println("Eig: ", round(eig, digits=6), " Error: ", round(eig_err, digits=6), "   \n")
+        #println("Eig: ", round(eig, digits=6), " Error: ", round(eig_err, digits=6), "   \r")
     end
     println()
     return eig, phi
@@ -216,8 +225,7 @@ function eigenvalue_computation()
     surfaces, surface_vals, surface_weights = get_surface(num_surfaces, band)
     println("Creating Integration Prefactors")
     prefactors = get_prefactors(surfaces, band, surface_weights)
-    println("max prefac: ", maximum(abs.(vcat(prefactors...))))
-    exit()
+
 
     println("Getting Vertex")
     vertex = Firefly.Vertex()

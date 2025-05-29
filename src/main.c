@@ -8,6 +8,7 @@
 #include "config/load/py_interface.h"
 
 // Category nodes below
+#include "algorithms/electron_number.hpp"
 #include "hamiltonian/fs.hpp"
 #include "hamiltonian/vertex.hpp"
 #include "hamiltonian/self_energy.hpp"
@@ -27,6 +28,11 @@
 void DOS() {
     printf("Starting DOS Calculation\n\n");
     DOS_spectrum();
+}
+
+void electron_number() {
+    printf("Starting Electron Number Calculation\n\n");
+    electron_number_wrapper();
 }
 
 void fermi_surface() {
@@ -131,6 +137,8 @@ int main() {
             DOS();
         else if (!strcmp(category, "fermi_surface"))
             fermi_surface();
+        else if (!strcmp(category, "electron_num"))
+            electron_number();
         else if (!strcmp(category, "response"))
             response();
         else if (!strcmp(category, "superconductor"))

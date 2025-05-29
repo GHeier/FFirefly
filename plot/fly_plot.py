@@ -1,5 +1,6 @@
 from . import plot_path
 from . import basic
+from . import colorplot
 from . import gap_function
 
 import argparse
@@ -90,6 +91,8 @@ def sketch(files, plot_type='line', **kwargs):
         fig, ax = basic.plot_bar(files, **kwargs)
     elif plot_type == 'hist':
         fig, ax = basic.plot_hist(files, **kwargs)
+    elif plot_type == 'colorgrid':
+        fig, ax = colorplot.plot_colorgrid(files, **kwargs)
     elif plot_type == "path":
         fig, ax = plot_path.plot_path(files, **kwargs)
     else:
