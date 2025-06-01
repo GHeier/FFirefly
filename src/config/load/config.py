@@ -272,6 +272,8 @@ def load_config():
             print("Error: Number of bands does not match number of bands specified in input.")
             sys.exit(1)
         nbnd = len(band)
+        if outdir[-1] != '/':
+            outdir += '/'
     return input_file
 
 def printv(format_string: str, *args):

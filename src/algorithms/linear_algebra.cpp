@@ -23,9 +23,11 @@ using namespace std;
  * If the top 2 eigenvalues are positive and nonzero it will return 2 solutions instead of 1
  */
 vector<Eigenvector> power_iteration(Matrix &A, float error) {
+    printf("power iteration called\n");
     vector<Eigenvector> vals;
     for (int eig_num = 0; eig_num < 5; eig_num++) {
         Eigenvector x(A.size, true);
+        printf("x created\n");
         float diff_mag = 1;
         float rayleigh = dot(x, A * x) / dot(x, x);
         float sum = 0;
@@ -37,11 +39,13 @@ vector<Eigenvector> power_iteration(Matrix &A, float error) {
             x_new.normalize();
 
             // Account for phase shift
-            Eigenvector diff_vec = x - x_new;
-            Eigenvector diff_neg_vec = x + x_new;
-            diff_mag = diff_vec.norm();
-            if (diff_mag > diff_neg_vec.norm())
-                diff_mag = diff_neg_vec.norm();
+            float cos_diff = dot(x, x_new) / (x.norm() * x_new.norm());
+            diff_mag = abs(cos_diff) - 1.0;
+            //Eigenvector diff_vec = x - x_new;
+            //Eigenvector diff_neg_vec = x + x_new;
+            //diff_mag = diff_vec.norm();
+            //if (diff_mag > diff_neg_vec.norm())
+            //    diff_mag = diff_neg_vec.norm();
 
             // Update iterated eigenvector
             // if ( i%100 == 0) cout << x.transpose()*A*x << endl;
@@ -75,13 +79,14 @@ vector<Eigenvector> power_iteration(Matrix &A, float error) {
 Eigenvector power_iteration(Matrix &A) {
     Eigenvector x(A.size, true);
     float diff_percent = 1;
-    for (int i = 0; diff_percent > 0.001; i++) {
+    for (int i = 0; diff_percent > 0.0001; i++) {
         Eigenvector x_new = A * x;
         x_new.normalize();
         x_new.eigenvalue = dot(x_new, A * x_new) / dot(x_new, x_new);
-        diff_percent = fabs((x_new.eigenvalue - x.eigenvalue) / x.eigenvalue);
-        printv("Iteration: %d, Eigenvalue: %f, Diff Percent: %f\n", i,
-               x_new.eigenvalue, diff_percent);
+        float cos_diff = dot(x, x_new) / (x.norm() * x_new.norm());
+        diff_percent = abs(abs(cos_diff) - 1.0);
+        if (i % 10 == 0)
+            printv("Iteration: %d, Eigenvalue: %f, Diff Percent: %f\n", i, x_new.eigenvalue, diff_percent);
         x = x_new;
     }
     if (x.eigenvalue < 0) {

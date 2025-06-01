@@ -53,6 +53,10 @@ float get_Tc_FS_only(double eig) {
     // double T_ex = 0.025;
     // double f_ex = f_singlet_integral(T_ex);
     // printf("Expected: %f, Calculated %f\n", 1.512, f_ex);
+    float low_val = f_singlet_integral(lower) * eig - 1.0;
+    float upper_val = f_singlet_integral(upper) * eig - 1.0;
+    if (low_val * upper_val > 0)
+        return -1.0;
 
     auto result = boost::math::tools::bisect(
         [eig](float T) {

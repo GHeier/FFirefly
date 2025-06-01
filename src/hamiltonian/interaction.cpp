@@ -25,8 +25,7 @@ __attribute__((visibility("default"))) float V(const Vec q, float w,
     if (interaction == "test")
         return potential_test(q, spin1, spin2);
     else {
-        cout << "Unknown Potential Function: " << interaction << endl;
-        exit(1);
+        throw runtime_error("Unknown Potential function " + interaction + "\n");
     }
 }
 

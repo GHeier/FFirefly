@@ -30,7 +30,7 @@ const wc = cfg.bcs_cutoff_frequency
 
 const beta = 1 / cfg.Temperature
 
-const bcs_debug = false
+const bcs_debug = true
 
 if bcs_debug && nw % 2 != 0
     println("Remember to make nw even")
@@ -115,9 +115,8 @@ function linearized_eliashberg_loop(phi, iw, V_rt, e, mesh = 0)
         initial_expected = log(1.134 * wc * beta) * N(mu)
         println("Initial Expected eig: $initial_expected")
     end
-    max_iters = 1000
     iters = 0
-    while eig_err > 1e-5 && iters < max_iters
+    while eig_err > 1e-5
         if !bcs_debug
             eig, phi = linearized_eliashberg(phi, iw, V_rt, e, mesh)
         else
@@ -125,10 +124,10 @@ function linearized_eliashberg_loop(phi, iw, V_rt, e, mesh = 0)
         end
         eig_err = abs(eig - prev_eig)
         prev_eig = eig
-        println("Eig: ", round(eig, digits=6), " Error: ", round(eig_err, digits=6), "   \n")
+        print("Eig: ", round(eig, digits=6), " Error: ", round(eig_err, digits=6), "   \n")
         iters += 1
     end
-    println()
+    println("Iterations: ", iters)
     if bcs_debug
         final_expected = log(1.134 * wc * beta)
         println("Final Expected eig: $final_expected")
@@ -138,7 +137,7 @@ end
 
 
 function linearized_eliashberg(phi, iw, V_rt, e, mesh)
-    F = -phi .* ( 1 ./ (iw .- e)) .* (1 ./ (-iw .- e))
+    F = -phi .* ( 1 ./ (iw .- e)) .* (1 ./ (iw .- e))
     #F = -phi ./ ((Z .* imag.(iw)).^2 .+ e.^2)
     F_rt = kw_to_rtau(F, 'F', mesh)
     temp = V_rt .* F_rt
@@ -238,12 +237,12 @@ function eigenvalue_computation()
 
     println("Power Iteration to find Eigenvalue and symmetry")
     phi = Array{Float32}(undef, fnw, nx, ny, nz)
-    for i in 1:fnw, j in 1:nx, k in 1:ny, l in 1:nz
+    for j in 1:nx, k in 1:ny, l in 1:nz
         kvec = get_kvec(j, k, l)
-        phi[i, j, k, l] = cos(kvec[1]) - cos(kvec[2])
+        phi[:, j, k, l] .= cos(kvec[1]) - cos(kvec[2])
     end
     #phi = rand(Float32, fnw, nx, ny, nz) 
-    #phi = ones(fnw, nx, ny, nz) # Initialize 
+    phi = ones(fnw, nx, ny, nz) # Initialize 
     phi ./= sum(phi.*phi)^(0.5) # Normalize
     eig, phi = linearized_eliashberg_loop(phi, iw, V_rt, e, mesh)
 

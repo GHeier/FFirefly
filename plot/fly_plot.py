@@ -81,7 +81,8 @@ def get_flags_from_files(result):
             flags["fermi_surface"] = True
 
 def sketch(files, plot_type='line', **kwargs):
-
+    if isinstance(files, str):
+        files = [files]
     # Select plot type
     if plot_type == 'line':
         fig, ax = basic.plot_basic(files, **kwargs)
@@ -93,6 +94,8 @@ def sketch(files, plot_type='line', **kwargs):
         fig, ax = basic.plot_hist(files, **kwargs)
     elif plot_type == 'colorgrid':
         fig, ax = colorplot.plot_colorgrid(files, **kwargs)
+    elif plot_type == 'colorline':
+        fig, ax = colorplot.plot_colorline(files, **kwargs)
     elif plot_type == "path":
         fig, ax = plot_path.plot_path(files, **kwargs)
     else:
