@@ -21,7 +21,7 @@ extern bool c_automatic_file_read;
 //[SYSTEM]
 extern char* c_interaction; char* get_interaction();
 extern int c_dimension;
-extern int c_ibrav;
+extern char* c_celltype; char* get_celltype();
 extern int c_nbnd;
 extern int c_natoms;
 extern float c_fermi_energy;

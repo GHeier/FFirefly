@@ -18,9 +18,7 @@ float epsilon(int n, Vec k) {
             "\nThe band index is negative/too small. Counting starts at 1\n");
         throw("The band index is negative/too small. Counting starts at 1\n");
     }
-    if (band[n] == "simple_cubic_layered")
-        return epsilon_SC_layered(n, k);
-    if (band[n] == "tight_binding" && ibrav == 1)
+    if (band[n] == "tight_binding" && celltype == "SC")
         return epsilon_SC(n, k);
     if (band[n] == "fermi_gas")
         return epsilon_fermi_gas(n, k);
@@ -40,7 +38,7 @@ float vp(int n, Vec k) {
     n--;
     if (band[n] == "simple_cubic_layered")
         return fermi_velocity_SC_layered(n, k).norm();
-    if (band[n] == "tight_binding" && ibrav == 1) {
+    if (band[n] == "tight_binding" && celltype == "SC") {
         return fermi_velocity_SC(n, k).norm();
     }
     if (band[n] == "fermi_gas")

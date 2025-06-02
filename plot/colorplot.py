@@ -42,12 +42,6 @@ def colorplot_field(field, xlim=(-np.pi, np.pi), ylim=(-np.pi, np.pi), resolutio
     return fig, ax
 
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
-from scipy.spatial import ConvexHull
-
 def colorplot_surface(file, cmap='bwr'):
     df = pd.read_csv(file, sep=None, engine='python')
     x = df.iloc[:, 0].values
@@ -75,8 +69,8 @@ def colorplot_surface(file, cmap='bwr'):
     fig.colorbar(lc, ax=ax, label='f(x, y)')
 
     # ✅ Fix: Set axis limits to match the data
-    ax.set_xlim(ordered_points[:, 0].min(), ordered_points[:, 0].max())
-    ax.set_ylim(ordered_points[:, 1].min(), ordered_points[:, 1].max())
+    ax.set_xlim(ordered_points[:, 0].min() * 1.03, ordered_points[:, 0].max() * 1.03)
+    ax.set_ylim(ordered_points[:, 1].min() * 1.03, ordered_points[:, 1].max() * 1.03)
 
     ax.set_xlabel('x')
     ax.set_ylabel('y')

@@ -85,9 +85,15 @@ void bcs() {
 
     printf("Max eigenvalue: %f\n", solutions[0].eigenvalue);
 
-    //Eigenvector top_gap = power_iteration(P);
-    //cout << "top gap eig: " << top_gap.eigenvalue << endl;
-    //return;
+    Eigenvector initial_guess(P.size, true);
+    for (int i = 0; i < P.size; i++) {
+        Vec k = FS[i];
+        float proj = cos(k(0)) - cos(k(1));
+        initial_guess.eigenvector[i] = proj;
+    }
+    Eigenvector top_gap = power_iteration(P, initial_guess);
+    cout << "top gap eig: " << top_gap.eigenvalue << endl;
+    return;
     //vector<Eigenvector> top_gaps = power_iteration(P, 0.01);
     //for (Eigenvector x : top_gaps) {
     //    cout << "eig: " << x.eigenvalue << endl;

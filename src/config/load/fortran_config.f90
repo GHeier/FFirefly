@@ -44,8 +44,7 @@ module ffirefly
     character(len=50) :: interaction
     integer(c_int), bind(C, name="c_dimension") :: c_dimension
     integer :: dimension
-    integer(c_int), bind(C, name="c_ibrav") :: c_ibrav
-    integer :: ibrav
+    character(len=50) :: celltype
     integer(c_int), bind(C, name="c_nbnd") :: c_nbnd
     integer :: nbnd
     integer(c_int), bind(C, name="c_natoms") :: c_natoms
@@ -166,7 +165,10 @@ module ffirefly
             type(c_ptr) :: get_interaction
     end function get_interaction
 
-
+        function get_celltype() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_celltype
+    end function get_celltype
 
 
 
@@ -265,7 +267,7 @@ contains
 ![SYSTEM]
         interaction = get_string(get_interaction())
         dimension = c_dimension
-        ibrav = c_ibrav
+        celltype = get_string(get_celltype())
         nbnd = c_nbnd
         natoms = c_natoms
         fermi_energy = c_fermi_energy

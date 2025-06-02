@@ -25,7 +25,7 @@ bool automatic_file_read;
 //[SYSTEM]
 string interaction;
 int dimension;
-int ibrav;
+string celltype;
 int nbnd;
 int natoms;
 float fermi_energy;
@@ -95,7 +95,7 @@ extern "C" void load_cpp_config() {
 //[SYSTEM]
     interaction = c_interaction;
     dimension = c_dimension;
-    ibrav = c_ibrav;
+    celltype = c_celltype;
     nbnd = c_nbnd;
     natoms = c_natoms;
     fermi_energy = c_fermi_energy;

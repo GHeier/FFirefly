@@ -24,7 +24,7 @@ ALL = {
     "SYSTEM": {
         "interaction": "none",
         "dimension": 3,
-        "ibrav": 0,
+        "celltype": "",
         "nbnd": 0,
         "natoms": 0,
         "fermi_energy": 0.0,

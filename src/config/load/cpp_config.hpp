@@ -21,7 +21,7 @@ extern bool automatic_file_read;
 //[SYSTEM]
 extern string interaction;
 extern int dimension;
-extern int ibrav;
+extern string celltype;
 extern int nbnd;
 extern int natoms;
 extern float fermi_energy;

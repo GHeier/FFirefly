@@ -35,7 +35,8 @@ bool c_automatic_file_read = true;
 char* c_interaction = "none";
 char* get_interaction() {return c_interaction;}
 int c_dimension = 3;
-int c_ibrav = 0;
+char* c_celltype = "";
+char* get_celltype() {return c_celltype;}
 int c_nbnd = 0;
 int c_natoms = 0;
 float c_fermi_energy = 0.0;
@@ -298,8 +299,8 @@ void read_c_config(const char *path) {
                 c_dimension = atoi(value);
                  got_dimension = true;
             }
-            else if (strstr(key, "ibrav") != NULL) {
-                c_ibrav = atoi(value);
+            else if (strstr(key, "celltype") != NULL) {
+                set_string(&c_celltype, value);
             }
             else if (strstr(key, "nbnd") != NULL) {
                 c_nbnd = atoi(value);

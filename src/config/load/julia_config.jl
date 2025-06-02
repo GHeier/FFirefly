@@ -21,7 +21,7 @@ automatic_file_read::Bool = cfg.automatic_file_read
 #[SYSTEM]
 interaction::String = cfg.interaction
 dimension::Int = cfg.dimension
-ibrav::Int = cfg.ibrav
+celltype::String = cfg.celltype
 nbnd::Int = cfg.nbnd
 natoms::Int = cfg.natoms
 fermi_energy::Float64 = cfg.fermi_energy

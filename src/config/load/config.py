@@ -15,7 +15,7 @@ automatic_file_read = True
 #[SYSTEM]
 interaction = 'none'
 dimension = 3
-ibrav = 0
+celltype = ''
 nbnd = 0
 natoms = 0
 fermi_energy = 0.0
@@ -149,9 +149,9 @@ def load_config():
                 global dimension
                 dimension = int(value)
                 got_dimension = True
-            if "ibrav" in key:
-                global ibrav
-                ibrav = int(value)
+            if "celltype" in key:
+                global celltype
+                celltype = value
             if "nbnd" in key:
                 global nbnd
                 nbnd = int(value)

@@ -27,6 +27,7 @@ const U = cfg.onsite_U
 const BZ = cfg.brillouin_zone
 const mu = cfg.fermi_energy
 const wc = cfg.bcs_cutoff_frequency
+projs = cfg.projections
 
 const beta = 1 / cfg.Temperature
 
@@ -110,11 +111,6 @@ end
 
 function linearized_eliashberg_loop(phi, iw, V_rt, e, mesh = 0)
     eig, prev_eig, eig_err = 0, 0, 1
-    if bcs_debug
-        N = Firefly.Field_R(outdir * prefix * "_DOS.dat")
-        initial_expected = log(1.134 * wc * beta) * N(mu)
-        println("Initial Expected eig: $initial_expected")
-    end
     iters = 0
     while eig_err > 1e-5
         if !bcs_debug
@@ -128,27 +124,23 @@ function linearized_eliashberg_loop(phi, iw, V_rt, e, mesh = 0)
         iters += 1
     end
     println("Iterations: ", iters)
-    if bcs_debug
-        final_expected = log(1.134 * wc * beta)
-        println("Final Expected eig: $final_expected")
-    end
     return eig, phi
 end
 
 
 function linearized_eliashberg(phi, iw, V_rt, e, mesh)
-    F = -phi .* ( 1 ./ (iw .- e)) .* (1 ./ (iw .- e))
+    F = -phi .* ( 1 ./ (iw .- e)) .* (1 ./ (-iw .- e))
     #F = -phi ./ ((Z .* imag.(iw)).^2 .+ e.^2)
     F_rt = kw_to_rtau(F, 'F', mesh)
     temp = V_rt .* F_rt
     newphi = rtau_to_kw(temp, 'F', mesh)
 
-    mag = newphi .* newphi # Normalized gap
-    norm = sum(mag)^(0.5)
+    norm = sum(newphi .* newphi)^(0.5)
+    newphi .= newphi ./ norm
 
     result = phi .* newphi # Resultant eigenvector/value
-    eig = sum(result)
-    return eig, newphi ./ norm
+    eig = sum(result) / sum(phi .* phi)
+    return eig, newphi 
 end
 
 
@@ -165,11 +157,8 @@ function linearized_eliashberg_bcs(phi, iw, V_rt, e)
     zero_out_beyond_wc_e!(phi, e)
     #zero_out_beyond_wc_iw!(result, iw)
 
-    result = phi .* result # Resultant eigenvector/value
-    mag = phi .* phi # Normalized gap
-
-    eig = sum(result) / (nk * beta)
-    norm = sum(mag) / (nk * beta)
+    eig = sum(result .* phi)
+    norm = sum(phi .* phi)
     return eig / norm, result ./ norm
 end
 
@@ -184,7 +173,6 @@ function save_gap(phi, iw)
         else 
             println(io, "kx\tky\tw\tRe(f)\tIm(f)")
         end
-
 
         for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:nw
             kvec = get_kvec(i, j, k)
@@ -235,21 +223,29 @@ function eigenvalue_computation()
     println("Creating energy mesh")
     e = create_energy_mesh(band, iw, Sigma)
 
+    if bcs_debug
+        N = Firefly.Field_R(outdir * prefix * "_DOS.dat")
+        initial_expected = log(1.134 * wc * beta) * N(mu)
+        println("Initial Expected eig: $initial_expected")
+    end
+    if projs != ""
+        println("Finding eigs for $projs projections")
+        projections = get_projections(fnw, nx, ny, nz)
+        println("Projections Created")
+        eigs, c_vals = linearized_eliashberg_projections(projections, iw, V_rt, e, mesh)
+        println("Eigenvalue Projections Found")
+        for i in eachindex(eigs)
+            println("Eig for $(projs[i]) wave is $(eigs[i])")
+        end
+    end
     println("Power Iteration to find Eigenvalue and symmetry")
-    phi = Array{Float32}(undef, fnw, nx, ny, nz)
-    for j in 1:nx, k in 1:ny, l in 1:nz
-        kvec = get_kvec(j, k, l)
-        phi[:, j, k, l] .= cos(kvec[1]) - cos(kvec[2])
-    end
-    #phi = rand(Float32, fnw, nx, ny, nz) 
-    phi = ones(fnw, nx, ny, nz) # Initialize 
-    phi ./= sum(phi.*phi)^(0.5) # Normalize
+    phi = rand(Float32, fnw, nx, ny, nz) 
     eig, phi = linearized_eliashberg_loop(phi, iw, V_rt, e, mesh)
+    @printf("Max Eig: %.6f\n", real(eig))
 
-    @printf("Final Eig: %.6f\n", real(eig))
-    if !bcs_debug
-        save_gap(phi, iw)
-    end
+    #if !bcs_debug
+    #    save_gap(phi, iw)
+    #end
 end
 
 
@@ -269,5 +265,80 @@ function get_iw_iv_bcs()
     return iw, iv 
 end
 
+
+function get_projections(fnw, nx, ny, nz)
+    num_projs = 2
+    projections = Vector{Array{Float32}}(undef, num_projs)
+    for i in 1:num_projs
+        phi = Array{Float32}(undef, fnw, nx, ny, nz)
+        for j in 1:nx, k in 1:ny, l in 1:nz
+            kvec = get_kvec(nx, ny, nz)
+            if projs[i] == 's'
+                phi[:, j, k, l] .= 1.0
+            elseif projs[i] == 'd'
+                phi[:, j, k, l] .= cos(kvec[1]) - cos(kvec[2])
+            end
+        end
+        phi ./= (sum(phi .* phi, dims=(2,3,4))) # Normalize in k-space
+        projections[i] = phi
+    end
+    return projections
+end
+    
+
+
+function linearized_eliashberg_projections(projections, iw, V_rt, e, mesh)
+    num_projs = length(projections)
+    eigs = zeros(num_projs)
+    c_vals = Vector{Array{Float32}}(undef, num_projs)
+    conv_thresh = 1e-4
+    conv_iters = 1
+    errs = ones(conv_iters)
+    for i in 1:num_projs
+        Delta_0 = projections[i]
+        c_vals[i] = ones(size(Delta_0))
+        prev_eig = Inf
+        iter = 0
+        err = true
+        while err
+            if bcs_debug
+                zero_out_beyond_wc_e!(Delta_0, e)
+            end
+
+            # Step 1
+            F = -( 1 ./ (iw .- e)) .* (1 ./ (-iw .- e)) .* Delta_0 .* c_vals[i]
+            # Step 2
+            if !bcs_debug
+                F_rt = kw_to_rtau(F, 'F', mesh)
+                F_rt .= V_rt .* F_rt
+                Delta_1 = real.(rtau_to_kw(F_rt, 'F', mesh))
+            else
+                F_rt = fft(F)
+                F_rt .= V_rt .* F_rt
+                Delta_1 = real.(fftshift(ifft(F_rt)) ./ (nk * beta))
+                zero_out_beyond_wc_e!(Delta_1, e)
+            end
+
+            # Step 3
+            w = Delta_1 ./ sum(Delta_1 .* projections[i], dims=(2,3,4))
+            # Step 4
+            eig = ( sum( (projections[i] .* w).^2 ) )^(0.5)
+            # Step 5
+            c_vals[i] .= w ./ eig
+            eigs[i] = eig
+
+            # Error checking
+            errs[iter % conv_iters + 1] = abs(prev_eig - eig)
+            err = any(e -> e > conv_thresh, errs)
+
+            # Update for next iteration
+            prev_eig = eig
+            Delta_0 .= Delta_1
+            iter += 1
+            println("iter = $iter, eig = $eig")
+        end
+    end
+    return eigs, c_vals
+end
 
 end # module

@@ -11,6 +11,7 @@
 #include <boost/math/tools/roots.hpp>
 
 #include "../config/load/cpp_config.hpp"
+#include "../objects/vec.hpp"
 #include "../objects/eigenvec.hpp"
 #include "../objects/matrix.hpp"
 
@@ -76,22 +77,32 @@ vector<Eigenvector> power_iteration(Matrix &A, float error) {
 }
 
 // This function is designed to get the eigenvalue accurately, not the eigenvector
-Eigenvector power_iteration(Matrix &A) {
-    Eigenvector x(A.size, true);
+Eigenvector power_iteration(Matrix &A, Eigenvector initial) {
+    Eigenvector x = initial;
+    //Eigenvector x(A.size, true);
     float diff_percent = 1;
-    for (int i = 0; diff_percent > 0.0001; i++) {
+    vector<float> diffs(10, 1.0f);
+    bool all_low = false;
+    for (int i = 0; !all_low; i++) {
         Eigenvector x_new = A * x;
         x_new.normalize();
         x_new.eigenvalue = dot(x_new, A * x_new) / dot(x_new, x_new);
         float cos_diff = dot(x, x_new) / (x.norm() * x_new.norm());
-        diff_percent = abs(abs(cos_diff) - 1.0);
-        if (i % 10 == 0)
+        //diff_percent = abs(abs(cos_diff) - 1.0);
+        diff_percent = abs(x.eigenvalue - x_new.eigenvalue) / (abs(x.eigenvalue) + 1e-6);
+        diffs[i % 10] = diff_percent;
+        if (i % 10 == 0) {
             printv("Iteration: %d, Eigenvalue: %f, Diff Percent: %f\n", i, x_new.eigenvalue, diff_percent);
+            all_low = true;
+            for (int j = 0; j < 10; j++)
+                if (diffs[j] > 1e-4)
+                    all_low = false;
+        }
         x = x_new;
     }
     if (x.eigenvalue < 0) {
         A -= Matrix(A.size) * x.eigenvalue;
-        return power_iteration(A);
+        return power_iteration(A, initial);
     }
     return x;
 }

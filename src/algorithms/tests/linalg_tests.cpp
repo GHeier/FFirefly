@@ -10,7 +10,8 @@ bool test_3_by_3() {
     A(0,0) = 1.0;
     A(1,1) = 2.1;
     A(2,2) = 3.2;
-    Eigenvector result = power_iteration(A);
+    Eigenvector initial_guess(3, true);
+    Eigenvector result = power_iteration(A, initial_guess);
 
     if (abs(result.eigenvalue - 3.2) > 1e-2)
         return false;
