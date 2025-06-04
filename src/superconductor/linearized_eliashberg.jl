@@ -270,16 +270,17 @@ function get_projections(fnw, nx, ny, nz)
     num_projs = 2
     projections = Vector{Array{Float32}}(undef, num_projs)
     for i in 1:num_projs
+        println("projs[$i] = ", projs[i])
         phi = Array{Float32}(undef, fnw, nx, ny, nz)
         for j in 1:nx, k in 1:ny, l in 1:nz
-            kvec = get_kvec(nx, ny, nz)
+            kvec = get_kvec(j, k, l)
             if projs[i] == 's'
                 phi[:, j, k, l] .= 1.0
             elseif projs[i] == 'd'
                 phi[:, j, k, l] .= cos(kvec[1]) - cos(kvec[2])
             end
         end
-        phi ./= (sum(phi .* phi, dims=(2,3,4))) # Normalize in k-space
+        phi ./= (sum(phi .* phi)^(0.5))
         projections[i] = phi
     end
     return projections
@@ -288,21 +289,22 @@ end
 
 
 function linearized_eliashberg_projections(projections, iw, V_rt, e, mesh)
+    nw = length(iw)
     num_projs = length(projections)
     eigs = zeros(num_projs)
     c_vals = Vector{Array{Float32}}(undef, num_projs)
     conv_thresh = 1e-4
-    conv_iters = 1
+    conv_iters = 2
     errs = ones(conv_iters)
     for i in 1:num_projs
         Delta_0 = projections[i]
         c_vals[i] = ones(size(Delta_0))
-        prev_eig = Inf
         iter = 0
         err = true
         while err
             if bcs_debug
                 zero_out_beyond_wc_e!(Delta_0, e)
+                Delta_0 ./= (sum(Delta_0 .* Delta_0)^(0.5)) # Normalize after changing
             end
 
             # Step 1
@@ -320,19 +322,17 @@ function linearized_eliashberg_projections(projections, iw, V_rt, e, mesh)
             end
 
             # Step 3
-            w = Delta_1 ./ sum(Delta_1 .* projections[i], dims=(2,3,4))
+            eig = sum(Delta_1 .* Delta_0)
             # Step 4
-            eig = ( sum( (projections[i] .* w).^2 ) )^(0.5)
-            # Step 5
-            c_vals[i] .= w ./ eig
-            eigs[i] = eig
+            c_n = sum(Delta_1 .* Delta_0, dims=(2, 3, 4)) ./ eig .* nw
 
             # Error checking
-            errs[iter % conv_iters + 1] = abs(prev_eig - eig)
+            errs[iter % conv_iters + 1] = abs(eigs[i] - eig)
             err = any(e -> e > conv_thresh, errs)
 
             # Update for next iteration
-            prev_eig = eig
+            c_vals[i] = c_n
+            eigs[i] = eig
             Delta_0 .= Delta_1
             iter += 1
             println("iter = $iter, eig = $eig")
