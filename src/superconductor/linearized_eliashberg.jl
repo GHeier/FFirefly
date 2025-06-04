@@ -112,7 +112,7 @@ end
 function linearized_eliashberg_loop(phi, iw, V_rt, e, mesh = 0)
     eig, prev_eig, eig_err = 0, 0, 1
     iters = 0
-    while eig_err > 1e-5
+    while eig_err > 1e-4
         if !bcs_debug
             eig, phi = linearized_eliashberg(phi, iw, V_rt, e, mesh)
         else
@@ -120,7 +120,7 @@ function linearized_eliashberg_loop(phi, iw, V_rt, e, mesh = 0)
         end
         eig_err = abs(eig - prev_eig)
         prev_eig = eig
-        print("Eig: ", round(eig, digits=6), " Error: ", round(eig_err, digits=6), "   \n")
+        print("Eig: ", round(real(eig), digits=6), " Error: ", round(eig_err, digits=6), "       \r")
         iters += 1
     end
     println("Iterations: ", iters)
@@ -235,13 +235,13 @@ function eigenvalue_computation()
         eigs, c_vals = linearized_eliashberg_projections(projections, iw, V_rt, e, mesh)
         println("Eigenvalue Projections Found")
         for i in eachindex(eigs)
-            println("Eig for $(projs[i]) wave is $(eigs[i])")
+            @printf("Eig for %c wave is %.4f\n", projs[i], eigs[i])
         end
     end
     println("Power Iteration to find Eigenvalue and symmetry")
     phi = rand(Float32, fnw, nx, ny, nz) 
     eig, phi = linearized_eliashberg_loop(phi, iw, V_rt, e, mesh)
-    @printf("Max Eig: %.6f\n", real(eig))
+    @printf("Max Eig: %.4f\n", real(eig))
 
     #if !bcs_debug
     #    save_gap(phi, iw)
@@ -270,7 +270,6 @@ function get_projections(fnw, nx, ny, nz)
     num_projs = 2
     projections = Vector{Array{Float32}}(undef, num_projs)
     for i in 1:num_projs
-        println("projs[$i] = ", projs[i])
         phi = Array{Float32}(undef, fnw, nx, ny, nz)
         for j in 1:nx, k in 1:ny, l in 1:nz
             kvec = get_kvec(j, k, l)
@@ -335,7 +334,7 @@ function linearized_eliashberg_projections(projections, iw, V_rt, e, mesh)
             eigs[i] = eig
             Delta_0 .= Delta_1
             iter += 1
-            println("iter = $iter, eig = $eig")
+            printv("iter = $iter, eig = $eig")
         end
     end
     return eigs, c_vals
