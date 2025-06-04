@@ -17,6 +17,7 @@ beta = 1 / cfg.Temperature
 
 export Mesh, get_iw_iv
 export tau_to_wn, wn_to_tau, k_to_r, r_to_k, kw_to_rtau, rtau_to_kw, IR_Mesh
+export k_to_r!, r_to_k!, kw_to_rtau!, rtau_to_kw!, IR_Mesh
 
 """
 Holding struct for k-mesh and sparsely sampled imaginary time 'tau' / Matsubara frequency 'iw_n' grids.
@@ -110,6 +111,31 @@ function wn_to_tau(mesh::Mesh, statistics::Statistics, obj_wn)
     return obj_tau
 end
 
+function tau_to_wn!(obj_wn, statistics::T, mesh::Mesh, obj_tau) where {T <: SparseIR.Statistics}
+    """ Fourier transform from tau to iw_n via IR basis """
+    smpl_tau, smpl_wn = smpl_obj(mesh, statistics)
+
+    obj_l = fit(smpl_tau, obj_tau, dim=1)
+    obj_wn .= evaluate(smpl_wn, obj_l, dim=1)
+end
+
+function wn_to_tau!(obj_tau, statistics::Statistics, mesh::Mesh, obj_wn)
+    smpl_tau, smpl_wn = smpl_obj(mesh, statistics)
+
+    obj_l = fit(smpl_wn, obj_wn, dim=1)  # This allocates and must be temporary
+
+    # Truncation (in-place) on obj_l
+    max_l = maximum(abs.(obj_l))
+    for i in eachindex(obj_l)
+        if abs(obj_l[i]) < 1e-5 * max_l
+            obj_l[i] = 0
+        end
+    end
+
+    # Evaluate directly into preallocated output array
+    obj_tau .= evaluate(smpl_tau, obj_l, dim=1)
+end
+
 function tau_to_wn_c(mesh::Mesh, statistics::Statistics, obj_tau)
     """ Custom Fourier transform from tau to iw_n """
     obj_wn = ifft(obj_tau, [1])
@@ -146,6 +172,32 @@ function r_to_k(obj_r, mesh)
     return obj_k / mesh.nk
 end
 
+function k_to_r!(obj_r::AbstractArray, obj_k::AbstractArray, mesh::Mesh)
+    obj_r .= fft(obj_k, ntuple(i -> i+1, mesh.dimension))
+end
+
+function r_to_k!(obj_k, obj_r, mesh)
+    obj_k .= ifft(obj_r, ntuple(i -> i+1, mesh.dimension)) ./ mesh.nk
+end
+
+function kw_to_rtau!(out, obj_k, particle_type::Char, mesh)
+    if particle_type == 'F'
+        wn_to_tau!(out, Fermionic(), mesh, obj_k)  # Also needs to be in-place
+    elseif particle_type == 'B'
+        wn_to_tau!(out, Bosonic(), mesh, obj_k)
+    end
+    k_to_r!(out, out, mesh)  # This must be an in-place version
+end
+
+function rtau_to_kw!(out, obj_r, particle_type, mesh)
+    if particle_type == 'F'
+        tau_to_wn!(out, Fermionic(), mesh, obj_r)  # Also needs to be in-place
+    elseif particle_type == 'B'
+        tau_to_wn!(out, Bosonic(), mesh, obj_r)  # Also needs to be in-place
+    end
+    r_to_k!(out, out, mesh)
+end
+
 function kw_to_rtau(obj_k, particle_type, mesh)
     temp = k_to_r(obj_k, mesh)
     if particle_type == 'F'
@@ -180,10 +232,10 @@ function get_bandwidth()
     return maxval - minval
 end
 
-function IR_Mesh(IR_tol = 1e-10)
+function IR_Mesh(energy_mesh, IR_tol = 1e-10)
     beta = 1 / cfg.Temperature
     nx, ny, nz = cfg.k_mesh
-    wmax = get_bandwidth()
+    wmax = maximum(energy_mesh) - minimum(energy_mesh)
     IR_basis_set = FiniteTempBasisSet(beta, Float64(wmax), IR_tol)
     if dim == 1
         mesh = Mesh(IR_basis_set, nx, 0, 0)

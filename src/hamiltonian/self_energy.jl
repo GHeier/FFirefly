@@ -68,22 +68,29 @@ function zero_out_beyond_wc_e!(A, e)
     end
 end
 
-function get_G_V(iw, iv)
+
+function get_ek(band)
+    e = Array{ComplexF32}(undef, 1, nx, ny, nz)
+    for ix in 1:nx, iy in 1:ny, iz in 1:nz
+        kvec = get_kvec(ix - 1, iy - 1, iz - 1, nx, ny, nz)
+        e[1, ix, iy, iz] = band(1, kvec)
+    end
+    return e
+end
+
+
+function get_G_V(iw, iv, ek)
     fnw = length(iw)
     bnw = length(iv)
     G = Array{ComplexF32}(undef, fnw, nx, ny, nz)
     V = Array{ComplexF32}(undef, bnw, nx, ny, nz)
-    e = Array{ComplexF32}(undef, 1, nx, ny, nz)
-    println("Getting bands")
-    band = Bands()
     println("Getting vertex")
     vertex = Vertex()
     println("Filling arrays")
     for iy in 1:ny, ix in 1:nx, iz in 1:nz
         kvec = get_kvec(ix - 1, iy - 1, iz - 1, nx, ny, nz)
-        e[1, ix, iy, iz] = band(1, kvec)
         for l in 1:fnw
-            G[l, ix, iy, iz] = 1 / (iw[l] - band(1, kvec) )
+            G[l, ix, iy, iz] = 1 / (iw[l] - ek[1, ix, iy, iz])
         end
         for l in 1:bnw
             w = imag(iv[l])
@@ -95,6 +102,8 @@ function get_G_V(iw, iv)
 end
 
 function get_self_energy()
+    band = Bands()
+    ek = get_ek(band)
     is_bcs = false
     if interaction == "const"
         iw, iv = get_iw_iv_bcs()
@@ -103,12 +112,12 @@ function get_self_energy()
         println("Taking const interaction")
     else
         println("Getting basis")
-        basis = IR_Mesh()
+        basis = IR_Mesh(ek)
         fnw, bnw = basis.fnw, basis.bnw
         iw, iv = get_iw_iv(basis)
     end
 
-    G, V = get_G_V(iw, iv)
+    G, V = get_G_V(iw, iv, ek)
     println("Got arrays")
     if is_bcs
         p_fft = plan_fft(G)

@@ -237,12 +237,11 @@ function eliashberg_convsum()
 
     println("Getting Vertex")
     vertex = Firefly.Vertex()
+    e_4d = initialize_ep_arr(surfaces, band, surface_vals, fnw)
     println("Creating IRMesh")
     mesh = IR_Mesh()
     iw, iv = get_iw_iv(mesh)
     fnw, bnw = length(iw), length(iv)
-
-    e_4d = initialize_ep_arr(surfaces, band, surface_vals, fnw)
 
     phi, Z, chi, sigma, V = initialize(iw, vertex, surfaces, band)
 

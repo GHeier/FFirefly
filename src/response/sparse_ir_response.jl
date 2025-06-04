@@ -32,7 +32,7 @@ outdir = cfg.outdir
 dynamic = cfg.dynamic
 
 function get_kvec(ix, iy, iz, nx, ny, nz)
-    kvec = [ix / (nx - 1) - 0.5, iy / (ny - 1) - 0.5, iz / (nz - 1) - 0.5] 
+    kvec = [ix / (nx) - 0.0, iy / (ny) - 0.0, iz / (nz) - 0.0] 
     if dim < 3
         kvec[3] = 0.0
     elseif dim < 2
@@ -63,22 +63,16 @@ end
 
 function get_ckio_ir()
     println("Calculating IR response")
-    println("Getting basis")
-    basis = IR_Mesh(1e-15)
-    iw, iv = get_iw_iv(basis)
     println("Filling bands array")
     band = Bands()
-    println(band(1, [0.0, 0.0, 0.0]))
-    println(band(1, [3.14, 3.14, 3.14]))
     ek = Array{Float64}(undef, 1, nx, ny, nz)
     for ix in 1:nx, iy in 1:ny, iz in 1:nz
         kvec = get_kvec(ix - 1, iy - 1, iz - 1, nx, ny, nz)
         ek[1, ix, iy, iz] = band(1, kvec)
-        if ix == 1 && iy == 1 && iz == 1
-            println(kvec)
-            println(ek[1, ix, iy, iz])
-        end
     end
+    println("Getting basis")
+    basis = IR_Mesh(ek, 1e-15)
+    iw, iv = get_iw_iv(basis)
     iw = reshape(iw, :, 1, 1, 1)
 
 
@@ -99,7 +93,7 @@ function get_ckio_ir()
         itp = interpolate((1:basis.bnw, 1:nx, 1:ny, 1:2), ckio, Gridded(Linear()))
     end
     println("Interpolated")
-    save_ckio_ir(basis, itp)
+    save_ckio_ir(basis, ckio)
 end
 
 function gkio_calc(basis, ek::Array{Float64,4}, mu::Float64, iw)
@@ -115,7 +109,8 @@ end
 
 function ckio_calc(basis, grit)
     crit = Array{ComplexF64}(undef, basis.bntau, nx, ny, nz)
-    crit .= grit .* grit
+    #crit .= grit .* grit
+    crit .= grit .* reverse(grit, dims=1)
     # Fourier transform
     ckit = r_to_k(crit, basis)
     ckio = tau_to_wn(basis, Bosonic(), ckit)

@@ -12,6 +12,7 @@
 #include "hamiltonian/fs.hpp"
 #include "hamiltonian/vertex.hpp"
 #include "hamiltonian/self_energy.hpp"
+#include "hamiltonian/bethe_salpeter.hpp"
 #include "response/DOS.h"
 #include "response/response.h"
 #include "superconductor/node.hpp"
@@ -53,6 +54,11 @@ void vertex() {
 void self_energy() {
     printf("Starting Self Energy Calculation\n\n");
     self_energy_wrapper();
+}
+
+void bethe_salpeter() {
+    printf("Starting Bethe-Salpeter Calculation\n\n");
+    bethe_salpeter_wrapper();
 }
 
 void superconductor() {
@@ -154,6 +160,8 @@ int main() {
             vertex();
         else if (!strcmp(category, "self_energy"))
             self_energy();
+        else if (!strcmp(category, "bethe_salpeter"))
+            bethe_salpeter();
         else if (!strcmp(category, "test"))
             test();
         else

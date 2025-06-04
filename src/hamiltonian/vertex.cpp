@@ -58,6 +58,10 @@ void call_flex2() {
 
     vector<Vec> points;
     vector<float> wpts = chi.cmf.data.w_points;
+    if (wpts.size() == 0) {
+        wpts.push_back(0.0);
+    }
+    printv("wpts size: %d\n", wpts.size());
     vector<complex<Vec>> values;
 
     printf("Computing vertex\n");
