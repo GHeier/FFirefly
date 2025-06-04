@@ -31,7 +31,7 @@ projs = cfg.projections
 
 const beta = 1 / cfg.Temperature
 
-const bcs_debug = true
+const bcs_debug = false
 
 if bcs_debug && nw % 2 != 0
     println("Remember to make nw even")
@@ -279,7 +279,7 @@ function get_projections(fnw, nx, ny, nz)
                 phi[:, j, k, l] .= cos(kvec[1]) - cos(kvec[2])
             end
         end
-        phi ./= (sum(phi .* phi)^(0.5))
+        #phi ./= (sum(phi .* phi)^(0.5))
         projections[i] = phi
     end
     return projections
@@ -303,8 +303,8 @@ function linearized_eliashberg_projections(projections, iw, V_rt, e, mesh)
         while err
             if bcs_debug
                 zero_out_beyond_wc_e!(Delta_0, e)
-                Delta_0 ./= (sum(Delta_0 .* Delta_0)^(0.5)) # Normalize after changing
             end
+            Delta_0 ./= (sum(Delta_0 .* Delta_0)^(0.5)) # Normalize Before calculation
 
             # Step 1
             F = -( 1 ./ (iw .- e)) .* (1 ./ (-iw .- e)) .* Delta_0 .* c_vals[i]
@@ -324,6 +324,7 @@ function linearized_eliashberg_projections(projections, iw, V_rt, e, mesh)
             eig = sum(Delta_1 .* Delta_0)
             # Step 4
             c_n = sum(Delta_1 .* Delta_0, dims=(2, 3, 4)) ./ eig .* nw
+            println("max c_n: ", maximum(c_n))
 
             # Error checking
             errs[iter % conv_iters + 1] = abs(eigs[i] - eig)

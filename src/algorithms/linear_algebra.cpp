@@ -83,7 +83,8 @@ Eigenvector power_iteration(Matrix &A, Eigenvector initial) {
     float diff_percent = 1;
     vector<float> diffs(10, 1.0f);
     bool all_low = false;
-    for (int i = 0; !all_low; i++) {
+    int max_iters = 1000;
+    for (int i = 0; !all_low and i < max_iters; i++) {
         Eigenvector x_new = A * x;
         x_new.normalize();
         x_new.eigenvalue = dot(x_new, A * x_new) / dot(x_new, x_new);

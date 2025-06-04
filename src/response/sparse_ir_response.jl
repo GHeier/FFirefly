@@ -17,6 +17,10 @@ T = cfg.Temperature
 beta = 1 / T
 dim = cfg.dimension
 nx, ny, nz = cfg.k_mesh
+if nx < cfg.q_mesh[1] || ny < cfg.q_mesh[2] || nz < cfg.q_mesh[3]
+    println("Q Mesh cannot be larger than K Mesh.\nQ Mesh is the mesh where the data is saved")
+    exit()
+end
 if dim == 2
     nz = 1
 end
@@ -27,7 +31,7 @@ prefix = cfg.prefix
 outdir = cfg.outdir
 dynamic = cfg.dynamic
 
-function get_kvec(ix, iy, iz)
+function get_kvec(ix, iy, iz, nx, ny, nz)
     kvec = [ix / (nx - 1) - 0.5, iy / (ny - 1) - 0.5, iz / (nz - 1) - 0.5] 
     if dim < 3
         kvec[3] = 0.0
@@ -64,10 +68,16 @@ function get_ckio_ir()
     iw, iv = get_iw_iv(basis)
     println("Filling bands array")
     band = Bands()
-    ek = Array{ComplexF64}(undef, 1, nx, ny, nz)
-    for iy in 1:ny, ix in 1:nx, iz in 1:nz
-        kvec = get_kvec(ix - 1, iy - 1, iz - 1)
+    println(band(1, [0.0, 0.0, 0.0]))
+    println(band(1, [3.14, 3.14, 3.14]))
+    ek = Array{Float64}(undef, 1, nx, ny, nz)
+    for ix in 1:nx, iy in 1:ny, iz in 1:nz
+        kvec = get_kvec(ix - 1, iy - 1, iz - 1, nx, ny, nz)
         ek[1, ix, iy, iz] = band(1, kvec)
+        if ix == 1 && iy == 1 && iz == 1
+            println(kvec)
+            println(ek[1, ix, iy, iz])
+        end
     end
     iw = reshape(iw, :, 1, 1, 1)
 
@@ -78,6 +88,7 @@ function get_ckio_ir()
     grit = grit_calc(basis, gkio)
     println("Calculating X(k,iv)")
     ckio = ckio_calc(basis, grit)
+    println(ckio[Int(basis.bnw / 2 + 0.5), 1, 1, 1])
     println("Max χ = ", maximum(real.(ckio)))
     println("Min χ: ", minimum(real.(ckio)))
     println("Interpolaing result")
@@ -91,8 +102,8 @@ function get_ckio_ir()
     save_ckio_ir(basis, itp)
 end
 
-function gkio_calc(basis, ek::Array{ComplexF64,4}, mu::Float64, iw)
-    gkio = 1.0 ./ (iw .- ek .+ mu)
+function gkio_calc(basis, ek::Array{Float64,4}, mu::Float64, iw)
+    gkio = 1.0 ./ (iw .+ mu .- ek)
     return gkio
 end
 
@@ -135,7 +146,7 @@ function save_ckio_ir(basis, ckio)
        print(f, header)
 
        for ix in 1:nx, iy in 1:ny, iz in 1:nz, iw in 1:basis.bnw
-            kvec = get_kvec(ix - 1, iy - 1, iz - 1)
+            kvec = get_kvec(ix - 1, iy - 1, iz - 1, nx, ny, nz)
             iv = valueim(basis.IR_basis_set.smpl_wn_b.sampling_points[iw], beta)
             if !dynamic && iv.im != 0.0
                 continue

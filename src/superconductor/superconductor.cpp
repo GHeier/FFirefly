@@ -73,6 +73,8 @@ void bcs() {
     float f = f_singlet_integral(T);
     cout << "F-integral value: " << f << endl;
 
+    vector<float> proj_eigs = matrix_projections(FS, P);
+
     cout << "Finding Eigenspace..." << endl;
     Eigenvector *solutions = new Eigenvector[num_eigenvalues_to_save];
     lapack_hermitian_diagonalization(P, solutions);
@@ -83,7 +85,7 @@ void bcs() {
     sort(solutions, solutions + num_eigenvalues_to_save,
          descending_eigenvalues);
 
-    printf("Max eigenvalue: %f\n", solutions[0].eigenvalue);
+    printf("Max Diagonalized eigenvalue: %f\n", solutions[0].eigenvalue);
 
     Eigenvector initial_guess(P.size, true);
     for (int i = 0; i < P.size; i++) {
@@ -92,8 +94,7 @@ void bcs() {
         initial_guess.eigenvector[i] = proj;
     }
     Eigenvector top_gap = power_iteration(P, initial_guess);
-    cout << "top gap eig: " << top_gap.eigenvalue << endl;
-    return;
+    cout << "Max Power Iteration eigenvalue: " << top_gap.eigenvalue << endl;
     //vector<Eigenvector> top_gaps = power_iteration(P, 0.01);
     //for (Eigenvector x : top_gaps) {
     //    cout << "eig: " << x.eigenvalue << endl;

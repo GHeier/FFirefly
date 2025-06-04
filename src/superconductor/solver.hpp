@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "../objects/vec.hpp"
+#include "../objects/matrix.hpp"
 
 float f_singlet(float x, float T);
 float f_singlet_integral(float T);
@@ -13,4 +14,4 @@ float f(vector<Vec> k, float T,
 float get_Tc(
     vector<Vec> k,
     const unordered_map<float, vector<vector<vector<float>>>> &cube_map);
-vector<float> matrix_proejctions(vector<Vec> &FS, float T);
+vector<float> matrix_projections(vector<Vec> &FS, Matrix &P);

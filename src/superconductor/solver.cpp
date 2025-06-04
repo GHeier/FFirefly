@@ -117,7 +117,7 @@ float get_Tc(
     return root;
 }
 
-vector<float> matrix_proejctions(vector<Vec> &FS, Matrix &P) {
+vector<float> matrix_projections(vector<Vec> &FS, Matrix &P) {
     cout << "Calculating Coupling Constant...\n";
     int size = FS.size();
 
@@ -130,13 +130,15 @@ vector<float> matrix_proejctions(vector<Vec> &FS, Matrix &P) {
 #pragma omp parallel for
     for (int i = 0; i < size; i++) {
         Vec k1 = FS[i];
+        float f1 = pow(k1.area / vp(k1.n, k1), 0.5);
         for (int j = 0; j < size; j++) {
             Vec k2 = FS[j];
-            lambda[0] += P(i, j) * s(k1) * s(k2);
-            lambda[1] += P(i, j) * d_x2_y2(k1) * d_x2_y2(k2);
+            float f2 = pow(k2.area / vp(k2.n, k2), 0.5);
+            lambda[0] += P(i, j) * s(k1) * s(k2) * f1 * f2;
+            lambda[1] += P(i, j) * d_x2_y2(k1) * d_x2_y2(k2) * f1 * f2;
         }
-        normalization[0] += pow(s(k1), 2) * k1.area / vp(k1.n, k1);
-        normalization[1] += pow(d_x2_y2(k1), 2) * k1.area / vp(k1.n, k1);
+        normalization[0] += pow(s(k1), 2) * f1 * f1;
+        normalization[1] += pow(d_x2_y2(k1), 2) * f1 * f1;
     }
     vector<float> lambdas;
     for (int i = 0; i < num_projs; i++) 
