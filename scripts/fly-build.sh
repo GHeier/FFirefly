@@ -1,9 +1,9 @@
 #!/bin/bash
 
+# Resolve the absolute path of the script, following symlinks if necessary
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 folder="${SCRIPT_DIR}/.."
 folder="$(realpath "$folder")"
-
 # Check if the first argument is provided and handle verbosity levels
 if [ "$1" == "-v" ]; then
     cmake -S "$folder" -B "$folder/build" -G Ninja 1>/dev/null && cmake --build "$folder/build"

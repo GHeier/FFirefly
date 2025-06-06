@@ -136,6 +136,9 @@ function get_self_energy()
         temp = V_rt .* G_rt
         sigma = rtau_to_kw(temp, 'F', basis)
     end
+    for i in 1:fnw
+        sigma[i, :, :, :] = fftshift(sigma[i, :, :, :])
+    end
     println("Max Sigma: ", maximum(real.(sigma)))
     println("Min Sigma: ", minimum(real.(sigma)))
     println("Interpolaing result")

@@ -40,6 +40,7 @@ The Ffirefly project grants access to a wide variety of extremely powerful algor
 |            |               | ccache   |            |      |
 |            |               | Boost    |            |      |
 |            |               | pybind   |            |      |
+|            |               | hdf5     |            |      |
 
 ---
 #### **2️⃣ Build Instructions**  

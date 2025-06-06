@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/g/Research/FFirefly/hdf5_test/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

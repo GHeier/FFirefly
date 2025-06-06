@@ -101,5 +101,5 @@ add_executable(fly.x $<TARGET_OBJECTS:objlib_c> $<TARGET_OBJECTS:objlib_cpp> $<T
 set_target_properties(fly.x PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
 # Link necessary libraries (but NOT the shared library!)
-target_link_libraries(fly.x PRIVATE ${Python3_LIBRARIES} ${LIBS})
+target_link_libraries(fly.x PRIVATE ${LIBS} ${Python3_LIBRARIES})
 target_link_libraries(fly PRIVATE ${Python3_LIBRARIES} ${LIBS})

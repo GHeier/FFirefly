@@ -6,6 +6,7 @@ cfg = Firefly.Config
 
 include("../objects/mesh.jl")
 using .IRMesh
+using FFTW
 using SparseIR
 import SparseIR: Statistics, value, valueim
 using PyCall
@@ -52,7 +53,7 @@ function get_iw_iv(mesh)
     for i in 1:fnw
         iw[i] = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta)
     end
-for i in 1:bnw
+    for i in 1:bnw
         iv[i] = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[i], beta)
     end
     println("Fermionic frequency from ", minimum(imag.(iw)), " to ", maximum(imag.(iw)))
@@ -114,6 +115,10 @@ function ckio_calc(basis, grit)
     # Fourier transform
     ckit = r_to_k(crit, basis)
     ckio = tau_to_wn(basis, Bosonic(), ckit)
+
+    for i in 1:mesh.bnw
+        ckio[i, :, :, :] .= fftshift(ckio[i, :, :, :])
+    end
     return ckio
 end
 
