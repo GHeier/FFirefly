@@ -64,21 +64,29 @@ This wrapper comes with a launcher and data extracters for every calculation typ
 ---
 
 ### **🔹 Plotting**  
-The "plot" folder contains a script, fly-plot.py, which contains a function called `sketch`. Given a file/files and a plot type, this function returns a figure that can be further modified by the user. It also acts as a command-line interface for plotting a given file with default settings. These two uses allow for easy plotting of results from Ffirefly calculations. It is recommended to make the script a custom terminal command so that quick plots can be made from anywhere.
+Plotting is based around the `sketch` function, contained in "plot/fly_plot.py". Given a file/files and a plot type, this function returns a figure that can be further modified by the user. Plot types are:
+
+    - Line
+    - Scatter
+    - Colorgrid
+    - Surface
+    - ColorSurface
+
+A command-line interface for plotting a given file with default settings is also available.
 
 ---
 
 
 ## **📚 Developer Guide**
-In src/ there are folders for each category of calculation, with subfolders as needed. If you are adding a new category, simply create a new folder in src/ and add a new file for the calculation. The main.c file handles the input file and calls the appropriate calculation function. After your folder has been created, add a "node" that connects main.c to your folder. Make sure to call this node from main.c and compile with fly-build.sh after.
-   - An example of this in the superconductor/ folder in the `node.cpp` file. This file has a function called superconductor_wrapper(), which determines the type of calculation to be performed. main.c calls this superconductor_wrapper() function if the category type is "superconductor". New categories should follow this format.
-   - If you do add new code to the project, the code must interact with the config file by modifying its behavior based on all relevant variables. Adding config variables is done in `src/config/input_variables.py`.
-   - It also must pass tests to confirm that it is working correctly, and to confirm that the code still works upon future development. These tests must have a source, whether it be an analytical limit or a reference paper. This must be quick to run, so simply check that 1 or 2 points are correct rather than calculating an entire dense mesh.
+In src/, there are folders for each category of calculation, with subfolders as needed. If you are adding a new category, simply create a new folder in src/ and add a new file for the calculation. After your folder has been created, add a "node" that connects main.c to your calculation folder and make sure to call it within main.c. Finally, recompile the project with fly-build.sh. The main.c file handles the input file and calls the appropriate calculation function.
+An example of this in the superconductor/ folder in the `node.cpp` file. This file has a function called superconductor_wrapper(), which determines the type of calculation to be performed. main.c calls this superconductor_wrapper() function if the category type is "superconductor". New categories should follow this format.
+If you do add new code to the project, the code must interact with the config file by modifying its behavior based on all relevant variables. Adding config variables is done in `src/config/input_variables.py`.
+   - It also must pass tests to confirm that it is working correctly and that the code still works upon future development. These tests must have a source, whether it be an analytical limit or a reference paper. This must be quick to run, so simply check that 1 or 2 points are correct rather than calculating an entire dense mesh.
 
 ### **🔹 Testing**  
  This project encourages good coding practice by giving easy access to all tests across all projects. By setting up simple tests prior to running large calculations, you can save yourself a lot of time and headache. In Ffirefly, it is easy to set up and run new tests.
  - To run all existing tests, simply run "fly.x". The tests will run, and the ones that fail will be printed. 
- - To add tests to the test suite, make a "tests/" folder in your category folder. In "tests/" create "all.cpp" and "all.hpp", copying the format shown in src/objects/tests/all.cpp. This file stores a bool array of all test results, and runs "print_test_results" to display the results. Replace the tests with your own, and link the function in main.c. Don't forget to update num_tests to the correct number of tests you run.
+ - To add tests to the test suite, make a "tests/" folder in your category folder. In this new folder, create "all.cpp" and "all.hpp", copying the format shown in src/objects/tests/all.cpp. This file stores a bool array of all test results, and runs "print_test_results" to display them. Replace the tests with your own, and link the function in main.c. Don't forget to update num_tests to the correct number of tests you run.
  - These tests will run when `fly.x` is executed with no arguments.
 
 ### **🔹 Documentation**
@@ -88,7 +96,6 @@ When adding a new category, describe what it does and how it works in the User.m
  Add testing for 
     - algorithms
         - integration
-        - linear_algebra
     - response
         - susceptibility
     - superconductor

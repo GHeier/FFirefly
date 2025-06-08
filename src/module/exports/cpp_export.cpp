@@ -242,9 +242,19 @@ void cmf_save(CMField *cmf, const char *filename) {
 }
 
 // Destroy CMField instance
-void destroy_Field_C(Field_C *field) { delete field; }
+void destroy_Field_C(Field_C *a) { delete a; }
 
-void destroy_Field_R(Field_R *field) { delete field; }
+void destroy_Field_R(Field_R *a) { delete a; }
+
+void destroy_Bands(Bands *a) { delete a; }
+
+void destroy_Vertex(Vertex *a) { delete a; }
+
+void destroy_Self_Energy(Self_Energy *a) { delete a; }
+
+void destroy_Surface(Surface *a) { delete a; }
+
+void destroy_Vec(Vec *a) { delete a; }
 
 void CMF_points_export0(CMField *cmf, vector<Vec> &points) {
     points = cmf->data.points;

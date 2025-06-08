@@ -29,6 +29,7 @@ public:
   int nx = 0, ny = 0, nz = 0, nw = 0;
 
   CMField();
+  ~CMField();
   CMField(CMData &data);
   CMField(vector<Vec> points, vector<complex<Vec>> values, int coords_dim,
           bool w_col, bool n_col, bool is_complex, bool is_vector);
@@ -41,6 +42,7 @@ public:
   complex<Vec> operator()(int n, Vec point, float w = 0);
 };
 
+float sizeof_values(vector<vector<complex<Vec>>> &values);
 vector<float> matrix_multiplication(vector<Vec> &matrix, Vec &vec, int n);
 Vec vec_matrix_multiplication(vector<float> &matrix, Vec &vec, int n);
 bool domain_vec_found(float a[4], float dx, float dy, float dz, float dw);

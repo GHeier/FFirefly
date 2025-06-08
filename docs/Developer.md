@@ -1,94 +1,5 @@
 ### 🔹 **Module Objects**
 
----
-
-#### 🔸 `Bands`
-
-- **Purpose**: Provides band structure data from `_bands.dat`, or falls back to the `.cfg` definition (`epsilon` function) if the file is not present.
-- **Behavior**:
-  - Automatically reads `_bands.dat` upon initialization.
-  - Defaults to `.cfg` if no file is found.
-  - Internally wraps a `Field_R` object.
-
-- **Usage**:
-  - **C++**:
-    ```cpp
-    Bands band;
-    band(n, k);
-    ```
-  - **Python**:
-    ```python
-    band = Bands()
-    band(n, k)
-    ```
-  - **Parameters**:
-    - `n`: *integer* – Band index (starting at **1**)
-    - `k`: *vector<float>* – 1D, 2D, or 3D momentum vector
-
----
-
-#### 🔸 `Vertex`
-
-- **Purpose**: Returns the two-particle vertex $\Gamma$ using data from `_2PI.dat` or the fallback `interaction` defined in `.cfg`.
-- **Behavior**:
-  - Automatically loads `_2PI.dat` if available.
-  - Falls back to `.cfg` definition if `_2PI.dat` is missing and the interaction is analytically defined.
-  - Accepts optional label arguments (e.g., spin, valley).
-
-- **Usage**:
-  - **C++**:
-    ```cpp
-    Vertex V;
-    V(q, w, label1, label2);
-    ```
-  - **Python**:
-    ```python
-    V = Vertex()
-    V(q, w, label1, label2)
-    ```
-  - **Parameters**:
-    - `q`: *vector<float>* – Momentum transfer vector  
-    - `w`: *float* – Energy transfer (pass as imaginary value for Matsubara)  
-    - `label1`, `label2`: *optional* – Labels for degrees of freedom (e.g., spin, orbital)
-
----
-
-#### 🔸 `Field_R`
-
-- **Purpose**: Wraps a `CMField` and returns **real-valued** scalar field data.
-
-- **Usage**:
-  ```cpp
-  Field_R field;
-  field(x, y, z);
-
-#### 🔸 `Field_C`
-
-- **Purpose**: Wraps a `CMField` and returns **complex-valued** scalar field data.
-
-- **Usage**:
-  ```cpp
-  Field_C field;
-  field(x, y, z);
-
-#### 🔸 `Field_VR`
-
-- **Purpose**: Wraps a `CMField` and returns **real-valued** vector field data.
-
-- **Usage**:
-  ```cpp
-  Field_VR field;
-  field(x, y, z);
-
-#### 🔸 `Field_VC`
-
-- **Purpose**: Wraps a `CMField` and returns **complex-valued** vector field data.
-
-- **Usage**:
-  ```cpp
-  Field_VC field;
-  field(x, y, z);
-
 #### 🔸 `CMData`
 
 - **Purpose**: Manages structured datasets and handles reading/writing from disk with a defined column format.
@@ -152,3 +63,93 @@
     - `n`, `w`: *int, float* – Index and 4th dimension coordinate used for binary-search interpolation
 
 ---
+
+#### 🔸 `Field_R`
+
+- **Purpose**: Wraps a `CMField` and returns **real-valued** scalar field data.
+
+- **Usage**:
+  ```cpp
+  Field_R field;
+  field(x, y, z);
+
+#### 🔸 `Field_C`
+
+- **Purpose**: Wraps a `CMField` and returns **complex-valued** scalar field data.
+
+- **Usage**:
+  ```cpp
+  Field_C field;
+  field(x, y, z);
+
+#### 🔸 `Field_VR`
+
+- **Purpose**: Wraps a `CMField` and returns **real-valued** vector field data.
+
+- **Usage**:
+  ```cpp
+  Field_VR field;
+  field(x, y, z);
+
+#### 🔸 `Field_VC`
+
+- **Purpose**: Wraps a `CMField` and returns **complex-valued** vector field data.
+
+- **Usage**:
+  ```cpp
+  Field_VC field;
+  field(x, y, z);
+
+---
+
+#### 🔸 `Bands`
+
+- **Purpose**: Provides band structure data from `_bands.dat`, or falls back to the `.cfg` definition (`epsilon` function) if the file is not present.
+- **Behavior**:
+  - Automatically reads `_bands.dat` upon initialization.
+  - Defaults to `.cfg` if no file is found.
+  - Internally wraps a `Field_R` object.
+
+- **Usage**:
+  - **C++**:
+    ```cpp
+    Bands band;
+    band(n, k);
+    ```
+  - **Python**:
+    ```python
+    band = Bands()
+    band(n, k)
+    ```
+  - **Parameters**:
+    - `n`: *integer* – Band index (starting at **1**)
+    - `k`: *vector<float>* – 1D, 2D, or 3D momentum vector
+
+---
+
+#### 🔸 `Vertex`
+
+- **Purpose**: Returns the two-particle vertex $\Gamma$ using data from `_2PI.dat` or the fallback `interaction` defined in `.cfg`.
+- **Behavior**:
+  - Automatically loads `_2PI.dat` if available.
+  - Falls back to `.cfg` definition if `_2PI.dat` is missing and the interaction is analytically defined.
+  - Accepts optional label arguments (e.g., spin, valley).
+
+- **Usage**:
+  - **C++**:
+    ```cpp
+    Vertex V;
+    V(q, w, label1, label2);
+    ```
+  - **Python**:
+    ```python
+    V = Vertex()
+    V(q, w, label1, label2)
+    ```
+  - **Parameters**:
+    - `q`: *vector<float>* – Momentum transfer vector  
+    - `w`: *float* – Energy transfer (pass as imaginary value for Matsubara)  
+    - `label1`, `label2`: *optional* – Labels for degrees of freedom (e.g., spin, orbital)
+
+---
+

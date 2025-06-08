@@ -71,50 +71,50 @@ function get_ckio_ir()
         kvec = get_kvec(ix - 1, iy - 1, iz - 1, nx, ny, nz)
         ek[1, ix, iy, iz] = band(1, kvec)
     end
-    println("Getting basis")
-    basis = IR_Mesh(ek, 1e-15)
-    iw, iv = get_iw_iv(basis)
+    println("Getting mesh")
+    mesh = IR_Mesh(ek, 1e-15)
+    iw, iv = get_iw_iv(mesh)
     iw = reshape(iw, :, 1, 1, 1)
 
 
     println("Calculating G(k,iw)")
-    gkio = gkio_calc(basis, ek, mu, iw)
+    gkio = gkio_calc(mesh, ek, mu, iw)
     println("Calculating G(r,tau)")
-    grit = grit_calc(basis, gkio)
+    grit = grit_calc(mesh, gkio)
     println("Calculating X(k,iv)")
-    ckio = ckio_calc(basis, grit)
-    println(ckio[Int(basis.bnw / 2 + 0.5), 1, 1, 1])
+    ckio = ckio_calc(mesh, grit)
+    println(ckio[Int(mesh.bnw / 2 + 0.5), 1, 1, 1])
     println("Max χ = ", maximum(real.(ckio)))
     println("Min χ: ", minimum(real.(ckio)))
     println("Interpolaing result")
     if nz > 1
-        itp = interpolate((1:basis.bnw, 1:nx, 1:ny, 1:nz), ckio, Gridded(Linear()))
+        itp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:nz), ckio, Gridded(Linear()))
     else
         ckio = repeat(ckio, 1, 1, 1, 2)
-        itp = interpolate((1:basis.bnw, 1:nx, 1:ny, 1:2), ckio, Gridded(Linear()))
+        itp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:2), ckio, Gridded(Linear()))
     end
     println("Interpolated")
-    save_ckio_ir(basis, ckio)
+    save_ckio_ir(mesh, ckio)
 end
 
-function gkio_calc(basis, ek::Array{Float64,4}, mu::Float64, iw)
+function gkio_calc(mesh, ek::Array{Float64,4}, mu::Float64, iw)
     gkio = 1.0 ./ (iw .+ mu .- ek)
     return gkio
 end
 
-function grit_calc(basis, gkio)
-    grio = k_to_r(gkio, basis)
-    grit = wn_to_tau(basis, Fermionic(), grio)
+function grit_calc(mesh, gkio)
+    grio = k_to_r(gkio, mesh)
+    grit = wn_to_tau(mesh, Fermionic(), grio)
     return grit
 end
 
-function ckio_calc(basis, grit)
-    crit = Array{ComplexF64}(undef, basis.bntau, nx, ny, nz)
+function ckio_calc(mesh, grit)
+    crit = Array{ComplexF64}(undef, mesh.bntau, nx, ny, nz)
     #crit .= grit .* grit
     crit .= grit .* reverse(grit, dims=1)
     # Fourier transform
-    ckit = r_to_k(crit, basis)
-    ckio = tau_to_wn(basis, Bosonic(), ckit)
+    ckit = r_to_k(crit, mesh)
+    ckio = tau_to_wn(mesh, Bosonic(), ckit)
 
     for i in 1:mesh.bnw
         ckio[i, :, :, :] .= fftshift(ckio[i, :, :, :])
@@ -122,7 +122,7 @@ function ckio_calc(basis, grit)
     return ckio
 end
 
-function save_ckio_ir(basis, ckio)
+function save_ckio_ir(mesh, ckio)
     println("Saving IR response")
     max_X = -1000
     min_X = 1000
@@ -145,9 +145,9 @@ function save_ckio_ir(basis, ckio)
 
        print(f, header)
 
-       for ix in 1:nx, iy in 1:ny, iz in 1:nz, iw in 1:basis.bnw
+       for ix in 1:nx, iy in 1:ny, iz in 1:nz, iw in 1:mesh.bnw
             kvec = get_kvec(ix - 1, iy - 1, iz - 1, nx, ny, nz)
-            iv = valueim(basis.IR_basis_set.smpl_wn_b.sampling_points[iw], beta)
+            iv = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[iw], beta)
             if !dynamic && iv.im != 0.0
                 continue
             end

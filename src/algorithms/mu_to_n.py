@@ -7,10 +7,11 @@ outdir = cfg.outdir
 prefix = cfg.prefix
 dim = cfg.dimension
 nbnd = cfg.nbnd
+w_pts = cfg.w_pts
 BZ = np.array(cfg.brillouin_zone)
 
 def get_bandwidth():
-    nk1, nk2, nk3 = [200, 200, 200]
+    nk1, nk2, nk3 = cfg.k_mesh
     if (dim == 2):
         nk3 = 1
     k1, k2, k3 = np.meshgrid(np.arange(nk1)/nk1, np.arange(nk2)/nk2, np.arange(nk3)/nk3)
@@ -32,12 +33,12 @@ def mu_vs_n():
     dos = firefly.Field_R(outdir + prefix + "_DOS.dat")
     min_e, max_e = get_bandwidth()
     bandwidth = max_e - min_e
-    de = bandwidth / 1000
+    de = bandwidth / w_pts
     print("Bandwidth: ", bandwidth)
     num = 0
     e_list = list()
     num_list = list()
-    for i in range(1000):
+    for i in range(w_pts):
         e = min_e + de * i
         num += 2 * de * dos(e) # 2 is for spin degeneracy
         e_list.append(e)

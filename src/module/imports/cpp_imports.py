@@ -72,8 +72,9 @@ class Surface:
 
     def __del__(self):
         try:
-            lib.destroy.argtypes = [ctypes.c_void_p]
-            lib.destroy(self.ptr)
+            destroy = lib.destroy_Surface
+            destroy.argtypes = [ctypes.c_void_p]
+            destroy(self.ptr)
         except AttributeError:
             pass
 
@@ -170,7 +171,7 @@ class Vec:
 
     def __del__(self):
         try:
-            destroy = lib.destroy
+            destroy = lib.destroy_Vec
             destroy.argtypes = [ctypes.c_void_p]
             destroy(self.ptr)
         except AttributeError:
@@ -220,7 +221,7 @@ class Field_R:
 
     def __del__(self):
         try:
-            destroy = lib.destroy
+            destroy = lib.destroy_Field_R
             destroy.argtypes = [c_void_p]
             destroy(self.ptr)
         except AttributeError:
@@ -308,11 +309,11 @@ class Field_C:
 
     def __del__(self):
         try:
-            destroy = lib.destroy
+            destroy = lib.destroy_Field_C
             destroy.argtypes = [ctypes.c_void_p]
             destroy(self.ptr)
         except AttributeError:
-            pass
+            print("failed to clear memory")
 
 lib.Bands_export0.restype = c_void_p
 
@@ -372,7 +373,7 @@ class Bands:
 
     def __del__(self):
         try:
-            destroy = lib.destroy
+            destroy = lib.destroy_Bands
             destroy.argtypes = [ctypes.c_void_p]
             destroy(self.ptr)
         except AttributeError:

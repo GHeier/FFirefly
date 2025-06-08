@@ -142,8 +142,8 @@ vector<float> matrix_projections(vector<Vec> &FS, Matrix &P) {
     }
     vector<float> lambdas;
     for (int i = 0; i < num_projs; i++) 
-        //lambdas.push_back(lambda[i] / normalization[i]);
-        lambdas.push_back(lambda[i]);
+        lambdas.push_back(lambda[i] / normalization[i]);
+        //lambdas.push_back(lambda[i]);
     printf("S-wave λ = %.3f\n", lambdas[0]);
     printf("D-wave λ = %.3f\n", lambdas[1]);
     return lambdas;

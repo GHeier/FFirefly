@@ -98,12 +98,16 @@ function get_iw_iv(mesh)
 end
 
 
-function create_energy_mesh(band, iw, Sigma)
+function create_energy_mesh(band, iw, Sigma, with_sigma=true)
     nw = length(iw)
     e_arr = zeros(ComplexF32, nw, nx, ny, nz)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:nw
         kvec = get_kvec(i, j, k)
-        e_arr[l, i, j, k] = band(1, kvec) - mu + Sigma(kvec, imag(iw[l]))
+        if with_sigma
+            e_arr[l, i, j, k] = band(1, kvec) - mu + Sigma(kvec, imag(iw[l]))
+        else
+            e_arr[l, i, j, k] = band(1, kvec) - mu
+        end
     end
     return e_arr
 end
@@ -138,7 +142,7 @@ function linearized_eliashberg(phi, iw, V_rt, e, mesh)
     norm = sum(newphi .* newphi)^(0.5)
     newphi .= newphi ./ norm
 
-    result = phi .* newphi # Resultant eigenvector/value
+    result = conj.(phi) .* newphi # Resultant eigenvector/value
     eig = sum(result) / sum(phi .* phi)
     return eig, newphi 
 end
@@ -192,9 +196,15 @@ end
 
 
 function eigenvalue_computation()
+
+    println("Getting Bands")
+    band = Firefly.Bands()
+    println("Creating energy mesh")
+    e = create_energy_mesh(band, 0, 0, false)
+
     if !bcs_debug
         println("Creating Mesh")
-        mesh = IR_Mesh()
+        mesh = IR_Mesh(real.(e))
         iw, iv = get_iw_iv(mesh)
         fnw, bnw = length(iw), length(iv)
     else 
@@ -204,6 +214,9 @@ function eigenvalue_computation()
         println("BCS DEBUG: Found iw/iv")
     end
 
+    println("Getting Self Energy")
+    Sigma = Self_Energy()
+    e = create_energy_mesh(band, iw, Sigma)
 
     if !bcs_debug
         println("Getting Vertex")
@@ -215,13 +228,6 @@ function eigenvalue_computation()
         V_rt = fft(V)
         println("BCS DEBUG: FFT'd Vertex")
     end
-
-    println("Getting Bands")
-    band = Firefly.Bands()
-    println("Getting Self Energy")
-    Sigma = Self_Energy()
-    println("Creating energy mesh")
-    e = create_energy_mesh(band, iw, Sigma)
 
     if bcs_debug
         N = Firefly.Field_R(outdir * prefix * "_DOS.dat")
@@ -243,9 +249,9 @@ function eigenvalue_computation()
     eig, phi = linearized_eliashberg_loop(phi, iw, V_rt, e, mesh)
     @printf("Max Eig: %.4f\n", real(eig))
 
-    #if !bcs_debug
-    #    save_gap(phi, iw)
-    #end
+    if !bcs_debug
+        save_gap(phi, iw)
+    end
 end
 
 
@@ -324,7 +330,7 @@ function linearized_eliashberg_projections(projections, iw, V_rt, e, mesh)
             eig = sum(Delta_1 .* Delta_0)
             # Step 4
             c_n = sum(Delta_1 .* Delta_0, dims=(2, 3, 4)) ./ eig .* nw
-            println("max c_n: ", maximum(c_n))
+            printv("max c_n: $(maximum(c_n))")
 
             # Error checking
             errs[iter % conv_iters + 1] = abs(eigs[i] - eig)

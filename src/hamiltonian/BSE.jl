@@ -75,7 +75,7 @@ function loop2!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
 
         X .= rtau_to_kw(X_rt, 'B', mesh)
 
-        #V .= (-3/2) .* (U^2 .* X ./ (1 .- U .* X)) .+ (1/2) .* (U^2 .* X ./ (1 .+ U .* X))
+        #V .= (3/2) .* (U^2 .* X ./ (1 .- U .* X)) .- (1/2) .* (U^2 .* X ./ (1 .+ U .* X))
         V .= (U^2 .* X ./ (1 .- U .* X)) .+ (U^3 .* X.^2 ./ (1 .+ U^2 .* X.^2))
 
         X_rt .= kw_to_rtau(V, 'B', mesh)

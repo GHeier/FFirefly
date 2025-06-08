@@ -11,7 +11,7 @@ from cycler import cycler
 
 #matplotlib.use('module://matplotlib-backend-kitty')  # Kitty terminal
 
-plt.rcParams["axes.prop_cycle"] = cycler(color=["#9a05fc", "#f00524", "#f0d802"])
+plt.rcParams["axes.prop_cycle"] = cycler(color=["#9a05fc", "#f00524", "#f0b802", "#3887f3", "#ed6c09", "#20c714", "black", "gray"])
 plt.rcParams["lines.linewidth"] = 1.0
 
 plt.rcParams['lines.markersize'] = 5.0

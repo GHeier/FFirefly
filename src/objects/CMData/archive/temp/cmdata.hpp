@@ -20,14 +20,11 @@ class CMData {
         bool filled;
 
         CMData();
-        ~CMData();
-        CMData(vector<Vec> &points, vector<complex<Vec>> &values, int dimension, bool with_w, bool with_n, bool is_complex, bool is_vector);
+        CMData(vector<Vec> points, vector<complex<Vec>> values, int dimension, bool with_w, bool with_n, bool is_complex, bool is_vector);
 
         CMData(string filename);
 
         string get_header(int dimension, bool with_w, bool with_n, bool is_complex, bool is_vector);
-
-        void save_hdf5(const std::string& filename) const;
 };
 
 CMData load(string filename);

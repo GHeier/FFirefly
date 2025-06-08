@@ -55,7 +55,7 @@ def plot_section(field, qi, qf, section):
     return np.min(y)
 
 
-def plot_path(files, path):
+def plot_path(files, path, hline=False):
     fig, ax = plt.subplots()
     ax.set_xticks([])
     ymin = 0
@@ -72,7 +72,8 @@ def plot_path(files, path):
             qi = qf
             i += 1
 
-    plt.axhline(y=0, color="gray", linestyle="--", linewidth=1)
+    if hline:
+        plt.axhline(y=0, color="gray", linestyle="--", linewidth=1)
     plt.xlim(0, len(path) - 1)
     for i in range(len(path)):
         ax.text(i, ymin - 1.0, path[i].upper(), ha="center", va="top")

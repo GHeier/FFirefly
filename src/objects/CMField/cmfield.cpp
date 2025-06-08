@@ -35,6 +35,16 @@ CMField::CMField() {
     wmax = 0, wmin = 0;
 }
 
+CMField::~CMField() {
+    // No manual cleanup is necessary here unless you allocate memory with new.
+    // Standard containers (like vector) and member objects (like CMData) clean up automatically.
+
+    // Optional: clear vectors explicitly (only needed for large memory footprint or debugging)
+    values.clear();
+    domain.clear();
+    inv_domain.clear();
+}
+
 CMField::CMField(CMData &data) {
     this->data = data;
     if (data.dimension == 1 or (data.dimension == 0 and data.with_w))
@@ -91,6 +101,14 @@ void make_values_2d(vector<vector<complex<Vec>>> &values, CMData &data) {
         values.emplace_back(data.values.begin() + start,
                             data.values.begin() + end);
     }
+}
+
+float sizeof_values(vector<vector<complex<Vec>>> &values) {
+    float MB = 0;
+    for (auto x : values) {
+        MB += 1.0 * x.size() * 64 / (1024 * 1024);
+    }
+    return MB;
 }
 
 CMField load_CMField(string filename) {

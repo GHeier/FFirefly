@@ -78,7 +78,7 @@ class Field_C_Wrapper:
     def load_field(self, filename):
         return self.Field_C(self.lib.load_Field_C(filename.encode()))
 
-field = Field_C_Wrapper()
+#field = Field_C_Wrapper()
 
 # Create a Field_C object
-f = field.load_field("/home/g/Research/Materials/Test/test_chi.dat")
+#f = field.load_field("/home/g/Research/Materials/Test/test_chi.dat")

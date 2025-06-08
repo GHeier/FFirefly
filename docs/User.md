@@ -65,7 +65,9 @@
 - **Options**:
   - `method`:  
     - `bcs` – Basic BCS approximation  
+        - Outputs `_gap.dat` file with gap values along surface
     - `eliashberg` – Eliashberg theory
+        - Outputs `_gap.dat` file with gap values across brillouin zone
   - `calculation`:  
     - `diagonalization` – Direct diagonalization of gap functions  
     - `projection` – Projection onto a predefined basis set
@@ -80,8 +82,10 @@
 ! **Options**:
   ! `method`:  
     ! `sparse_ir` – Uses sparse Matsubara frequencies (finite T; requires dense k-grid)  
+        - Outputs `_chi.dat` file with chi values across brillouin zone
     ! `libtetrabz` – Uses analytic tetrahedra integration (0 K; allows sparse grid)  
-    ! ⚠️ *If you encounter "STOP NESTING", adjust the k-grid size.*
+        - Outputs `_chi.dat` file with chi values across brillouin zone
+        ! ⚠️ *If you encounter "STOP NESTING", adjust the k-grid size.*
   ! `dynamic`:  
     ! `true` – Calculate and save data for finite $\omega$  
     ! `false` – Only compute at $\omega = 0$
@@ -96,9 +100,7 @@
 - **Options**:
   - `interaction`:  
     - `FLEX` – Computes the FLEX vertex; requires bare susceptibility file (`_chi.dat`)
-  - `scf`:  
-    - `true` – Compute self-consistent vertex (outputs self-energy)  
-    - `false` – Use 0th-order vertex
+- Outputs `_vertex.dat` file with vertex values across brillouin zone
 
 ---
 
@@ -108,11 +110,8 @@
   - `method`:  
     - `libtetrabz` – Analytic tetrahedra integration  
     - `surface_sum` – Alternative method with comparable results
-
----
-
-#### 🔸 `fermi_surface`
-- **Purpose**: Calculates the Fermi Surface.  
-- **Options**: *(No specific configuration required)*
-
----
+  - w_pts:
+    - Number of energy points across bandwidth
+  - k_mesh
+    - Density of points when defining tetrahedra/surface points
+- Outputs `_DOS.dat` file with Density of States vs Energy

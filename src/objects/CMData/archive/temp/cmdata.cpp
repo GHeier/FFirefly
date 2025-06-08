@@ -1,12 +1,9 @@
-#include "H5Cpp.h"
 #include "cmdata.hpp"
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <string>
-
-using namespace H5;
 
 CMData::CMData() {
     points = vector<Vec>();
@@ -22,18 +19,7 @@ CMData::CMData() {
     filled = false;
 }
 
-CMData::~CMData() {
-    // Explicitly clear vectors (optional; only necessary if you're releasing large memory early)
-    points.clear();
-    w_points.clear();
-    values.clear();
-    n_inds.clear();
-
-    // Reset flags (optional; mostly useful in debugging)
-    filled = false;
-}
-
-CMData::CMData(vector<Vec> &points, vector<complex<Vec>> &values, int dimension,
+CMData::CMData(vector<Vec> points, vector<complex<Vec>> values, int dimension,
                bool with_w, bool with_n, bool is_complex, bool is_vector) {
     this->points = points;
     this->values = values;
@@ -265,58 +251,4 @@ void save_to_file(string filename, vector<Vec> &points,
 void save(CMData &data, string filename) {
     save_to_file(filename, data.points, data.values, data.dimension,
                  data.with_w, data.with_n, data.is_complex, data.is_vector);
-}
-
-void CMData::save_hdf5(const std::string& filename) const {
-    H5File file(filename, H5F_ACC_TRUNC);
-
-    // === Attributes ===
-    file.createAttribute("dimension", PredType::NATIVE_INT, DataSpace(H5S_SCALAR)).write(PredType::NATIVE_INT, &dimension);
-    file.createAttribute("is_complex", PredType::NATIVE_HBOOL, DataSpace(H5S_SCALAR)).write(PredType::NATIVE_HBOOL, &is_complex);
-    file.createAttribute("is_vector",  PredType::NATIVE_HBOOL, DataSpace(H5S_SCALAR)).write(PredType::NATIVE_HBOOL, &is_vector);
-    file.createAttribute("with_w",     PredType::NATIVE_HBOOL, DataSpace(H5S_SCALAR)).write(PredType::NATIVE_HBOOL, &with_w);
-    file.createAttribute("with_n",     PredType::NATIVE_HBOOL, DataSpace(H5S_SCALAR)).write(PredType::NATIVE_HBOOL, &with_n);
-
-    // === Points ===
-    hsize_t n_points = points.size();
-    hsize_t point_dims[2] = { n_points, static_cast<hsize_t>(dimension) };
-    DataSpace point_space(2, point_dims);
-    std::vector<float> point_data(n_points * dimension);
-    for (size_t i = 0; i < n_points; ++i) {
-        const Vec& v = points[i];
-        float* dst = &point_data[i * dimension];
-        if (dimension >= 1) dst[0] = v.x;
-        if (dimension >= 2) dst[1] = v.y;
-        if (dimension >= 3) dst[2] = v.z;
-        if (dimension >= 4) dst[3] = v.w;
-    }
-    file.createDataSet("points", PredType::NATIVE_FLOAT, point_space).write(point_data.data(), PredType::NATIVE_FLOAT);
-
-    // === Optional Weights ===
-    if (with_w && !w_points.empty()) {
-        hsize_t w_dims[1] = { n_points };
-        DataSpace w_space(1, w_dims);
-        file.createDataSet("w_points", PredType::NATIVE_FLOAT, w_space).write(w_points.data(), PredType::NATIVE_FLOAT);
-    }
-
-    // === Optional N Indices ===
-    if (with_n && !n_inds.empty()) {
-        hsize_t n_dims[1] = { n_inds.size() };
-        DataSpace n_space(1, n_dims);
-        file.createDataSet("n_inds", PredType::NATIVE_INT, n_space).write(n_inds.data(), PredType::NATIVE_INT);
-    }
-
-    // === Values (complex<Vec>) ===
-    hsize_t val_dims[3] = { n_points, 2, static_cast<hsize_t>(dimension) };
-    DataSpace val_space(3, val_dims);
-    std::vector<float> val_data(n_points * 2 * dimension);
-    for (size_t i = 0; i < n_points; ++i) {
-        const Vec& r = values[i].real();
-        const Vec& im = values[i].imag();
-        for (int d = 0; d < dimension; ++d) {
-            val_data[i * 2 * dimension + 0 * dimension + d] = (&r.x)[d];
-            val_data[i * 2 * dimension + 1 * dimension + d] = (&im.x)[d];
-        }
-    }
-    file.createDataSet("values", PredType::NATIVE_FLOAT, val_space).write(val_data.data(), PredType::NATIVE_FLOAT);
 }

@@ -94,6 +94,8 @@ void bcs() {
         initial_guess.eigenvector[i] = proj;
     }
     Eigenvector top_gap = power_iteration(P, initial_guess);
+    Eigenvector* temp = new Eigenvector[1];
+    temp[0] = top_gap;
     cout << "Max Power Iteration eigenvalue: " << top_gap.eigenvalue << endl;
     //vector<Eigenvector> top_gaps = power_iteration(P, 0.01);
     //for (Eigenvector x : top_gaps) {
@@ -118,6 +120,7 @@ void bcs() {
     // Save file in cartesian coordinates for the sake of plotting easier
     if (FS_only)
         save(file_name, T, FS, solutions);
+        //save(file_name, T, FS, temp);
     else
         save_with_freq(file_name, T, freq_FS, solutions);
     cout << "Eigenvectors Saved\n";
