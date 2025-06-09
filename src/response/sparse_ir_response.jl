@@ -44,6 +44,18 @@ function get_kvec(ix, iy, iz, nx, ny, nz)
 end
 
 
+function get_qvec(ix, iy, iz, nx, ny, nz)
+    kvec = [ix / (nx) - 0.5, iy / (ny) - 0.5, iz / (nz) - 0.5] 
+    if dim < 3
+        kvec[3] = 0.0
+    elseif dim < 2
+        kvec[2] = 0.0
+    end
+    kvec = BZ * kvec
+    return kvec
+end
+
+
 function get_iw_iv(mesh)
     fnw, bnw, fntau, bntau = mesh.fnw, mesh.bnw, mesh.fntau, mesh.bntau
     println("fnw: ", fnw, " bnw: ", bnw, " fntau: ", fntau, " bntau: ", bntau)
@@ -146,7 +158,7 @@ function save_ckio_ir(mesh, ckio)
        print(f, header)
 
        for ix in 1:nx, iy in 1:ny, iz in 1:nz, iw in 1:mesh.bnw
-            kvec = get_kvec(ix - 1, iy - 1, iz - 1, nx, ny, nz)
+            qvec = get_qvec(ix - 1, iy - 1, iz - 1, nx, ny, nz)
             iv = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[iw], beta)
             if !dynamic && iv.im != 0.0
                 continue
@@ -154,7 +166,7 @@ function save_ckio_ir(mesh, ckio)
             val = ckio[iw, ix, iy, iz]
             max_X = max(real(val), max_X)
             min_X = min(real(val), min_X)
-            print(f, fmt(kvec, iv, val))
+            print(f, fmt(qvec, iv, val))
         end
     end
     println("Max χ Saved: ", max_X)

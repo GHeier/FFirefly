@@ -23,6 +23,11 @@ mu = cfg.fermi_energy
 U = cfg.onsite_U
 BZ = cfg.brillouin_zone
 
+
+if cfg.interaction != "FLEX"
+    println("Code written for FLEX interactions")
+end
+
 function BSE_node()
     band = Bands()
     ek = fill_energy_mesh(band)
@@ -74,6 +79,11 @@ function loop2!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
         X_rt .= G_rt .* reverse(G_rt, dims=1)
 
         X .= rtau_to_kw(X_rt, 'B', mesh)
+        max_val = maximum(real.(X)) * U
+        if (max_val >= 1)
+            println("AFM Found: U*X = $max_val")
+            exit()
+        end
 
         #V .= (3/2) .* (U^2 .* X ./ (1 .- U .* X)) .- (1/2) .* (U^2 .* X ./ (1 .+ U .* X))
         V .= (U^2 .* X ./ (1 .- U .* X)) .+ (U^3 .* X.^2 ./ (1 .+ U^2 .* X.^2))
@@ -144,7 +154,7 @@ end
 function fill_energy_mesh(band)
     ek = Array{Float64}(undef, 1, nx, ny, nz)
     for i in 1:nx, j in 1:ny, k in 1:nz
-        kvec = get_kvec(i, j, k, nx, ny, nz)
+        kvec = get_kvec(i - 1, j - 1, k - 1, nx, ny, nz)
         ek[1, i, j, k] = band(1, kvec)
     end
     return ek

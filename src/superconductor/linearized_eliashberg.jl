@@ -127,7 +127,7 @@ function linearized_eliashberg_loop(phi, iw, V_rt, e, mesh = 0)
         print("Eig: ", round(real(eig), digits=6), " Error: ", round(eig_err, digits=6), "       \r")
         iters += 1
     end
-    println("Iterations: ", iters)
+    println("Iterations: $iters                                 ")
     return eig, phi
 end
 
@@ -139,11 +139,11 @@ function linearized_eliashberg(phi, iw, V_rt, e, mesh)
     temp = V_rt .* F_rt
     newphi = rtau_to_kw(temp, 'F', mesh)
 
+    eig = sum(conj.(newphi) .* phi)
+
     norm = sum(newphi .* newphi)^(0.5)
     newphi .= newphi ./ norm
 
-    result = conj.(phi) .* newphi # Resultant eigenvector/value
-    eig = sum(result) / sum(phi .* phi)
     return eig, newphi 
 end
 
@@ -246,6 +246,7 @@ function eigenvalue_computation()
     end
     println("Power Iteration to find Eigenvalue and symmetry")
     phi = rand(Float32, fnw, nx, ny, nz) 
+    phi ./ (sum(phi .* phi))^(0.5)
     eig, phi = linearized_eliashberg_loop(phi, iw, V_rt, e, mesh)
     @printf("Max Eig: %.4f\n", real(eig))
 

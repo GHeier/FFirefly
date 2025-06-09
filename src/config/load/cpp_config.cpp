@@ -18,9 +18,9 @@ string outdir;
 string indir;
 string prefix;
 string verbosity;
-string input_data_file;
 string output_data_file;
 bool automatic_file_read;
+bool write_result;
 
 //[SYSTEM]
 string interaction;
@@ -88,9 +88,9 @@ extern "C" void load_cpp_config() {
     indir = c_indir;
     prefix = c_prefix;
     verbosity = c_verbosity;
-    input_data_file = c_input_data_file;
     output_data_file = c_output_data_file;
     automatic_file_read = c_automatic_file_read;
+    write_result = c_write_result;
 
 //[SYSTEM]
     interaction = c_interaction;

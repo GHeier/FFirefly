@@ -35,10 +35,11 @@ module ffirefly
     character(len=50) :: indir
     character(len=50) :: prefix
     character(len=50) :: verbosity
-    character(len=50) :: input_data_file
     character(len=50) :: output_data_file
     logical(c_bool), bind(C, name="c_automatic_file_read") :: c_automatic_file_read
     logical :: automatic_file_read
+    logical(c_bool), bind(C, name="c_write_result") :: c_write_result
+    logical :: write_result
 
 ![SYSTEM]
     character(len=50) :: interaction
@@ -149,14 +150,11 @@ module ffirefly
             use iso_c_binding
             type(c_ptr) :: get_verbosity
     end function get_verbosity
-        function get_input_data_file() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_input_data_file
-    end function get_input_data_file
         function get_output_data_file() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_output_data_file
     end function get_output_data_file
+
 
 
 ![SYSTEM]
@@ -260,9 +258,9 @@ contains
         indir = get_string(get_indir())
         prefix = get_string(get_prefix())
         verbosity = get_string(get_verbosity())
-        input_data_file = get_string(get_input_data_file())
         output_data_file = get_string(get_output_data_file())
         automatic_file_read = c_automatic_file_read
+        write_result = c_write_result
 
 ![SYSTEM]
         interaction = get_string(get_interaction())

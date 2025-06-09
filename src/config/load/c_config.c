@@ -25,11 +25,10 @@ char* c_prefix = "sample";
 char* get_prefix() {return c_prefix;}
 char* c_verbosity = "low";
 char* get_verbosity() {return c_verbosity;}
-char* c_input_data_file = "input.dat";
-char* get_input_data_file() {return c_input_data_file;}
 char* c_output_data_file = "output.dat";
 char* get_output_data_file() {return c_output_data_file;}
 bool c_automatic_file_read = true;
+bool c_write_result = true;
 
 //[SYSTEM]
 char* c_interaction = "none";
@@ -276,9 +275,6 @@ void read_c_config(const char *path) {
             else if (strstr(key, "verbosity") != NULL) {
                 set_string(&c_verbosity, value);
             }
-            else if (strstr(key, "input_data_file") != NULL) {
-                set_string(&c_input_data_file, value);
-            }
             else if (strstr(key, "output_data_file") != NULL) {
                 set_string(&c_output_data_file, value);
             }
@@ -288,6 +284,14 @@ void read_c_config(const char *path) {
                     c_automatic_file_read = true;
                 } else {
                     c_automatic_file_read = false;
+                }
+            }
+            else if (strstr(key, "write_result") != NULL) {
+                strip_single_quotes(value);
+                if (strcmp(value, "true") == 0) {
+                    c_write_result = true;
+                } else {
+                    c_write_result = false;
                 }
             }
 
