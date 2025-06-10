@@ -162,6 +162,11 @@ void set_global(string &a, const char* b) {
     a = b;
 }
 
+void set_global(vector<int> &a, vector<int> b) {
+    printv("Setting mesh to $d $d $d\n", b[0], b[1], b[2]);
+    a = b;
+}
+
 void set_nbnd(int nbnd_) {
     nbnd = nbnd;
 }

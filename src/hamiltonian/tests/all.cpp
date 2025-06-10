@@ -17,16 +17,6 @@ extern "C" bool hamiltonian_tests() {
   int num_tests = 2;
   bool all_tests[num_tests] = {DOS_test_2d(), DOS_test_3d()};
 
-    string folder = "hamiltonian/";
-    string file = "test";
-    string module = "Test";
-    string function = "bool_test";
-    bool val = call_julia_func(folder.c_str(), file.c_str(), module.c_str(), function.c_str());
-    if (val)
-        cout << "holy shit\n";
-    else
-        cout << "?????\n";
-
   return print_test_results(all_tests, num_tests, "Hamiltonian tests");
 }
 

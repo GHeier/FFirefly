@@ -87,6 +87,7 @@ inline void set_global(float &a, float b) {
 //
 //void set_global(string &a, string b);
 void set_global(string &a, const char* b);
+void set_global(vector<int> &a, vector<int> b);
 
 extern "C" {
     void set_nbnd(int nbnd_);

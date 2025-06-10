@@ -2,7 +2,6 @@
 #include <vector>
 
 #include "../../config/load/c_config.h"
-#include "../../config/load/jl_interface.h"
 #include "../CMData/tests/all.hpp"
 #include "../CMField/tests/bands_tests.hpp"
 #include "../CMField/tests/cmfield_tests.hpp"
