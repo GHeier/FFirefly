@@ -64,7 +64,16 @@ bool call_julia_func(const char *folder, const char *filename,
     return false;
   }
   // if (ret == jl_nothing) return true;
-  return true;
+    jl_datatype_t *ret_type = (jl_datatype_t*)jl_typeof(ret);
+    bool result = false;
+    if (ret_type == jl_bool_type) {
+        result = jl_unbox_bool(ret);
+    }
+    else {
+        printf("Wrong type returned\n");
+        exit(1);
+    }
+    return result;
   // return jl_unbox_bool(ret);
 
   // Cleanup

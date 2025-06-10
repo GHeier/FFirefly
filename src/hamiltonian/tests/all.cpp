@@ -1,5 +1,6 @@
 #include "all.hpp"
 #include "../../config/load/c_config.h"
+#include "../../config/load/jl_interface.h"
 #include "../../config/load/cpp_config.hpp"
 #include "../../hamiltonian/band_structure.hpp"
 #include "../../superconductor/cfg.hpp"
@@ -15,6 +16,17 @@ extern "C" bool hamiltonian_tests() {
   load_cpp_cfg();
   int num_tests = 2;
   bool all_tests[num_tests] = {DOS_test_2d(), DOS_test_3d()};
+
+    string folder = "hamiltonian/";
+    string file = "test";
+    string module = "Test";
+    string function = "bool_test";
+    bool val = call_julia_func(folder.c_str(), file.c_str(), module.c_str(), function.c_str());
+    if (val)
+        cout << "holy shit\n";
+    else
+        cout << "?????\n";
+
   return print_test_results(all_tests, num_tests, "Hamiltonian tests");
 }
 
