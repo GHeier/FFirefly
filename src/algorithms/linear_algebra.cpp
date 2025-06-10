@@ -17,7 +17,8 @@
 
 using namespace std;
 
-/* Power iteration algorithm
+/* CODE CURRENTLY DEPRECATED. USE OTHER FUNCTION
+ * Power iteration algorithm
  * Not optimized, but so fast it doesn't matter
  * Returns eigenvalue and eigenvector
  * NOTE: Technically returns multiple (up to 2) eigenvalues and eigenvectors
@@ -77,9 +78,9 @@ vector<Eigenvector> power_iteration(Matrix &A, float error) {
 }
 
 // This function is designed to get the eigenvalue accurately, not the eigenvector
-Eigenvector power_iteration(Matrix &A, Eigenvector initial) {
-    Eigenvector x = initial;
-    //Eigenvector x(A.size, true);
+Eigenvector power_iteration(Matrix &A) {
+    //Eigenvector x = initial;
+    Eigenvector x(A.size, true);
     float diff_percent = 1;
     vector<float> diffs(10, 1.0f);
     bool all_low = false;
@@ -103,7 +104,7 @@ Eigenvector power_iteration(Matrix &A, Eigenvector initial) {
     }
     if (x.eigenvalue < 0) {
         A -= Matrix(A.size) * x.eigenvalue;
-        return power_iteration(A, initial);
+        return power_iteration(A);
     }
     return x;
 }
