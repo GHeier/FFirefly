@@ -12,7 +12,7 @@ extern "C" bool response_tests() {
     printf("Running Response Tests\n");
     int num_tests = 1;
     bool all_tests[num_tests] = {
-        sparse_ir_response_test(),
+        sparse_ir_response_test_3D(),
     };
     return print_test_results(all_tests, num_tests, "Response Tests");
 }

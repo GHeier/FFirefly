@@ -8,9 +8,9 @@ outdir = './'
 indir = './'
 prefix = 'sample'
 verbosity = 'low'
-output_data_file = 'output.dat'
 automatic_file_read = True
 write_result = True
+filetype = 'h5'
 
 #[SYSTEM]
 interaction = 'none'
@@ -131,15 +131,15 @@ def load_config():
             if "verbosity" in key:
                 global verbosity
                 verbosity = value
-            if "output_data_file" in key:
-                global output_data_file
-                output_data_file = value
             if "automatic_file_read" in key:
                 global automatic_file_read
                 automatic_file_read = value == 'true'
             if "write_result" in key:
                 global write_result
                 write_result = value == 'true'
+            if "filetype" in key:
+                global filetype
+                filetype = value
 
 #[SYSTEM]
             if "interaction" in key:

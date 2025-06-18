@@ -37,7 +37,7 @@ vector<Eigenvector> power_iteration(Matrix &A, float error);
  *
  * @return The leading eigenvector.
  */
-Eigenvector power_iteration(Matrix &A);
+Eigenvector power_iteration(Matrix &A, vector<float> eigs = {});
 
 /**
  * @brief Calculates the eigenvectors of a matrix using the LAPACK library.

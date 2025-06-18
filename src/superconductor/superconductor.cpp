@@ -45,8 +45,8 @@ void bcs() {
     }
 
     cout << "Number of points along Fermi Surface: " << FS.size() << endl;
-    float DOS = get_DOS(FS);
-    printf("DOS: %f\n", DOS);
+    //float DOS = get_DOS(FS);
+    //printf("DOS: %f\n", DOS);
     assert(FS.size() > 10);
     save_FS(FS);
 
@@ -75,18 +75,6 @@ void bcs() {
 
     vector<float> proj_eigs = matrix_projections(FS, P);
 
-    cout << "Finding Eigenspace..." << endl;
-    Eigenvector *solutions = new Eigenvector[num_eigenvalues_to_save];
-    lapack_hermitian_diagonalization(P, solutions);
-
-
-    // Sort solutions with highest eigenvalue/eigenvector pair first
-    cout << "Sorting Eigenvectors..." << endl;
-    sort(solutions, solutions + num_eigenvalues_to_save,
-         descending_eigenvalues);
-
-    printf("Max Diagonalized eigenvalue: %f\n", solutions[0].eigenvalue);
-
     //Eigenvector initial_guess(P.size, true);
     //for (int i = 0; i < P.size; i++) {
     //    Vec k = FS[i];
@@ -94,13 +82,24 @@ void bcs() {
     //    initial_guess.eigenvector[i] = proj;
     //}
     Eigenvector top_gap = power_iteration(P);
-    Eigenvector* temp = new Eigenvector[1];
-    temp[0] = top_gap;
-    cout << "Max Power Iteration eigenvalue: " << top_gap.eigenvalue << endl;
+    //Eigenvector* temp = new Eigenvector[1];
+    //temp[0] = top_gap;
+    printf("Max Power Iteration eigenvalue: %f\n", top_gap.eigenvalue);
     //vector<Eigenvector> top_gaps = power_iteration(P, 0.01);
     //for (Eigenvector x : top_gaps) {
     //    cout << "eig: " << x.eigenvalue << endl;
     //}
+
+    cout << "Finding Eigenspace..." << endl;
+    Eigenvector *solutions = new Eigenvector[num_eigenvalues_to_save];
+    lapack_hermitian_diagonalization(P, solutions);
+
+    // Sort solutions with highest eigenvalue/eigenvector pair first
+    cout << "Sorting Eigenvectors..." << endl;
+    sort(solutions, solutions + num_eigenvalues_to_save,
+         descending_eigenvalues);
+
+    printf("Max Diagonalized eigenvalue: %f\n", solutions[0].eigenvalue);
 
     if (FS_only) {
         double calc_Tc = get_Tc_FS_only(solutions[0].eigenvalue);
@@ -112,10 +111,21 @@ void bcs() {
     else
         freq_vector_to_wave(freq_FS, solutions);
 
+    auto d_x2_y2 = [](Vec k) { return cos(k(0)) - cos(k(1)); };
+    float norm = 0;
+    for (int i = 0; i < FS.size(); i++) {
+        Vec k = FS[i];
+        norm += d_x2_y2(k) * d_x2_y2(k);
+    }
+    for (int i = 0; i < FS.size(); i++) {
+        Vec k = FS[i];
+        //cout << d_x2_y2(k) / pow(norm, 0.5) << ", " << solutions[0].eigenvector[i] << endl;
+    }
+
     // Defining file name based on config/load/cpp_config (config)
     cout << "Saving Eigenvectors..." << endl;
     string file_name = get_SC_filename();
-    file_name = outdir + prefix + "_gap.dat";
+    file_name = outdir + prefix + "_gap." + filetype;
 
     // Save file in cartesian coordinates for the sake of plotting easier
     if (FS_only)
@@ -139,8 +149,8 @@ void eliashberg() {
 
 void linearized_eliashberg() {
     string folder = "superconductor/";
-    string filename = "linearized_eliashberg";
-    string module = "Linearized_Eliashberg";
+    string filename = "linearized_eliashberg2";
+    string module = "Linearized_Eliashberg2";
     string function = "eigenvalue_computation";
     // call_python_func(folder.c_str(), filename.c_str(), function.c_str());
     call_julia_func(folder.c_str(), filename.c_str(), module.c_str(),

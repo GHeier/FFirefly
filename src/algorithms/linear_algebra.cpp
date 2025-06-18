@@ -78,14 +78,14 @@ vector<Eigenvector> power_iteration(Matrix &A, float error) {
 }
 
 // This function is designed to get the eigenvalue accurately, not the eigenvector
-Eigenvector power_iteration(Matrix &A) {
+Eigenvector power_iteration(Matrix &A, vector<float> eigs) {
     //Eigenvector x = initial;
     Eigenvector x(A.size, true);
     float diff_percent = 1;
     vector<float> diffs(10, 1.0f);
     bool all_low = false;
     int max_iters = 1000;
-    for (int i = 0; !all_low and i < max_iters; i++) {
+    for (int i = 0; !all_low; i++) {
         Eigenvector x_new = A * x;
         x_new.normalize();
         x_new.eigenvalue = dot(x_new, A * x_new) / dot(x_new, x_new);
@@ -94,17 +94,26 @@ Eigenvector power_iteration(Matrix &A) {
         diff_percent = abs(x.eigenvalue - x_new.eigenvalue) / (abs(x.eigenvalue) + 1e-6);
         diffs[i % 10] = diff_percent;
         if (i % 10 == 0) {
-            printv("Iteration: %d, Eigenvalue: %f, Diff Percent: %f\n", i, x_new.eigenvalue, diff_percent);
+            printv("Iteration: %d, (shifted) Eigenvalue: %f, Diff Percent: %f\n", i, x_new.eigenvalue, diff_percent);
             all_low = true;
             for (int j = 0; j < 10; j++)
                 if (diffs[j] > 1e-4)
                     all_low = false;
         }
+        if (i > max_iters) {
+            printf("Power iteration failed to converge after %d iterations\n", i);
+            break;
+        }
         x = x_new;
     }
     if (x.eigenvalue < 0) {
         A -= Matrix(A.size) * x.eigenvalue;
-        return power_iteration(A);
+        eigs.push_back(x.eigenvalue);
+        return power_iteration(A, eigs);
+    }
+    for (float v : eigs) {
+        A += Matrix(A.size) * v;
+        x.eigenvalue += v;
     }
     return x;
 }

@@ -1,5 +1,5 @@
 import ctypes
-from ctypes import c_void_p, c_char_p, c_float, c_int, POINTER
+from ctypes import c_bool, c_void_p, c_char_p, c_float, c_int, POINTER
 import numpy as np
 from pathlib import Path
 import os
@@ -379,10 +379,40 @@ class Bands:
         except AttributeError:
             pass
 
+ctypes.POINTER(ctypes.c_float)
+lib.data_save_export0.argtypes = [c_char_p, POINTER(c_float), POINTER(c_float), c_int, c_bool, c_bool, c_bool, c_bool]
+lib.data_save_export0.restype = None
+def data_save(filename, points, values, dimension, with_w, with_n, is_complex, is_vector):
+    # Ensure inputs are numpy arrays of type float32
+    points = np.asarray(points, dtype=np.float32)
+    values = np.asarray(values, dtype=np.float32)
+
+    # Calculate number of points
+    if points.ndim == 2:
+        num_points = points.shape[0]
+    elif points.ndim == 1:
+        if dimension == 0:
+            raise ValueError("dimension cannot be zero when points is 1D")
+        num_points = len(points) // dimension
+    else:
+        raise ValueError("points must be 1D or 2D array")
+
+    # Call the C++ function
+    lib.data_save_export0(
+        filename.encode('utf-8'),
+        points.ctypes.data_as(POINTER(c_float)),
+        values.ctypes.data_as(POINTER(c_float)),
+        c_int(num_points),
+        c_int(dimension),
+        c_bool(with_w),
+        c_bool(with_n),
+        c_bool(is_complex),
+        c_bool(is_vector)
+    )
+
 # Set up the function signature
 lib.load_config_export0.argtypes = [ctypes.c_char_p]
 lib.load_config_export0.restype = None  # Equivalent to Cvoid
-
 
 # Define the wrapper function
 def load_config(path: str) -> None:

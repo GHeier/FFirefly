@@ -17,9 +17,9 @@ ALL = {
         "indir": "./",
         "prefix": "sample",
         "verbosity": "low",
-        "output_data_file": "output.dat",
         "automatic_file_read": True,
         "write_result": True,
+        "filetype": 'h5',
     },
     "SYSTEM": {
         "interaction": "none",

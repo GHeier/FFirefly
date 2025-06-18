@@ -12,7 +12,7 @@ using namespace std;
 namespace fs = std::filesystem;
 
 Vertex::Vertex() {
-    string filename = outdir + prefix + "_vertex.dat";
+    string filename = outdir + prefix + "_vertex." + filetype;
     if (fs::exists(filename) and automatic_file_read) {
         field = load_CMField(outdir + prefix + "_vertex.dat");
         file_found = true;

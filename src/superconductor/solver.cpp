@@ -124,10 +124,10 @@ vector<float> matrix_projections(vector<Vec> &FS, Matrix &P) {
     int num_projs = 2;
     vector<float> lambda(num_projs, 0.0);
     vector<float> normalization(num_projs, 0.0);
-    auto d_x2_y2 = [](Vec k) { return cos(k(1)) - cos(k(0)); };
+    auto d_x2_y2 = [](Vec k) { return cos(k(0)) - cos(k(1)); };
     auto s = [](Vec k) { return 1.0; };
 
-#pragma omp parallel for
+    //#pragma omp parallel for
     for (int i = 0; i < size; i++) {
         Vec k1 = FS[i];
         float f1 = pow(k1.area / vp(k1.n, k1), 0.5);

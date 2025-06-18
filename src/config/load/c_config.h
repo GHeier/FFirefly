@@ -14,9 +14,9 @@ extern char* c_outdir; char* get_outdir();
 extern char* c_indir; char* get_indir();
 extern char* c_prefix; char* get_prefix();
 extern char* c_verbosity; char* get_verbosity();
-extern char* c_output_data_file; char* get_output_data_file();
 extern bool c_automatic_file_read;
 extern bool c_write_result;
+extern char* c_filetype; char* get_filetype();
 
 //[SYSTEM]
 extern char* c_interaction; char* get_interaction();

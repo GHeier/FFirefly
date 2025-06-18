@@ -12,9 +12,9 @@ using namespace std;
 namespace fs = std::filesystem;
 
 Self_Energy::Self_Energy() {
-    string filename = outdir + prefix + "_self_energy.dat";
+    string filename = outdir + prefix + "_self_energy." + filetype;
     if (fs::exists(filename) and automatic_file_read) {
-        field = load_CMField(outdir + prefix + "_self_energy.dat");
+        field = load_CMField(filename);
         file_found = true;
     } else {
         file_found = false;

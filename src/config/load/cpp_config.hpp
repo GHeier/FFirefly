@@ -14,9 +14,9 @@ extern string outdir;
 extern string indir;
 extern string prefix;
 extern string verbosity;
-extern string output_data_file;
 extern bool automatic_file_read;
 extern bool write_result;
+extern string filetype;
 
 //[SYSTEM]
 extern string interaction;

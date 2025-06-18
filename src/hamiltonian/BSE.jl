@@ -10,6 +10,7 @@ cfg = Firefly.Config
 
 outdir = cfg.outdir
 prefix = cfg.prefix
+filetype = cfg.filetype
 
 nx, ny, nz = cfg.k_mesh
 nqx, nqy, nqz = cfg.q_mesh
@@ -63,14 +64,14 @@ function BSE_node()
         vitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:2), V, Gridded(Linear()))
         xitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:2), X, Gridded(Linear()))
     end
-    save(iw, sitp, outdir * prefix * "_self_energy.dat")
-    save(iv, vitp, outdir * prefix * "_vertex.dat")
-    save(iv, xitp, outdir * prefix * "_chi.dat")
+    save(iw, sitp, outdir * prefix * "_self_energy." * filetype)
+    save(iv, vitp, outdir * prefix * "_vertex." * filetype)
+    save(iv, xitp, outdir * prefix * "_chi." * filetype)
 end
 
 
 function loop2!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
-    max_iters = 1
+    max_iters = 30
     for _ in 1:max_iters
         G .= 1 ./ (iw .- ek .+ mu .- Sigma)
 

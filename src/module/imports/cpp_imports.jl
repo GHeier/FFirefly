@@ -12,7 +12,8 @@ export epsilon,
        Field_R,
        destroy!,
        save_field_to_file!,
-       save_data
+       save_data,
+       data_save!
 
 # Struct for Vec
 struct RawVec
@@ -447,6 +448,16 @@ end
 
 function save_data(path::String, points, data, dimension, with_w, is_complex, is_vector)
     ccall((:save_data, libfly), Cvoid, (Cstring, Ptr{Float64}, Ptr{Float64}, Cint, Cint, Cint, Cint), path, points, data, dimension, with_w, is_complex, is_vector)
+end
+
+function data_save!(path::String, points, data, dimension, with_w, is_complex, is_vector)
+    println("type of points: ", typeof(points))
+    println("type of data: ", typeof(data))
+    println("type of dimension: ", typeof(dimension))
+    numpts = length(points)
+    jpoints = points
+    jdata = data
+    ccall((:data_save_export0, libfly), Cvoid, (Cstring, Ptr{Float64}, Ptr{Float64}, Cint, Cint, Cint, Cint, Cint), path, jpoints, jdata, numpts, dimension, with_w, is_complex, is_vector)
 end
 
 function load_config!(path::String)

@@ -244,6 +244,7 @@ function IR_Mesh(energy_mesh, IR_tol = 1e-10)
     elseif dim == 3
         mesh = Mesh(IR_basis_set, nx, ny, nz)
     end
+    println("mesh dimension is ", mesh.dimension)
     return mesh
 end
 

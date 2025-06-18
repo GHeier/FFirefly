@@ -24,14 +24,13 @@ void create_P(Matrix &P, vector<Vec> &k) {
     cout << "Creating P Matrix\n";
     for (int i = 0; i < P.size; i++) {
         Vec k1 = k[i];
-#pragma omp parallel for
+        float f1 = pow(k1.area / vp(k1.n, k1), 0.5);
+        #pragma omp parallel for
         for (int j = 0; j < P.size; j++) {
             Vec k2 = k[j];
-            P(i, j) = (float)(-pow(k1.area / vp(k1.n, k1), 0.5) *
-                              (V_func(k1 - k2, 0, "up", "down").real() +
-                               V_func(k1 + k2, 0, "up", "down").real()) *
-                              pow(k2.area / vp(k2.n, k2), 0.5)) /
-                      2.0;
+            float f2 = pow(k2.area / vp(k2.n, k2), 0.5);
+            P(i, j) = -f1 * f2 * (V_func(k1 - k2, 0).real() + V_func(k1 + k2, 0).real()) / 2.0;
+            //P(i, j) = f1 * f2 * (cos(k1.x) - cos(k1.y)) * (cos(k2.x) - cos(k2.y));
             assert(isnan(P(i, j)) == false);
         }
         progress_bar(1.0 * i / (P.size - 1));

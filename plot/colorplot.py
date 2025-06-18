@@ -47,6 +47,11 @@ def colorplot_surface(file, cmap='bwr'):
     x = df.iloc[:, 0].values
     y = df.iloc[:, 1].values
     f = df.iloc[:, 2].values
+    #f2 = df.iloc[:, 2].values
+    #for i in range(len(x)):
+    #    xval = x[i]
+    #    yval = y[i]
+    #    f2[i] = np.cos(xval) - np.cos(yval)
 
     points = np.column_stack((x, y))
     hull = ConvexHull(points)

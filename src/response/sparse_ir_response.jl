@@ -30,6 +30,7 @@ mu = cfg.fermi_energy
 BZ = cfg.brillouin_zone
 prefix = cfg.prefix
 outdir = cfg.outdir
+filetype = cfg.filetype
 dynamic = cfg.dynamic
 
 function get_kvec(ix, iy, iz, nx, ny, nz)
@@ -52,7 +53,7 @@ function get_qvec(ix, iy, iz, nx, ny, nz)
         kvec[2] = 0.0
     end
     kvec = BZ * kvec
-    return kvec
+    return kvec[1:dim]
 end
 
 
@@ -107,6 +108,11 @@ function get_ckio_ir()
     end
     println("Interpolated")
     save_ckio_ir(mesh, ckio)
+    #if dynamic
+    #    save_hdf5_dynamic(ckio, iw)
+    #else
+    #    save_hdf5_static(ckio, iw)
+    #end
 end
 
 function gkio_calc(mesh, ek::Array{Float64,4}, mu::Float64, iw)
@@ -142,7 +148,7 @@ function save_ckio_ir(mesh, ckio)
     if (dim == 2)
         nz = 1
     end
-    open(outdir * prefix * "_chi.dat", "w") do f
+    open(outdir * prefix * "_chi." * filetype, "w") do f
         header, fmt = begin
             if dim == 3
                 dynamic ? ("# x y z w Re(f) Im(f)\n", (k, iv, v) -> @sprintf("%f %f %f %f %f %f\n", k[1], k[2], k[3], iv.im, real(v), imag(v))) : ("# x y z Re(f) Im(f)\n",        (k, iv, v) -> @sprintf("%f %f %f %f %f\n",   k[1], k[2], k[3], real(v), imag(v)))
@@ -171,8 +177,45 @@ function save_ckio_ir(mesh, ckio)
     end
     println("Max χ Saved: ", max_X)
     println("Min χ Saved: ", min_X)
-    println("Saved to ", outdir * prefix * "_chi.dat")
+    println("Saved to ", outdir * prefix * "_chi." * filetype)
 end
 
+function save_hdf5_dynamic(chi, iw)
+    filename = outdir * prefix * "_chi." * filetype
+    println("Saving to $filename")
+    nw = length(iw)
+    nx, ny, nz = cfg.q_mesh
+    if dim == 2
+        nz = 1
+    end
+    kwpts = Array{Float32}(undef, nx * ny * nz * nw, dim + 1)
+    for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:nw
+        ind = ((l - 1) * nz * ny * nx) + ((k - 1) * ny * nx) + ((j - 1) * nx) + i
+        kvec = Float32.(get_qvec(i - 1, j - 1, k - 1, nx, ny, nz))
+        w = Float32(imag(iw[l]))
+        kwpts[ind, :] = vcat(kvec, w)
+    end
+    data_save!(filename, kwpts, chi, dim, true, true, false)
+    println("Saved to $filename")
+end
+
+
+function save_hdf5_static(chi, iw)
+    filename = outdir * prefix * "_chi." * filetype
+    println("Saving to $filename")
+    nw = length(iw)
+    nx, ny, nz = cfg.q_mesh
+    if dim == 2
+        nz = 1
+    end
+    kwpts = Array{Float32}(undef, nx * ny * nz, dim)
+    for i in 1:nx, j in 1:ny, k in 1:nz
+        ind = ((k - 1) * ny * nx) + ((j - 1) * nx) + i
+        kvec = Float32.(get_qvec(i - 1, j - 1, k - 1, nx, ny, nz))
+        kwpts[ind, :] = kvec
+    end
+    data_save!(filename, kwpts, chi, dim, true, true, false)
+    println("Saved to $filename")
+end
 end
 

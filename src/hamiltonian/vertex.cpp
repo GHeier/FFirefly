@@ -16,7 +16,7 @@ extern "C" void vertex_wrapper() {
 }
 
 void call_flex() {
-  CMField vertex = load_CMField(outdir + prefix + "_chi.dat");
+  CMField vertex = load_CMField(outdir + prefix + "_chi." + filetype);
   float U = onsite_U;
 
   for (int i = 0; i < vertex.data.values.size(); i++) {
@@ -43,14 +43,14 @@ void call_flex() {
     }
     vertex.data.values[i] = complex<Vec>(Vec(V.real()), Vec(0.0));
   }
-  save_CMField(outdir + prefix + "_vertex.dat", vertex);
-  cout << "Saved to " << outdir + prefix + "_vertex.dat" << endl;
+  save_CMField(outdir + prefix + "_vertex." + filetype, vertex);
+  cout << "Saved to " << outdir + prefix + "_vertex." + filetype << endl;
 }
 
 void call_flex2() {
-    string filename = outdir + prefix + "_chi.dat";
+    string filename = outdir + prefix + "_chi." + filetype;
     printf("Reading chi from %s\n", filename.c_str());
-    Field_C chi(outdir + prefix + "_chi.dat");
+    Field_C chi(filename);
     float U = onsite_U;
     float nx = q_mesh[0], ny = q_mesh[1], nz = q_mesh[2];
     int chidim = chi.cmf.data.dimension;
@@ -87,6 +87,6 @@ void call_flex2() {
         }
     }
     printf("Saving Vertex\n");
-    save_to_file(outdir + prefix + "_vertex.dat", points, values, chi.cmf.data.dimension, chi.cmf.data.with_w, chi.cmf.data.with_n, chi.cmf.data.is_complex, chi.cmf.data.is_vector);
-    cout << "Saved to " << outdir + prefix + "_vertex.dat" << endl;
+    save_to_file(outdir + prefix + "_vertex." + filetype, points, values, chi.cmf.data.dimension, chi.cmf.data.with_w, chi.cmf.data.with_n, chi.cmf.data.is_complex, chi.cmf.data.is_vector);
+    cout << "Saved to " << outdir + prefix + "_vertex." + filetype << endl;
 }

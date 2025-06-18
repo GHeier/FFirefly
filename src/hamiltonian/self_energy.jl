@@ -128,7 +128,7 @@ function get_self_energy()
         V_rt .*= G_rt
         sigma = fftshift(p_ifft * V_rt) / (beta * nx * ny * nz)
         #sigma = ones(ComplexF32, nw, nx, ny, nz)
-        N = Field_R(outdir * prefix * "_DOS.dat")
+        N = Field_R(outdir * prefix * "_DOS." + filetype) 
         println("Predicted BCS sigma = ", 1 * N(mu) * wc / 2)
     else
         G_rt = kw_to_rtau(G, 'F', basis)
@@ -155,7 +155,7 @@ end
 function save(iw_arr, sigma)
     println("Saving Self Energy")
 
-    filepath = outdir * prefix * "_self_energy.dat"
+    filepath = outdir * prefix * "_self_energy." + filetype
     max_SE = -Inf
     min_SE = Inf
 

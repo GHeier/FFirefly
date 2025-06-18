@@ -112,7 +112,7 @@ float sizeof_values(vector<vector<complex<Vec>>> &values) {
 }
 
 CMField load_CMField(string filename) {
-    CMData data = load(filename);
+    CMData data(filename);
     CMField temp(data);
     return temp;
 }
@@ -252,8 +252,10 @@ void CMField::find_domain(CMData &data) {
         jump = w_size;
 
     int first_n = -1;
-    if (data.n_inds.size() > 0)
+    if (data.n_inds.size() > 1)
         first_n = data.n_inds[1];
+    if (data.n_inds.size() == 1)
+        first_n = data.points.size();
 
     Vec lattice_vec = (data.points[jump] - first);
     lattice_vec.dimension = data.dimension;

@@ -14,9 +14,9 @@ outdir::String = cfg.outdir
 indir::String = cfg.indir
 prefix::String = cfg.prefix
 verbosity::String = cfg.verbosity
-output_data_file::String = cfg.output_data_file
 automatic_file_read::Bool = cfg.automatic_file_read
 write_result::Bool = cfg.write_result
+filetype::String = cfg.filetype
 
 #[SYSTEM]
 interaction::String = cfg.interaction

@@ -28,6 +28,7 @@ class CMData {
         string get_header(int dimension, bool with_w, bool with_n, bool is_complex, bool is_vector);
 
         void save_hdf5(const std::string& filename) const;
+        void load_hdf5(const std::string& filename);
 };
 
 CMData load(string filename);

@@ -2,6 +2,7 @@
 #include "cmdata.hpp"
 #include <algorithm>
 #include <fstream>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -60,7 +61,25 @@ CMData::CMData(vector<Vec> &points, vector<complex<Vec>> &values, int dimension,
     filled = true;
 }
 
-CMData::CMData(string filename) { *this = load(filename); }
+CMData::CMData(std::string filename) {
+    using std::filesystem::exists;
+    using std::filesystem::path;
+
+    if (!exists(filename)) {
+        throw std::runtime_error("File not found: " + filename);
+    }
+
+    std::string ext = path(filename).extension().string();
+
+    if (ext == ".h5" || ext == ".hdf5") {
+        load_hdf5(filename);
+    } else if (ext == ".dat" || ext == ".txt") {
+        // Assuming you already have load_dat defined somewhere
+        *this = load(filename);  // if `load()` returns CMData
+    } else {
+        throw std::runtime_error("Unsupported file format: " + ext);
+    }
+}
 
 CMData load(string filename) {
     ifstream file(filename);
@@ -263,8 +282,17 @@ void save_to_file(string filename, vector<Vec> &points,
 }
 
 void save(CMData &data, string filename) {
-    save_to_file(filename, data.points, data.values, data.dimension,
-                 data.with_w, data.with_n, data.is_complex, data.is_vector);
+    using std::filesystem::path;
+    std::string ext = path(filename).extension().string();
+
+    if (ext == ".h5" || ext == ".hdf5") {
+        data.save_hdf5(filename);
+    } else if (ext == ".dat" || ext == ".txt") {
+        // Assuming you already have load_dat defined somewhere
+        save_to_file(filename, data.points, data.values, data.dimension, data.with_w, data.with_n, data.is_complex, data.is_vector);
+    } else {
+        throw std::runtime_error("Unsupported file format: " + ext + "\nNot saving\n");
+    }
 }
 
 void CMData::save_hdf5(const std::string& filename) const {
@@ -279,6 +307,7 @@ void CMData::save_hdf5(const std::string& filename) const {
 
     // === Points ===
     hsize_t n_points = points.size();
+
     hsize_t point_dims[2] = { n_points, static_cast<hsize_t>(dimension) };
     DataSpace point_space(2, point_dims);
     std::vector<float> point_data(n_points * dimension);
@@ -294,7 +323,8 @@ void CMData::save_hdf5(const std::string& filename) const {
 
     // === Optional Weights ===
     if (with_w && !w_points.empty()) {
-        hsize_t w_dims[1] = { n_points };
+        hsize_t nw_points = w_points.size();
+        hsize_t w_dims[1] = { nw_points };
         DataSpace w_space(1, w_dims);
         file.createDataSet("w_points", PredType::NATIVE_FLOAT, w_space).write(w_points.data(), PredType::NATIVE_FLOAT);
     }
@@ -307,16 +337,103 @@ void CMData::save_hdf5(const std::string& filename) const {
     }
 
     // === Values (complex<Vec>) ===
-    hsize_t val_dims[3] = { n_points, 2, static_cast<hsize_t>(dimension) };
+    int fdim = dimension;
+    if (fdim == 0 and with_w) {
+        fdim = 1;
+    }
+    hsize_t val_dims[3] = { n_points, 2, static_cast<hsize_t>(fdim) };
     DataSpace val_space(3, val_dims);
-    std::vector<float> val_data(n_points * 2 * dimension);
+    std::vector<float> val_data(n_points * 2 * fdim);
     for (size_t i = 0; i < n_points; ++i) {
         const Vec& r = values[i].real();
         const Vec& im = values[i].imag();
-        for (int d = 0; d < dimension; ++d) {
-            val_data[i * 2 * dimension + 0 * dimension + d] = (&r.x)[d];
-            val_data[i * 2 * dimension + 1 * dimension + d] = (&im.x)[d];
+        for (int d = 0; d < fdim; ++d) {
+            val_data[i * 2 * fdim + 0 * fdim + d] = (&r.x)[d];
+            val_data[i * 2 * fdim + 1 * fdim + d] = (&im.x)[d];
         }
     }
     file.createDataSet("values", PredType::NATIVE_FLOAT, val_space).write(val_data.data(), PredType::NATIVE_FLOAT);
+}
+
+void CMData::load_hdf5(const std::string& filename) {
+    H5File file(filename, H5F_ACC_RDONLY);
+
+    // === Read Attributes ===
+    file.openAttribute("dimension").read(PredType::NATIVE_INT, &dimension);
+    file.openAttribute("is_complex").read(PredType::NATIVE_HBOOL, &is_complex);
+    file.openAttribute("is_vector").read(PredType::NATIVE_HBOOL, &is_vector);
+    file.openAttribute("with_w").read(PredType::NATIVE_HBOOL, &with_w);
+    file.openAttribute("with_n").read(PredType::NATIVE_HBOOL, &with_n);
+
+    // === Read Points ===
+    DataSet points_ds = file.openDataSet("points");
+    DataSpace points_space = points_ds.getSpace();
+    hsize_t dims[2];
+    points_space.getSimpleExtentDims(dims);
+    size_t n_points = dims[0];
+
+    std::vector<float> point_data(n_points * dimension);
+    points_ds.read(point_data.data(), PredType::NATIVE_FLOAT);
+    points.resize(n_points);
+    for (size_t i = 0; i < n_points; ++i) {
+        Vec v = {};
+        if (dimension >= 1) v.x = point_data[i * dimension + 0];
+        if (dimension >= 2) v.y = point_data[i * dimension + 1];
+        if (dimension >= 3) v.z = point_data[i * dimension + 2];
+        if (dimension >= 4) v.w = point_data[i * dimension + 3];
+        points[i] = v;
+    }
+
+    // === Optional Weights ===
+    w_points.clear();
+    if (with_w) {
+        try {
+            DataSet w_ds = file.openDataSet("w_points");
+            hsize_t w_dims[1];
+            w_ds.getSpace().getSimpleExtentDims(w_dims);
+            w_points.resize(w_dims[0]);
+            w_ds.read(w_points.data(), PredType::NATIVE_FLOAT);
+        } catch (...) {
+            printf("Skipping. Error with with_w\n");
+            // Dataset missing: silently skip
+        }
+    }
+
+    // === Optional N Indices ===
+    n_inds.clear();
+    if (with_n) {
+        try {
+            DataSet n_ds = file.openDataSet("n_inds");
+            hsize_t n_dims[1];
+            n_ds.getSpace().getSimpleExtentDims(n_dims);
+            n_inds.resize(n_dims[0]);
+            n_ds.read(n_inds.data(), PredType::NATIVE_INT);
+        } catch (...) {
+            printf("Skipping. Error with with_n\n");
+            // Dataset missing: silently skip
+        }
+    }
+
+    // === Read Values ===
+    DataSet val_ds = file.openDataSet("values");
+    DataSpace val_space = val_ds.getSpace();
+    hsize_t val_dims[3];
+    val_space.getSimpleExtentDims(val_dims);
+    std::vector<float> val_data(val_dims[0] * val_dims[1] * val_dims[2]);
+    val_ds.read(val_data.data(), PredType::NATIVE_FLOAT);
+
+    values.resize(n_points);
+    int fdim = dimension;
+    if (fdim == 0 and with_w)
+        fdim = 1;
+    for (size_t i = 0; i < n_points; ++i) {
+        Vec r = {}, im = {};
+        for (int d = 0; d < fdim; ++d) {
+            (&r.x)[d] = val_data[i * 2 * fdim + 0 * fdim + d];
+            (&im.x)[d] = val_data[i * 2 * fdim + 1 * fdim + d];
+        }
+        values[i] = std::complex<Vec>(r, im);
+    }
+
+    filled = true;
 }

@@ -63,7 +63,7 @@ bool call_julia_func(const char *folder, const char *filename,
     jl_atexit_hook(0);
     return false;
   }
-  // if (ret == jl_nothing) return true;
+   if (ret == jl_nothing) return true;
     jl_datatype_t *ret_type = (jl_datatype_t*)jl_typeof(ret);
     bool result = false;
     if (ret_type == jl_bool_type) {

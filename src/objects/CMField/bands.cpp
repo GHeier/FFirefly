@@ -13,7 +13,7 @@ using namespace std;
 
 Bands::Bands() {
     file_found = false;
-    string filename = outdir + prefix + "_bands.dat";
+    string filename = outdir + prefix + "_bands." + filetype;
     ifstream file(filename);
     if (file.is_open() and automatic_file_read) {
         Field_R data(filename);
@@ -22,7 +22,7 @@ Bands::Bands() {
         printv("Read in bands from %s\n", filename);
     } else
         printv("Taking bands from .cfg file; No %s band file found\n",
-               filename);
+               filename.c_str());
 }
 
 float Bands::operator()(int n, Vec k) {

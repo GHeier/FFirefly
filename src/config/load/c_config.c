@@ -25,10 +25,10 @@ char* c_prefix = "sample";
 char* get_prefix() {return c_prefix;}
 char* c_verbosity = "low";
 char* get_verbosity() {return c_verbosity;}
-char* c_output_data_file = "output.dat";
-char* get_output_data_file() {return c_output_data_file;}
 bool c_automatic_file_read = true;
 bool c_write_result = true;
+char* c_filetype = "h5";
+char* get_filetype() {return c_filetype;}
 
 //[SYSTEM]
 char* c_interaction = "none";
@@ -275,9 +275,6 @@ void read_c_config(const char *path) {
             else if (strstr(key, "verbosity") != NULL) {
                 set_string(&c_verbosity, value);
             }
-            else if (strstr(key, "output_data_file") != NULL) {
-                set_string(&c_output_data_file, value);
-            }
             else if (strstr(key, "automatic_file_read") != NULL) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
@@ -293,6 +290,9 @@ void read_c_config(const char *path) {
                 } else {
                     c_write_result = false;
                 }
+            }
+            else if (strstr(key, "filetype") != NULL) {
+                set_string(&c_filetype, value);
             }
 
 //[SYSTEM]

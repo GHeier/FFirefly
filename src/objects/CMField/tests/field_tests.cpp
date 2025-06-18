@@ -29,9 +29,9 @@ bool Field_R_interp_test_2d() {
         }
     }
     CMData data(points, values, dimension, with_w, with_n, is_complex, is_vector);
-    save(data, "temp");
+    save(data, "temp.h5");
 
-    auto real_field = Field_R("temp");
+    auto real_field = Field_R("temp.h5");
 
     float r1 = real_field(Vec(0.5, 0.5));
     float r2 = real_field(Vec(1.0, 1.0));
@@ -72,9 +72,9 @@ bool Field_C_interp_test_2d() {
         }
     }
     CMData data(points, values, dimension, with_w, with_n, is_complex, is_vector);
-    save(data, "temp");
+    save(data, "temp.h5");
 
-    auto complex_field = Field_C("temp");
+    auto complex_field = Field_C("temp.h5");
     complex<float> r1 = complex_field(Vec(0.5, 0.5));
     complex<float> r2 = complex_field(Vec(1.0, 1.0));
     complex<float> r3 = complex_field(Vec(0.0, 0.0));
@@ -113,15 +113,16 @@ bool Field_C_interp_test_2d_with_w() {
                 float w = 2.0 * (k - fpnts / 2.0) / (fpnts - 1);
                 Vec point(x, y, w);
                 point.dimension = dimension + 1;
+                //cout << "p: " << point << endl;
                 points.push_back(point);
                 values.push_back(fieldfunc(point));
             }
         }
     }
     CMData data(points, values, dimension, with_w, with_n, is_complex, is_vector);
-    save(data, "temp");
+    save(data, "temp.h5");
 
-    auto complex_field = Field_C("temp");
+    auto complex_field = Field_C("temp.h5");
     complex<float> r1 = complex_field(Vec(0.5, 0.5));
     complex<float> r2 = complex_field(Vec(1.0, 1.0));
     complex<float> r3 = complex_field(Vec(0.0, 0.0));
@@ -129,8 +130,6 @@ bool Field_C_interp_test_2d_with_w() {
     complex<float> e1 = complex<float>(1.0, 0);
     complex<float> e2 = complex<float>(2.0, 0);
     complex<float> e3 = complex<float>(0.0, 0);
-
-
 
     bool test1 = fabs(r1 - e1) < 1e-2;
     bool test2 = fabs(r2 - e2) < 1e-2;

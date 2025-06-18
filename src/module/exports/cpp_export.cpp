@@ -132,6 +132,27 @@ extern "C" float norm_export0(Vec* a) {
 
 extern "C" {
 
+
+void data_save_export0(string filename, const float *points, const float *values, int num_points, int dimension,
+               bool with_w, bool with_n, bool is_complex, bool is_vector) {
+    vector<Vec> cpoints(num_points);
+    vector<complex<Vec>> cvalues(num_points);
+    int a = 0;
+    int c = is_complex;
+    int v = is_vector;
+    for (int i = 0; i < num_points; i+=dimension) {
+        cpoints[i] = Vec(vector<float>(points + i, points + i + dimension));
+        Vec rv(vector<float>(values + a, values + a + 1 + 3*v));
+        Vec cv;
+        if (is_complex) 
+            cv = Vec(vector<float>(values + a, values + a + 1 + 3*v));
+        complex<Vec> val = complex<Vec>(rv, cv);
+        cvalues[a] = val;
+    }
+    CMData data(cpoints, cvalues, dimension, with_w, with_n, is_complex, is_vector);
+    data.save_hdf5(filename);
+}
+
 Bands *Bands_export0() { return new Bands(); }
 float Bands_operator_export0(Bands *obj, int n, const float *point, int len) {
     Vec v(point, len);
