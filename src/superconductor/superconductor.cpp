@@ -57,6 +57,8 @@ void bcs() {
     // T = get_Tc(FS);
     printf("Temperature: %.5f \n", T);
 
+    float renorm = get_renormalization(FS);
+
     // Calculates the susceptibility matrix if it's going to be used in the
     // potential Otherwise it's passed as empty
 
@@ -73,7 +75,7 @@ void bcs() {
     float f = f_singlet_integral(T);
     cout << "F-integral value: " << f << endl;
 
-    vector<float> proj_eigs = matrix_projections(FS, P);
+    vector<float> proj_eigs = matrix_projections(FS, P, renorm);
 
     //Eigenvector initial_guess(P.size, true);
     //for (int i = 0; i < P.size; i++) {
@@ -84,7 +86,7 @@ void bcs() {
     Eigenvector top_gap = power_iteration(P);
     //Eigenvector* temp = new Eigenvector[1];
     //temp[0] = top_gap;
-    printf("Max Power Iteration eigenvalue: %f\n", top_gap.eigenvalue);
+    printf("Max Power Iteration eigenvalue: %f\n", top_gap.eigenvalue / renorm);
     //vector<Eigenvector> top_gaps = power_iteration(P, 0.01);
     //for (Eigenvector x : top_gaps) {
     //    cout << "eig: " << x.eigenvalue << endl;
@@ -99,7 +101,7 @@ void bcs() {
     sort(solutions, solutions + num_eigenvalues_to_save,
          descending_eigenvalues);
 
-    printf("Max Diagonalized eigenvalue: %f\n", solutions[0].eigenvalue);
+    printf("Max Diagonalized eigenvalue: %f\n", solutions[0].eigenvalue / renorm);
 
     if (FS_only) {
         double calc_Tc = get_Tc_FS_only(solutions[0].eigenvalue);
@@ -149,9 +151,9 @@ void eliashberg() {
 
 void linearized_eliashberg() {
     string folder = "superconductor/";
-    string filename = "linearized_eliashberg2";
-    string module = "Linearized_Eliashberg2";
-    string function = "eigenvalue_computation";
+    string filename = "si";
+    string module = "SparseIR_Linearized_Eliashberg";
+    string function = "main";
     // call_python_func(folder.c_str(), filename.c_str(), function.c_str());
     call_julia_func(folder.c_str(), filename.c_str(), module.c_str(),
                     function.c_str());

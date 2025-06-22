@@ -541,7 +541,22 @@ bool interp_test_1d_complex() {
     bool test2 = (r2 - Vec(1.0, 0.0)).norm() < 1e-2;
     bool test3 = (r3 - Vec(0.0, 0.0)).norm() < 1e-2;
 
-    return test1 && test2 && test3;
+    save_CMField("testfield.h5", field);
+    CMField newfield = load_CMField("testfield.h5");
+
+    r1 = field(Vec(0.5)).real();
+    r2 = field(Vec(1.0)).real();
+    r3 = field(Vec(0.0)).real();
+
+    // printf("\nExpected: 0.5, 1.0, 0.0\n");
+    // printf("Got: %f, %f, %f\n\n", r1, r2, r3);
+    // cout << "Got:\n" << r1 << "\n" << r2 << "\n" << r3 << endl;
+
+    bool test4 = (r1 - Vec(0.5, 0.0)).norm() < 1e-2;
+    bool test5 = (r2 - Vec(1.0, 0.0)).norm() < 1e-2;
+    bool test6 = (r3 - Vec(0.0, 0.0)).norm() < 1e-2;
+
+    return test1 && test2 && test3 && test4 && test5 && test6;
 }
 
 bool cmfield_tests() {

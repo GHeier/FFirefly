@@ -14,4 +14,5 @@ float f(vector<Vec> k, float T,
 float get_Tc(
     vector<Vec> k,
     const unordered_map<float, vector<vector<vector<float>>>> &cube_map);
-vector<float> matrix_projections(vector<Vec> &FS, Matrix &P);
+float get_renormalization(vector<Vec> &FS);
+vector<float> matrix_projections(vector<Vec> &FS, Matrix &P, float renorm);

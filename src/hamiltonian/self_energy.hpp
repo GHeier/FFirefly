@@ -9,6 +9,7 @@ void self_energy_wrapper();
 #ifdef __cplusplus
 }
 void call_self_energy();
+void construct_self_energy();
 
 #endif
 

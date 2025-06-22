@@ -18,6 +18,7 @@
 #include "../objects/eigenvec.hpp"
 #include "../objects/matrix.hpp"
 #include "../objects/vec.hpp"
+#include "../objects/CMField/fields.hpp"
 #include "cfg.hpp"
 #include "frequency_inclusion.hpp"
 #include "matrix_creation.hpp"
@@ -117,7 +118,27 @@ float get_Tc(
     return root;
 }
 
-vector<float> matrix_projections(vector<Vec> &FS, Matrix &P) {
+float get_renormalization(vector<Vec> &FS) {
+    Field_C sigma(outdir + prefix + "_self_energy." + filetype);
+    float renorm = 0;
+    float norm = 0;
+    int size = FS.size();
+
+    for (int i = 0; i < size; i++) {
+        Vec k1 = FS[i];
+        float f1 = pow(k1.area / vp(k1.n, k1), 0.5);
+        for (int j = 0; j < size; j++) {
+            Vec k2 = FS[j];
+            float f2 = pow(k2.area / vp(k2.n, k2), 0.5);
+            renorm += real(sigma(k2 - k1) * f1 * f2);
+        }
+        norm += f1 * f1;
+    }
+    renorm /= (pow(2 * M_PI, dim));
+    return renorm / norm;
+}
+
+vector<float> matrix_projections(vector<Vec> &FS, Matrix &P, float renorm) {
     cout << "Calculating Coupling Constant...\n";
     int size = FS.size();
 
@@ -142,7 +163,7 @@ vector<float> matrix_projections(vector<Vec> &FS, Matrix &P) {
     }
     vector<float> lambdas;
     for (int i = 0; i < num_projs; i++) 
-        lambdas.push_back(lambda[i] / normalization[i]);
+        lambdas.push_back(lambda[i] / normalization[i] / renorm);
         //lambdas.push_back(lambda[i]);
     printf("S-wave λ = %.3f\n", lambdas[0]);
     printf("D-wave λ = %.3f\n", lambdas[1]);

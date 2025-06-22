@@ -29,9 +29,9 @@ bool Field_R_interp_test_2d() {
         }
     }
     CMData data(points, values, dimension, with_w, with_n, is_complex, is_vector);
-    save(data, "temp.h5");
+    save(data, "temp.dat");
 
-    auto real_field = Field_R("temp.h5");
+    auto real_field = Field_R("temp.dat");
 
     float r1 = real_field(Vec(0.5, 0.5));
     float r2 = real_field(Vec(1.0, 1.0));
@@ -72,9 +72,9 @@ bool Field_C_interp_test_2d() {
         }
     }
     CMData data(points, values, dimension, with_w, with_n, is_complex, is_vector);
-    save(data, "temp.h5");
+    save(data, "temp.dat");
 
-    auto complex_field = Field_C("temp.h5");
+    auto complex_field = Field_C("temp.dat");
     complex<float> r1 = complex_field(Vec(0.5, 0.5));
     complex<float> r2 = complex_field(Vec(1.0, 1.0));
     complex<float> r3 = complex_field(Vec(0.0, 0.0));
@@ -120,9 +120,9 @@ bool Field_C_interp_test_2d_with_w() {
         }
     }
     CMData data(points, values, dimension, with_w, with_n, is_complex, is_vector);
-    save(data, "temp.h5");
+    save(data, "temp.dat");
 
-    auto complex_field = Field_C("temp.h5");
+    auto complex_field = Field_C("temp.dat");
     complex<float> r1 = complex_field(Vec(0.5, 0.5));
     complex<float> r2 = complex_field(Vec(1.0, 1.0));
     complex<float> r3 = complex_field(Vec(0.0, 0.0));

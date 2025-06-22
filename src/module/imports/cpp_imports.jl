@@ -13,7 +13,8 @@ export epsilon,
        destroy!,
        save_field_to_file!,
        save_data,
-       data_save!
+       data_save!,
+       save_field!
 
 # Struct for Vec
 struct RawVec
@@ -458,6 +459,37 @@ function data_save!(path::String, points, data, dimension, with_w, is_complex, i
     jpoints = points
     jdata = data
     ccall((:data_save_export0, libfly), Cvoid, (Cstring, Ptr{Float64}, Ptr{Float64}, Cint, Cint, Cint, Cint, Cint), path, jpoints, jdata, numpts, dimension, with_w, is_complex, is_vector)
+end
+
+function interleave_complex(A::AbstractArray{<:ComplexF32})
+    out = Vector{Float32}(undef, 2 * length(A))
+    @inbounds for i in eachindex(A)
+        out[2i - 1] = real(A[i])
+        out[2i]     = imag(A[i])
+    end
+    return out
+end
+
+function save_field!(filename::String, values, domain, mesh, w_points = [])
+    with_w = length(w_points) > 0 ? true : false
+    found_mesh = collect(size(values))
+    nbnd = 1
+    println(with_w, length(w_points))
+    println(found_mesh)
+    println("mesh=", mesh)
+    if with_w && found_mesh[1] != length(w_points) || !with_w && found_mesh[1] != mesh[1]
+        nbnd = found_mesh[1]
+    end
+    domain = reshape(domain, :)
+    is_complex = eltype(values) <: Complex
+    is_vector = false # not yet enabled vector support
+    with_n = nbnd > 1
+    if !is_complex
+        values_c = reshape(values, :)  # 1D view, memory-compatible
+    else
+        values_c = interleave_complex(ComplexF32.(values))
+    end
+    ccall((:field_save_export0, libfly), Cvoid, (Cstring, Ptr{Float32}, Ptr{Cint}, Cint, Cint, Ptr{Float32}, Cint, Bool, Bool, Bool, Bool, Ptr{Float32}), filename, domain, Cint.(mesh), length(mesh), nbnd, w_points, length(w_points), is_complex, is_vector, with_w, with_n, values_c)
 end
 
 function load_config!(path::String)

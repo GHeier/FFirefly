@@ -21,8 +21,13 @@
 #include "../CMData/cmdata.hpp"
 #include "../vec.hpp"
 #include "cmfield.hpp"
+#include <filesystem>
+#include <H5Cpp.h>
 
+using namespace H5;
 using namespace std;
+namespace fs = std::filesystem;
+using std::filesystem::path;
 
 CMField::CMField() {
     data = CMData();
@@ -79,6 +84,30 @@ CMField::CMField(vector<Vec> points, vector<complex<Vec>> values, int dimension,
     empty_CMData(data);
 }
 
+CMField::CMField(vector<vector<complex<Vec>>> &values_in, vector<float> &w_points, vector<Vec> &domain_in, Vec &first_in, vector<int> &mesh, int dimension, bool with_w, bool with_n, bool is_complex, bool is_vector) {
+    data = CMData();
+    values = values_in;
+    data.dimension = dimension;
+    data.with_w = with_w;
+    data.with_n = with_n;
+    data.is_complex = is_complex;
+    data.is_vector = is_vector;
+    domain = domain_in;
+    inv_domain = invertMatrix(domain, data.dimension);
+
+    first = first_in;
+    nx = mesh[0];
+    if (dimension > 1)
+        ny = mesh[1];
+    if (dimension > 2)
+        nz = mesh[2];
+    if (with_w) {
+        nw = w_points.size();
+        wmin = *min_element(data.w_points.begin(), data.w_points.end());
+        wmax = *max_element(data.w_points.begin(), data.w_points.end());
+    }
+}
+
 void empty_CMData(CMData &data) {
     data.points = vector<Vec>();
     // data.w_points = vector<float>();
@@ -112,13 +141,28 @@ float sizeof_values(vector<vector<complex<Vec>>> &values) {
 }
 
 CMField load_CMField(string filename) {
+    if (!fs::exists(filename)) {
+        printf("File %s not found\n", filename.c_str());
+        exit(1);
+    }
+    std::string ext = path(filename).extension().string();
+    if (ext == ".h5" || ext == ".hdf5") {
+        return load_cmfield_from_hdf5(filename);
+    }
     CMData data(filename);
     CMField temp(data);
     return temp;
 }
 
 void save_CMField(string filename, CMField &field) {
-    save(field.data, filename);
+    std::string ext = path(filename).extension().string();
+    if (ext == ".h5" || ext == ".hdf5") {
+        vector<int> mesh = {field.nx, field.ny, field.nz};
+        int nbnd = field.data.n_inds.size();
+        save_to_hdf5(filename, field.domain, field.first, mesh, field.data.dimension, nbnd, field.data.w_points, field.data.is_complex, field.data.is_vector, field.data.with_w, field.data.with_n, field.values);
+    }
+    else
+        save(field.data, filename);
 }
 
 // Function to invert a matrix represented as vector<Vec>
@@ -634,3 +678,274 @@ complex<Vec> CMF_search_4d(float x_val, float y_val, float z_val, float w_val,
 
     return result;
 }
+
+void save_scalar(H5File& file, const std::string& name, int value) {
+    hsize_t dims[1] = {1};
+    DataSpace scalar_space(1, dims);
+    DataSet dataset = file.createDataSet(name, PredType::NATIVE_INT, scalar_space);
+    dataset.write(&value, PredType::NATIVE_INT);
+}
+
+void save_scalar(H5File& file, const std::string& name, bool value) {
+    hsize_t dims[1] = {1};
+    DataSpace scalar_space(1, dims);
+    DataSet dataset = file.createDataSet(name, PredType::NATIVE_HBOOL, scalar_space);
+    dataset.write(&value, PredType::NATIVE_HBOOL);
+}
+
+template<typename T>
+void save_vector(H5File& file, const std::string& name, const std::vector<T>& data) {
+    hsize_t dims[1] = {data.size()};
+    DataSpace dataspace(1, dims);
+    PredType type = std::is_same<T, float>::value ? PredType::NATIVE_FLOAT : PredType::NATIVE_INT;
+    DataSet dataset = file.createDataSet(name, type, dataspace);
+    dataset.write(data.data(), type);
+}
+
+void save_to_hdf5(
+    const string& filename,
+    vector<Vec>& domain,
+    Vec& first,
+    const vector<int>& mesh,
+    int dimension,
+    int nbnd,
+    const vector<float>& w_points,
+    bool is_complex,
+    bool is_vector,
+    bool with_w,
+    bool with_n,
+    vector<vector<complex<Vec>>>& values
+) {
+    vector<float> new_first(dimension);
+    vector<vector<float>> new_domain;
+    for (int i = 0; i < dimension; i++) {
+        vector<float> temp(dimension);
+        for (int j = 0; j < dimension; j++) {
+            temp[j] = domain[i](j);
+        }
+        new_domain.push_back(temp);
+        new_first[i] = first(i);
+    }
+
+    int size = (3 * is_vector  + (1 - is_vector) ) * (1 + is_complex);
+    vector<vector<vector<float>>> new_values(values.size());
+    for (int i = 0; i < values.size(); i++) {
+        vector<vector<float>> value_list(values[i].size());
+        for (int j = 0; j < values[i].size(); j++) {
+            vector<float> temp(size);
+            for (int k = 0; k < size; k++) {
+                if (k < size / 2 or k == 0)
+                    temp[k] = real(values[i][j])(k);
+                else
+                    temp[k] = imag(values[i][j])(k);
+            }
+        }
+    }
+    save_to_hdf5(filename, new_domain, new_first, mesh, dimension, nbnd, w_points, is_complex, is_vector, with_w, with_n, new_values);
+}
+
+void save_to_hdf5(
+    const string& filename,
+    const vector<vector<float>>& domain,
+    const vector<float>& first,
+    const vector<int>& mesh,
+    int dimension,
+    int nbnd,
+    const vector<float>& w_points,
+    bool is_complex,
+    bool is_vector,
+    bool with_w,
+    bool with_n,
+    const vector<vector<vector<float>>>& values
+) {
+    printf("I'm here!\n");
+    printf("filename2: %s\n", filename.c_str());
+    H5File file(filename, H5F_ACC_TRUNC);
+
+    // Save scalars
+    printf("1\n");
+    save_scalar(file, "/dimension", dimension);
+    save_scalar(file, "/nbnd", nbnd);
+    save_scalar(file, "/is_complex", is_complex);
+    save_scalar(file, "/is_vector", is_vector);
+    save_scalar(file, "/with_w", with_w);
+    save_scalar(file, "/with_n", with_n);
+
+    // Save 1D vectors
+    printf("2\n");
+    save_vector(file, "/first", first);
+    save_vector(file, "/mesh", mesh);
+    save_vector(file, "/w_points", w_points);
+
+    // Save 2D domain
+    {
+        hsize_t dims[2] = { domain.size(), domain.empty() ? 0 : domain[0].size() };
+        DataSpace dataspace(2, dims);
+        std::vector<float> flat;
+        for (const auto& row : domain)
+            flat.insert(flat.end(), row.begin(), row.end());
+
+        DataSet dataset = file.createDataSet("/domain", PredType::NATIVE_FLOAT, dataspace);
+        dataset.write(flat.data(), PredType::NATIVE_FLOAT);
+    }
+
+    // Save values under /values/band_i/
+    printf("3\n");
+    Group valuesGroup = file.createGroup("/values");
+    printf("4\n");
+    printf("nbnd: %d\n", nbnd);
+    for (int b = 0; b < nbnd; ++b) {
+        printf("4.1\n");
+        std::string bandPath = "/values/band_" + std::to_string(b);
+        Group bandGroup = file.createGroup(bandPath);
+        printf("4.2\n");
+
+        // Determine shape
+        cout << "values size: " << values.size() << endl;
+        const std::vector<float>& real_part = values[b][0];
+        printf("about to print real_part\n");
+        cout << real_part.size() << endl;
+        cout << real_part[0] << endl;
+        hsize_t dims[1] = { is_vector ? static_cast<hsize_t>(dimension) : 1 };
+        DataSpace dataspace(1, dims);
+        printf("4.3\n");
+
+        // Write real
+        DataSet real_ds = bandGroup.createDataSet("real", PredType::NATIVE_FLOAT, dataspace);
+        printf("4.31\n");
+        real_ds.write(real_part.data(), PredType::NATIVE_FLOAT);
+        printf("4.4\n");
+
+        // Write imag if complex
+        if (is_complex && values[b].size() > 1) {
+            const std::vector<float>& imag_part = values[b][1];
+            DataSet imag_ds = bandGroup.createDataSet("imag", PredType::NATIVE_FLOAT, dataspace);
+            imag_ds.write(imag_part.data(), PredType::NATIVE_FLOAT);
+        }
+        printf("4.5\n");
+    }
+    printf("4\n");
+}
+
+template<typename T>
+void read_scalar(H5File& file, const std::string& name, T& value) {
+    DataSet dataset = file.openDataSet(name);
+    dataset.read(&value, std::is_same<T, bool>::value ? PredType::NATIVE_HBOOL : PredType::NATIVE_INT);
+}
+
+template<typename T>
+void read_vector(H5File& file, const std::string& name, std::vector<T>& out) {
+    DataSet dataset = file.openDataSet(name);
+    DataSpace dataspace = dataset.getSpace();
+    hsize_t dims[1];
+    dataspace.getSimpleExtentDims(dims, nullptr);
+    out.resize(dims[0]);
+    dataset.read(out.data(), std::is_same<T, float>::value ? PredType::NATIVE_FLOAT : PredType::NATIVE_INT);
+}
+
+void load_from_hdf5(
+    const string& filename,
+    vector<Vec>& domain,
+    Vec& first,
+    vector<int>& mesh,
+    int& dimension,
+    int& nbnd,
+    vector<float>& w_points,
+    bool& is_complex,
+    bool& is_vector,
+    bool& with_w,
+    bool& with_n,
+    vector<vector<complex<Vec>>>& values
+) {
+    H5File file(filename, H5F_ACC_RDONLY);
+
+    // Scalars
+    read_scalar(file, "/dimension", dimension);
+    read_scalar(file, "/nbnd", nbnd);
+    read_scalar(file, "/is_complex", is_complex);
+    read_scalar(file, "/is_vector", is_vector);
+    read_scalar(file, "/with_w", with_w);
+    read_scalar(file, "/with_n", with_n);
+
+    // Vectors
+    vector<float> vec_first;
+    read_vector(file, "/first", vec_first);
+    for (int i = 0; i < vec_first.size(); i++)
+        first(i) = vec_first[i];
+    read_vector(file, "/mesh", mesh);
+    read_vector(file, "/w_points", w_points);
+
+    // 2D domain
+    {
+        DataSet dataset = file.openDataSet("/domain");
+        DataSpace dataspace = dataset.getSpace();
+        hsize_t dims[2];
+        dataspace.getSimpleExtentDims(dims, nullptr);
+        std::vector<float> flat(dims[0] * dims[1]);
+        dataset.read(flat.data(), PredType::NATIVE_FLOAT);
+
+        domain.resize(dims[0], std::vector<float>(dims[1]));
+        for (size_t i = 0; i < dims[0]; ++i)
+            for (size_t j = 0; j < dims[1]; ++j)
+                domain[i](j) = flat[i * dims[1] + j];
+    }
+
+    // values[b][0] = real, values[b][1] = imag (if is_complex)
+    vector<vector<vector<float>>> vec_values;
+    values.resize(nbnd);
+    vec_values.resize(nbnd);
+    for (int b = 0; b < nbnd; ++b) {
+        std::string bandPath = "/values/band_" + std::to_string(b);
+
+        Group bandGroup = file.openGroup(bandPath);
+
+        // Determine expected size
+        hsize_t count = is_vector ? static_cast<hsize_t>(dimension) : 1;
+
+        // Read real
+        {
+            DataSet real_ds = bandGroup.openDataSet("real");
+            std::vector<float> real(count);
+            real_ds.read(real.data(), PredType::NATIVE_FLOAT);
+            vec_values[b].push_back(std::move(real));
+        }
+
+        // Read imag if needed
+        if (is_complex) {
+            DataSet imag_ds = bandGroup.openDataSet("imag");
+            std::vector<float> imag(count);
+            imag_ds.read(imag.data(), PredType::NATIVE_FLOAT);
+            vec_values[b].push_back(std::move(imag));
+        }
+    }
+    int size = (3 * is_vector  + (1 - is_vector) ) * (1 + is_complex);
+    for (int i = 0; i < nbnd; i++) {
+        for (int j = 0; j < vec_values.size(); j++) {
+            Vec real_temp;
+            Vec imag_temp;
+            for (int k = 0; k < size; k++) {
+                if (k < size / 2 or k == 0)
+                    real_temp(k) = vec_values[i][j][k];
+                else
+                    imag_temp(k) = vec_values[i][j][k];
+            }
+        }
+    }
+}
+
+CMField load_cmfield_from_hdf5(const string& filename) {
+    vector<Vec> domain;
+    Vec first;
+    vector<int> mesh;
+    int dimension;
+    int nbnd;
+    vector<float> w_points;
+    bool is_complex;
+    bool is_vector;
+    bool with_w;
+    bool with_n;
+    vector<vector<complex<Vec>>> values;
+    load_from_hdf5(filename, domain, first, mesh, dimension, nbnd, w_points, is_complex, is_vector, with_w, with_n, values);
+    return CMField(values, w_points, domain, first, mesh, dimension, with_w, with_n, is_complex, is_vector);
+}
+

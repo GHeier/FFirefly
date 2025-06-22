@@ -96,7 +96,6 @@ function get_ckio_ir()
     grit = grit_calc(mesh, gkio)
     println("Calculating X(k,iv)")
     ckio = ckio_calc(mesh, grit)
-    println(ckio[Int(mesh.bnw / 2 + 0.5), 1, 1, 1])
     println("Max χ = ", maximum(real.(ckio)))
     println("Min χ: ", minimum(real.(ckio)))
     println("Interpolaing result")
@@ -106,8 +105,18 @@ function get_ckio_ir()
         ckio = repeat(ckio, 1, 1, 1, 2)
         itp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:2), ckio, Gridded(Linear()))
     end
+    println(typeof(itp))
     println("Interpolated")
-    save_ckio_ir(mesh, ckio)
+    if filetype == "dat"
+        save_ckio_ir(mesh, ckio)
+    elseif filetype == "h5" || filetype == "hdf5"
+        filename = outdir * prefix * "_chi." * filetype
+        mesh = [nx, ny, nz]
+        if dim == 2
+            mesh = mesh[1:end-1]
+        end
+        save_field!(filename, ckio, BZ, mesh, imag.(iv))
+    end
     #if dynamic
     #    save_hdf5_dynamic(ckio, iw)
     #else

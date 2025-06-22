@@ -34,7 +34,7 @@ nk        = nx*ny*nz
 sfc_tol   = 1e-4      # accuracy for self-consistent iteration
 maxiter   = 30        # maximal number of iterations in self-consistent cycle
 
-bcs_debug = true
+bcs_debug = false
 ;
 
 """
@@ -75,8 +75,8 @@ function LinearizedGapSolver(
     delta = Array{ComplexF64}(undef, mesh.fnw, nx, ny, nz)
     frit  = Array{ComplexF64}(undef, mesh.fntau, nx, ny, nz)
     for iy in 1:ny, ix in 1:nx, iw in 1:mesh.fnw
-        kx::Float64 = (2*π*(ix-1))/nx
-        ky::Float64 = (2*π*(iy-1))/ny
+        kx::Float64 = 2*π* ((ix-1)/nx - 0.5)
+        ky::Float64 = 2*π* ((iy-1)/ny - 0.5)
         delta[iw,ix,iy] = cos(kx) - cos(ky)
     end
     if bcs_debug
@@ -90,9 +90,6 @@ function LinearizedGapSolver(
 
     # Initialize interaction
     V_singlet = V
-    if any(isnan, delta)
-        println("wooooooooooo")
-    end
 
     ## Initialize eigenvalue
     lam::Float64 = 0.0
@@ -191,7 +188,8 @@ function fill_V_rt(vertex, iv, mesh)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:bnw
         q = get_kvec(i, j, k)
         w = imag(iv[l])
-        V[l, i, j, k] = 0.5 * (vertex(q, w) + vertex(-q, w))
+        #V[l, i, j, k] = 0.5 * (vertex(q, w) + vertex(-q, w))
+        V[l, i, j, k] = vertex(q, w)
     end
     return kw_to_rtau(V, 'B', mesh)
 end

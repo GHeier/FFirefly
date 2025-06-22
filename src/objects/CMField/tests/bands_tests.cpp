@@ -40,7 +40,7 @@ bool breadwrite_2d() {
     if (abs(test_val - data_val) > 1e-6)
         return false;
 
-    save(data, "./sample_bands.h5");
+    save(data, "./sample_bands.dat");
     outdir = "./";
     prefix = "sample";
     Bands loaddata;
@@ -80,7 +80,7 @@ bool periodicity_2d() {
     if (abs(test_val - data_val) > 1e-6)
         return false;
 
-    save(data, "./sample_bands.h5");
+    save(data, "./sample_bands.dat");
     outdir = "./";
     prefix = "sample";
     Bands loaddata;
@@ -104,10 +104,11 @@ bool periodicity_2d() {
 
 bool bands_tests() {
     int num_tests = 2;
+    set_global(filetype, "dat");
     bool all_tests[num_tests] = {
         breadwrite_2d(),
         periodicity_2d(),
     };
-    //remove("./sample_bands.h5");
+    remove("./sample_bands.dat");
     return print_test_results(all_tests, num_tests, "Bands tests");
 }

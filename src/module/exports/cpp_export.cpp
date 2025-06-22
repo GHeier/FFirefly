@@ -153,6 +153,41 @@ void data_save_export0(string filename, const float *points, const float *values
     data.save_hdf5(filename);
 }
 
+void field_save_export0(char* filename, float *domain_c, int* mesh_c, int dimension, int nbnd, float* w_points_c, int w_size, bool is_complex, bool is_vector, bool with_w, bool with_n, float* values_c) {
+    vector<vector<float>> domain(dimension);
+    vector<float> first(dimension);
+    int num_vals = 1;
+    for (int i = 0; i < dimension; i++) {
+        vector<float> temp(dimension);
+        for (int j = 0; j < dimension; j++) {
+            temp[j] = domain_c[i * dimension + j];
+            first[j] += temp[j] * (-0.5);
+        }
+        domain.push_back(temp);
+        printf("mesh[%d]:%d\n", i, mesh_c[i]);
+        num_vals *= mesh_c[i];
+    }
+    vector<int> mesh(mesh_c, mesh_c + dimension);
+    vector<float> w_points(w_points_c, w_points_c + w_size);
+
+    int size = (3 * is_vector  + (1 - is_vector) ) * (1 + is_complex);
+    printf("num_vals, size: %d, %d\n", num_vals, size);
+    vector<vector<vector<float>>> values(nbnd, vector<vector<float>>(num_vals, vector<float>(size)));
+    for (int i = 0; i < nbnd; i++) {
+        for (int j = 0; j < num_vals; j++) {
+            for (int k = 0; k < size; k++) {
+                int idx = i * nbnd * num_vals + j * size + k;
+                values[i][j][k] = values_c[idx];
+            }
+
+        }
+    }
+    printf("About to display filename\n");
+    printf("filename: %s\n", filename);
+    string str_file = filename;
+    save_to_hdf5(str_file, domain, first, mesh, dimension, nbnd, w_points, is_complex, is_vector, with_w, with_n, values);
+}
+
 Bands *Bands_export0() { return new Bands(); }
 float Bands_operator_export0(Bands *obj, int n, const float *point, int len) {
     Vec v(point, len);

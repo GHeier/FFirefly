@@ -140,7 +140,8 @@ int main() {
         int ind = i;
         if (ind >= mcount)
             ind = mcount - 1;
-        c_method = meth_tokens[ind];
+        if (c_method[0] != '\0')
+            c_method = meth_tokens[ind];
         load_cpp_config_wrapper(); 
     /*
         * ADDING A CATEGORY OCCURS BELOW

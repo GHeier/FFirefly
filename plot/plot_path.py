@@ -20,14 +20,14 @@ def BZ_point_to_q(letter):
     return 0
 
 
-def plot_section(field, qi, qf, section):
+def plot_section(field, qi, qf, section, letter):
     N = 100
     # BZ = field.domain
     qi = np.array(qi) / 2.0
     qf = np.array(qf) / 2.0
-    # BZ = np.array([[2 * np.pi, 0, 0], [0, 2*np.pi, 0], [0, 0, 2*np.pi]])
-    BZ = np.array([[1.6388, 0, 0], [0, 1.615, 0], [0, 0, 0.538]])
-    nbnd = 8
+    BZ = np.array([[2 * np.pi, 0, 0], [0, 2*np.pi, 0], [0, 0, 2*np.pi]])
+    #BZ = np.array([[1.6388, 0, 0], [0, 1.615, 0], [0, 0, 0.538]])
+    nbnd = 1
 
     x = np.linspace(0, 1, N)
     y = []
@@ -58,7 +58,7 @@ def plot_section(field, qi, qf, section):
 def plot_path(files, path, hline=False):
     fig, ax = plt.subplots()
     ax.set_xticks([])
-    ymin = 0
+    ymin = 999999999999999
 
     for file in files:
         field = fly.Field_R(file)
@@ -68,15 +68,20 @@ def plot_path(files, path, hline=False):
         while i < len(path):
             letter = path[i].lower()
             qf = BZ_point_to_q(letter)
-            ymin = min(ymin, plot_section(field, qi, qf, i))
+            ymin = min(ymin, plot_section(field, qi, qf, i, letter))
             qi = qf
             i += 1
 
     if hline:
         plt.axhline(y=0, color="gray", linestyle="--", linewidth=1)
     plt.xlim(0, len(path) - 1)
+    yloc = ymin
+    if yloc > 0:
+        yloc *= 0.99
+    else:
+        yloc *= 1.01
     for i in range(len(path)):
-        ax.text(i, ymin - 1.0, path[i].upper(), ha="center", va="top")
+        ax.text(i, yloc, path[i].upper(), ha="center", va="top")
     # fig.patch.set_facecolor('black')
     # ax.set_facecolor('black')              # Axes background
     return fig, ax
