@@ -164,15 +164,17 @@ void field_save_export0(char* filename, float *domain_c, int* mesh_c, int dimens
             first[j] += temp[j] * (-0.5);
         }
         domain.push_back(temp);
-        printf("mesh[%d]:%d\n", i, mesh_c[i]);
         num_vals *= mesh_c[i];
     }
+    if (with_w) num_vals *= w_size;
     vector<int> mesh(mesh_c, mesh_c + dimension);
     vector<float> w_points(w_points_c, w_points_c + w_size);
 
     int size = (3 * is_vector  + (1 - is_vector) ) * (1 + is_complex);
-    printf("num_vals, size: %d, %d\n", num_vals, size);
     vector<vector<vector<float>>> values(nbnd, vector<vector<float>>(num_vals, vector<float>(size)));
+    printf("nbnd: %d\n", nbnd);
+    printf("num_vals: %d\n", num_vals);
+    printf("size: %d\n", size);
     for (int i = 0; i < nbnd; i++) {
         for (int j = 0; j < num_vals; j++) {
             for (int k = 0; k < size; k++) {
@@ -182,8 +184,6 @@ void field_save_export0(char* filename, float *domain_c, int* mesh_c, int dimens
 
         }
     }
-    printf("About to display filename\n");
-    printf("filename: %s\n", filename);
     string str_file = filename;
     save_to_hdf5(str_file, domain, first, mesh, dimension, nbnd, w_points, is_complex, is_vector, with_w, with_n, values);
 }

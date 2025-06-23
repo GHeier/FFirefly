@@ -489,7 +489,7 @@ function save_field!(filename::String, values, domain, mesh, w_points = [])
     else
         values_c = interleave_complex(ComplexF32.(values))
     end
-    ccall((:field_save_export0, libfly), Cvoid, (Cstring, Ptr{Float32}, Ptr{Cint}, Cint, Cint, Ptr{Float32}, Cint, Bool, Bool, Bool, Bool, Ptr{Float32}), filename, domain, Cint.(mesh), length(mesh), nbnd, w_points, length(w_points), is_complex, is_vector, with_w, with_n, values_c)
+    ccall((:field_save_export0, libfly), Cvoid, (Cstring, Ptr{Float32}, Ptr{Cint}, Cint, Cint, Ptr{Float32}, Cint, Bool, Bool, Bool, Bool, Ptr{Float32}), filename, Float32.(domain), Cint.(mesh), length(mesh), nbnd, w_points, length(w_points), is_complex, is_vector, with_w, with_n, values_c)
 end
 
 function load_config!(path::String)
