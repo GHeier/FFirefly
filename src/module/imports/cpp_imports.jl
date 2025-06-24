@@ -474,9 +474,6 @@ function save_field!(filename::String, values, domain, mesh, w_points = [])
     with_w = length(w_points) > 0 ? true : false
     found_mesh = collect(size(values))
     nbnd = 1
-    println(with_w, length(w_points))
-    println(found_mesh)
-    println("mesh=", mesh)
     if with_w && found_mesh[1] != length(w_points) || !with_w && found_mesh[1] != mesh[1]
         nbnd = found_mesh[1]
     end

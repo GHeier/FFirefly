@@ -49,7 +49,7 @@ def plot_section(field, qi, qf, section, letter):
 
     x = np.linspace(section - 1, section, N)
     for n in range(nbnd):
-        plt.plot(x, y[n], color="#3887f3")
+        plt.plot(x, y[n], color="#9a05fc")
     plt.axvline(x=section, color="gray", linestyle="-", linewidth=1)
     # plt.plot(x, y, color='#3887f3')
     return np.min(y)
@@ -58,30 +58,25 @@ def plot_section(field, qi, qf, section, letter):
 def plot_path(files, path, hline=False):
     fig, ax = plt.subplots()
     ax.set_xticks([])
-    ymin = 999999999999999
 
     for file in files:
-        field = fly.Field_R(file)
+        field = fly.Field_C(file)
         letter = path[0].lower()
         qi = BZ_point_to_q(letter)
         i = 1
         while i < len(path):
             letter = path[i].lower()
             qf = BZ_point_to_q(letter)
-            ymin = min(ymin, plot_section(field, qi, qf, i, letter))
+            plot_section(field, qi, qf, i, letter)
             qi = qf
             i += 1
 
     if hline:
         plt.axhline(y=0, color="gray", linestyle="--", linewidth=1)
     plt.xlim(0, len(path) - 1)
-    yloc = ymin
-    if yloc > 0:
-        yloc *= 0.99
-    else:
-        yloc *= 1.01
+    yloc = -0.02
     for i in range(len(path)):
-        ax.text(i, yloc, path[i].upper(), ha="center", va="top")
+        ax.text(i, yloc, path[i].upper(), transform=ax.get_xaxis_transform(), ha="center", va="top")
     # fig.patch.set_facecolor('black')
     # ax.set_facecolor('black')              # Axes background
     return fig, ax

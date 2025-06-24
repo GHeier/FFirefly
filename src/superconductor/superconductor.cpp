@@ -58,6 +58,7 @@ void bcs() {
     printf("Temperature: %.5f \n", T);
 
     float renorm = get_renormalization(FS);
+    printf("renorm = %f\n", renorm);
 
     // Calculates the susceptibility matrix if it's going to be used in the
     // potential Otherwise it's passed as empty
@@ -151,9 +152,9 @@ void eliashberg() {
 
 void linearized_eliashberg() {
     string folder = "superconductor/";
-    string filename = "si";
-    string module = "SparseIR_Linearized_Eliashberg";
-    string function = "main";
+    string filename = "linearized_eliashberg2";
+    string module = "Linearized_Eliashberg2";
+    string function = "eigenvalue_computation";
     // call_python_func(folder.c_str(), filename.c_str(), function.c_str());
     call_julia_func(folder.c_str(), filename.c_str(), module.c_str(),
                     function.c_str());

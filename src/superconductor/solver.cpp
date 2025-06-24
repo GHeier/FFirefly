@@ -19,6 +19,7 @@
 #include "../objects/matrix.hpp"
 #include "../objects/vec.hpp"
 #include "../objects/CMField/fields.hpp"
+#include "../objects/CMField/self_energy.hpp"
 #include "cfg.hpp"
 #include "frequency_inclusion.hpp"
 #include "matrix_creation.hpp"
@@ -119,20 +120,20 @@ float get_Tc(
 }
 
 float get_renormalization(vector<Vec> &FS) {
-    Field_C sigma(outdir + prefix + "_self_energy." + filetype);
+    Self_Energy sigma;
     float renorm = 0;
     float norm = 0;
     int size = FS.size();
 
     for (int i = 0; i < size; i++) {
         Vec k1 = FS[i];
-        float f1 = pow(k1.area / vp(k1.n, k1), 0.5);
+        float f1 = (k1.area / vp(k1.n, k1));
         for (int j = 0; j < size; j++) {
             Vec k2 = FS[j];
-            float f2 = pow(k2.area / vp(k2.n, k2), 0.5);
+            float f2 = (k2.area / vp(k2.n, k2));
             renorm += real(sigma(k2 - k1) * f1 * f2);
         }
-        norm += f1 * f1;
+        norm += f1;
     }
     renorm /= (pow(2 * M_PI, dim));
     return renorm / norm;

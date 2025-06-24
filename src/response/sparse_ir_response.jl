@@ -114,9 +114,9 @@ function get_ckio_ir()
         mesh = [nx, ny, nz]
         if dim == 2
             mesh = mesh[1:end-1]
-            BZ_2d = BZ[1:end-1, 1:end-1]
+            BZ = BZ[1:end-1, 1:end-1]
         end
-        save_field!(filename, ckio, BZ_2d, mesh, imag.(iv))
+        save_field!(filename, ckio, BZ, mesh, imag.(iv))
     end
     #if dynamic
     #    save_hdf5_dynamic(ckio, iw)

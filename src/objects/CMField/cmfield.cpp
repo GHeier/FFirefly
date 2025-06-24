@@ -563,6 +563,8 @@ complex<Vec> CMF_search_3d(float x_val, float y_val, float w_val, int nx,
     if (w_rel < 0 || w_rel > 1)
         throw out_of_range("w_rel out of bounds");
 
+    //printf("i, j, k: %d, %d, %d\n", i, j, k);
+    //printf("nx, ny, nw: %d, %d, %d\n", nx, ny, nw);
     complex<Vec> result =
         (1 - x_rel) * (1 - y_rel) * (1 - w_rel) * f[i * ny * nw + j * nw + k] +
         x_rel * (1 - y_rel) * (1 - w_rel) * f[(i + 1) * ny * nw + j * nw + k] +
@@ -759,12 +761,9 @@ void save_to_hdf5(
     bool with_n,
     const vector<vector<vector<float>>>& values
 ) {
-    printf("I'm here!\n");
-    printf("filename2: %s\n", filename.c_str());
     H5File file(filename, H5F_ACC_TRUNC);
 
     // Save scalars
-    printf("1\n");
     save_scalar(file, "/dimension", dimension);
     save_scalar(file, "/nbnd", nbnd);
     save_scalar(file, "/is_complex", is_complex);
@@ -773,7 +772,6 @@ void save_to_hdf5(
     save_scalar(file, "/with_n", with_n);
 
     // Save 1D vectors
-    printf("2\n");
     save_vector(file, "/first", first);
     save_vector(file, "/mesh", mesh);
     save_vector(file, "/w_points", w_points);
@@ -793,9 +791,6 @@ void save_to_hdf5(
     }
 
     // Save values under /values/band_i/
-    printf("3\n");
-    printf("4\n");
-    printf("nbnd: %d\n", nbnd);
     size_t nkpt = values[0].size(); // assume all bands same size
     size_t vec_len = is_vector ? dimension : 1;
 
@@ -833,7 +828,6 @@ void save_to_hdf5(
         DataSet imag_ds = valuesGroup.createDataSet("imag", PredType::NATIVE_FLOAT, space);
         imag_ds.write(imag_all.data(), PredType::NATIVE_FLOAT);
     }
-    printf("4\n");
 }
 
 template<typename T>
@@ -953,9 +947,19 @@ CMField load_cmfield_from_hdf5(const string& filename) {
     bool with_n;
     vector<vector<complex<Vec>>> values;
     load_from_hdf5(filename, domain, first, mesh, dimension, nbnd, w_points, is_complex, is_vector, with_w, with_n, values);
-    printf("nx * ny * nw = %zu\n", mesh[0] * mesh[1] * w_points.size());
-    printf("nx, ny, nw = %d, %d, %zu\n", mesh[0], mesh[1], w_points.size());
     return CMField(values, w_points, domain, first, mesh, dimension, with_w, with_n, is_complex, is_vector);
 }
 
-
+void save_to_field(string filename, vector<vector<vector<float>>> &values, vector<vector<float>> &domain, vector<int> mesh, vector<float> w_points, bool is_complex, bool is_vector) {
+    bool with_w = w_points.size() > 0;
+    int dim = mesh.size();
+    Vec first(-0.5, -0.5, -0.5);
+    first.dimension = dim;
+    first = domain * first;
+    vector<float> first_vec(dim);
+    for (int i = 0; i < dim; i++) {
+        first_vec[i] = first(i);
+    }
+    int nbnd = values.size();
+    save_to_hdf5(filename, domain, first_vec, mesh, dim, nbnd, w_points, is_complex, is_vector, with_w, nbnd > 1, values);
+}

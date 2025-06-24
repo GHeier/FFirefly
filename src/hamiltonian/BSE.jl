@@ -53,21 +53,29 @@ function BSE_node()
     println("Max Vertex: $(maximum(abs.(V)))")
     println("Min Vertex: $(minimum(abs.(V)))")
 
-    if nz > 1
-        sitp = interpolate((1:mesh.fnw, 1:nx, 1:ny, 1:nz), Sigma, Gridded(Linear()))
-        vitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:nz), V, Gridded(Linear()))
-        xitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:nz), X, Gridded(Linear()))
-    else
-        Sigma = repeat(Sigma, 1, 1, 1, 2)
-        V = repeat(V, 1, 1, 1, 2)
-        X = repeat(X, 1, 1, 1, 2)
-        sitp = interpolate((1:mesh.fnw, 1:nx, 1:ny, 1:2), Sigma, Gridded(Linear()))
-        vitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:2), V, Gridded(Linear()))
-        xitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:2), X, Gridded(Linear()))
+    #if nz > 1
+    #    sitp = interpolate((1:mesh.fnw, 1:nx, 1:ny, 1:nz), Sigma, Gridded(Linear()))
+    #    vitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:nz), V, Gridded(Linear()))
+    #    xitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:nz), X, Gridded(Linear()))
+    #else
+    #    Sigma = repeat(Sigma, 1, 1, 1, 2)
+    #    V = repeat(V, 1, 1, 1, 2)
+    #    X = repeat(X, 1, 1, 1, 2)
+    #    sitp = interpolate((1:mesh.fnw, 1:nx, 1:ny, 1:2), Sigma, Gridded(Linear()))
+    #    vitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:2), V, Gridded(Linear()))
+    #    xitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:2), X, Gridded(Linear()))
+    #end
+
+    BZ_in = BZ
+    kmesh = cfg.k_mesh
+    if dim == 2
+        kmesh = kmesh[1:end-1]
+        BZ_in = BZ_in[1:end-1, 1:end-1]
     end
-    save(iw, sitp, outdir * prefix * "_self_energy." * filetype)
-    save(iv, vitp, outdir * prefix * "_vertex." * filetype)
-    save(iv, xitp, outdir * prefix * "_chi." * filetype)
+
+    save_field!(outdir * prefix * "_self_energy." * filetype, Sigma, BZ_in, kmesh, imag.(iw))
+    save_field!(outdir * prefix * "_vertex." * filetype, V, BZ_in, kmesh, imag.(iv))
+    save_field!(outdir * prefix * "_chi." * filetype, X, BZ_in, kmesh, imag.(iv))
 end
 
 

@@ -172,9 +172,6 @@ void field_save_export0(char* filename, float *domain_c, int* mesh_c, int dimens
 
     int size = (3 * is_vector  + (1 - is_vector) ) * (1 + is_complex);
     vector<vector<vector<float>>> values(nbnd, vector<vector<float>>(num_vals, vector<float>(size)));
-    printf("nbnd: %d\n", nbnd);
-    printf("num_vals: %d\n", num_vals);
-    printf("size: %d\n", size);
     for (int i = 0; i < nbnd; i++) {
         for (int j = 0; j < num_vals; j++) {
             for (int k = 0; k < size; k++) {

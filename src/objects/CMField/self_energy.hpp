@@ -15,7 +15,7 @@ class Self_Energy {
     // "");
     complex<float> operator()(Vec k, complex<float> w, string label1 = "",
                               string label2 = "");
-    complex<float> operator()(Vec k, float w, string label1 = "",
+    complex<float> operator()(Vec k, float w = 0, string label1 = "",
                               string label2 = "");
 };
 

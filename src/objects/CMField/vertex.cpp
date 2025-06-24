@@ -14,7 +14,7 @@ namespace fs = std::filesystem;
 Vertex::Vertex() {
     string filename = outdir + prefix + "_vertex." + filetype;
     if (fs::exists(filename) and automatic_file_read) {
-        field = load_CMField(outdir + prefix + "_vertex.dat");
+        field = load_CMField(filename);
         file_found = true;
     } else {
         file_found = false;

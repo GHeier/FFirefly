@@ -34,6 +34,7 @@ void construct_self_energy() {
     }
     printv("wpts size: %d\n", wpts.size());
     vector<complex<Vec>> values;
+    vector<vector<vector<float>>> vec_values(1);
 
     printf("Computing Self Energy\n");
     for (int i = 0; i < nx; i++) {
@@ -48,7 +49,10 @@ void construct_self_energy() {
                     points.push_back(q);
                     complex<float> X = chi(q, w);
                     complex<float> val = (U*U*U * X*X) / complex<float>(1.0f - U * X) + (U*U * X) / complex<float>(1.0f - U * U * X * X);
-                    values.push_back(complex<Vec>(Vec(val.real()), Vec(val.imag())));
+                    if (filetype == "dat" || filetype == "txt")
+                        values.push_back(complex<Vec>(Vec(val.real()), Vec(val.imag())));
+                    else if (filetype == "h5" || filetype == "hdf5")
+                        vec_values[0].push_back({val.real(), val.imag()});
                     if (abs(U * X) >= 1) {
                         printf("Geometric series not convergent: U*X = %f\n", U * X.real());
                         exit(1);
@@ -58,7 +62,20 @@ void construct_self_energy() {
         }
     }
     printf("Saving Self Energy\n");
-    save_to_file(outdir + prefix + "_self_energy." + filetype, points, values, chi.cmf.data.dimension, chi.cmf.data.with_w, chi.cmf.data.with_n, chi.cmf.data.is_complex, chi.cmf.data.is_vector);
+    string file = outdir + prefix + "_self_energy." + filetype;
+    if (filetype == "dat" || filetype == "txt")
+        save_to_file(file, points, values, chi.cmf.data.dimension, chi.cmf.data.with_w, chi.cmf.data.with_n, chi.cmf.data.is_complex, chi.cmf.data.is_vector);
+    else if (filetype == "hdf5" || filetype == "h5") {
+        vector<vector<float>> BZ = brillouin_zone;
+        BZ.resize(dimension);
+        for (auto &row : BZ)
+            row.resize(dimension);
+        Vec first = BZ * Vec(-0.5, -0.5, -0.5);
+        vector<int> mesh = q_mesh;
+        if (chi.cmf.data.dimension == 2)
+            mesh = {q_mesh[0], q_mesh[1]};
+        save_to_field(file, vec_values, BZ, mesh, chi.cmf.data.w_points, chi.cmf.data.is_complex, chi.cmf.data.is_vector);
+    }
     cout << "Saved to " << outdir + prefix + "_self_energy." + filetype << endl;
 }
 

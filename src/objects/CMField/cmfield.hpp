@@ -124,3 +124,5 @@ void load_from_hdf5(
     vector<vector<complex<Vec>>>& values
 );
 CMField load_cmfield_from_hdf5(const string& filename);
+
+void save_to_field(string filename, vector<vector<vector<float>>> &values, vector<vector<float>> &domain, vector<int> mesh, vector<float> w_points, bool is_complex, bool is_vector);
