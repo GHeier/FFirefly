@@ -47,17 +47,14 @@ function Mesh(
 
     nk::Int64 = nk1 * nk2 * nk3
     dimension = 3
-    if nk3 == 0
+    if nk3 == 1
         dimension = 2
-        nk = nk1 * nk2
     end
-    if nk2 == 0
+    if nk2 == 1
         dimension = 1
-        nk = nk1
     end
-    if nk1 == 0
+    if nk1 == 1
         dimension = 0
-        nk = 0
     end
     println("IRMesh: nk = ", nk, " dimension = ", dimension)
 
@@ -101,12 +98,12 @@ function wn_to_tau(mesh::Mesh, statistics::Statistics, obj_wn)
     """ Fourier transform from iw_n to tau via IR basis """
     smpl_tau, smpl_wn = smpl_obj(mesh, statistics)
     obj_l   = fit(smpl_wn, obj_wn, dim=1)
-    max_l = maximum(abs.(obj_l))
-    for i in 1:length(obj_l)
-        if abs(obj_l[i]) < 1e-5 * max_l
-            obj_l[i] = 0
-        end
-    end
+    #max_l = maximum(abs.(obj_l))
+    #for i in 1:length(obj_l)
+    #    if abs(obj_l[i]) < 1e-5 * max_l
+    #        obj_l[i] = 0
+    #    end
+    #end
     obj_tau = evaluate(smpl_tau, obj_l, dim=1)
     return obj_tau
 end
@@ -208,12 +205,12 @@ function kw_to_rtau(obj_k, particle_type, mesh)
 end
 
 function rtau_to_kw(obj_r, particle_type, mesh)
+    temp = r_to_k(obj_r, mesh)
     if particle_type == 'F'
-        temp = tau_to_wn(mesh, Fermionic(), obj_r)
+        return tau_to_wn(mesh, Fermionic(), temp)
     elseif particle_type == 'B'
-        temp = tau_to_wn(mesh, Bosonic(), obj_r)
+        return tau_to_wn(mesh, Bosonic(), temp)
     end
-    return r_to_k(temp, mesh)
 end
 
 function get_bandwidth()
@@ -232,11 +229,12 @@ function get_bandwidth()
     return maxval - minval
 end
 
-function IR_Mesh(energy_mesh, IR_tol = 1e-10)
+function IR_Mesh(energy_mesh::Array{Float32, 4}, IR_tol = 1e-10)
     beta = 1 / cfg.Temperature
-    nx, ny, nz = cfg.k_mesh
+    _, nx, ny, nz = size(energy_mesh)
     wmax = maximum(energy_mesh) - minimum(energy_mesh)
-    IR_basis_set = FiniteTempBasisSet(beta, Float64(wmax), IR_tol)
+    IR_basis_set = FiniteTempBasisSet(beta, Float64(1.2*wmax), IR_tol)
+    return Mesh(IR_basis_set, nx, ny, nz)
     if dim == 1
         mesh = Mesh(IR_basis_set, nx, 0, 0)
     elseif dim == 2

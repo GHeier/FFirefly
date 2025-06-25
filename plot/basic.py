@@ -1,3 +1,6 @@
+import h5py
+import os
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -33,26 +36,44 @@ def load_data(files):
 
     for file in files:
         # Step 1: Detect header
-        with open(file, "r") as f:
-            first_line = f.readline().strip()
-            try:
-                float(first_line.split(None)[0])
-                header = None
-            except ValueError:
-                header = 0
+        if file[-2:] != "h5" and file[-4:] != "hdf5":
+            with open(file, "r") as f:
+                first_line = f.readline().strip()
+                try:
+                    float(first_line.split(None)[0])
+                    header = None
+                except ValueError:
+                    header = 0
 
-        # Step 2: Read file
-        df = pd.read_csv(file, sep=r"\s+", engine="python", header=header)
-        columns = df.columns.tolist()
-        if '#' in columns:
-            columns.remove('#')
-        x_label = columns[0]
-        y_label = columns[1]
-        x = df.iloc[:, 0]
-        y = df.iloc[:, 1]
-        title = clean_filename(file)
+            # Step 2: Read file
+            df = pd.read_csv(file, sep=r"\s+", engine="python", header=header)
+            columns = df.columns.tolist()
+            if '#' in columns:
+                columns.remove('#')
+            x_label = columns[0]
+            y_label = columns[1]
+            x = df.iloc[:, 0]
+            y = df.iloc[:, 1]
+            title = clean_filename(file)
 
-        datasets.append((x, y, x_label, y_label, title))
+            datasets.append((x, y, x_label, y_label, title))
+        else:
+            with h5py.File(file, 'r') as f:
+                x = f['/w_points'][()]
+                y = f['/values/real'][()]
+
+                # Remove singleton dimensions: (1, 500, 1) → (500,)
+                y = np.squeeze(y)
+
+                # Validate dimension match
+                if x.shape != y.shape:
+                    raise ValueError(f"x.shape {x.shape} does not match y.shape {y.shape} after squeezing.")
+
+                x_label = "w"
+                y_label = "values"
+                title = os.path.splitext(os.path.basename(file))[0]
+
+                datasets.append((x, y, x_label, y_label, title))
 
     return datasets
 

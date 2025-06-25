@@ -98,20 +98,21 @@ function get_ckio_ir()
     ckio = ckio_calc(mesh, grit)
     println("Max χ = ", maximum(real.(ckio)))
     println("Min χ: ", minimum(real.(ckio)))
-    println("Interpolaing result")
-    if nz > 1
-        itp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:nz), ckio, Gridded(Linear()))
-    else
-        ckio = repeat(ckio, 1, 1, 1, 2)
-        itp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:2), ckio, Gridded(Linear()))
-    end
-    println(typeof(itp))
-    println("Interpolated")
+    #println("Interpolaing result")
+    #if nz > 1
+    #    itp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:nz), ckio, Gridded(Linear()))
+    #else
+    #    ckio = repeat(ckio, 1, 1, 1, 2)
+    #    itp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:2), ckio, Gridded(Linear()))
+    #end
+    #println(typeof(itp))
+    #println("Interpolated")
     if filetype == "dat"
         save_ckio_ir(mesh, ckio)
     elseif filetype == "h5" || filetype == "hdf5"
         filename = outdir * prefix * "_chi." * filetype
         mesh = [nx, ny, nz]
+        BZ = cfg.brillouin_zone
         if dim == 2
             mesh = mesh[1:end-1]
             BZ = BZ[1:end-1, 1:end-1]

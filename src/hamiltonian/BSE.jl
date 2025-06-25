@@ -38,12 +38,12 @@ function BSE_node()
     fnw, bnw, fntau, bntau = mesh.fnw, mesh.bnw, mesh.fntau, mesh.bntau
     iw = reshape(iw, fnw, 1, 1, 1)
     # Preallocate all arrays
-    Sigma = zeros(ComplexF64, fnw, nx, ny, nz)
-    G     = zeros(ComplexF64, fnw, nx, ny, nz)
-    G_rt  = Array{ComplexF64}(undef, fntau, nx, ny, nz)
-    X     = Array{ComplexF64}(undef, bnw, nx, ny, nz)
-    X_rt  = Array{ComplexF64}(undef, bntau, nx, ny, nz)
-    V     = Array{ComplexF64}(undef, bnw, nx, ny, nz)
+    Sigma = zeros(ComplexF32, fnw, nx, ny, nz)
+    G     = zeros(ComplexF32, fnw, nx, ny, nz)
+    G_rt  = Array{ComplexF32}(undef, fntau, nx, ny, nz)
+    X     = Array{ComplexF32}(undef, bnw, nx, ny, nz)
+    X_rt  = Array{ComplexF32}(undef, bntau, nx, ny, nz)
+    V     = Array{ComplexF32}(undef, bnw, nx, ny, nz)
 
     loop2!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
     #loop!(Sigma, G, G_rt, X, X_rt, V, mesh, iw, ek)
@@ -162,7 +162,7 @@ end
 
 
 function fill_energy_mesh(band)
-    ek = Array{Float64}(undef, 1, nx, ny, nz)
+    ek = Array{Float32}(undef, 1, nx, ny, nz)
     for i in 1:nx, j in 1:ny, k in 1:nz
         kvec = get_kvec(i - 1, j - 1, k - 1, nx, ny, nz)
         ek[1, i, j, k] = band(1, kvec)

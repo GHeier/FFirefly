@@ -14,7 +14,7 @@ def plot_colorgrid(files, **kwargs):
 def plot_colorline(files, **kwargs):
     return colorplot_surface(files[0], **kwargs)
 
-def colorplot_field(field, xlim=(-np.pi, np.pi), ylim=(-np.pi, np.pi), resolution=100,
+def colorplot_field(field, xlim=(-np.pi, np.pi), ylim=(-np.pi, np.pi), resolution=500,
                     cmap='bwr', title="f(x, y)"):
     x = np.linspace(*xlim, resolution)
     y = np.linspace(*ylim, resolution)

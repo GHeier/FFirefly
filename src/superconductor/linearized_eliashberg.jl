@@ -30,11 +30,14 @@ const mu = cfg.fermi_energy
 const wc = cfg.bcs_cutoff_frequency
 projs = cfg.projections
 
+const verbosity = cfg.verbosity
+const filetype = cfg.filetype
+
 const beta = 1 / cfg.Temperature
 
 const bcs_debug = false
 if bcs_debug
-    println("BCS Debug Session enabled")
+    printstyled("BCS Debug Session enabled\n"; color = :blue)
     if nw % 2 != 0
         println("Remember to make nw even")
         exit()
@@ -42,7 +45,7 @@ if bcs_debug
 end
 
 function get_kvec(i, j, k)
-    temp = BZ * [i / nx - 0.5, j / ny - 0.5, k / nz - 0.5]
+    temp = BZ * [i / nx - 0.0, j / ny - 0.0, k / nz - 0.0]
     return temp[1:dim]
 end
 
@@ -64,7 +67,7 @@ function zero_out_beyond_wc_iw!(A, iw)
     if size(A, 1) != length(iw)
         println("Zero_Out: Incorrect array mapping")
     end
-    for i in 1:length(iw)
+    for i in eachindex(iw)
         if abs(imag(iw[i])) > wc 
             A[i, :, :, :] .= 0
         end
@@ -75,19 +78,21 @@ function fill_V_rt(vertex, iv, mesh)
     bnw = length(iv)
     V = Array{ComplexF32}(undef, bnw, nx, ny, nz)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:bnw
-        q = get_kvec(i, j, k)
+        q = get_kvec(i - 1, j - 1, k - 1)
         w = imag(iv[l])
         V[l, i, j, k] = 0.5 * (vertex(q, w) + vertex(-q, w))
     end
+    if bcs_debug
+        return fft(V)
+    end
     return kw_to_rtau(V, 'B', mesh)
 end
-
 
 function create_energy_mesh(band, iw, Sigma, with_sigma=true)
     nw = length(iw)
     e_arr = zeros(ComplexF32, nw, nx, ny, nz)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:nw
-        kvec = get_kvec(i, j, k)
+        kvec = get_kvec(i - 1, j - 1, k - 1)
         if with_sigma
             e_arr[l, i, j, k] = band(1, kvec) - mu + Sigma(kvec, imag(iw[l]))
         else
@@ -96,7 +101,6 @@ function create_energy_mesh(band, iw, Sigma, with_sigma=true)
     end
     return e_arr
 end
-
 
 function deflate_v!(v, eigvecs)
     for phi_i in eigvecs
@@ -111,35 +115,46 @@ function deflate_v!(v, eigvecs)
     end
 end
 
-
 function power_iteration(iw, V_rt, e, mesh = 0)
     println("Beginning Power Iteration")
     deflate = Vector{Array{ComplexF32, 4}}()
-    eig, phi = linearized_eliashberg_loop(iw, V_rt, e, deflate, mesh)
-    iters, max_iters = 0, 10 
+    eig, iters, max_iters = -1, 0, 5
     while real(eig) < 0 && iters < max_iters
+        eig, phi = linearized_eliashberg_loop(iw, V_rt, e, deflate, mesh)
+        println("eig$iters = $eig")
+        save!(outdir * prefix * "_gap_$iters.h5", phi, iw)
         if eig != 0
             push!(deflate, conj.(phi))
         end
-        eig, phi = linearized_eliashberg_loop(iw, V_rt, e, deflate, mesh)
-        println("Found Eigenvalue: $eig")
         iters += 1
     end
-    return eig, phi
+    return eig
+end
+
+function save!(filename, phi, iw)
+    mesh = [nx, ny, nz]
+    BZ = cfg.brillouin_zone
+    if dim == 2
+        mesh = mesh[1:end-1]
+        BZ = BZ[1:end-1, 1:end-1]
+    end
+    save_field!(filename, phi, BZ, mesh, imag.(iw))
 end
 
 
 function linearized_eliashberg_loop(iw, V_rt, e, deflates, mesh = 0)
-    phi = rand(ComplexF32, mesh.fnw, nx, ny, nz)
-    for iy in 1:ny, ix in 1:nx, iw in 1:mesh.fnw
-        kx::Float64 = (2*π*(ix-1))/nx
-        ky::Float64 = (2*π*(iy-1))/ny
-        phi[iw,ix,iy,1] = cos(kx) - cos(ky)
+    phinw = length(iw)
+    phi = rand(ComplexF32, phinw, nx, ny, nz)
+    for iy in 1:ny, ix in 1:nx, iw in 1:phinw
+        kx, ky = get_kvec(ix, iy, 1)
+        #kx::Float64 = (2*π*(ix-1))/nx
+        #ky::Float64 = (2*π*(iy-1))/ny
+        #phi[iw,ix,iy,1] = cos(kx) - cos(ky)
     end
     eig, prev_eig, eig_err = 0, 0, 1
     max_iters = 50
     iters = 0
-    while eig_err > 1e-5 && iters < max_iters
+    while eig_err > 1e-4 && iters < max_iters
         if !bcs_debug
             eig, phi = linearized_eliashberg(phi, iw, V_rt, e, mesh)
         else
@@ -148,7 +163,11 @@ function linearized_eliashberg_loop(iw, V_rt, e, deflates, mesh = 0)
         deflate_v!(phi, deflates)
         eig_err = abs(eig - prev_eig)
         prev_eig = eig
-        print("Eig: ", round(real(eig), digits=6), " Error: ", round(eig_err, digits=6), "       \n")
+        if verbosity == "high"
+            print("Eig: ", round(real(eig), digits=6), " Error: ", round(eig_err, digits=6), "       \n")
+        else
+            print("Eig: ", round(real(eig), digits=6), " Error: ", round(eig_err, digits=6), "       \r")
+        end
         iters += 1
     end
     println("Iterations: $iters                                 ")
@@ -156,46 +175,38 @@ function linearized_eliashberg_loop(iw, V_rt, e, deflates, mesh = 0)
 end
 
 
-function half_conv(A, B, mesh)
+function convolution(A, B, mesh)
     if bcs_debug
         return fftshift(ifft(fft(A) .* B)) / (beta * nk)
     else
         A_rt = kw_to_rtau(A, 'F', mesh)
         A_rt .= B .* A_rt
-        return rtau_to_kw(A_rt, 'F', mesh)
+        temp = rtau_to_kw(A_rt, 'F', mesh)
+        return temp
     end
 end
 
 
 function linearized_eliashberg(phi, iw, V_rt, e, mesh)
     F = -phi .* ( 1 ./ (iw .- e)) .* (1 ./ (-iw .- e))
-    #F_rt = kw_to_rtau(F, 'F', mesh)
-    #F_rt .= V_rt .* F_rt
-    #result = rtau_to_kw(F_rt, 'F', mesh)
-    result = half_conv(F, V_rt, mesh)
+    result = convolution(F, V_rt, mesh)
 
-    eig = dot(result, phi)
-    norm_val = norm(phi)
-    return eig / norm_val^2, result ./ norm_val
+    eig = sum(real.(conj.(result) .* phi))
+    norm = sum(real.(phi .* conj.(phi)))
+    return eig / norm, result ./ norm^(0.5)
 end
 
 
 function linearized_eliashberg_bcs(phi, iw, V_rt, e)
     #zero_out_beyond_wc_e!(phi, e)
-    zero_out_beyond_wc_iw!(phi, iw)
-
+    #zero_out_beyond_wc_iw!(phi, iw)
     F = -phi .* ( 1 ./ (iw .- e)) .* (1 ./ (-iw .- e))
-    #F = -phi ./ ((Z .* imag.(iw)).^2 .+ e.^2)
-    #F .= -1.0
-    #F_rt = fft(F)
-    #temp = V_rt .* F_rt
-    #result = fftshift(ifft(temp)) / (beta * nk)
-    result = half_conv(F, V_rt, mesh)
+    result = convolution(F, V_rt, 0)
     #zero_out_beyond_wc_e!(phi, e)
-    zero_out_beyond_wc_iw!(result, iw)
+    #zero_out_beyond_wc_iw!(result, iw)
 
-    eig = sum(result .* conj.(phi))
-    norm = sum(phi .* conj.(phi))
+    eig = sum(real.(conj.(result) .* phi))
+    norm = sum(real.(phi .* conj.(phi)))
     return eig / norm, result ./ norm^(0.5)
 end
 
@@ -249,21 +260,21 @@ function eigenvalue_computation()
 
     println("Getting Self Energy")
     Sigma = Self_Energy()
-    e = create_energy_mesh(band, iw, Sigma)
+    e = create_energy_mesh(band, iw, Sigma, false)
 
     if !bcs_debug
         println("Getting Vertex")
         vertex = Firefly.Vertex()
         println("Fourier Transforming Vertex")
         V_rt = fill_V_rt(vertex, iv, mesh)
+        save!("V_rt_si.h5", V_rt, iv)
     else
-        V = -1.0 .* ones(Complex{Float32}, bnw, nx, ny, nz)
-        for j in 1:nx, k in 1:ny, l in 1:nz
-            kvec = get_kvec(j, k, l)
-            V[:,j,k,l] .= cos(kvec[1]) - cos(kvec[2])
-        end
-        V_rt = fft(V)
+        #V = -1.0 .* ones(Complex{Float32}, bnw, nx, ny, nz)
+        #V_rt = fft(V)
+        vertex = Firefly.Vertex()
+        V_rt = fill_V_rt(vertex, iv, 0)
         println("BCS DEBUG: FFT'd Vertex")
+        save!("V_rt_mf.h5", V_rt, iv)
     end
 
     if bcs_debug
@@ -282,13 +293,9 @@ function eigenvalue_computation()
         end
     end
     println("Power Iteration to find Eigenvalue and symmetry")
-    eig, phi = power_iteration(iw, V_rt, e, mesh)
+    eig = power_iteration(iw, V_rt, e, mesh)
     #eig, phi = linearized_eliashberg_loop(iw, V_rt, e, eigs, mesh)
     @printf("Max Eig: %.4f\n", real(eig))
-
-    if bcs_debug
-        save_gap(phi, iw)
-    end
 end
 
 
@@ -326,7 +333,7 @@ function get_projections(fnw, nx, ny, nz, num_projs)
     end
     return projections
 end
-    
+
 
 
 function linearized_eliashberg_projections(projections, iw, V_rt, e, mesh)

@@ -32,6 +32,9 @@ void construct_self_energy() {
     if (wpts.size() == 0) {
         wpts.push_back(0.0);
     }
+    for (int i = 0; i < wpts.size(); i++) {
+        wpts[i] += M_PI * Temperature;
+    }
     printv("wpts size: %d\n", wpts.size());
     vector<complex<Vec>> values;
     vector<vector<vector<float>>> vec_values(1);

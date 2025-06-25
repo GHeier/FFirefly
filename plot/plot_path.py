@@ -15,6 +15,8 @@ def BZ_point_to_q(letter):
         return [1, 0, 0]
     if letter == "m":
         return [1, 1, 0]
+    if letter == "r":
+        return [1, 1, 1]
     else:
         print("Letter not recognized in BZ")
     return 0
@@ -76,7 +78,10 @@ def plot_path(files, path, hline=False):
     plt.xlim(0, len(path) - 1)
     yloc = -0.02
     for i in range(len(path)):
-        ax.text(i, yloc, path[i].upper(), transform=ax.get_xaxis_transform(), ha="center", va="top")
+        let = path[i].upper()
+        if let == 'G':
+            let = 'Γ'
+        ax.text(i, yloc, let, transform=ax.get_xaxis_transform(), ha="center", va="top")
     # fig.patch.set_facecolor('black')
     # ax.set_facecolor('black')              # Axes background
     return fig, ax
