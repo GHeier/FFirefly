@@ -47,11 +47,6 @@ def colorplot_surface(file, cmap='bwr'):
     x = df.iloc[:, 0].values
     y = df.iloc[:, 1].values
     f = df.iloc[:, 2].values
-    #f2 = df.iloc[:, 2].values
-    #for i in range(len(x)):
-    #    xval = x[i]
-    #    yval = y[i]
-    #    f2[i] = np.cos(xval) - np.cos(yval)
 
     points = np.column_stack((x, y))
     hull = ConvexHull(points)
@@ -71,15 +66,12 @@ def colorplot_surface(file, cmap='bwr'):
     fig, ax = plt.subplots(figsize=(8, 6))
     lc = LineCollection(segments, cmap=cmap, array=segment_vals, linewidths=5)
     ax.add_collection(lc)
-    fig.colorbar(lc, ax=ax, label='f(x, y)')
+    fig.colorbar(lc, ax=ax)
 
     # ✅ Fix: Set axis limits to match the data
     ax.set_xlim(ordered_points[:, 0].min() * 1.03, ordered_points[:, 0].max() * 1.03)
     ax.set_ylim(ordered_points[:, 1].min() * 1.03, ordered_points[:, 1].max() * 1.03)
 
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_title('2D Surface Colored by f(x, y)')
     ax.set_aspect('equal')
     fig.tight_layout()
 

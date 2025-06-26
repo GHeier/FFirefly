@@ -12,6 +12,7 @@
 #include <boost/math/tools/roots.hpp>
 
 #include "../algorithms/linear_algebra.hpp"
+#include "../algorithms/integration.hpp"
 #include "../config/load/cpp_config.hpp"
 #include "../hamiltonian/band_structure.hpp"
 #include "../hamiltonian/interaction.hpp"
@@ -20,6 +21,8 @@
 #include "../objects/vec.hpp"
 #include "../objects/CMField/fields.hpp"
 #include "../objects/CMField/self_energy.hpp"
+#include "../objects/CMField/bands.hpp"
+#include "../config/load/cpp_config.hpp"
 #include "cfg.hpp"
 #include "frequency_inclusion.hpp"
 #include "matrix_creation.hpp"
@@ -58,7 +61,7 @@ float get_Tc_FS_only(double eig) {
     float low_val = f_singlet_integral(lower) * eig - 1.0;
     float upper_val = f_singlet_integral(upper) * eig - 1.0;
     if (low_val * upper_val > 0)
-        return -1.0;
+        return 0.0;
 
     auto result = boost::math::tools::bisect(
         [eig](float T) {
@@ -139,6 +142,34 @@ float get_renormalization(vector<Vec> &FS) {
     return renorm / norm;
 }
 
+float get_renormalization_off_FS(vector<vector<Vec>> &FS) {
+    Self_Energy sigma;
+    Bands band;
+    float renorm = 0;
+    float norm = 0;
+    int size = FS.size();
+
+    for (int i = 0; i < size; i++) {
+        float w1 = wc * points[l - 1][i];
+        for (int j = 0; j < FS[i].size(); j++) {
+            Vec k1 = FS[i][j];
+            float f1 = (k1.area / vp(k1.n, k1));
+            for (int a = 0; a < size; a++) {
+                float w2 = wc * points[l - 1][a];
+                for (int b = 0; b < FS[a].size(); b++) {
+                    Vec k2 = FS[a][b];
+                    float f2 = (k2.area / vp(k2.n, k2));
+                    float w = band(k2.n, k2) - band(k1.n, k1);
+                    renorm += real(sigma(k2 - k1, w) * f1 * f2);
+                }
+            }
+            norm += f1;
+        }
+    }
+    renorm /= (pow(2 * M_PI, dim));
+    return renorm / norm;
+}
+
 vector<float> matrix_projections(vector<Vec> &FS, Matrix &P, float renorm) {
     cout << "Calculating Coupling Constant...\n";
     int size = FS.size();
@@ -164,7 +195,7 @@ vector<float> matrix_projections(vector<Vec> &FS, Matrix &P, float renorm) {
     }
     vector<float> lambdas;
     for (int i = 0; i < num_projs; i++) 
-        lambdas.push_back(lambda[i] / normalization[i] / renorm);
+        lambdas.push_back(lambda[i] / normalization[i] / (1 + renorm));
         //lambdas.push_back(lambda[i]);
     printf("S-wave λ = %.3f\n", lambdas[0]);
     printf("D-wave λ = %.3f\n", lambdas[1]);

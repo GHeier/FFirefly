@@ -48,7 +48,7 @@ void bcs() {
     //float DOS = get_DOS(FS);
     //printf("DOS: %f\n", DOS);
     assert(FS.size() > 10);
-    save_FS(FS);
+    //save_FS(FS);
 
     float T = Temperature;
     cout << setprecision(10);
@@ -57,7 +57,11 @@ void bcs() {
     // T = get_Tc(FS);
     printf("Temperature: %.5f \n", T);
 
-    float renorm = get_renormalization(FS);
+    float renorm = 1.0;
+    if (FS_only)
+        renorm = get_renormalization(FS);
+    else
+        renorm = get_renormalization_off_FS(freq_FS);
     printf("renorm = %f\n", renorm);
 
     // Calculates the susceptibility matrix if it's going to be used in the
@@ -87,7 +91,7 @@ void bcs() {
     Eigenvector top_gap = power_iteration(P);
     //Eigenvector* temp = new Eigenvector[1];
     //temp[0] = top_gap;
-    printf("Max Power Iteration eigenvalue: %f\n", top_gap.eigenvalue / renorm);
+    printf("Max Power Iteration eigenvalue: %f\n", top_gap.eigenvalue / (1 + renorm));
     //vector<Eigenvector> top_gaps = power_iteration(P, 0.01);
     //for (Eigenvector x : top_gaps) {
     //    cout << "eig: " << x.eigenvalue << endl;
@@ -102,7 +106,7 @@ void bcs() {
     sort(solutions, solutions + num_eigenvalues_to_save,
          descending_eigenvalues);
 
-    printf("Max Diagonalized eigenvalue: %f\n", solutions[0].eigenvalue / renorm);
+    printf("Max Diagonalized eigenvalue: %f\n", solutions[0].eigenvalue / (1 + renorm));
 
     if (FS_only) {
         double calc_Tc = get_Tc_FS_only(solutions[0].eigenvalue);

@@ -73,6 +73,15 @@ function BSE_node()
         BZ_in = BZ_in[1:end-1, 1:end-1]
     end
 
+    # Centers points correctly, so they go from (-pi,pi) to (pi,pi) instead of the current (0,0) to (2pi,2pi). Important for saving
+    for i in 1:mesh.fnw
+        Sigma[i, :, :, :] .= fftshift(Sigma[i, :, :, :])
+    end
+    for i in 1:mesh.bnw
+        V[i, :, :, :] .= fftshift(V[i, :, :, :])
+        X[i, :, :, :] .= fftshift(X[i, :, :, :])
+    end
+
     save_field!(outdir * prefix * "_self_energy." * filetype, Sigma, BZ_in, kmesh, imag.(iw))
     save_field!(outdir * prefix * "_vertex." * filetype, V, BZ_in, kmesh, imag.(iv))
     save_field!(outdir * prefix * "_chi." * filetype, X, BZ_in, kmesh, imag.(iv))
@@ -103,13 +112,6 @@ function loop2!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
         G_rt .= X_rt .* G_rt
 
         Sigma .= rtau_to_kw(G_rt, 'F', mesh)
-    end
-    for i in 1:mesh.fnw
-        Sigma[i, :, :, :] .= fftshift(Sigma[i, :, :, :])
-    end
-    for i in 1:mesh.bnw
-        V[i, :, :, :] .= fftshift(V[i, :, :, :])
-        X[i, :, :, :] .= fftshift(X[i, :, :, :])
     end
 end
 

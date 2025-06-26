@@ -18,10 +18,10 @@ T = cfg.Temperature
 beta = 1 / T
 dim = cfg.dimension
 nx, ny, nz = cfg.k_mesh
-if nx < cfg.q_mesh[1] || ny < cfg.q_mesh[2] || nz < cfg.q_mesh[3]
-    println("Q Mesh cannot be larger than K Mesh.\nQ Mesh is the mesh where the data is saved")
-    exit()
-end
+#if nx < cfg.q_mesh[1] || ny < cfg.q_mesh[2] || nz < cfg.q_mesh[3]
+#    println("Q Mesh cannot be larger than K Mesh.\nQ Mesh is the mesh where the data is saved")
+#    exit()
+#end
 if dim == 2
     nz = 1
 end
@@ -79,7 +79,7 @@ function get_ckio_ir()
     println("Calculating IR response")
     println("Filling bands array")
     band = Bands()
-    ek = Array{Float64}(undef, 1, nx, ny, nz)
+    ek = Array{Float32}(undef, 1, nx, ny, nz)
     for ix in 1:nx, iy in 1:ny, iz in 1:nz
         kvec = get_kvec(ix - 1, iy - 1, iz - 1, nx, ny, nz)
         ek[1, ix, iy, iz] = band(1, kvec)
@@ -126,7 +126,7 @@ function get_ckio_ir()
     #end
 end
 
-function gkio_calc(mesh, ek::Array{Float64,4}, mu::Float64, iw)
+function gkio_calc(mesh, ek::Array{Float32,4}, mu, iw)
     gkio = 1.0 ./ (iw .+ mu .- ek)
     return gkio
 end
@@ -138,7 +138,7 @@ function grit_calc(mesh, gkio)
 end
 
 function ckio_calc(mesh, grit)
-    crit = Array{ComplexF64}(undef, mesh.bntau, nx, ny, nz)
+    crit = Array{ComplexF32}(undef, mesh.bntau, nx, ny, nz)
     #crit .= grit .* grit
     crit .= grit .* reverse(grit, dims=1)
     # Fourier transform

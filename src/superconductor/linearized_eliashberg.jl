@@ -260,7 +260,7 @@ function eigenvalue_computation()
 
     println("Getting Self Energy")
     Sigma = Self_Energy()
-    e = create_energy_mesh(band, iw, Sigma, false)
+    e = create_energy_mesh(band, iw, Sigma, true)
 
     if !bcs_debug
         println("Getting Vertex")
