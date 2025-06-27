@@ -1,6 +1,7 @@
 #pragma once
 
 #include "eigenvec.hpp"
+#include <vector>
 #include <iostream>
 
 using namespace std;
@@ -14,10 +15,10 @@ using namespace std;
  */
 class Matrix {
   public:
-    int size;
-    float *vals;
+    long int size;
+    vector<float> vals;
     Matrix();
-    ~Matrix();
+    //~Matrix();
     Matrix(int size);
     Matrix(vector<vector<float>> vals);
 

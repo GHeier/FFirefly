@@ -27,7 +27,7 @@ const nbnd = cfg.nbnd
 const U = cfg.onsite_U
 const BZ = cfg.brillouin_zone
 const mu = cfg.fermi_energy
-const wc = cfg.bcs_cutoff_frequency
+const wc = cfg.cutoff_energy
 projs = cfg.projections
 
 const verbosity = cfg.verbosity
@@ -260,21 +260,19 @@ function eigenvalue_computation()
 
     println("Getting Self Energy")
     Sigma = Self_Energy()
-    e = create_energy_mesh(band, iw, Sigma, true)
+    e = create_energy_mesh(band, iw, Sigma, false)
 
     if !bcs_debug
         println("Getting Vertex")
         vertex = Firefly.Vertex()
         println("Fourier Transforming Vertex")
         V_rt = fill_V_rt(vertex, iv, mesh)
-        save!("V_rt_si.h5", V_rt, iv)
     else
         #V = -1.0 .* ones(Complex{Float32}, bnw, nx, ny, nz)
         #V_rt = fft(V)
         vertex = Firefly.Vertex()
         V_rt = fill_V_rt(vertex, iv, 0)
         println("BCS DEBUG: FFT'd Vertex")
-        save!("V_rt_mf.h5", V_rt, iv)
     end
 
     if bcs_debug

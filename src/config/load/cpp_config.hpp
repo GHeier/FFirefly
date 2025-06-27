@@ -10,6 +10,7 @@ using namespace std;
 //[CONTROL]
 extern string category;
 extern string calculation;
+extern string method;
 extern string outdir;
 extern string indir;
 extern string prefix;
@@ -27,6 +28,7 @@ extern int natoms;
 extern float fermi_energy;
 extern float Temperature;
 extern float onsite_U;
+extern float cutoff_energy;
 
 //[MESH]
 extern vector<int> k_mesh;
@@ -62,15 +64,16 @@ extern vector<float> t9;
 extern vector<float> t10;
 
 //[SUPERCONDUCTOR]
-extern string method;
 extern bool FS_only;
-extern float bcs_cutoff_frequency;
 extern int num_eigenvalues_to_save;
 extern int frequency_pts;
 extern string projections;
 
 //[RESPONSE]
 extern bool dynamic;
+
+//[MANY_BODY]
+extern bool self_consistent;
 // End of Global Variables
 
 

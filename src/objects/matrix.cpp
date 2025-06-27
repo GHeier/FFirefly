@@ -14,30 +14,42 @@
 
 Matrix::Matrix() {
     this->size = 0;
-    this->vals = nullptr;
 }
 
-Matrix::~Matrix() { delete[] this->vals; }
+//Matrix::~Matrix() { delete[] this->vals; }
 
 Matrix::Matrix(int size) {
     this->size = size;
-    float MB = (float)(this->size * this->size * sizeof(float)) / 1000000;
-    if (MB > 1) {
+    printv("Matrix size (N): %d\n", size);
+    long int size_sqr = static_cast<long>(size) * size;
+    printv("Matrix size (NxN): %ld\n", size_sqr);
+    float MB = (float)(size_sqr * sizeof(float)) / 1000000;
+    if (MB > 100) {
+        printv("Allocating %.1lf GB\n", MB / 1024);
+    }
+    else if (MB > 1) {
         printv("Allocating %.0lf MB\n", MB);
     } else {
         printv("Allocating %.3lf MB\n", MB);
     }
-    this->vals = new float[size * size];
+    try {
+        vals.resize(size_sqr);
+    } catch (const std::bad_alloc& e) {
+        std::cerr << "Memory allocation failed: " << e.what() << '\n';
+        exit(EXIT_FAILURE);
+    }
+    printv("Allocated\n");
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
-            this->vals[i * size + j] = (i == j) ? 1 : 0;
+            vals[i * size + j] = (i == j) ? 1 : 0;
         }
     }
+    printv("Filled\n");
 }
 
 Matrix::Matrix(vector<vector<float>> vals) {
     this->size = vals.size();
-    this->vals = new float[this->size * this->size];
+    vals.resize(size * size);
     for (int i = 0; i < this->size; i++) {
         for (int j = 0; j < this->size; j++) {
             this->vals[i * this->size + j] = vals[i][j];

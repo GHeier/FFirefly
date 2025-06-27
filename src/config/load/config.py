@@ -4,6 +4,7 @@ import ast
 #[CONTROL]
 category = 'test'
 calculation = 'test'
+method = 'none'
 outdir = './'
 indir = './'
 prefix = 'sample'
@@ -21,6 +22,7 @@ natoms = 0
 fermi_energy = 0.0
 Temperature = 0.0
 onsite_U = 0.0
+cutoff_energy = 0.05
 
 #[MESH]
 k_mesh = [10, 10, 10]
@@ -66,15 +68,16 @@ t10 = []
 t10.append(0.0)
 
 #[SUPERCONDUCTOR]
-method = 'none'
 FS_only = True
-bcs_cutoff_frequency = 0.05
 num_eigenvalues_to_save = 1
 frequency_pts = 5
 projections = ''
 
 #[RESPONSE]
 dynamic = False
+
+#[MANY_BODY]
+self_consistent = False
 ### End Variables ###
 nbnd += 1
 ### Functions ###
@@ -119,6 +122,9 @@ def load_config():
             if "calculation" in key:
                 global calculation
                 calculation = value
+            if "method" in key:
+                global method
+                method = value
             if "outdir" in key:
                 global outdir
                 outdir = value
@@ -167,6 +173,9 @@ def load_config():
             if "onsite_U" in key:
                 global onsite_U
                 onsite_U = float(value)
+            if "cutoff_energy" in key:
+                global cutoff_energy
+                cutoff_energy = float(value)
 
 #[MESH]
             if "k_mesh" in key:
@@ -241,15 +250,9 @@ def load_config():
                 t10.append(float(value))
 
 #[SUPERCONDUCTOR]
-            if "method" in key:
-                global method
-                method = value
             if "FS_only" in key:
                 global FS_only
                 FS_only = value == 'true'
-            if "bcs_cutoff_frequency" in key:
-                global bcs_cutoff_frequency
-                bcs_cutoff_frequency = float(value)
             if "num_eigenvalues_to_save" in key:
                 global num_eigenvalues_to_save
                 num_eigenvalues_to_save = int(value)
@@ -264,6 +267,11 @@ def load_config():
             if "dynamic" in key:
                 global dynamic
                 dynamic = value == 'true'
+
+#[MANY_BODY]
+            if "self_consistent" in key:
+                global self_consistent
+                self_consistent = value == 'true'
             # Finished setting variables
         if not brillouin_zone:
             print("Error: Brillouin zone not specified.")

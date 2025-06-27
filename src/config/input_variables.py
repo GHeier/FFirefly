@@ -13,6 +13,7 @@ ALL = {
     "CONTROL": {
         "category": "test",
         "calculation": "test",
+        "method": "none",
         "outdir": "./",
         "indir": "./",
         "prefix": "sample",
@@ -30,6 +31,7 @@ ALL = {
         "fermi_energy": 0.0,
         "Temperature": 0.0,
         "onsite_U": 0.0,
+        "cutoff_energy": 0.05,
     },
     "MESH": {"k_mesh": [10, 10, 10], "q_mesh": [10, 10, 10], "w_pts": 100},
     "CELL": {"cell": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]},
@@ -57,14 +59,13 @@ ALL = {
         "t10": 0.0,
     },
     "SUPERCONDUCTOR": {
-        "method": "none",
         "FS_only": True,
-        "bcs_cutoff_frequency": 0.05,
         "num_eigenvalues_to_save": 1,
         "frequency_pts": 5,
         "projections": "",
     },
     "RESPONSE": {"dynamic": False},
+    "MANY_BODY": {"self_consistent": False},
 }
 
 

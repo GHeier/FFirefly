@@ -132,7 +132,7 @@ void lapack_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
     // LAPACKE_sgeev parameters:
     // 'N' -> No computation of left eigenvectors
     // 'V' -> Compute right eigenvectors
-    info = LAPACKE_sgeev(LAPACK_ROW_MAJOR, 'N', 'V', N, A.vals, N, val_r, val_i,
+    info = LAPACKE_sgeev(LAPACK_ROW_MAJOR, 'N', 'V', N, A.vals.data(), N, val_r, val_i,
                          NULL, N, vecs, N);
 
     if (info > 0) {
@@ -187,7 +187,7 @@ void lapack_hermitian_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
         }
     }
     printf("Diagonalizing Matrix\n");
-    info = LAPACKE_ssyevr(LAPACK_ROW_MAJOR, jobz, range, uplo, N, A.vals, lda,
+    info = LAPACKE_ssyevr(LAPACK_ROW_MAJOR, jobz, range, uplo, N, A.vals.data(), lda,
                           0.0f, 0.0f, il, iu, abstol, &m, w, z, lda, isuppz);
 
     if (info != 0) {

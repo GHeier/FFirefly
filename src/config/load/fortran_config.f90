@@ -31,6 +31,7 @@ module ffirefly
 ![CONTROL]
     character(len=50) :: category
     character(len=50) :: calculation
+    character(len=50) :: method
     character(len=50) :: outdir
     character(len=50) :: indir
     character(len=50) :: prefix
@@ -56,6 +57,8 @@ module ffirefly
     real :: Temperature
     real(c_float), bind(C, name="c_onsite_U") :: c_onsite_U
     real :: onsite_U
+    real(c_float), bind(C, name="c_cutoff_energy") :: c_cutoff_energy
+    real :: cutoff_energy
 
 ![MESH]
     integer(c_int), bind(C, name="c_k_mesh") :: c_k_mesh(3)
@@ -106,11 +109,8 @@ module ffirefly
     real :: t10(50)
 
 ![SUPERCONDUCTOR]
-    character(len=50) :: method
     logical(c_bool), bind(C, name="c_FS_only") :: c_FS_only
     logical :: FS_only
-    real(c_float), bind(C, name="c_bcs_cutoff_frequency") :: c_bcs_cutoff_frequency
-    real :: bcs_cutoff_frequency
     integer(c_int), bind(C, name="c_num_eigenvalues_to_save") :: c_num_eigenvalues_to_save
     integer :: num_eigenvalues_to_save
     integer(c_int), bind(C, name="c_frequency_pts") :: c_frequency_pts
@@ -120,6 +120,10 @@ module ffirefly
 ![RESPONSE]
     logical(c_bool), bind(C, name="c_dynamic") :: c_dynamic
     logical :: dynamic
+
+![MANY_BODY]
+    logical(c_bool), bind(C, name="c_self_consistent") :: c_self_consistent
+    logical :: self_consistent
     ! End of global variables
 
     interface
@@ -134,6 +138,10 @@ module ffirefly
             use iso_c_binding
             type(c_ptr) :: get_calculation
     end function get_calculation
+        function get_method() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_method
+    end function get_method
         function get_outdir() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_outdir
@@ -167,6 +175,7 @@ module ffirefly
             use iso_c_binding
             type(c_ptr) :: get_celltype
     end function get_celltype
+
 
 
 
@@ -210,11 +219,6 @@ module ffirefly
 
 
 ![SUPERCONDUCTOR]
-        function get_method() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_method
-    end function get_method
-
 
 
 
@@ -224,6 +228,9 @@ module ffirefly
     end function get_projections
 
 ![RESPONSE]
+
+
+![MANY_BODY]
 
     ! End of global functions
 
@@ -254,6 +261,7 @@ contains
 ![CONTROL]
         category = get_string(get_category())
         calculation = get_string(get_calculation())
+        method = get_string(get_method())
         outdir = get_string(get_outdir())
         indir = get_string(get_indir())
         prefix = get_string(get_prefix())
@@ -271,6 +279,7 @@ contains
         fermi_energy = c_fermi_energy
         Temperature = c_Temperature
         onsite_U = c_onsite_U
+        cutoff_energy = c_cutoff_energy
 
 ![MESH]
         k_mesh = c_k_mesh
@@ -303,15 +312,16 @@ contains
         t10 = c_t10
 
 ![SUPERCONDUCTOR]
-        method = get_string(get_method())
         FS_only = c_FS_only
-        bcs_cutoff_frequency = c_bcs_cutoff_frequency
         num_eigenvalues_to_save = c_num_eigenvalues_to_save
         frequency_pts = c_frequency_pts
         projections = get_string(get_projections())
 
 ![RESPONSE]
         dynamic = c_dynamic
+
+![MANY_BODY]
+        self_consistent = c_self_consistent
         ! End of loading variables
     end subroutine load_f90_config
 

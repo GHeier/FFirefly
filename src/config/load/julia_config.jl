@@ -10,6 +10,7 @@ cfg = firefly.config
 #[CONTROL]
 category::String = cfg.category
 calculation::String = cfg.calculation
+method::String = cfg.method
 outdir::String = cfg.outdir
 indir::String = cfg.indir
 prefix::String = cfg.prefix
@@ -27,6 +28,7 @@ natoms::Int = cfg.natoms
 fermi_energy::Float64 = cfg.fermi_energy
 Temperature::Float64 = cfg.Temperature
 onsite_U::Float64 = cfg.onsite_U
+cutoff_energy::Float64 = cfg.cutoff_energy
 
 #[MESH]
 k_mesh::Array{Int} = cfg.k_mesh
@@ -60,15 +62,16 @@ t9::Vector{Float64} = cfg.t9
 t10::Vector{Float64} = cfg.t10
 
 #[SUPERCONDUCTOR]
-method::String = cfg.method
 FS_only::Bool = cfg.FS_only
-bcs_cutoff_frequency::Float64 = cfg.bcs_cutoff_frequency
 num_eigenvalues_to_save::Int = cfg.num_eigenvalues_to_save
 frequency_pts::Int = cfg.frequency_pts
 projections::String = cfg.projections
 
 #[RESPONSE]
 dynamic::Bool = cfg.dynamic
+
+#[MANY_BODY]
+self_consistent::Bool = cfg.self_consistent
 # End variable definitions
 
 end

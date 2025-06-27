@@ -57,11 +57,11 @@ void bcs() {
     // T = get_Tc(FS);
     printf("Temperature: %.5f \n", T);
 
-    float renorm = 1.0;
-    if (FS_only)
-        renorm = get_renormalization(FS);
-    else
-        renorm = get_renormalization_off_FS(freq_FS);
+    float renorm = 0.0;
+    //if (FS_only)
+    //    renorm = get_renormalization(FS);
+    //else
+    //    renorm = get_renormalization_off_FS(freq_FS);
     printf("renorm = %f\n", renorm);
 
     // Calculates the susceptibility matrix if it's going to be used in the
@@ -88,26 +88,27 @@ void bcs() {
     //    float proj = cos(k(0)) - cos(k(1));
     //    initial_guess.eigenvector[i] = proj;
     //}
-    Eigenvector top_gap = power_iteration(P);
-    //Eigenvector* temp = new Eigenvector[1];
-    //temp[0] = top_gap;
-    printf("Max Power Iteration eigenvalue: %f\n", top_gap.eigenvalue / (1 + renorm));
-    //vector<Eigenvector> top_gaps = power_iteration(P, 0.01);
-    //for (Eigenvector x : top_gaps) {
-    //    cout << "eig: " << x.eigenvalue << endl;
-    //}
-
-    cout << "Finding Eigenspace..." << endl;
     Eigenvector *solutions = new Eigenvector[num_eigenvalues_to_save];
-    lapack_hermitian_diagonalization(P, solutions);
+    if (method == "power_iteration") {
+        Eigenvector top_gap = power_iteration(P);
+        printf("Max Power Iteration eigenvalue: %f\n", top_gap.eigenvalue / (1 + renorm));
+        solutions[0] = top_gap;
+    }
+    else if (method == "diagonalization") {
+        cout << "Finding Eigenspace..." << endl;
+        lapack_hermitian_diagonalization(P, solutions);
 
-    // Sort solutions with highest eigenvalue/eigenvector pair first
-    cout << "Sorting Eigenvectors..." << endl;
-    sort(solutions, solutions + num_eigenvalues_to_save,
-         descending_eigenvalues);
+        // Sort solutions with highest eigenvalue/eigenvector pair first
+        cout << "Sorting Eigenvectors..." << endl;
+        sort(solutions, solutions + num_eigenvalues_to_save,
+            descending_eigenvalues);
 
-    printf("Max Diagonalized eigenvalue: %f\n", solutions[0].eigenvalue / (1 + renorm));
-
+        printf("Max Diagonalized eigenvalue: %f\n", solutions[0].eigenvalue / (1 + renorm));
+    }
+    else {
+        printf("Projections completed and no additional method provided. Exiting\n");
+        exit(0);
+    }
     if (FS_only) {
         double calc_Tc = get_Tc_FS_only(solutions[0].eigenvalue);
         printf("Calculated Tc: %.5f\n", calc_Tc);
@@ -118,21 +119,10 @@ void bcs() {
     else
         freq_vector_to_wave(freq_FS, solutions);
 
-    auto d_x2_y2 = [](Vec k) { return cos(k(0)) - cos(k(1)); };
-    float norm = 0;
-    for (int i = 0; i < FS.size(); i++) {
-        Vec k = FS[i];
-        norm += d_x2_y2(k) * d_x2_y2(k);
-    }
-    for (int i = 0; i < FS.size(); i++) {
-        Vec k = FS[i];
-        //cout << d_x2_y2(k) / pow(norm, 0.5) << ", " << solutions[0].eigenvector[i] << endl;
-    }
-
     // Defining file name based on config/load/cpp_config (config)
     cout << "Saving Eigenvectors..." << endl;
     string file_name = get_SC_filename();
-    file_name = outdir + prefix + "_gap." + filetype;
+    file_name = outdir + prefix + "_gap.dat";
 
     // Save file in cartesian coordinates for the sake of plotting easier
     if (FS_only)

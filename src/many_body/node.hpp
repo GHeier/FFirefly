@@ -4,11 +4,11 @@
 extern "C" {
 #endif
 
-void bethe_salpeter_wrapper();
+void many_body_wrapper();
 
 #ifdef __cplusplus
 }
-void call_BSE();
+void many_body_loop();
 
 #endif
 

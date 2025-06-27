@@ -50,7 +50,7 @@ const beta = 1 / cfg.Temperature
 println("Beta: ", beta)
 const pi = π
 
-wD = cfg.bcs_cutoff_frequency
+wD = cfg.cutoff_energy
 
 function to_IBZ(k)
     tolerance = 1e-10  # small tolerance to account for floating-point errors
@@ -885,7 +885,7 @@ function energy_2sum()
     println("nk: ", nk)
 
     lambda = 1.0
-    wD = cfg.bcs_cutoff_frequency
+    wD = cfg.cutoff_energy
     dos = Firefly.Field_R(outdir * prefix * "_DOS.dat")
 
     println("Starting CPU sum")

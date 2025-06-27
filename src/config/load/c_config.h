@@ -10,6 +10,7 @@
 //[CONTROL]
 extern char* c_category; char* get_category();
 extern char* c_calculation; char* get_calculation();
+extern char* c_method; char* get_method();
 extern char* c_outdir; char* get_outdir();
 extern char* c_indir; char* get_indir();
 extern char* c_prefix; char* get_prefix();
@@ -27,6 +28,7 @@ extern int c_natoms;
 extern float c_fermi_energy;
 extern float c_Temperature;
 extern float c_onsite_U;
+extern float c_cutoff_energy;
 
 //[MESH]
 extern int c_k_mesh[3];
@@ -59,15 +61,16 @@ extern float c_t9[50];
 extern float c_t10[50];
 
 //[SUPERCONDUCTOR]
-extern char* c_method; char* get_method();
 extern bool c_FS_only;
-extern float c_bcs_cutoff_frequency;
 extern int c_num_eigenvalues_to_save;
 extern int c_frequency_pts;
 extern char* c_projections; char* get_projections();
 
 //[RESPONSE]
 extern bool c_dynamic;
+
+//[MANY_BODY]
+extern bool c_self_consistent;
 // End of Global Variables
 
 void get_dimensions();

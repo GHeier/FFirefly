@@ -28,7 +28,7 @@ end
 #
 #outdir = cfg.outdir
 #prefix = cfg.prefix
-#wc = cfg.bcs_cutoff_frequency
+#wc = cfg.cutoff_energy
 #mu = cfg.fermi_energy
 
 

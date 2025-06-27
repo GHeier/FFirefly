@@ -14,6 +14,7 @@ namespace fs = std::filesystem;
 //[CONTROL]
 string category;
 string calculation;
+string method;
 string outdir;
 string indir;
 string prefix;
@@ -31,6 +32,7 @@ int natoms;
 float fermi_energy;
 float Temperature;
 float onsite_U;
+float cutoff_energy;
 
 //[MESH]
 vector<int> k_mesh(3);
@@ -66,15 +68,16 @@ vector<float> t9;
 vector<float> t10;
 
 //[SUPERCONDUCTOR]
-string method;
 bool FS_only;
-float bcs_cutoff_frequency;
 int num_eigenvalues_to_save;
 int frequency_pts;
 string projections;
 
 //[RESPONSE]
 bool dynamic;
+
+//[MANY_BODY]
+bool self_consistent;
 // End of Global Variables 
 
 
@@ -84,6 +87,7 @@ extern "C" void load_cpp_config() {
 //[CONTROL]
     category = c_category;
     calculation = c_calculation;
+    method = c_method;
     outdir = c_outdir;
     indir = c_indir;
     prefix = c_prefix;
@@ -101,6 +105,7 @@ extern "C" void load_cpp_config() {
     fermi_energy = c_fermi_energy;
     Temperature = c_Temperature;
     onsite_U = c_onsite_U;
+    cutoff_energy = c_cutoff_energy;
 
 //[MESH]
     for (int i = 0; i < 3; i++) k_mesh[i] = c_k_mesh[i];
@@ -133,15 +138,16 @@ extern "C" void load_cpp_config() {
     for (int i = 0; i < nbnd; i++) t10.push_back(c_t10[i]);
 
 //[SUPERCONDUCTOR]
-    method = c_method;
     FS_only = c_FS_only;
-    bcs_cutoff_frequency = c_bcs_cutoff_frequency;
     num_eigenvalues_to_save = c_num_eigenvalues_to_save;
     frequency_pts = c_frequency_pts;
     projections = c_projections;
 
 //[RESPONSE]
     dynamic = c_dynamic;
+
+//[MANY_BODY]
+    self_consistent = c_self_consistent;
     // End of Global Functions 
     if (!isDirectoryExisting(outdir)) {
         if (fs::create_directory(outdir)) {

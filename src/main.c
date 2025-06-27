@@ -10,9 +10,9 @@
 // Category nodes below
 #include "algorithms/electron_number.hpp"
 #include "hamiltonian/fs.hpp"
-#include "hamiltonian/vertex.hpp"
-#include "hamiltonian/self_energy.hpp"
-#include "hamiltonian/bethe_salpeter.hpp"
+#include "many_body/vertex.hpp"
+#include "many_body/self_energy.hpp"
+#include "many_body/node.hpp"
 #include "response/DOS.h"
 #include "response/response.h"
 #include "superconductor/node.hpp"
@@ -56,9 +56,9 @@ void self_energy() {
     self_energy_wrapper();
 }
 
-void bethe_salpeter() {
+void many_body() {
     printf("Starting Bethe-Salpeter Calculation\n\n");
-    bethe_salpeter_wrapper();
+    many_body_wrapper();
 }
 
 void superconductor() {
@@ -161,8 +161,8 @@ int main() {
             vertex();
         else if (!strcmp(category, "self_energy"))
             self_energy();
-        else if (!strcmp(category, "bethe_salpeter"))
-            bethe_salpeter();
+        else if (!strcmp(category, "many_body"))
+            many_body();
         else if (!strcmp(category, "test"))
             test();
         else

@@ -27,7 +27,7 @@ const nbnd = cfg.nbnd
 const U = cfg.onsite_U
 const BZ = cfg.brillouin_zone
 const mu = cfg.fermi_energy
-const wc = cfg.bcs_cutoff_frequency
+const wc = cfg.cutoff_energy
 
 const beta = 1 / cfg.Temperature
 

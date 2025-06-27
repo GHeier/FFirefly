@@ -25,7 +25,7 @@ end
 nw = cfg.w_pts
 nbnd = cfg.nbnd
 mu = cfg.fermi_energy
-wc = cfg.bcs_cutoff_frequency
+wc = cfg.cutoff_energy
 BZ = cfg.brillouin_zone
 prefix = cfg.prefix
 outdir = cfg.outdir

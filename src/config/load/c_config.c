@@ -17,6 +17,8 @@ char* c_category = "test";
 char* get_category() {return c_category;}
 char* c_calculation = "test";
 char* get_calculation() {return c_calculation;}
+char* c_method = "none";
+char* get_method() {return c_method;}
 char* c_outdir = "./";
 char* get_outdir() {return c_outdir;}
 char* c_indir = "./";
@@ -41,6 +43,7 @@ int c_natoms = 0;
 float c_fermi_energy = 0.0;
 float c_Temperature = 0.0;
 float c_onsite_U = 0.0;
+float c_cutoff_energy = 0.05;
 
 //[MESH]
 int c_k_mesh[3] = {10, 10, 10};
@@ -75,10 +78,7 @@ float c_t9[50];
 float c_t10[50];
 
 //[SUPERCONDUCTOR]
-char* c_method = "none";
-char* get_method() {return c_method;}
 bool c_FS_only = true;
-float c_bcs_cutoff_frequency = 0.05;
 int c_num_eigenvalues_to_save = 1;
 int c_frequency_pts = 5;
 char* c_projections = "";
@@ -86,6 +86,9 @@ char* get_projections() {return c_projections;}
 
 //[RESPONSE]
 bool c_dynamic = false;
+
+//[MANY_BODY]
+bool c_self_consistent = false;
 // End of Global Variables
 
 void get_dimensions() {
@@ -263,6 +266,9 @@ void read_c_config(const char *path) {
             else if (strstr(key, "calculation") != NULL) {
                 set_string(&c_calculation, value);
             }
+            else if (strstr(key, "method") != NULL) {
+                set_string(&c_method, value);
+            }
             else if (strstr(key, "outdir") != NULL) {
                 set_string(&c_outdir, value);
             }
@@ -321,6 +327,9 @@ void read_c_config(const char *path) {
             }
             else if (strstr(key, "onsite_U") != NULL) {
                 c_onsite_U = atof(value);
+            }
+            else if (strstr(key, "cutoff_energy") != NULL) {
+                c_cutoff_energy = atof(value);
             }
 
 //[MESH]
@@ -383,9 +392,6 @@ void read_c_config(const char *path) {
             }
 
 //[SUPERCONDUCTOR]
-            else if (strstr(key, "method") != NULL) {
-                set_string(&c_method, value);
-            }
             else if (strstr(key, "FS_only") != NULL) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
@@ -393,9 +399,6 @@ void read_c_config(const char *path) {
                 } else {
                     c_FS_only = false;
                 }
-            }
-            else if (strstr(key, "bcs_cutoff_frequency") != NULL) {
-                c_bcs_cutoff_frequency = atof(value);
             }
             else if (strstr(key, "num_eigenvalues_to_save") != NULL) {
                 c_num_eigenvalues_to_save = atoi(value);
@@ -414,6 +417,16 @@ void read_c_config(const char *path) {
                     c_dynamic = true;
                 } else {
                     c_dynamic = false;
+                }
+            }
+
+//[MANY_BODY]
+            else if (strstr(key, "self_consistent") != NULL) {
+                strip_single_quotes(value);
+                if (strcmp(value, "true") == 0) {
+                    c_self_consistent = true;
+                } else {
+                    c_self_consistent = false;
                 }
             }
             // End of variable reading
@@ -580,7 +593,7 @@ void unload_c_config() {
     //        free(c_FS_only[i]);
     //    }
     //    for (int i = 0; i < 50; i++) {
-    //        free(c_bcs_cutoff_frequency[i]);
+    //        free(c_cutoff_energy[i]);
     //    }
     //    for (int i = 0; i < 50; i++) {
     //        free(c_num_eigenvalues_to_save[i]);

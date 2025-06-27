@@ -1,8 +1,12 @@
-module BSE
+module ManyBodyLoop
 
 using FFTW
+using LinearAlgebra
+using Roots
 using Printf
 using Interpolations
+using SparseIR
+import SparseIR: Statistics, value, valueim
 include("../objects/mesh.jl")
 using .IRMesh
 using Firefly
@@ -12,6 +16,8 @@ outdir = cfg.outdir
 prefix = cfg.prefix
 filetype = cfg.filetype
 
+scf = cfg.self_consistent 
+
 nx, ny, nz = cfg.k_mesh
 nqx, nqy, nqz = cfg.q_mesh
 dim = cfg.dimension
@@ -19,6 +25,7 @@ if dim == 2
     nz = 1
     nqz = 1
 end
+nk = nx * ny * nz
 nbnd = cfg.nbnd
 mu = cfg.fermi_energy
 U = cfg.onsite_U
@@ -30,7 +37,7 @@ if cfg.interaction != "FLEX"
     exit()
 end
 
-function BSE_node()
+function main()
     band = Bands()
     ek = fill_energy_mesh(band)
     mesh = IR_Mesh(ek)
@@ -45,8 +52,7 @@ function BSE_node()
     X_rt  = Array{ComplexF32}(undef, bntau, nx, ny, nz)
     V     = Array{ComplexF32}(undef, bnw, nx, ny, nz)
 
-    loop2!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
-    #loop!(Sigma, G, G_rt, X, X_rt, V, mesh, iw, ek)
+    loop!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
 
     println("Max Self-Energy: $(maximum(abs.(Sigma)))")
     println("Min Self-Energy: $(minimum(abs.(Sigma)))")
@@ -88,8 +94,11 @@ function BSE_node()
 end
 
 
-function loop2!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
+function loop!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
     max_iters = 30
+    if !scf
+        max_iters = 1
+    end
     for _ in 1:max_iters
         G .= 1 ./ (iw .- ek .+ mu .- Sigma)
 
@@ -100,8 +109,12 @@ function loop2!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
         X .= rtau_to_kw(X_rt, 'B', mesh)
         max_val = maximum(real.(X)) * U
         if (max_val >= 1)
-            println("AFM Found: U*X = $max_val")
-            exit()
+            println("U*X = $(maximum(abs, X) * U)")
+            if scf
+                U_renormalization(U, mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
+            else
+                exit("Diverging Interaction, cannot be handled without scf U renormalization")
+            end
         end
 
         V .= (3/2) .* (U^2 .* X ./ (1 .- U .* X)) .- (1/2) .* (U^2 .* X ./ (1 .+ U .* X))
@@ -115,25 +128,41 @@ function loop2!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
     end
 end
 
+function U_renormalization(U, mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
+    """ Loop for renormalizing U if Stoner enhancement U*max{chi0} >= 1. """
+    println("WARNING: U is too large and the spin susceptibility denominator will diverge/turn unphysical!")
+    println("Initiate U renormalization loop.")
+    
+    # save old U for later
+    U_old::Float64 = U
+    # renormalization loop may run infinitely! Insert break condition after U_it_max steps
+    U_it::Int64 = 0
+    U_maxiter = 50
+    
+    while U_old*maximum(abs, X) >= 1.0
+        U_it += 1
+        
+        # remormalize U such that U*chi0 < 1
+        U = U / (maximum(abs, X)*U + 0.01)
+        println(U_it, '\t', U, '\t', U_old)
+        
+        V .= (3/2) .* (U^2 .* X ./ (1 .- U .* X)) .- (1/2) .* (U^2 .* X ./ (1 .+ U .* X))
+        #V .= (U^2 .* X ./ (1 .- U .* X)) .+ (U^3 .* X.^2 ./ (1 .+ U^2 .* X.^2))
 
-#function loop!(Sigma, G, G_rt, X, X_rt, V, mesh, iw, ek)
-#    max_iters = 1
-#    for _ in 1:max_iters
-#        @. G = 1 / (iw - ek + mu - Sigma)
-#
-#        G_rt .= kw_to_rtau(G, 'F', mesh)
-#        X_rt .= G_rt .* reverse(G_rt, dims=1)
-#
-#        X .= rtau_to_kw(X_rt, 'B', mesh)
-#
-#        @. V = (U^2 * X / (1 - U * X)) + (U^3 * X^2 / (1 + U^2 * X^2))
-#
-#        X_rt .= kw_to_rtau(V, 'B', mesh)
-#        @. G_rt = X_rt * G_rt
-#
-#        Sigma .= rtau_to_kw(G_rt, 'F', mesh)
-#    end
-#end
+        # perform one shot FLEX loop
+        loop!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
+        
+        # reset U
+        U = U_old
+        
+        # break condition for too many steps
+        if U_it == U_maxiter
+            println("U renormalization reached breaking point")
+            break
+        end
+    end
+    println("Leaving U renormalization...")
+end
 
 
 function get_kvec(ix, iy, iz, nx, ny, nz)
@@ -150,9 +179,6 @@ end
 
 function get_qvec(ix, iy, iz, nx, ny, nz)
     kvec = [ix / nx - 0.5, iy / ny - 0.5, iz / nz - 0.5] 
-    #a, b, c = ix / nx, iy / ny, iz / nz
-    #kvec = [a * sign(0.5-a), b * sign(0.5-b), c * sign(0.5-c)]
-    #kvec = [ix / (nx) * sign(), iy / (ny) - 0.0, iz / (nz) - 0.0] 
     if dim < 3
         kvec[3] = 0.0
     elseif dim < 2
@@ -172,6 +198,24 @@ function fill_energy_mesh(band)
     return ek
 end
 
+function calc_electron_density(G, mesh)::Float64
+    """ Calculate electron density from Green function """
+    gio = dropdims(sum(G,dims=(2,3,4)),dims=(2,3,4))/nk
+
+    g_l = fit(mesh.IR_basis_set.smpl_wn_f,gio, dim=1)
+    g_tau0 = dot(mesh.IR_basis_set.basis_f.u(0), g_l)
+
+    n  = 1.0 + real(g_tau0)
+    n  = 2.0 * n #for spin
+end
+
+function mu_calc(iw, ek, n)::Float64
+    """ Find chemical potential for a given filling n0 via brent's root finding algorithm """
+    gkio = 1.0 ./ (iw .- ek)
+    f  = x -> calc_electron_density(gkio,x) - n
+
+    mu = find_zero(f, (3*minimum(ek), 3*maximum(ek)), Roots.Brent()) 
+end
 
 function save(iw, arr, filename)
     
