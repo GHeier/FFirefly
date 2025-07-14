@@ -6,8 +6,10 @@
 extern "C" void self_energy_wrapper() {
     if (method == "sparse_ir")
         call_self_energy();
+    else if (method == "renormalization")
+        FLEX_renormalization();
     else
-        construct_self_energy();
+        printf("Method not available\n");
 }
 
 void call_self_energy() {
@@ -18,7 +20,7 @@ void call_self_energy() {
     call_julia_func(folder.c_str(), filename.c_str(), module.c_str(), function.c_str());
 }
 
-void construct_self_energy() {
+void FLEX_renormalization() {
     string filename = outdir + prefix + "_chi." + filetype;
     printf("Reading chi from %s\n", filename.c_str());
     Field_C chi(filename);
@@ -39,7 +41,7 @@ void construct_self_energy() {
     vector<complex<Vec>> values;
     vector<vector<vector<float>>> vec_values(1);
 
-    printf("Computing Self Energy\n");
+    printf("Computing Renormalization\n");
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
             for (int k = 0; k < nz; k++) {
@@ -64,8 +66,8 @@ void construct_self_energy() {
             }
         }
     }
-    printf("Saving Self Energy\n");
-    string file = outdir + prefix + "_self_energy." + filetype;
+    printf("Saving Renormalization\n");
+    string file = outdir + prefix + "_renormalization." + filetype;
     if (filetype == "dat" || filetype == "txt")
         save_to_file(file, points, values, chi.cmf.data.dimension, chi.cmf.data.with_w, chi.cmf.data.with_n, chi.cmf.data.is_complex, chi.cmf.data.is_vector);
     else if (filetype == "hdf5" || filetype == "h5") {
@@ -79,7 +81,7 @@ void construct_self_energy() {
             mesh = {q_mesh[0], q_mesh[1]};
         save_to_field(file, vec_values, BZ, mesh, chi.cmf.data.w_points, chi.cmf.data.is_complex, chi.cmf.data.is_vector);
     }
-    cout << "Saved to " << outdir + prefix + "_self_energy." + filetype << endl;
+    cout << "Saved to " << outdir + prefix + "_renormalization." + filetype << endl;
 }
 
 

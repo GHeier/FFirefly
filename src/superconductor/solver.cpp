@@ -123,7 +123,7 @@ float get_Tc(
 }
 
 float get_renormalization(vector<Vec> &FS) {
-    Self_Energy sigma;
+    Field_C lam_z(outdir + prefix + "_renormalization." + filetype);
     float renorm = 0;
     float norm = 0;
     int size = FS.size();
@@ -134,7 +134,7 @@ float get_renormalization(vector<Vec> &FS) {
         for (int j = 0; j < size; j++) {
             Vec k2 = FS[j];
             float f2 = (k2.area / vp(k2.n, k2));
-            renorm += real(sigma(k2 - k1) * f1 * f2);
+            renorm += real(lam_z(k2 - k1) * f1 * f2);
         }
         norm += f1;
     }
@@ -143,24 +143,22 @@ float get_renormalization(vector<Vec> &FS) {
 }
 
 float get_renormalization_off_FS(vector<vector<Vec>> &FS) {
-    Self_Energy sigma;
+    Field_C lam_z(outdir + prefix + "_renormalization." + filetype);
     Bands band;
     float renorm = 0;
     float norm = 0;
     int size = FS.size();
 
     for (int i = 0; i < size; i++) {
-        float w1 = wc * points[l - 1][i];
         for (int j = 0; j < FS[i].size(); j++) {
             Vec k1 = FS[i][j];
-            float f1 = (k1.area / vp(k1.n, k1));
+            float f1 = (k1.area / vp(k1.n, k1)) * weights[l - 1][i];
             for (int a = 0; a < size; a++) {
-                float w2 = wc * points[l - 1][a];
                 for (int b = 0; b < FS[a].size(); b++) {
                     Vec k2 = FS[a][b];
-                    float f2 = (k2.area / vp(k2.n, k2));
+                    float f2 = (k2.area / vp(k2.n, k2)) * weights[l - 1][a];
                     float w = band(k2.n, k2) - band(k1.n, k1);
-                    renorm += real(sigma(k2 - k1, w) * f1 * f2);
+                    renorm += real(lam_z(k2 - k1, w) * f1 * f2);
                 }
             }
             norm += f1;

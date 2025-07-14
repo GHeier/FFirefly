@@ -410,6 +410,94 @@ def data_save(filename, points, values, dimension, with_w, with_n, is_complex, i
         c_bool(is_vector)
     )
 
+# Define interleave_complex (similar to Julia's interleave)
+def interleave_complex(values: np.ndarray) -> np.ndarray:
+    values = values.astype(np.complex64)
+    real = np.real(values).ravel()
+    imag = np.imag(values).ravel()
+    return np.column_stack((real, imag)).astype(np.float32).ravel()
+
+def save_field(filename: str, values, domain, mesh, w_points=None):
+    print("1")
+    if w_points is None:
+        w_points = []
+
+    print("2")
+    with_w = len(w_points) > 0
+    found_mesh = values.shape
+    nbnd = 1
+
+    print("3")
+    if with_w and found_mesh[0] != len(w_points) or (not with_w and found_mesh[0] != mesh[0]):
+        nbnd = found_mesh[0]
+
+    print("4")
+    domain = np.reshape(domain, -1).astype(np.float32)
+    mesh_arr = np.array(mesh, dtype=np.int32)
+    len_mesh = len(mesh_arr)
+    print("5")
+
+    is_complex = np.iscomplexobj(values)
+    is_vector = False  # Vector support not implemented
+    with_n = nbnd > 1
+    print("6")
+
+    if not is_complex:
+        values_c = np.reshape(values, -1).astype(np.float32)
+    else:
+        values_c = interleave_complex(values)
+    print("7")
+
+    w_points = np.array(w_points, dtype=np.float32) if with_w else np.array([], dtype=np.float32)
+    print("8")
+
+    # Set up argument types
+    lib.field_save_export0.argtypes = [
+        c_char_p,
+        POINTER(c_float),
+        POINTER(c_int),
+        c_int,
+        c_int,
+        POINTER(c_float),
+        c_int,
+        c_bool,
+        c_bool,
+        c_bool,
+        c_bool,
+        POINTER(c_float),
+    ]
+    lib.field_save_export0.restype = None
+    print("9")
+
+    # Call C function
+    print(values)
+    print(filename)
+    print(domain)
+    print(mesh_arr)
+    print(len_mesh)
+    print(nbnd)
+    print(w_points)
+    print(len(w_points))
+    print(is_complex)
+    print(is_vector)
+    print(with_w)
+    print(with_n)
+    lib.field_save_export0(
+        filename.encode("utf-8"),
+        domain.ctypes.data_as(POINTER(c_float)),
+        mesh_arr.ctypes.data_as(POINTER(c_int)),
+        len_mesh,
+        nbnd,
+        w_points.ctypes.data_as(POINTER(c_float)),
+        len(w_points),
+        is_complex,
+        is_vector,
+        with_w,
+        with_n,
+        values_c.ctypes.data_as(POINTER(c_float))
+    )
+    print("10")
+
 # Set up the function signature
 lib.load_config_export0.argtypes = [ctypes.c_char_p]
 lib.load_config_export0.restype = None  # Equivalent to Cvoid

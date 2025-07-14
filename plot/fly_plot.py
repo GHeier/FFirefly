@@ -1,7 +1,7 @@
-from . import plot_path
-from . import basic
-from . import colorplot
-from . import gap_function
+from plot import plot_path
+from plot import basic
+from plot import colorplot
+from plot import gap_function
 
 import argparse
 import sys
@@ -11,7 +11,15 @@ from cycler import cycler
 
 #matplotlib.use('module://matplotlib-backend-kitty')  # Kitty terminal
 
-plt.rcParams["axes.prop_cycle"] = cycler(color=["#9a05fc", "#f00524", "#f0b802", "#3887f3", "#ed6c09", "#20c714", "black", "gray"])
+# Joey chose colors
+plt.rcParams["axes.prop_cycle"] = cycler(color=["#9a05fc", # Purple
+                                                "#f00524", # Red
+                                                "#f80af1", # Pink
+                                                "#0a68f8", # Blue
+                                                "#1c841f", # Green
+                                                "#865522", # Brown
+                                                "#fc9303", # Orange
+                                                "black"])
 plt.rcParams["lines.linewidth"] = 1.0
 
 plt.rcParams['lines.markersize'] = 5.0
@@ -108,7 +116,10 @@ def sketch(files, plot_type='line', **kwargs):
 if __name__ == "__main__":
     try:
         result = parse_arguments()
-        get_flags_from_files(result)
+        print(result)
+        if (not any(result['flags'].values())):
+            get_flags_from_files(result)
+        print(result)
         #print("Flags:", result['flags'])
         #print("Files:", result['files'])
         plot_type = ''
