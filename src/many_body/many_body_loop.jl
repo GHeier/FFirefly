@@ -1,12 +1,12 @@
 module ManyBodyLoop
 
-#using FFTW
-#using LinearAlgebra
-#using Roots
-#using Printf
-#using Interpolations
-#using SparseIR
-#import SparseIR: Statistics, value, valueim
+using FFTW
+using LinearAlgebra
+using Roots
+using SparseIR
+import SparseIR: Statistics, value, valueim
+using Printf
+using Interpolations
 include("../objects/mesh.jl")
 using .IRMesh
 using Firefly
@@ -35,15 +35,10 @@ BZ = cfg.brillouin_zone
 beta = 1 / cfg.Temperature
 
 
-using FFTW
-using LinearAlgebra
-using Roots
-using SparseIR
-import SparseIR: Statistics, value, valueim
 ### System parameters
 T    = cfg.Temperature
 beta = 1/T    # inverse temperature
-n    = 0.85   # electron filling, here per spin per lattice site (n=1: half filling)
+#n    = 0.85   # electron filling, here per spin per lattice site (n=1: half filling)
 nbnd = cfg.nbnd
 mu = cfg.fermi_energy
 U = cfg.onsite_U
@@ -52,12 +47,11 @@ BZ = cfg.brillouin_zone
 ### Numerical parameters
 nk1, nk2, nk3  = cfg.k_mesh
 dim = cfg.dimension
-if dim == 2
-    nk3 = 1
-end
+if dim == 2 nk3 = 1 end
 nk        = nk1*nk2*nk3
 sfc_tol   = 1e-4      # accuracy for self-consistent iteration
 maxiter   = 30        # maximal number of iterations in self-consistent cycle
+if scf == false maxiter = 1 end
 mix       = 0.2       # mixing parameter for new 
 U_maxiter = 50       # maximal number of iteration steps in U renormalization loop
 
@@ -384,7 +378,7 @@ end
 function solve(solver::FLEXSolver)
     """ FLEXSolver.solve() executes FLEX loop until convergence """
     # check whether U < U_crit! Otherwise, U needs to be renormalized.
-    if maximum(abs, solver.ckio) * solver.U >= 1
+    if maximum(abs, solver.ckio) * solver.U >= 1 && scf == true
         U_renormalization(solver)
     end
             
@@ -527,7 +521,8 @@ function main()
     ek = fill_energy_mesh(band)
     mesh = IR_Mesh(ek)
     sigma_init = zeros(ComplexF32,(mesh.fnw, nk1, nk2, nk3))
-    solver = make_FLEXSolver(mesh, beta, ek, U, mu, sigma_init, sfc_tol=sfc_tol, maxiter=maxiter, U_maxiter=U_maxiter, mix=mix)
+    verbose = cfg.verbosity == "high" 
+    solver = make_FLEXSolver(mesh, beta, ek, U, mu, sigma_init, sfc_tol=sfc_tol, maxiter=maxiter, U_maxiter=U_maxiter, mix=mix, verbose=verbose)
 
     # perform FLEX loop
     solve(solver)
