@@ -380,12 +380,19 @@ function solve(solver::FLEXSolver)
     # check whether U < U_crit! Otherwise, U needs to be renormalized.
     if maximum(abs, solver.ckio) * solver.U >= 1 && scf == true
         U_renormalization(solver)
+        println("New U = $(solver.U)")
     end
             
     # perform loop until convergence is reached:
     for it in 1:solver.maxiter
         sigma_old = copy(solver.sigma)
         loop(solver)
+        println("max ckio: $(maximum(abs, solver.ckio))")
+        println("U: $(solver.U)")
+        if maximum(abs, solver.ckio) * solver.U >= 1 
+            println("Divergence in interaction found. Paramagnetic phase entered. Code exiting")
+            exit()
+        end
         
         # check whether solution is converged.
         sfc_check = sum(abs.(solver.sigma-sigma_old))/sum(abs.(solver.sigma))
@@ -430,6 +437,8 @@ function U_renormalization(solver::FLEXSolver)
     
     while U_old*maximum(abs, solver.ckio) >= 1.0
         U_it += 1
+        # reset U
+        solver.U = U_old
         
         # remormalize U such that U*chi0 < 1
         solver.U = solver.U / (maximum(abs, solver.ckio)*solver.U + 0.01)
@@ -438,8 +447,6 @@ function U_renormalization(solver::FLEXSolver)
         # perform one shot FLEX loop
         loop(solver)
         
-        # reset U
-        solver.U = U_old
         
         # break condition for too many steps
         if U_it == solver.U_maxiter

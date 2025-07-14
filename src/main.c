@@ -80,6 +80,15 @@ void print_banner_bottom() {
     printf("╚══════════════════════════════════════╝\n");
 }
 
+void format_runtime(clock_t start, clock_t end, char *out_str, size_t max_len) {
+    double total_secs = (double)(end - start) / CLOCKS_PER_SEC;
+    int hours = (int)(total_secs / 3600);
+    int minutes = ((int)(total_secs) % 3600) / 60;
+    int seconds = ((int)(total_secs) % 60);
+
+    snprintf(out_str, max_len, "%02d:%02d:%02d", hours, minutes, seconds);
+}
+
 // Global test calls
 void test() {
     printf("Starting Test Calculations\n");
@@ -95,6 +104,7 @@ void test() {
 }
 
 int main() {
+    clock_t start_time = clock();
     print_banner_top();
 
     load_c_config();           // Read input to load global c variables
@@ -174,6 +184,18 @@ int main() {
         free(tokens[i]);
     }
     end_python();
-    printf("\nProgram Complete\n");
+
+    time_t end_time = time(NULL);
+    struct tm *end_tm = localtime(&end_time);    // Convert to local time
+
+    double total_time = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
+    int hours = (int)(total_time / 3600);
+    int minutes = ((int)total_time % 3600) / 60;
+    int seconds = (int)total_time % 60;
+
+    printf("╔══════════════════════════════════════╗\n");
+    printf("║         🚀 FFirefly Landed.          ║\n");
+    printf("║          Runtime: %02d:%02d:%02d           ║\n", hours, minutes, seconds);
+    printf("╚══════════════════════════════════════╝\n");
     return 0;
 }
