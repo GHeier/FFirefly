@@ -58,10 +58,10 @@ void bcs() {
     printf("Temperature: %.5f \n", T);
 
     float renorm = 0.0;
-    //if (FS_only)
-    //    renorm = get_renormalization(FS);
-    //else
-    //    renorm = get_renormalization_off_FS(freq_FS);
+    if (FS_only)
+        renorm = get_renormalization(FS);
+    else
+        renorm = get_renormalization_off_FS(freq_FS);
     printf("renorm = %f\n", renorm);
 
     // Calculates the susceptibility matrix if it's going to be used in the
@@ -92,6 +92,7 @@ void bcs() {
     if (method == "power_iteration") {
         Eigenvector top_gap = power_iteration(P);
         printf("Max Power Iteration eigenvalue: %f\n", top_gap.eigenvalue / (1 + renorm));
+        printf("Eigenvalue with T included: %f\n", top_gap.eigenvalue / (1 + renorm) * f);
         solutions[0] = top_gap;
     }
     else if (method == "diagonalization") {
@@ -104,9 +105,10 @@ void bcs() {
             descending_eigenvalues);
 
         printf("Max Diagonalized eigenvalue: %f\n", solutions[0].eigenvalue / (1 + renorm));
+        printf("Eigenvalue with T included: %f\n", solutions[0].eigenvalue / (1 + renorm) * f);
     }
     else {
-        printf("Projections completed and no additional method provided. Exiting\n");
+        printf("No method provided. Exiting\n");
         exit(0);
     }
     if (FS_only) {

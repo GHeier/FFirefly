@@ -12,6 +12,7 @@
 #include "hamiltonian/fs.hpp"
 #include "many_body/vertex.hpp"
 #include "many_body/self_energy.hpp"
+#include "many_body/renormalization.hpp"
 #include "many_body/node.hpp"
 #include "response/DOS.h"
 #include "response/response.h"
@@ -56,6 +57,11 @@ void self_energy() {
     self_energy_wrapper();
 }
 
+void renormalization() {
+    printf("Starting Self Energy Calculation\n\n");
+    renormalization_wrapper();
+}
+
 void many_body() {
     printf("Starting Bethe-Salpeter Calculation\n\n");
     many_body_wrapper();
@@ -71,22 +77,12 @@ void print_banner_top() {
     printf("║       🚀 FFirefly Launching...       ║\n");
 }
 
-void print_banner_bottom() {
-    time_t now = time(NULL);
+void print_banner_bottom(time_t now) {
     struct tm *t = localtime(&now);
     char time_str[16];
     strftime(time_str, sizeof(time_str), "%H:%M:%S", t);
     printf("║        Launched at %s          ║\n", time_str);
     printf("╚══════════════════════════════════════╝\n");
-}
-
-void format_runtime(clock_t start, clock_t end, char *out_str, size_t max_len) {
-    double total_secs = (double)(end - start) / CLOCKS_PER_SEC;
-    int hours = (int)(total_secs / 3600);
-    int minutes = ((int)(total_secs) % 3600) / 60;
-    int seconds = ((int)(total_secs) % 60);
-
-    snprintf(out_str, max_len, "%02d:%02d:%02d", hours, minutes, seconds);
 }
 
 // Global test calls
@@ -104,7 +100,7 @@ void test() {
 }
 
 int main() {
-    clock_t start_time = clock();
+    time_t start = time(NULL);
     print_banner_top();
 
     load_c_config();           // Read input to load global c variables
@@ -135,7 +131,7 @@ int main() {
         meth_token = strtok_r(NULL, "+", &saveptr2);
     }
 
-    print_banner_bottom();
+    print_banner_bottom(start);
 
     // Set the number of threads used in parallelization to one less than the
     // maximum
@@ -171,6 +167,8 @@ int main() {
             vertex();
         else if (!strcmp(category, "self_energy"))
             self_energy();
+        else if (!strcmp(category, "renormalization"))
+            renormalization();
         else if (!strcmp(category, "many_body"))
             many_body();
         else if (!strcmp(category, "test"))
@@ -186,15 +184,13 @@ int main() {
     end_python();
 
     time_t end_time = time(NULL);
-    struct tm *end_tm = localtime(&end_time);    // Convert to local time
-
-    double total_time = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
-    int hours = (int)(total_time / 3600);
-    int minutes = ((int)total_time % 3600) / 60;
-    int seconds = (int)total_time % 60;
+    int runtime_secs = (int)difftime(end_time, start);
+    int hours = runtime_secs / 3600;
+    int minutes = (runtime_secs % 3600) / 60;
+    int seconds = runtime_secs % 60;
 
     printf("╔══════════════════════════════════════╗\n");
-    printf("║         🚀 FFirefly Landed.          ║\n");
+    printf("║         🏁 FFirefly Landed.          ║\n");
     printf("║          Runtime: %02d:%02d:%02d           ║\n", hours, minutes, seconds);
     printf("╚══════════════════════════════════════╝\n");
     return 0;

@@ -481,8 +481,9 @@ end
 function V_calc(solver::FLEXSolver)
     """ Calculate interaction V(tau,r) from RPA-like spin and charge susceptibility for calculating sigma """
     # check whether U is too large and give warning
-    if maximum(abs.(solver.ckio))*solver.U >= 1
-        error("U*max(chi0) >= 1! Paramagnetic phase is left and calculations will turn unstable!")
+    maxval = maximum(abs.(solver.ckio))*solver.U
+    if maxval >= 1
+        error("U*max(chi0) = $(maxval) >= 1! Paramagnetic phase is left and calculations will turn unstable!")
     end
 
     solver.ckio .= V_FLEX(solver.U, solver.ckio)

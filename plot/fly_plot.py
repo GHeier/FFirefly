@@ -55,6 +55,9 @@ def parse_arguments():
         "-s", "--scatter", action="store_true", help="Perform scatter plot"
     )
     parser.add_argument(
+        "-l", "--line", action="store_true", help="Perform line plot"
+    )
+    parser.add_argument(
         "-G", "--Gap", action="store_true", help="Plot gap over mesh"
     )
     parser.add_argument(
@@ -74,7 +77,7 @@ def parse_arguments():
         valid_files.append(f)
 
     return {
-        "flags": {"verbose": args.verbose, "output": args.output, "scatter": args.scatter, "Gap": args.Gap},
+        "flags": {"verbose": args.verbose, "output": args.output, "scatter": args.scatter, "line": args.line, "Gap": args.Gap},
         "files": valid_files,
     }
 
@@ -106,6 +109,9 @@ def sketch(files, plot_type='line', **kwargs):
         fig, ax = colorplot.plot_colorline(files, **kwargs)
     elif plot_type == "path":
         fig, ax = plot_path.plot_path(files, **kwargs)
+    elif plot_type == "band":
+        pass
+        #fig, ax = plot_path.plot_band(files, **kwargs)
     else:
         raise ValueError(f"Unsupported plot type: {plot_type}")
 
@@ -116,19 +122,21 @@ def sketch(files, plot_type='line', **kwargs):
 if __name__ == "__main__":
     try:
         result = parse_arguments()
-        print(result)
         if (not any(result['flags'].values())):
             get_flags_from_files(result)
         print(result)
         #print("Flags:", result['flags'])
         #print("Files:", result['files'])
         plot_type = ''
-        if "band" in result["flags"]:
+        if result["flags"]["line"]:
+            plot_type = 'line'
+        elif "band" in result["flags"]:
             plot_type = 'band'
         elif result["flags"]["scatter"]:
             plot_type = 'scatter'
         elif result["flags"]["Gap"]:
             pass
+        print("plot_type: ", plot_type)
         fig, ax = sketch(result["files"], plot_type)
         plt.show()
 
