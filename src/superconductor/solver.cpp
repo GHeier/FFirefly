@@ -127,7 +127,6 @@ float get_renormalization(vector<Vec> &FS) {
     float renorm = 0;
     float norm = 0;
     int size = FS.size();
-
     for (int i = 0; i < size; i++) {
         Vec k1 = FS[i];
         float f1 = (k1.area / vp(k1.n, k1));

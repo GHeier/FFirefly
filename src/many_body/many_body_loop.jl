@@ -1,5 +1,9 @@
 module ManyBodyLoop
 
+using Random
+using PencilFFTs
+using MPI
+using LoopVectorization
 using FFTW
 using LinearAlgebra
 using Roots
@@ -55,164 +59,16 @@ if scf == false maxiter = 1 end
 mix       = 0.2       # mixing parameter for new 
 U_maxiter = 50       # maximal number of iteration steps in U renormalization loop
 
-if cfg.interaction != "FLEX"
-    println("Code written for FLEX interactions")
-    exit()
+interaction = cfg.interaction
+
+function fill_energy_mesh_mpi!(band, ek)
+    for i in 1:nx, j in 1:ny, k in 1:nz
+        kvec = get_kvec(i - 1, j - 1, k - 1, nx, ny, nz)
+        ek[1, i, j, k] = band(1, kvec)
+    end
+    return ek
 end
 
-#function main()
-#    band = Bands()
-#    ek = fill_energy_mesh(band)
-#    mesh = IR_Mesh(ek)
-#    iw, iv = get_iw_iv(mesh)
-#    fnw, bnw, fntau, bntau = mesh.fnw, mesh.bnw, mesh.fntau, mesh.bntau
-#    iw = reshape(iw, fnw, 1, 1, 1)
-#    # Preallocate all arrays
-#    Sigma = zeros(ComplexF32, fnw, nx, ny, nz)
-#    G     = zeros(ComplexF32, fnw, nx, ny, nz)
-#    G_rt  = Array{ComplexF32}(undef, fntau, nx, ny, nz)
-#    X     = Array{ComplexF32}(undef, bnw, nx, ny, nz)
-#    X_rt  = Array{ComplexF32}(undef, bntau, nx, ny, nz)
-#    V     = Array{ComplexF32}(undef, bnw, nx, ny, nz)
-#
-#    solve!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
-#
-#    println("Max Self-Energy: $(maximum(abs.(Sigma)))")
-#    println("Min Self-Energy: $(minimum(abs.(Sigma)))")
-#    println("Max Vertex: $(maximum(abs.(V)))")
-#    println("Min Vertex: $(minimum(abs.(V)))")
-#    println("Max Chi: $(maximum(abs.(X)))")
-#    println("Min Chi: $(minimum(abs.(X)))")
-#
-#    #if nz > 1
-#    #    sitp = interpolate((1:mesh.fnw, 1:nx, 1:ny, 1:nz), Sigma, Gridded(Linear()))
-#    #    vitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:nz), V, Gridded(Linear()))
-#    #    xitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:nz), X, Gridded(Linear()))
-#    #else
-#    #    Sigma = repeat(Sigma, 1, 1, 1, 2)
-#    #    V = repeat(V, 1, 1, 1, 2)
-#    #    X = repeat(X, 1, 1, 1, 2)
-#    #    sitp = interpolate((1:mesh.fnw, 1:nx, 1:ny, 1:2), Sigma, Gridded(Linear()))
-#    #    vitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:2), V, Gridded(Linear()))
-#    #    xitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:2), X, Gridded(Linear()))
-#    #end
-#
-#    BZ_in = BZ
-#    kmesh = cfg.k_mesh
-#    if dim == 2
-#        kmesh = kmesh[1:end-1]
-#        BZ_in = BZ_in[1:end-1, 1:end-1]
-#    end
-#
-#    # Centers points correctly, so they go from (-pi,pi) to (pi,pi) instead of the current (0,0) to (2pi,2pi). Important for saving
-#    for i in 1:mesh.fnw
-#        Sigma[i, :, :, :] .= fftshift(Sigma[i, :, :, :])
-#    end
-#    for i in 1:mesh.bnw
-#        V[i, :, :, :] .= fftshift(V[i, :, :, :])
-#        X[i, :, :, :] .= fftshift(X[i, :, :, :])
-#    end
-#
-#    save_field!(outdir * prefix * "_self_energy." * filetype, Sigma, BZ_in, kmesh, imag.(iw))
-#    save_field!(outdir * prefix * "_vertex." * filetype, V, BZ_in, kmesh, imag.(iv))
-#    save_field!(outdir * prefix * "_chi." * filetype, X, BZ_in, kmesh, imag.(iv))
-#end
-#
-#function solve!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
-#    max_iters = 30
-#    if !scf
-#        max_iters = 1
-#    end
-#
-#    G .= 1 ./ (iw .- ek .+ mu .- Sigma)
-#    G_rt .= kw_to_rtau(G, 'F', mesh)
-#    X_rt .= G_rt .* reverse(G_rt, dims=1)
-#    X .= rtau_to_kw(X_rt, 'B', mesh)
-#
-#    max_val = maximum(abs, X) * U
-#    if (max_val >= 1)
-#        println("U*X = $(max_val)")
-#        if scf
-#            U_renormalization(U, mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
-#            println("New U = $U")
-#        else
-#            println("Diverging Interaction, cannot be handled without scf U renormalization. Exiting")
-#            exit(1)
-#        end
-#    end
-#
-#    for _ in 1:max_iters
-#        sigma_old = copy(Sigma)
-#        loop!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V, U)
-#        scf_check = sum(abs.(Sigma-sigma_old))/sum(abs.(Sigma))
-#        println("Max(X) = $(maximum(abs.(X))), err = $(scf_check)")
-#        if scf_check < scf_tol
-#            println("SCF Condition met")
-#            break
-#        end
-#    end
-#end
-#
-#function loop!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V, U)
-#    G_old = copy(G)
-#
-#    V .= (3/2) .* (U^2 .* X ./ (1 .- U .* X)) .- (1/2) .* (U^2 .* X ./ (1 .+ U .* X))
-#    #V .= (U^2 .* X ./ (1 .- U .* X)) .+ (U^3 .* X.^2 ./ (1 .+ U^2 .* X.^2))
-#
-#    X_rt .= kw_to_rtau(V, 'B', mesh)
-#
-#    G_rt .= X_rt .* G_rt
-#
-#    Sigma .= rtau_to_kw(G_rt, 'F', mesh)
-#
-#    n = calc_electron_density(G, mesh)
-#    mu = mu_calc(iw, ek, n, mesh)
-#
-#    G .= 1 ./ (iw .- ek .+ mu .- Sigma)
-#    G .= mix * G .+ (1 - mix) * G_old
-#
-#    G_rt .= kw_to_rtau(G, 'F', mesh)
-#
-#    X_rt .= G_rt .* reverse(G_rt, dims=1)
-#
-#    X .= rtau_to_kw(X_rt, 'B', mesh)
-#end
-#
-#function U_renormalization!(U, mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V)
-#    """ Loop for renormalizing U if Stoner enhancement U*max{chi0} >= 1. """
-#    println("WARNING: U is too large and the spin susceptibility denominator will diverge/turn unphysical!")
-#    println("Initiate U renormalization loop.")
-#
-#    # save old U for later
-#    U_old::Float64 = U
-#    # renormalization loop may run infinitely! Insert break condition after U_it_max steps
-#    U_it::Int64 = 0
-#    U_maxiter = 50
-#
-#    println("Iter \t U \t U_old \t max_Chi")
-#    while U_old * maximum(abs, X) >= 1.0
-#        U_it += 1
-#
-#        # remormalize U such that U*chi0 < 1
-#        U = U / (maximum(abs, X) * U + 0.01)
-#
-#        # perform one shot FLEX loop
-#        loop!(mesh, iw, ek, Sigma, G, G_rt, X, X_rt, V, U)
-#        println(U_it, '\t', round(U, digits = 2), "\t ", U_old, '\t', maximum(abs, X))
-#
-#        # reset U
-#        U = U_old
-#
-#        # break condition for too many steps
-#        if U_it == U_maxiter
-#            println("U renormalization reached maximum iterations")
-#            break
-#        end
-#    end
-#    println("Leaving U renormalization...")
-#end
-#
-#
 function fill_energy_mesh(band)
     ek = Array{Float32}(undef, 1, nx, ny, nz)
     for i in 1:nx, j in 1:ny, k in 1:nz
@@ -221,40 +77,7 @@ function fill_energy_mesh(band)
     end
     return ek
 end
-#
-#function get_number_of_electrons(G)
-#    Ne = 0.0
-#    for i in 1:nx, j in 1:ny, k in 1:nz
-#        Gsum = sum(real.(G[:, i, j, k]))
-#        Ne += 1 + 2 * Gsum / beta
-#    end
-#    return round(Ne / nk, digits=6)
-#end
-#
-#function calc_electron_density(G, mesh)::Float64
-#    """ Calculate electron density from Green function """
-#    gio = dropdims(sum(G,dims=(2,3,4)),dims=(2,3,4))/nk
-#
-#    g_l = fit(mesh.IR_basis_set.smpl_wn_f,gio, dim=1)
-#    g_tau0 = dot(mesh.IR_basis_set.basis_f.u(0), g_l)
-#
-#    n  = 1.0 + real(g_tau0)
-#    n  = 2.0 * n #for spin
-#    return n
-#end
-#
-#function mu_calc(iw, ek, n, mesh)::Float64
-#    """ Find chemical potential for a given filling n0 via brent's root finding algorithm """
-#    f = μ -> begin
-#        G = 1.0 ./ (iw .- ek .+ μ)  # shape: (fnw, nx, ny, nz)
-#        calc_electron_density(G, mesh) - n
-#    end
-#
-#    mu = find_zero(f, (1.1*minimum(ek), 1.1*maximum(ek)), Roots.Brent()) 
-#    return mu
-#end
-#
-#
+
 function get_kvec(ix, iy, iz, nx, ny, nz)
     kvec = [ix / (nx) - 0.0, iy / (ny) - 0.0, iz / (nz) - 0.0] 
     if dim < 3
@@ -265,62 +88,17 @@ function get_kvec(ix, iy, iz, nx, ny, nz)
     kvec = BZ * kvec
     return kvec
 end
-#
-#
-#function get_qvec(ix, iy, iz, nx, ny, nz)
-#    kvec = [ix / nx - 0.5, iy / ny - 0.5, iz / nz - 0.5] 
-#    if dim < 3
-#        kvec[3] = 0.0
-#    elseif dim < 2
-#        kvec[2] = 0.0
-#    end
-#    kvec = BZ * kvec
-#    return kvec
-#end
-#
-#
-#function save(iw, arr, filename)
-#    
-#    printv("Saving")
-#    fnw = length(iw)
-#
-#    # Determine output header and formatter
-#    header, fmt = begin
-#        if dim == 3
-#            ("# x y z w Re(f) Im(f)\n", (k, iw, val) -> @sprintf("%f %f %f %f %f %f\n", k[1], k[2], k[3], iw.im, real(val), imag(val)))
-#        elseif dim == 2
-#            ("# x y w Re(f) Im(f)\n", (k, iw, val) -> @sprintf("%f %f %f %f %f\n", k[1], k[2], iw.im, real(val), imag(val)))
-#        elseif dim == 1
-#            ("# x w Re(f) Im(f)\n", (k, iw, val) -> @sprintf("%f %f %f %f\n", k[1], iw.im, real(val), imag(val)))
-#        else
-#            error("Invalid dimension: $dim")
-#        end
-#    end
-#
-#    # Write data
-#    open(filename, "w") do f
-#        print(f, header)
-#        for ix in 1:nqx, iy in 1:nqy, iz in 1:nqz, l in 1:fnw
-#            kvec = get_qvec(ix - 1, iy - 1, iz - 1, nqx, nqy, nqz)
-#            w = iw[l]
-#            val = arr[l, ix, iy, iz]
-#            print(f, fmt(kvec, w, val))
-#        end
-#    end
-#    println("Saved to $filename")
-#end
-
-
 
 """
 Solver struct to calculate the FLEX loop self-consistently.
-After initializing the Solver by `solver = FLEXSolver(mesh, beta, U, n, sigma_init, sfc_tol, maxiter, U_maxiter, mix)'
+After initializing the Solver by `solver = ManyBodySolver(mesh, beta, U, n, sigma_init, sfc_tol, maxiter, U_maxiter, mix)'
 it can be run by `solve(solver)`.
  """
-mutable struct FLEXSolver
+mutable struct ManyBodySolver
     mesh     ::Mesh
     beta     ::Float64
     U        ::Float64
+    UX       ::Float64
     n        ::Float64
     sfc_tol  ::Float64
     maxiter  ::Int64
@@ -336,10 +114,12 @@ mutable struct FLEXSolver
     iw       ::Array{ComplexF32,4}
     iv       ::Array{ComplexF32,4}
     ek       ::Array{Float32,4}
+    dim      ::Int64
+    nk       ::Int64
 end
 
 """Initiarize function"""
-function make_FLEXSolver(
+function make_ManyBodySolver(
         mesh      ::Mesh,
         beta      ::Float64,
         ek        ::Array{Float32, 4},
@@ -351,7 +131,7 @@ function make_FLEXSolver(
         U_maxiter ::Int64  =10,
         mix       ::Float64=0.2,
         verbose   ::Bool   =true
-        )::FLEXSolver
+        )::ManyBodySolver
     
         n::Float64 = 0.0
     
@@ -364,32 +144,45 @@ function make_FLEXSolver(
         iw, iv = get_iw_iv(mesh)
         iw = reshape(iw, mesh.fnw, 1, 1, 1)
         iv = reshape(iv, mesh.bnw, 1, 1, 1)
-        solver = FLEXSolver(mesh, beta, U, n, sfc_tol, maxiter, U_maxiter, mix, verbose, mu, gkio, grit, ckio, V, sigma, iw, iv, ek)
+        solver = ManyBodySolver(mesh, beta, U, 0.0, n, sfc_tol, maxiter, U_maxiter, mix, verbose, mu, gkio, grit, ckio, V, sigma, iw, iv, ek, dim, nk)
         solver.n = calc_electron_density(solver, mu)
     
         solver.mu = mu_calc(solver)
-        gkio_calc(solver,Float32(solver.mu))
-        grit_calc(solver)
-        ckio_calc(solver)
+        solver.gkio .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.sigma)
+        solver.grit .= kw_to_rtau(solver.gkio, 'F', solver.mesh)
+        solver.ckio .= rtau_to_kw(solver.grit .* reverse(solver.grit, dims=1), 'B', solver.mesh)
+        solver.UX = solver.U * maximum(abs, solver.ckio)
+
         return solver
 end
 
 #%%%%%%%%%%% Loop solving instance
-function solve(solver::FLEXSolver)
-    """ FLEXSolver.solve() executes FLEX loop until convergence """
+function solve!(solver::ManyBodySolver, comm)
+    """ ManyBodySolver.solve() executes FLEX loop until convergence """
     # check whether U < U_crit! Otherwise, U needs to be renormalized.
-    if maximum(abs, solver.ckio) * solver.U >= 1 && scf == true
-        U_renormalization(solver)
+    old_U = solver.U
+    #println("U, X, = $(solver.U), $(maximum(abs, solver.ckio))")
+    if solver.UX >= 1
+        println("U * max(X) = $(solver.UX). U Renormalization Starting")
+        U_renormalization(solver, comm)
         println("New U = $(solver.U)")
+        if (solver.U / old_U < 0.9)
+            println("-----------------------------------------------")
+            println("U is too large! Paramagnetic Phase Unavoidable!")
+            println("-----------------------------------------------")
+            exit()
+        end
     end
             
+    println("Beginning Self-Consistent Loop")
+    if solver.verbose println("---------------\nIter  | Error\n---------------") end
     # perform loop until convergence is reached:
+    sigma_old = copy(solver.sigma)
+    #println("U, X, = $(solver.U), $(maximum(abs, solver.ckio))")
     for it in 1:solver.maxiter
-        sigma_old = copy(solver.sigma)
-        loop(solver)
-        println("max ckio: $(maximum(abs, solver.ckio))")
-        println("U: $(solver.U)")
-        if maximum(abs, solver.ckio) * solver.U >= 1 
+        #println("U, X, = $(solver.U), $(maximum(abs, solver.ckio))")
+        loop!(solver)
+        if solver.UX >= 1 
             println("Divergence in interaction found. Paramagnetic phase entered. Code exiting")
             exit()
         end
@@ -404,28 +197,112 @@ function solve(solver::FLEXSolver)
             println("FLEX loop converged at desired accuracy")
             break
         end
+        sigma_old .= copy(solver.sigma)
     end
+    solver.grit .= kw_to_rtau(solver.gkio, 'F', solver.mesh)
+    solver.ckio .= rtau_to_kw(solver.grit .* reverse(solver.grit, dims=1), 'B', solver.mesh)
 end
     
-function loop(solver::FLEXSolver)
+function FLEX_loop!(solver::ManyBodySolver, comm)
     """ FLEX loop """
     gkio_old = copy(solver.gkio)
     
     V_calc(solver)
-    sigma_calc(solver)
+    @inbounds @simd for i in eachindex(solver.V)
+        solver.grit[i] = solver.V[i] * solver.grit[i]
+    end
+    rtau_to_kw!(solver.sigma, solver.grit, 'F', solver.mesh)
         
+    #local_sum = sum(real, solver.gkio)
+    #global_sum = MPI.Allreduce(local_sum, +, comm)
+    #total_size = solver.nk * solver.mesh.fnw
+    #solver.mu = Float32(global_sum / total_size)
     solver.mu = mu_calc(solver)
-    gkio_calc(solver,Float32(solver.mu))
+    solver.gkio .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.sigma)
     
-    solver.gkio .= solver.mix*solver.gkio .+ (1-solver.mix)*gkio_old
+    @inbounds @simd for i in eachindex(solver.gkio)
+        solver.gkio[i] = solver.mix*solver.gkio[i] + (1-solver.mix)*gkio_old[i]
+    end
         
-    grit_calc(solver)
-    ckio_calc(solver)
+    kw_to_rtau!(solver.grit, solver.gkio, 'F', solver.mesh)        
+    rtau_to_kw!(solver.ckio, solver.grit .* reverse(solver.grit, dims=1), 'B', solver.mesh)        
+end
+
+function DMFT_Sigma(solver::ManyBodySolver)
+    proj = ones(ComplexF32, nx, ny, nz)
+    g_loc = project_kernel(proj, solver.gkio)
+    gt = wn_to_tau(solver.mesh, Fermionic(), g_loc)
+    sigma_t = solver.U^2 * gt.^3
+    sigma_w = tau_to_wn(solver.mesh, Fermionic(), sigma_t)
+    return reshape(sigma_w, :, 1, 1, 1)
+end
+
+function FLEX_local_Sigma(solver::ManyBodySolver)
+    proj = ones(ComplexF32, nx, ny, nz)
+    g_loc = project_kernel(proj, solver.gkio)
+    gt = wn_to_tau(solver.mesh, Fermionic(), g_loc)
+    xt = gt .* reverse(gt)
+    xw = tau_to_wn(solver.mesh, Bosonic(), xt)
+    vw = similar(xw)
+    V_FLEX!(solver.U, xw, vw)
+    vt = wn_to_tau(solver.mesh, Bosonic(), vw)
+    sigmat = vt .* gt
+    sigmaw = tau_to_wn(solver.mesh, Fermionic(), sigmat)
+    return sigmaw
+end
+
+function FLEX_nonlocal_Sigma(solver::ManyBodySolver, local_sigma)
+    return solver.sigma .- reshape(local_sigma, :, 1, 1, 1)
+end
+
+function FLEX_sigma!(solver::ManyBodySolver)
+    # G Creation
+    kw_to_rtau!(solver.grit, solver.gkio, 'F', solver.mesh)
+    rtau_to_kw!(solver.ckio, solver.grit .* reverse(solver.grit, dims=1), 'B', solver.mesh)
+    solver.UX = solver.U * maximum(abs, solver.ckio)
+    V_calc(solver)
+    rtau_to_kw!(solver.sigma, solver.V .* solver.gkio, 'F', solver.mesh)
+end
+
+
+function combine_sigmas!(solver::ManyBodySolver, sigma_local)
+    solver.sigma .= solver.sigma .+ reshape(sigma_local, :, 1, 1, 1)
+end
+
+
+function DFMT_FLEX!(solver::ManyBodySolver)
+    # Loop 1
+    #println("1) U, X, = $(solver.U), $(maximum(abs, solver.ckio))")
+    sigma_w = DMFT_Sigma(solver)
+    combine_sigmas!(solver, sigma_w)
+    solver.mu = mu_calc(solver)
+    solver.gkio .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.sigma)
+    #println("2) U, X, = $(solver.U), $(maximum(abs, solver.ckio))")
+
+    FLEX_sigma!(solver)
+
+    # Loop 2
+    sigma_w .= FLEX_local_Sigma(solver)
+    solver.sigma .= FLEX_nonlocal_Sigma(solver, sigma_w)
+    combine_sigmas!(solver, sigma_w)
+    solver.mu = mu_calc(solver)
+    solver.gkio .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.sigma)
+end
+
+function loop!(solver::ManyBodySolver)
+    if interaction == "FLEX"
+        FLEX_loop!(solver, 1)
+    elseif interaction == "DMFT+FLEX" || interaction == "FLEX+DMFT"
+        DFMT_FLEX!(solver)
+    else
+        println("Interaction $interaction not available")
+        exit()
+    end
 end
 
 
 #%%%%%%%%%%% U renormalization loop instance
-function U_renormalization(solver::FLEXSolver)
+function U_renormalization(solver::ManyBodySolver, comm)
     """ Loop for renormalizing U if Stoner enhancement U*max{chi0} >= 1. """
     println("WARNING: U is too large and the spin susceptibility denominator will diverge/turn unphysical!")
     println("Initiate U renormalization loop.")
@@ -434,77 +311,68 @@ function U_renormalization(solver::FLEXSolver)
     U_old::Float64 = solver.U
     # renormalization loop may run infinitely! Insert break condition after U_it_max steps
     U_it::Int64 = 0
+
+    UX = solver.UX 
+    prev_U = 0.0
+    U_diff = 1.0
     
-    while U_old*maximum(abs, solver.ckio) >= 1.0
+    while UX >= 1.0
         U_it += 1
         # reset U
-        solver.U = U_old
+        solver.U = U_old / (solver.UX + 0.01)
+        #solver.U = U_old
         
         # remormalize U such that U*chi0 < 1
-        solver.U = solver.U / (maximum(abs, solver.ckio)*solver.U + 0.01)
         println(U_it, '\t', solver.U, '\t', U_old)
         
         # perform one shot FLEX loop
-        loop(solver)
+        loop!(solver)
+        solver.UX *= U_old / solver.U
         
         
         # break condition for too many steps
-        if U_it == solver.U_maxiter
-            println("U renormalization reached breaking point")
+        if U_it == solver.U_maxiter || U_diff < 1e-4
+            println("U_diff = $U_diff")
+            println("Iterations = $U_it")
+            println("Maximum Iterations = $(solver.U_maxiter)")
             break
         end
+        U_diff = abs(solver.U - prev_U)
+        prev_U = solver.U
     end
+    solver.UX = solver.U * maximum(abs, solver.ckio)
     println("Leaving U renormalization...")
 end
 
-#%%%%%%%%%%% Calculation steps
-function gkio_calc(solver::FLEXSolver, mu::Float32)
-    solver.gkio .= 1.0 ./ (solver.iw .- (solver.ek .- mu) .- solver.sigma)
-    """ calculate Green function G(iw,k) """
+function V_FLEX!(U, ckio, out)
+    U2 = U^2
+    @inbounds @simd for i in eachindex(ckio)
+        x = ckio[i]
+        term1 = (1.5*U^2) * x / (1 - U*x)
+        term2 = (0.5*U^2) * x / (1 + U*x)
+        out[i] = term1 + term2 - U2 * x
+    end
 end
 
-function grit_calc(solver::FLEXSolver)
-    """ Calculate real space Green function G(tau,r) [for calculating chi0 and sigma] """
-    solver.grit .= kw_to_rtau(solver.gkio, 'F', solver.mesh)
-end
-
-function ckio_calc(solver::FLEXSolver)
-    """ Calculate irreducible susciptibility chi0(iv,q) """
-    solver.ckio .= rtau_to_kw(solver.grit .* reverse(solver.grit, dims=1), 'B', solver.mesh)
-end
-
-function V_FLEX(U, ckio)
-    Vkio = (1.5*U^2) .* ckio ./ (1 .- U .* ckio) .+ (0.5*U^2) .* ckio ./ (1 .+ U .* ckio) .- (U^2) .* ckio
-    return Vkio
-end
-
-function V_calc(solver::FLEXSolver)
-    """ Calculate interaction V(tau,r) from RPA-like spin and charge susceptibility for calculating sigma """
-    # check whether U is too large and give warning
+function V_calc(solver::ManyBodySolver)
+    #println("U, X, = $(solver.U), $(maximum(abs, solver.ckio))")
     maxval = maximum(abs.(solver.ckio))*solver.U
     if maxval >= 1
         error("U*max(chi0) = $(maxval) >= 1! Paramagnetic phase is left and calculations will turn unstable!")
     end
 
-    solver.ckio .= V_FLEX(solver.U, solver.ckio)
+    V_FLEX!(solver.U, solver.ckio, solver.ckio)
     # Constant Hartree Term V ~ U needs to be treated extra, since they cannot be modeled by the IR basis.
     # In the single-band case, the Hartree term can be absorbed into the chemical potential.
 
-    solver.V .= kw_to_rtau(solver.ckio, 'B', solver.mesh)
+    #solver.V .= kw_to_rtau(solver.ckio, 'B', solver.mesh)
+    kw_to_rtau!(solver.V, solver.ckio, 'B', solver.mesh)
 end
-
-function sigma_calc(solver::FLEXSolver)
-    """ Calculate self-energy Sigma(iw,k) """
-    solver.grit = solver.V .* solver.grit
-
-    solver.sigma .= rtau_to_kw(solver.grit, 'F', solver.mesh)
-end
-
 
 #%%%%%%%%%%% Setting chemical potential mu
-function calc_electron_density(solver::FLEXSolver,mu::Float64)::Float64
+function calc_electron_density(solver::ManyBodySolver,mu::Float64)::Float64
     """ Calculate electron density from Green function """
-    gkio_calc(solver,Float32(mu))
+    solver.gkio .= 1.0 ./ (solver.iw .- (solver.ek .- mu) .- solver.sigma)
     gio = dropdims(sum(solver.gkio,dims=(2,3)),dims=(2,3))/solver.mesh.nk
 
     g_l = fit(solver.mesh.IR_basis_set.smpl_wn_f,gio, dim=1)
@@ -514,7 +382,7 @@ function calc_electron_density(solver::FLEXSolver,mu::Float64)::Float64
     n  = 2.0 * n #for spin
 end
 
-function mu_calc(solver::FLEXSolver)::Float64
+function mu_calc(solver::ManyBodySolver)::Float64
     n = Float64(solver.n)
     """ Find chemical potential for a given filling n0 via brent's root finding algorithm """
     f  = x -> calc_electron_density(solver,Float64(x)) - n
@@ -522,24 +390,45 @@ function mu_calc(solver::FLEXSolver)::Float64
     mu = find_zero(f, (3*Float64(minimum(solver.ek)), 3*Float64(maximum(solver.ek))), Roots.Brent()) 
     return mu
 end
+
+function get_local_k_slice(rank, nprocs, total_kz)
+    base = div(total_kz, nprocs)
+    rem = mod(total_kz, nprocs)
+
+    start_kz = rank * base + min(rank, rem) + 1
+    end_kz = start_kz + base - 1
+    if rank < rem
+        end_kz += 1
+    end
+    return start_kz:end_kz
+end
 # initialize calculation
 
 function main()
+
+    #mpi_test()
+
+    comm = 1
+
     band = Bands()
     ek = fill_energy_mesh(band)
     mesh = IR_Mesh(ek)
+
     sigma_init = zeros(ComplexF32,(mesh.fnw, nk1, nk2, nk3))
     verbose = cfg.verbosity == "high" 
-    solver = make_FLEXSolver(mesh, beta, ek, U, mu, sigma_init, sfc_tol=sfc_tol, maxiter=maxiter, U_maxiter=U_maxiter, mix=mix, verbose=verbose)
+    solver = make_ManyBodySolver(mesh, beta, ek, U, mu, sigma_init, sfc_tol=sfc_tol, maxiter=maxiter, U_maxiter=U_maxiter, mix=mix, verbose=verbose)
 
     # perform FLEX loop
-    solve(solver)
+    if scf
+        solve!(solver, comm)
+    end
     println("New mu=$(solver.mu)")
 
     solver.grit = Array{ComplexF32,4}(undef, 0, 0, 0, 0)
     solver.V = Array{ComplexF32,4}(undef, 0, 0, 0, 0)
+    V = similar(solver.ckio)
 
-    V = V_FLEX(solver.U, solver.ckio)
+    V_FLEX!(solver.U, solver.ckio, V)
 
     println("Max Self-Energy: $(maximum(abs.(solver.sigma)))")
     println("Min Self-Energy: $(minimum(abs.(solver.sigma)))")
@@ -579,5 +468,91 @@ function main()
     save_field!(outdir * prefix * "_self_energy." * filetype, solver.sigma, BZ_in, kmesh, imag.(solver.iw))
     save_field!(outdir * prefix * "_vertex." * filetype, V, BZ_in, kmesh, imag.(solver.iv))
     save_field!(outdir * prefix * "_chi." * filetype, solver.ckio, BZ_in, kmesh, imag.(solver.iv))
+
 end
+
+function mpi_test()
+    MPI.Init()
+    comm = MPI.COMM_WORLD
+
+    rank = MPI.Comm_rank(comm)
+    nprocs = MPI.Comm_size(comm)
+    println("comm = $comm rank = $rank nprocs = $nprocs")
+
+    band = Bands()
+    ek = fill_energy_mesh(band)
+    @show size(ek)
+    mesh = IR_Mesh(ek)
+    iw, iv = get_iw_iv(mesh)
+    @show size(iw)
+
+    dims = (nk1, nk2, nk3)
+    pen = Pencil(dims, comm)
+    transform = Transforms.BFFT()
+    farg = Val(false)
+    plan_fnw = PencilFFTPlan(pen, transform, extra_dims = (mesh.fnw,), permute_dims = farg)
+    plan_bnw = PencilFFTPlan(pen, transform, extra_dims = (mesh.bnw,), permute_dims = farg)
+    plan_fntau = PencilFFTPlan(pen, transform, extra_dims = (mesh.fntau,), permute_dims = farg)
+    plan_bntau = PencilFFTPlan(pen, transform, extra_dims = (mesh.bntau,), permute_dims = farg)
+    @show size(plan_fnw)
+    @show size(plan_bnw)
+    @show size(plan_fntau)
+    @show size(plan_bntau)
+
+    smpl_tau_F = mesh.IR_basis_set.smpl_tau_f
+    smpl_wn_F = mesh.IR_basis_set.smpl_wn_f
+    smpl_tau_B = mesh.IR_basis_set.smpl_tau_b
+    smpl_wn_B = mesh.IR_basis_set.smpl_wn_b
+    G = PencilFFTs.allocate_input(plan_fnw)
+    temp = PencilFFTs.allocate_output(plan_fntau)
+    temp_frt = PencilFFTs.allocate_input(plan_fntau)
+    temp_brw = PencilFFTs.allocate_input(plan_bnw)
+    G_rt = PencilFFTs.allocate_output(plan_fntau)
+    G1_rt = PencilFFTs.allocate_input(plan_fntau)
+    X_rt = PencilFFTs.allocate_input(plan_bntau)
+    X = PencilFFTs.allocate_output(plan_bnw)
+    @show size(G)
+    @show size(temp_frt)
+    @show size(temp_brw)
+    @show size(G_rt)
+    @show size(X_rt)
+    @show size(X)
+
+    G .= 1 ./ (reshape(iw, 1, 1, 1, :) .- dropdims(ek; dims=1) .+ mu)
+    G_rw = plan_fnw * G
+    u = plan_fnw / G_rw
+    println("done")
+    println("G->l")
+    obj_l_F = fit(smpl_wn_F, parent(G), dim=4)
+    @show size(obj_l_F)
+    println("l->t")
+    evaluate!(temp_frt, smpl_tau_F, obj_l_F, dim=4)
+    println("kt->rt")
+    mul!(G_rt, plan_fntau, temp_frt)
+    #temp = similar(temp_frt)
+    #G1_rt .= G_rt
+    #mul!(temp, adjoint(plan_fntau), G1_rt)  # now w ≈ u
+    #ldiv!(temp, plan_fntau, G1_rt)  # now w ≈ u
+    println("rt->rt")
+    X_rt = G_rt .* reverse(G_rt, dims=(4))
+    println("rt->l")
+    obj_l_B = fit(smpl_tau_B, parent(X_rt), dim=4)
+    @show size(obj_l_B)
+    println("l->rw")
+    evaluate!(temp_brw, smpl_wn_B, obj_l_B, dim=4)
+    #println("rw->kw")
+    #temp = plan_bnw / temp_brw
+    println("rw->kw")
+    ldiv!(X, plan_bnw, temp_brw)  # now w ≈ u
+    @show size(X)
+
+    println("Max X: $(maximum(abs, X))")
+
+    println("Rank $rank: completed test_flex")
+
+    MPI.Barrier(comm)
+    MPI.Finalize()
+    return
+end
+
 end # module

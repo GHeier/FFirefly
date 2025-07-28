@@ -18,6 +18,7 @@ beta = 1 / cfg.Temperature
 export Mesh, get_iw_iv
 export tau_to_wn, wn_to_tau, k_to_r, r_to_k, kw_to_rtau, rtau_to_kw, IR_Mesh
 export k_to_r!, r_to_k!, kw_to_rtau!, rtau_to_kw!, IR_Mesh
+export prepare_ir, project_kernel
 
 """
 Holding struct for k-mesh and sparsely sampled imaginary time 'tau' / Matsubara frequency 'iw_n' grids.
@@ -26,6 +27,7 @@ Additionally we defines the Fourier transform routines 'r <-> k'  and 'tau <-> l
 struct Mesh
     nk1         ::Int64
     nk2         ::Int64
+    nk3         ::Int64
     nk          ::Int64
     iw0_f       ::Int64
     iw0_b       ::Int64
@@ -35,6 +37,11 @@ struct Mesh
     bntau       ::Int64
     IR_basis_set::FiniteTempBasisSet
     dimension   ::Int64
+    smpl_tau_F
+    smpl_wn_F
+    smpl_tau_B
+    smpl_wn_B
+    obj_l
 end
 
 """Initialize function"""
@@ -68,8 +75,11 @@ function Mesh(
     bnw   = length(IR_basis_set.smpl_wn_b.sampling_points)
     bntau = length(IR_basis_set.smpl_tau_b.sampling_points)
 
-    # Return
-    Mesh(nk1, nk2, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension)
+
+    temp = Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, 0, 0, 0, 0, 0)
+    smpl_tau_F, smpl_wn_F, obj_l = prepare_ir(temp, Fermionic())
+    smpl_tau_B, smpl_wn_B, obj_l = prepare_ir(temp, Bosonic())
+    return Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, smpl_tau_F, smpl_wn_F, smpl_tau_B, smpl_wn_B, obj_l)
 end
 
 function smpl_obj(mesh::Mesh, statistics::SparseIR.Statistics)
@@ -108,29 +118,24 @@ function wn_to_tau(mesh::Mesh, statistics::Statistics, obj_wn)
     return obj_tau
 end
 
-function tau_to_wn!(obj_wn, statistics::T, mesh::Mesh, obj_tau) where {T <: SparseIR.Statistics}
-    """ Fourier transform from tau to iw_n via IR basis """
-    smpl_tau, smpl_wn = smpl_obj(mesh, statistics)
-
-    obj_l = fit(smpl_tau, obj_tau, dim=1)
-    obj_wn .= evaluate(smpl_wn, obj_l, dim=1)
+function tau_to_wn!(out, obj_tau, particle, mesh)
+    if particle == 'F'
+        fit!(mesh.obj_l, mesh.smpl_tau_F, obj_tau, dim=1)
+        evaluate!(out, mesh.smpl_wn_F, mesh.obj_l, dim=1)
+    else
+        fit!(mesh.obj_l, mesh.smpl_tau_B, obj_tau, dim=1)
+        evaluate!(out, mesh.smpl_wn_B, mesh.obj_l, dim=1)
+    end
 end
 
-function wn_to_tau!(obj_tau, statistics::Statistics, mesh::Mesh, obj_wn)
-    smpl_tau, smpl_wn = smpl_obj(mesh, statistics)
-
-    obj_l = fit(smpl_wn, obj_wn, dim=1)  # This allocates and must be temporary
-
-    # Truncation (in-place) on obj_l
-    max_l = maximum(abs.(obj_l))
-    for i in eachindex(obj_l)
-        if abs(obj_l[i]) < 1e-5 * max_l
-            obj_l[i] = 0
-        end
+function wn_to_tau!(out, obj_wn, particle, mesh)
+    if particle == 'F'
+        fit!(mesh.obj_l, mesh.smpl_wn_F, obj_wn, dim=1)
+        evaluate!(out, mesh.smpl_tau_F, mesh.obj_l, dim=1)
+    else
+        fit!(mesh.obj_l, mesh.smpl_wn_B, obj_wn, dim=1)
+        evaluate!(out, mesh.smpl_tau_B, mesh.obj_l, dim=1)
     end
-
-    # Evaluate directly into preallocated output array
-    obj_tau .= evaluate(smpl_tau, obj_l, dim=1)
 end
 
 function tau_to_wn_c(mesh::Mesh, statistics::Statistics, obj_tau)
@@ -169,30 +174,23 @@ function r_to_k(obj_r, mesh)
     return obj_k / mesh.nk
 end
 
-function k_to_r!(obj_r::AbstractArray, obj_k::AbstractArray, mesh::Mesh)
-    obj_r .= fft(obj_k, ntuple(i -> i+1, mesh.dimension))
+function k_to_r!(obj::AbstractArray, dim::Int64)
+    fft!(obj, ntuple(i -> i+1, dim))
 end
 
-function r_to_k!(obj_k, obj_r, mesh)
-    obj_k .= ifft(obj_r, ntuple(i -> i+1, mesh.dimension)) ./ mesh.nk
+function r_to_k!(obj::AbstractArray, dim::Int64, nk::Int64)
+    ifft!(obj, ntuple(i -> i+1, dim))
+    obj ./= nk
 end
 
-function kw_to_rtau!(out, obj_k, particle_type::Char, mesh)
-    if particle_type == 'F'
-        wn_to_tau!(out, Fermionic(), mesh, obj_k)  # Also needs to be in-place
-    elseif particle_type == 'B'
-        wn_to_tau!(out, Bosonic(), mesh, obj_k)
-    end
-    k_to_r!(out, out, mesh)  # This must be an in-place version
+function kw_to_rtau!(out, obj_k, particle, mesh)
+    wn_to_tau!(out, obj_k, particle, mesh)
+    k_to_r!(out, dim)
 end
 
-function rtau_to_kw!(out, obj_r, particle_type, mesh)
-    if particle_type == 'F'
-        tau_to_wn!(out, Fermionic(), mesh, obj_r)  # Also needs to be in-place
-    elseif particle_type == 'B'
-        tau_to_wn!(out, Bosonic(), mesh, obj_r)  # Also needs to be in-place
-    end
-    r_to_k!(out, out, mesh)
+function rtau_to_kw!(out, obj_r, particle, mesh)
+    tau_to_wn!(out, obj_r, particle, mesh)
+    r_to_k!(out, dim, mesh.nk)
 end
 
 function kw_to_rtau(obj_k, particle_type, mesh)
@@ -264,5 +262,24 @@ function get_iw_iv(mesh)
     return iw, iv 
 end
 
+
+function prepare_ir(mesh::Mesh, stats)
+    smpl_tau, smpl_wn = smpl_obj(mesh, stats)
+    lshape = (mesh.fnw, mesh.nk1, mesh.nk2, mesh.nk3)
+    obj_l = zeros(ComplexF32, lshape)
+    return smpl_tau, smpl_wn, obj_l
+end
+
+function project_kernel(proj::Array{T,3}, A::Array{T,4}) where T
+    @assert size(A)[2:4] == size(proj)
+    (nx, ny, nz) = size(proj)
+    nk = nx*ny*nz
+    wdim = size(A, 1)
+    A_w = zeros(T, wdim)
+    for w in 1:wdim
+        A_w[w] = sum(proj .* view(A, w, :, :, :) .* proj)
+    end
+    return A_w ./ nk
+end
 
 end

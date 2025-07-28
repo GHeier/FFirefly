@@ -24,7 +24,7 @@
 #include "algorithms/tests/all.hpp"
 
 #define MAX_TOKENS 10 // Max number of substrings
-#define MAX_LENGTH 50 // Max length of each substring
+#define MAX_LENGTH 80 // Max length of each substring
 
 // Global category calls
 void DOS() {
@@ -109,16 +109,21 @@ int main() {
     // Handling '+' separated categories for sequential runs
     char str_copy[MAX_LENGTH];
     char meth_copy[MAX_LENGTH];
+    char calc_copy[MAX_LENGTH];
     strncpy(str_copy, c_category, MAX_LENGTH); // Copy string safely
     strncpy(meth_copy, c_method, MAX_LENGTH); // Copy string safely
+    strncpy(calc_copy, c_calculation, MAX_LENGTH); // Copy string safely
     char *tokens[MAX_TOKENS];
     char *meth_tokens[MAX_TOKENS];
+    char *calc_tokens[MAX_TOKENS];
     int count = 0;
     int mcount = 0;
+    int ccount = 0;
 
-    char *saveptr1, *saveptr2;
+    char *saveptr1, *saveptr2, *saveptr3;
     char *token = strtok_r(str_copy, "+", &saveptr1);
     char *meth_token = strtok_r(meth_copy, "+", &saveptr2);
+    char *calc_token = strtok_r(calc_copy, "+", &saveptr3);
 
     while (token != NULL && count < MAX_TOKENS) {
         tokens[count] = strdup(token);
@@ -129,6 +134,11 @@ int main() {
         meth_tokens[mcount] = strdup(meth_token);
         mcount++;
         meth_token = strtok_r(NULL, "+", &saveptr2);
+    }
+    while (calc_token != NULL && ccount < MAX_TOKENS) {
+        calc_tokens[ccount] = strdup(calc_token);
+        ccount++;
+        calc_token = strtok_r(NULL, "+", &saveptr3);
     }
 
     print_banner_bottom(start);
@@ -148,6 +158,11 @@ int main() {
             ind = mcount - 1;
         if (c_method[0] != '\0')
             c_method = meth_tokens[ind];
+        ind = i;
+        if (ind >= ccount)
+            ind = ccount - 1;
+        if (c_calculation[0] != '\0')
+            c_calculation = calc_tokens[ind];
         load_cpp_config_wrapper(); 
     /*
         * ADDING A CATEGORY OCCURS BELOW
@@ -174,7 +189,7 @@ int main() {
         else if (!strcmp(category, "test"))
             test();
         else
-            printf("Unknown Category\n");
+            printf("Unknown Category %s\n", category);
     }
 
     // unload_c_config(); // Free memory allocated for global c variables

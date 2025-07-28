@@ -80,7 +80,9 @@ void bcs() {
     float f = f_singlet_integral(T);
     cout << "F-integral value: " << f << endl;
 
+    printf("\n");
     vector<float> proj_eigs = matrix_projections(FS, P, renorm);
+    printf("\n");
 
     //Eigenvector initial_guess(P.size, true);
     //for (int i = 0; i < P.size; i++) {
@@ -90,6 +92,7 @@ void bcs() {
     //}
     Eigenvector *solutions = new Eigenvector[num_eigenvalues_to_save];
     if (method == "power_iteration") {
+        printf("Performing Power Iteration\n");
         Eigenvector top_gap = power_iteration(P);
         printf("Max Power Iteration eigenvalue: %f\n", top_gap.eigenvalue / (1 + renorm));
         printf("Eigenvalue with T included: %f\n", top_gap.eigenvalue / (1 + renorm) * f);
@@ -111,6 +114,7 @@ void bcs() {
         printf("No method provided. Exiting\n");
         exit(0);
     }
+    printf("\n");
     if (FS_only) {
         double calc_Tc = get_Tc_FS_only(solutions[0].eigenvalue);
         printf("Calculated Tc: %.5f\n", calc_Tc);

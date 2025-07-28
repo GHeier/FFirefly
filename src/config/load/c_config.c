@@ -153,7 +153,7 @@ void strip_single_quotes(char *str) {
     str[j] = '\0'; // Null-terminate the modified string
 }
 void set_string(char **dest, const char *src) {
-    int size = 50;
+    int size = 80;
     *dest = (char *)malloc(size * sizeof(char)); // Allocate memory for dest
     strncpy(*dest, src, size - 1);               // Copy up to size-1 characters
     (*dest)[size - 1] = '\0';                    // Ensure null-termination
