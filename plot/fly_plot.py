@@ -2,6 +2,7 @@ from plot import plot_path
 from plot import basic
 from plot import colorplot
 from plot import gap_function
+from plot import plot_bands
 
 import argparse
 import sys
@@ -110,8 +111,7 @@ def sketch(files, plot_type='line', **kwargs):
     elif plot_type == "path":
         fig, ax = plot_path.plot_path(files, **kwargs)
     elif plot_type == "band":
-        pass
-        #fig, ax = plot_path.plot_band(files, **kwargs)
+        fig, ax = plot_bands.load_and_plot(files, **kwargs)
     else:
         raise ValueError(f"Unsupported plot type: {plot_type}")
 
