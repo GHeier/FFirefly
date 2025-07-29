@@ -68,8 +68,22 @@ def parse_arguments():
     parser.add_argument("files", nargs="*", help="Input file(s)")
 
     args, unknown = parser.parse_known_args()
-    if unknown:
-        parser.error(f"Unknown arguments: {' '.join(unknown)}")
+
+    # Parse unknown arguments into kwargs
+    kwargs = {}
+    for arg in unknown:
+        if arg.startswith("--") and "=" in arg:
+            key, value = arg[2:].split("=", 1)
+            try:
+                if "." in value:
+                    value = float(value)
+                else:
+                    value = int(value)
+            except ValueError:
+                pass
+            kwargs[key] = value
+        else:
+            parser.error(f"Unknown argument format: {arg}")
 
     valid_files = []
     for f in args.files:
@@ -78,8 +92,16 @@ def parse_arguments():
         valid_files.append(f)
 
     return {
-        "flags": {"verbose": args.verbose, "output": args.output, "scatter": args.scatter, "line": args.line, "Gap": args.Gap},
+        "flags": {
+            "verbose": args.verbose,
+            "output": args.output,
+            "scatter": args.scatter,
+            "line": args.line,
+            "Gap": args.Gap,
+            "Gap_Surface": args.Gap_Surface,
+        },
         "files": valid_files,
+        "kwargs": kwargs,
     }
 
 
@@ -111,6 +133,7 @@ def sketch(files, plot_type='line', **kwargs):
     elif plot_type == "path":
         fig, ax = plot_path.plot_path(files, **kwargs)
     elif plot_type == "band":
+        print("kwargs: ", kwargs)
         fig, ax = plot_bands.load_and_plot(files, **kwargs)
     else:
         raise ValueError(f"Unsupported plot type: {plot_type}")
@@ -124,9 +147,7 @@ if __name__ == "__main__":
         result = parse_arguments()
         if (not any(result['flags'].values())):
             get_flags_from_files(result)
-        print(result)
-        #print("Flags:", result['flags'])
-        #print("Files:", result['files'])
+        #print(result) # For printing out input. Useful when debugging
         plot_type = ''
         if result["flags"]["line"]:
             plot_type = 'line'
@@ -136,8 +157,7 @@ if __name__ == "__main__":
             plot_type = 'scatter'
         elif result["flags"]["Gap"]:
             pass
-        print("plot_type: ", plot_type)
-        fig, ax = sketch(result["files"], plot_type)
+        fig, ax = sketch(result["files"], plot_type, **result["kwargs"])
         plt.show()
 
     except Exception as e:
