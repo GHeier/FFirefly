@@ -406,7 +406,7 @@ end
 
 function main()
 
-    #mpi_test()
+    mpi_test()
 
     comm = 1
 
@@ -475,9 +475,9 @@ function mpi_test()
     MPI.Init()
     comm = MPI.COMM_WORLD
 
-    rank = MPI.Comm_rank(comm)
-    nprocs = MPI.Comm_size(comm)
-    println("comm = $comm rank = $rank nprocs = $nprocs")
+    #rank = MPI.Comm_rank(comm)
+    #nprocs = MPI.Comm_size(comm)
+    #println("comm = $comm rank = $rank nprocs = $nprocs")
 
     band = Bands()
     ek = fill_energy_mesh(band)
@@ -488,7 +488,7 @@ function mpi_test()
 
     dims = (nk1, nk2, nk3)
     pen = Pencil(dims, comm)
-    transform = Transforms.BFFT()
+    transform = Transforms.FFT()
     farg = Val(false)
     plan_fnw = PencilFFTPlan(pen, transform, extra_dims = (mesh.fnw,), permute_dims = farg)
     plan_bnw = PencilFFTPlan(pen, transform, extra_dims = (mesh.bnw,), permute_dims = farg)
@@ -503,14 +503,16 @@ function mpi_test()
     smpl_wn_F = mesh.IR_basis_set.smpl_wn_f
     smpl_tau_B = mesh.IR_basis_set.smpl_tau_b
     smpl_wn_B = mesh.IR_basis_set.smpl_wn_b
-    G = PencilFFTs.allocate_input(plan_fnw)
-    temp = PencilFFTs.allocate_output(plan_fntau)
-    temp_frt = PencilFFTs.allocate_input(plan_fntau)
-    temp_brw = PencilFFTs.allocate_input(plan_bnw)
-    G_rt = PencilFFTs.allocate_output(plan_fntau)
-    G1_rt = PencilFFTs.allocate_input(plan_fntau)
-    X_rt = PencilFFTs.allocate_input(plan_bntau)
-    X = PencilFFTs.allocate_output(plan_bnw)
+    G = allocate_input(plan_fnw)
+    G_rw = allocate_output(plan_fnw)
+    #temp_frw = allocate_output(plan_fnw)
+    temp = allocate_output(plan_fntau)
+    temp_frt = allocate_input(plan_fntau)
+    temp_brw = allocate_input(plan_bnw)
+    G_rt = allocate_output(plan_fntau)
+    G1_rt = allocate_input(plan_fntau)
+    X_rt = allocate_input(plan_bntau)
+    X = allocate_output(plan_bnw)
     @show size(G)
     @show size(temp_frt)
     @show size(temp_brw)
@@ -518,9 +520,17 @@ function mpi_test()
     @show size(X_rt)
     @show size(X)
 
+    println("0")
     G .= 1 ./ (reshape(iw, 1, 1, 1, :) .- dropdims(ek; dims=1) .+ mu)
-    G_rw = plan_fnw * G
+    println("1")
+    mul!(G_rw, plan_fnw, G)
+    temp_frw = similar(G)
+    #G_rw = plan_fnw * G
+    println("2")
+    ldiv!(temp_frw, plan_fnw, G_rw)
+    println("3")
     u = plan_fnw / G_rw
+    println("4")
     println("done")
     println("G->l")
     obj_l_F = fit(smpl_wn_F, parent(G), dim=4)
