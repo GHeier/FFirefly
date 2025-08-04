@@ -18,7 +18,7 @@ beta = 1 / cfg.Temperature
 export Mesh, get_iw_iv
 export tau_to_wn, wn_to_tau, k_to_r, r_to_k, kw_to_rtau, rtau_to_kw, IR_Mesh
 export k_to_r!, r_to_k!, kw_to_rtau!, rtau_to_kw!, IR_Mesh
-export prepare_ir, project_kernel
+export prepare_ir, project_kernel, smpl_obj
 
 """
 Holding struct for k-mesh and sparsely sampled imaginary time 'tau' / Matsubara frequency 'iw_n' grids.
@@ -98,9 +98,12 @@ end
 function tau_to_wn(mesh::Mesh, statistics::T, obj_tau) where {T <: SparseIR.Statistics}
     """ Fourier transform from tau to iw_n via IR basis """
     smpl_tau, smpl_wn = smpl_obj(mesh, statistics)
+    #println(valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[1], beta))
 
     obj_l = fit(smpl_tau, obj_tau, dim=1)
+    println("obj_l max = $(maximum(abs, obj_l))")
     obj_wn = evaluate(smpl_wn, obj_l, dim=1)
+    println("obj_wn max = $(maximum(abs, obj_wn))")
     return obj_wn
 end
 
@@ -203,11 +206,13 @@ function kw_to_rtau(obj_k, particle_type, mesh)
 end
 
 function rtau_to_kw(obj_r, particle_type, mesh)
+    println("max obj_r = $(maximum(abs, obj_r))")
     temp = r_to_k(obj_r, mesh)
+    println("max temp = $(maximum(abs, temp))")
     if particle_type == 'F'
-        return tau_to_wn(mesh, Fermionic(), temp)
+        temp = tau_to_wn(mesh, Fermionic(), temp)
     elseif particle_type == 'B'
-        return tau_to_wn(mesh, Bosonic(), temp)
+        temp = tau_to_wn(mesh, Bosonic(), temp)
     end
 end
 
