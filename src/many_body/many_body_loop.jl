@@ -150,21 +150,8 @@ function make_ManyBodySolver(
         solver.mu = mu_calc(solver)
         solver.gkio .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.sigma)
         solver.grit .= kw_to_rtau(solver.gkio, 'F', solver.mesh)
-        crit = solver.grit .* reverse(solver.grit, dims=1)
         solver.ckio .= rtau_to_kw(solver.grit .* reverse(solver.grit, dims=1), 'B', solver.mesh)
         solver.UX = solver.U * maximum(abs, solver.ckio)
-        println("max G = $(maximum(abs, solver.gkio))")
-        println("max G_rt = $(maximum(abs, solver.grit))")
-        println("max X_rt = $(maximum(abs, crit))")
-        println("min X_rt = $(minimum(abs, crit))")
-        println("max X = $(maximum(abs, solver.ckio))")
-        smpl_tau_B = mesh.IR_basis_set.smpl_tau_b
-        smpl_tau_B, wn = smpl_obj(mesh, Bosonic())
-        #println(valueim(smpl_tau_B.sampling_points[1], beta))
-        obj_l_B = fit(smpl_tau_B, crit, dim=1)
-        println("max obj_l_B = $(maximum(abs, obj_l_B))")
-        temp = rtau_to_kw(crit, 'B', solver.mesh)
-        solver.grit .= crit
 
         return solver
 end
@@ -495,10 +482,8 @@ function mpi_test()
 
     band = Bands()
     ek = fill_energy_mesh(band)
-    @show size(ek)
     mesh = IR_Mesh(ek)
     iw, iv = get_iw_iv(mesh)
-    @show size(iw)
 
     dims = (nk1, nk2, nk3)
     pen = Pencil(dims, comm)
@@ -507,95 +492,31 @@ function mpi_test()
     plan_fnw = PencilFFTPlan(pen, transform, extra_dims = (mesh.fnw,), permute_dims = farg)
     plan_bnw = PencilFFTPlan(pen, transform, extra_dims = (mesh.bnw,), permute_dims = farg)
     plan_fntau = PencilFFTPlan(pen, transform, extra_dims = (mesh.fntau,), permute_dims = farg)
-    @show size(plan_fnw)
-    @show size(plan_bnw)
-    @show size(plan_fntau)
 
     smpl_tau_F = mesh.IR_basis_set.smpl_tau_f
     smpl_wn_F = mesh.IR_basis_set.smpl_wn_f
     smpl_tau_B = mesh.IR_basis_set.smpl_tau_b
     smpl_wn_B = mesh.IR_basis_set.smpl_wn_b
+
     G = allocate_input(plan_fnw)
-    G_rw = allocate_output(plan_fnw)
-    temp_frw = allocate_input(plan_fnw)
-    #temp = allocate_output(plan_fntau)
     temp_frt = allocate_input(plan_fntau)
-    temp_brw = allocate_output(plan_bnw)
+    X = allocate_output(plan_bnw)
     G_rt = allocate_output(plan_fntau)
-    G1_rt = allocate_input(plan_fntau)
-    X_rt = allocate_output(plan_fntau)
     X_kt = allocate_input(plan_fntau)
-    X = allocate_input(plan_bnw)
-    @show size(G)
-    @show size(temp_frt)
-    @show size(temp_brw)
-    @show size(G_rt)
-    #@show size(X_rt)
-    @show size(X)
 
-    println("G")
     G .= 1 ./ (reshape(iw, 1, 1, 1, :) .- dropdims(ek; dims=1) .+ mu)
-    println("max G = $(maximum(abs, G))")
-    #println("1")
-    #mul!(G_rw, plan_fnw, G)
-    #temp_frw = similar(G)
-    ##G_rw = plan_fnw * G
-    #println("2")
-    #ldiv!(temp_frw, plan_fnw, G_rw)
-    #println("3")
-    #u = plan_fnw / G_rw
-    #println("4")
-    #println("done")
-    println("G->l")
     obj_l_F = fit(smpl_wn_F, parent(G), dim=4)
-    @show size(obj_l_F)
-    println("l->t")
     evaluate!(temp_frt, smpl_tau_F, obj_l_F, dim=4)
-    println("kt->rt")
     mul!(G_rt, plan_fntau, temp_frt)
-    println("max G_rt = $(maximum(abs, G_rt))")
-    #temp = similar(temp_frt)
-    #G1_rt .= G_rt
-    #mul!(temp, adjoint(plan_fntau), G1_rt)  # now w ≈ u
-    #ldiv!(temp, plan_fntau, G1_rt)  # now w ≈ u
-    println("rt->rt")
-    X_rt = similar(G_rt)
-    X_rt .= G_rt .* reverse(G_rt, dims=(4))
-    println("max X_rt = $(maximum(abs, X_rt))")
-    println("min X_rt = $(minimum(abs, X_rt))")
-    ldiv!(X_kt, plan_fntau, X_rt)
+    G_rt .= G_rt .* reverse(G_rt, dims=(4))
+    ldiv!(X_kt, plan_fntau, G_rt)
     X_kt ./= (nk1 * nk2 * nk3)
-    println("max X_kt = $(maximum(abs, X_kt))")
-    println("rt->l")
     obj_l_B = fit(smpl_tau_B, parent(X_kt), dim=4)
-    println("obj_l max = $(maximum(abs, obj_l_B))")
-    @show size(obj_l_B)
-    println("l->rw")
-    evaluate!(temp_brw, smpl_wn_B, obj_l_B, dim=4)
-    println("temp_brw max = $(maximum(abs, temp_brw))")
-    X .= temp_brw
-    #println("rw->kw")
-    #temp = plan_bnw / temp_brw
-    println("rw->kw")
-    #temp = similar(X)
-    #ldiv!(X, plan_bnw, temp_brw)  # now w ≈ u
-    @show size(X)
-
+    evaluate!(X, smpl_wn_B, obj_l_B, dim=4)
     println("Max X: $(maximum(abs, X))")
 
     println("Rank $rank: completed test_flex")
 
-    verbose = cfg.verbosity == "high" 
-    sigma_init = zeros(ComplexF32,(mesh.fnw, nk1, nk2, nk3))
-    solver = make_ManyBodySolver(mesh, beta, ek, U, mu, sigma_init, sfc_tol=sfc_tol, maxiter=maxiter, U_maxiter=U_maxiter, mix=mix, verbose=verbose)
-    diff = 0.0
-    for i in 1:nk1, j in 1:nk2, k in 1:nk3, l in 1:mesh.bntau
-        diff += abs(solver.grit[l, i, j, k] - X_rt[i, j, k, l])
-    end
-    println("Diff = ", diff)
-    println("Ave Diff = ", diff / (nk1 * nk2 * nk3 * mesh.bntau))
-    println(solver.grit[9, 1, 1, 1])
-    println(X_rt[1, 1, 1, 9])
 
     MPI.Barrier(comm)
     MPI.Finalize()
