@@ -179,6 +179,17 @@ class Vec:
 
 # End Functions
 
+class CMData:
+    def __init__(self, filename=None):
+        if filename is None:
+            self.ptr = lib.CMData_export0()
+        else:
+            self.ptr = lib.CMData_export1(filename)
+        if not self.ptr:
+            raise RuntimeError("Failed to initialize CMData")
+
+
+
 # Begin Objects
 # Field_R Object
 class Field_R:
@@ -189,6 +200,8 @@ class Field_R:
             self.ptr = lib.Field_R_export2(c_char_p(filename.encode('utf-8')))
         if not self.ptr:
             raise RuntimeError("Failed to initialize Field_R")
+        self.nbnd = lib.Field_R_nbnd_export0(self.ptr)
+
 
     def __call__(self, *args):
         # Overload for (w: float)
@@ -269,6 +282,7 @@ class Field_C:
             self.ptr = lib.Field_C_export2(c_char_p(filename.encode('utf-8')))
         if not self.ptr:
             raise RuntimeError('Failed to initialize Field_C')
+        self.nbnd = lib.Field_C_nbnd_export0(self.ptr)
 
     def __call__(self, *args):
         # Overload for args=1, required=1

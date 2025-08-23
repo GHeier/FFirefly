@@ -67,9 +67,10 @@ CMField::CMField(CMData &data) {
 }
 
 CMField::CMField(vector<Vec> points, vector<complex<Vec>> values, int dimension,
-                 bool with_w, bool with_n, bool is_complex, bool is_vector) {
+                 int nbnd, bool with_w, bool with_n, bool is_complex, bool is_vector) {
     data = CMData(points, values, dimension, with_w, with_n, is_complex,
                   is_vector);
+    this->nbnd = nbnd;
     if (data.dimension == 1 or (data.dimension == 0 and data.with_w))
         find_domain_1d(data);
     else
@@ -84,7 +85,7 @@ CMField::CMField(vector<Vec> points, vector<complex<Vec>> values, int dimension,
     empty_CMData(data);
 }
 
-CMField::CMField(vector<vector<complex<Vec>>> &values_in, vector<float> &w_points, vector<Vec> &domain_in, Vec &first_in, vector<int> &mesh, int dimension, bool with_w, bool with_n, bool is_complex, bool is_vector) {
+CMField::CMField(vector<vector<complex<Vec>>> &values_in, vector<float> &w_points, vector<Vec> &domain_in, Vec &first_in, vector<int> &mesh, int dimension, int nbnd, bool with_w, bool with_n, bool is_complex, bool is_vector) {
     data = CMData();
     values = values_in;
     data.dimension = dimension;
@@ -95,6 +96,7 @@ CMField::CMField(vector<vector<complex<Vec>>> &values_in, vector<float> &w_point
     data.w_points = w_points;
     domain = domain_in;
     inv_domain = invertMatrix(domain, data.dimension);
+    this->nbnd = nbnd;
 
     first = first_in;
     nx = mesh[0];
@@ -947,7 +949,7 @@ CMField load_cmfield_from_hdf5(const string& filename) {
     bool with_n;
     vector<vector<complex<Vec>>> values;
     load_from_hdf5(filename, domain, first, mesh, dimension, nbnd, w_points, is_complex, is_vector, with_w, with_n, values);
-    return CMField(values, w_points, domain, first, mesh, dimension, with_w, with_n, is_complex, is_vector);
+    return CMField(values, w_points, domain, first, mesh, dimension, nbnd, with_w, with_n, is_complex, is_vector);
 }
 
 void save_to_field(string filename, vector<vector<vector<float>>> &values, vector<vector<float>> &domain, vector<int> mesh, vector<float> w_points, bool is_complex, bool is_vector) {

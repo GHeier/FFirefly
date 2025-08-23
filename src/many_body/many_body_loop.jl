@@ -406,7 +406,7 @@ end
 
 function main()
 
-    mpi_test()
+    mpi_test2()
     return
 
     comm = 1
@@ -513,6 +513,53 @@ function mpi_test()
     X_kt ./= (nk1 * nk2 * nk3)
     obj_l_B = fit(smpl_tau_B, parent(X_kt), dim=4)
     evaluate!(X, smpl_wn_B, obj_l_B, dim=4)
+    println("Max X: $(maximum(abs, X))")
+
+    println("Rank $rank: completed test_flex")
+
+
+    MPI.Barrier(comm)
+    MPI.Finalize()
+    return
+end
+
+function mpi_test2()
+    MPI.Init()
+    comm = MPI.COMM_WORLD
+
+    #rank = MPI.Comm_rank(comm)
+    #nprocs = MPI.Comm_size(comm)
+    #println("comm = $comm rank = $rank nprocs = $nprocs")
+
+    band = Bands()
+    ek = fill_energy_mesh(band)
+    dims = (nk1, nk2, nk3)
+    pen = Pencil(dims, comm)
+    mesh = IR_Mesh(ek, pen)
+    iw, iv = get_iw_iv(mesh)
+
+    println("allo test")
+    G = allocate_input(mesh.plan_fnw)
+    temp_frt = allocate_input(mesh.plan_tau)
+    X = allocate_output(mesh.plan_bnw)
+    G_rt = allocate_output(mesh.plan_tau)
+    X_kt = allocate_input(mesh.plan_tau)
+    println("allo test done")
+
+    println("1")
+    G .= 1 ./ (reshape(iw, 1, 1, 1, :) .- dropdims(ek; dims=1) .+ mu)
+    println("2")
+    obj_l_F = fit(mesh.smpl_wn_F, parent(G), dim=4)
+    println("3")
+    evaluate!(temp_frt, mesh.smpl_tau_F, mesh.obj_l_F, dim=4)
+    println("4")
+    mul!(G_rt, mesh.plan_tau, temp_frt)
+    println("5")
+    G_rt .= G_rt .* reverse(G_rt, dims=(4))
+    ldiv!(X_kt, plan_tau, G_rt)
+    X_kt ./= (nk1 * nk2 * nk3)
+    obj_l_B = fit(mesh.smpl_tau_B, parent(X_kt), dim=4)
+    evaluate!(X, mesh.smpl_wn_B, mesh.obj_l_B, dim=4)
     println("Max X: $(maximum(abs, X))")
 
     println("Rank $rank: completed test_flex")

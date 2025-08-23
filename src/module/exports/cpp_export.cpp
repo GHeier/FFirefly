@@ -225,6 +225,36 @@ void Self_Energy_operator_export0(Self_Energy *obj, const float *point, int len,
     *imag_result = imag(r);
 }
 
+CMData *CMData_export0() { return new CMData();}
+CMData *CMData_export1(const char *filename) { return new CMData(filename);}
+extern "C" float CMData_dimension_export0(CMData* a) {
+    return a->dimension;
+}
+extern "C" float CMData_is_complex_export0(CMData* a) {
+    return a->is_complex;
+}
+extern "C" float CMData_is_vector_export0(CMData* a) {
+    return a->is_vector;
+}
+extern "C" float CMData_with_w_export0(CMData* a) {
+    return a->with_w;
+}
+extern "C" float CMData_with_n_export0(CMData* a) {
+    return a->with_n;
+}
+
+extern "C" float CMField_nbnd_export0(CMField* a) {
+    return a->nbnd;
+}
+
+extern "C" float Field_R_nbnd_export0(Field_R* a) {
+    return a->cmf.nbnd;
+}
+
+extern "C" float Field_C_nbnd_export0(Field_C* a) {
+    return a->cmf.nbnd;
+}
+
 Field_C *Field_C_export0() { return new Field_C(); }
 Field_C *Field_C_export1(CMField cmf) { return new Field_C(cmf); }
 Field_C *Field_C_export2(const char *filename) { 

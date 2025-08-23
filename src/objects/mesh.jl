@@ -6,6 +6,8 @@ using Roots
 using SparseIR
 import SparseIR: Statistics, value, valueim
 using PyCall
+using PencilFFTs
+using MPI
 
 using Firefly
 
@@ -41,7 +43,11 @@ struct Mesh
     smpl_wn_F
     smpl_tau_B
     smpl_wn_B
-    obj_l
+    obj_l_F
+    obj_l_B
+    plan_fnw
+    plan_bnw
+    plan_tau
 end
 
 """Initialize function"""
@@ -50,6 +56,7 @@ function Mesh(
         nk1         ::Int64 = 0,
         nk2         ::Int64 = 0,
         nk3         ::Int64 = 0,
+        pen                 = 0,
         )::Mesh
 
     nk::Int64 = nk1 * nk2 * nk3
@@ -76,10 +83,24 @@ function Mesh(
     bntau = length(IR_basis_set.smpl_tau_b.sampling_points)
 
 
-    temp = Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, 0, 0, 0, 0, 0)
-    smpl_tau_F, smpl_wn_F, obj_l = prepare_ir(temp, Fermionic())
-    smpl_tau_B, smpl_wn_B, obj_l = prepare_ir(temp, Bosonic())
-    return Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, smpl_tau_F, smpl_wn_F, smpl_tau_B, smpl_wn_B, obj_l)
+    temp = Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    smpl_tau_F, smpl_wn_F, obj_l_F = prepare_ir(temp, Fermionic())
+    smpl_tau_B, smpl_wn_B, obj_l_B = prepare_ir(temp, Bosonic())
+
+    if pen != 0
+        println("MPI Transforms enabled")
+    end
+    if pen == 0
+        return Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, smpl_tau_F, smpl_wn_F, smpl_tau_B, smpl_wn_B, obj_l_F, obj_l_B, 0, 0, 0)
+    end
+    transform = Transforms.FFT()
+    farg = Val(false)
+    plan_fnw = PencilFFTPlan(pen, transform, extra_dims = (fnw,), permute_dims = farg)
+    plan_bnw = PencilFFTPlan(pen, transform, extra_dims = (bnw,), permute_dims = farg)
+    plan_tau = PencilFFTPlan(pen, transform, extra_dims = (fntau,), permute_dims = farg)
+    G = allocate_input(plan_fnw)
+
+    return Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, smpl_tau_F, smpl_wn_F, smpl_tau_B, smpl_wn_B, obj_l_F, obj_l_B, plan_fnw, plan_bnw, plan_tau)
 end
 
 function smpl_obj(mesh::Mesh, statistics::SparseIR.Statistics)
@@ -232,20 +253,12 @@ function get_bandwidth()
     return maxval - minval
 end
 
-function IR_Mesh(energy_mesh::Array{Float32, 4}, IR_tol = 1e-10)
+function IR_Mesh(energy_mesh::Array{Float32, 4}, pen = 0, IR_tol = 1e-10)
     beta = 1 / cfg.Temperature
     _, nx, ny, nz = size(energy_mesh)
     wmax = maximum(energy_mesh) - minimum(energy_mesh)
     IR_basis_set = FiniteTempBasisSet(beta, Float64(1.2*wmax), IR_tol)
-    return Mesh(IR_basis_set, nx, ny, nz)
-    if dim == 1
-        mesh = Mesh(IR_basis_set, nx, 0, 0)
-    elseif dim == 2
-        mesh = Mesh(IR_basis_set, nx, ny, 0)
-    elseif dim == 3
-        mesh = Mesh(IR_basis_set, nx, ny, nz)
-    end
-    println("mesh dimension is ", mesh.dimension)
+    mesh = Mesh(IR_basis_set, nx, ny, nz, pen)
     return mesh
 end
 
@@ -285,6 +298,18 @@ function project_kernel(proj::Array{T,3}, A::Array{T,4}) where T
         A_w[w] = sum(proj .* view(A, w, :, :, :) .* proj)
     end
     return A_w ./ nk
+end
+
+function allocate_kw_fermionic(mesh)
+    return allocate_input(mesh.plan_fnw)
+end
+
+function allocate_kw_boson(mesh)
+    return allocate_input(mesh.plan_bnw)
+end
+
+function allocate_rt_boson(mesh)
+    return allocate_input(mesh.plan_bnw)
 end
 
 end

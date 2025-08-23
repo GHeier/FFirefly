@@ -27,14 +27,15 @@ public:
   Vec first;
   float xmin, xmax, ymin, ymax, zmin, zmax, wmin, wmax;
   int nx = 0, ny = 0, nz = 0, nw = 0;
+  int nbnd = 0;
 
   CMField();
   ~CMField();
   CMField(CMData &data);
-  CMField(vector<Vec> points, vector<complex<Vec>> values, int coords_dim,
+  CMField(vector<Vec> points, vector<complex<Vec>> values, int coords_dim, int nbnd,
           bool w_col, bool n_col, bool is_complex, bool is_vector);
 
-  CMField(vector<vector<complex<Vec>>> &values_in, vector<float> &w_points, vector<Vec> &domain_in, Vec &first_in, vector<int> &mesh, int dimension, bool with_w, bool with_n, bool is_complex, bool is_vector);
+  CMField(vector<vector<complex<Vec>>> &values_in, vector<float> &w_points, vector<Vec> &domain_in, Vec &first_in, vector<int> &mesh, int dimension, int nbnd, bool with_w, bool with_n, bool is_complex, bool is_vector);
 
   void find_domain(CMData &data);
   void find_domain_1d(CMData &data);

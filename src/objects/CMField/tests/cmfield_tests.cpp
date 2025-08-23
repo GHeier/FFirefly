@@ -37,7 +37,7 @@ bool interp_test_2d() {
             values.push_back(func_linear(point));
         }
     }
-    auto field = CMField(points, values, dimension, with_w, with_n, is_complex,
+    auto field = CMField(points, values, dimension, 0, with_w, with_n, is_complex,
                          is_vector);
     float r1 = field(Vec(0.5, 0.5)).real()(0);
     float r2 = field(Vec(1.0, 1.0)).real()(0);
@@ -73,7 +73,7 @@ bool interp_test_2d_complex() {
             values.push_back(func_linear(point));
         }
     }
-    auto field = CMField(points, values, dimension, with_w, with_n, is_complex,
+    auto field = CMField(points, values, dimension, 0, with_w, with_n, is_complex,
                          is_vector);
     Vec rv1 = field(Vec(0.5, 0.5)).real();
     Vec iv1 = field(Vec(0.5, 0.5)).imag();
@@ -119,7 +119,7 @@ bool interp_test_3d() {
             }
         }
     }
-    auto field = CMField(points, values, dimension, with_w, with_n, is_complex,
+    auto field = CMField(points, values, dimension, 0, with_w, with_n, is_complex,
                          is_vector);
     float r1 = field(Vec(0.5, 0.5, 0.5)).real()(0);
     float r2 = field(Vec(1.0, 1.0, 1.0)).real()(0);
@@ -157,7 +157,7 @@ bool interp_test_3d_complex() {
             }
         }
     }
-    auto field = CMField(points, values, dimension, with_w, with_n, is_complex,
+    auto field = CMField(points, values, dimension, 0, with_w, with_n, is_complex,
                          is_vector);
     Vec rv1 = field(Vec(0.5, 0.5, 0.5)).real();
     Vec iv1 = field(Vec(0.5, 0.5, 0.5)).imag();
@@ -199,7 +199,7 @@ bool interp_test_1d_with_w() {
             values.push_back(func_linear(point));
         }
     }
-    auto field = CMField(points, values, dimension, with_w, with_n, is_complex,
+    auto field = CMField(points, values, dimension, 0, with_w, with_n, is_complex,
                          is_vector);
     float r1 = field(Vec(0.5), 0.5).real()(0);
     float r2 = field(Vec(1.0), 1.0).real()(0);
@@ -237,7 +237,7 @@ bool interp_test_2d_with_w() {
             }
         }
     }
-    auto field = CMField(points, values, dimension, with_w, with_n, is_complex,
+    auto field = CMField(points, values, dimension, 0, with_w, with_n, is_complex,
                          is_vector);
     float r1 = field(Vec(0.5, 0.5), 0.5).real()(0);
     float r2 = field(Vec(1.0, 1.0), 1.0).real()(0);
@@ -278,7 +278,7 @@ bool interp_test_3d_with_w() {
             }
         }
     }
-    auto field = CMField(points, values, dimension, with_w, with_n, is_complex,
+    auto field = CMField(points, values, dimension, 0, with_w, with_n, is_complex,
                          is_vector);
     float r1 = field(Vec(0.5, 0.5, 0.5), 0.5).real()(0);
     float r2 = field(Vec(1.0, 1.0, 1.0), 1.0).real()(0);
@@ -310,7 +310,7 @@ bool interp_test_0d_with_w() {
         points.push_back(point);
         values.push_back(func_linear(point));
     }
-    auto field = CMField(points, values, dimension, with_w, with_n, is_complex,
+    auto field = CMField(points, values, dimension, 0, with_w, with_n, is_complex,
                          is_vector);
     float r1 = field(0.5).real()(0);
     float r2 = field(1.0).real()(0);
@@ -345,7 +345,7 @@ bool interp_test_1d_with_n() {
             values.push_back(func_linear(point));
         }
     }
-    auto field = CMField(points, values, dimension, with_w, with_n, is_complex,
+    auto field = CMField(points, values, dimension, 0, with_w, with_n, is_complex,
                          is_vector);
     float r1 = field(1, Vec(0.5)).real()(0);
     float r2 = field(1, Vec(1.0)).real()(0);
@@ -380,7 +380,7 @@ bool interp_test_1d_vector() {
             values.push_back(func_linear(point));
         }
     }
-    auto field = CMField(points, values, dimension, with_w, with_n, is_complex,
+    auto field = CMField(points, values, dimension, 0, with_w, with_n, is_complex,
                          is_vector);
     Vec r1 = field(1, Vec(0.5)).real();
     Vec r2 = field(1, Vec(1.0)).real();
@@ -418,7 +418,7 @@ bool interp_test_2d_vector() {
             }
         }
     }
-    auto field = CMField(points, values, dimension, with_w, with_n, is_complex,
+    auto field = CMField(points, values, dimension, 0, with_w, with_n, is_complex,
                          is_vector);
     Vec r1 = field(1, Vec(0.5, 0.5)).real();
     Vec r2 = field(1, Vec(1.0, 1.0)).real();
@@ -459,7 +459,7 @@ bool interp_test_3d_vector() {
             }
         }
     }
-    auto field = CMField(points, values, dimension, with_w, with_n, is_complex,
+    auto field = CMField(points, values, dimension, 0, with_w, with_n, is_complex,
                          is_vector);
     Vec r1 = field(1, Vec(0.5, 0.5, 0.5)).real();
     Vec r2 = field(1, Vec(1.0, 1.0, 1.0)).real();
@@ -493,7 +493,7 @@ bool interp_test_1d() {
         points.push_back(point);
         values.push_back(func_linear(point));
     }
-    auto field = CMField(points, values, dimension, with_w, with_n, is_complex,
+    auto field = CMField(points, values, dimension, 0, with_w, with_n, is_complex,
                          is_vector);
     Vec r1 = field(Vec(0.5)).real();
     Vec r2 = field(Vec(1.0)).real();
@@ -527,7 +527,7 @@ bool interp_test_1d_complex() {
         points.push_back(point);
         values.push_back(func_linear(point));
     }
-    auto field = CMField(points, values, dimension, with_w, with_n, is_complex,
+    auto field = CMField(points, values, dimension, 0, with_w, with_n, is_complex,
                          is_vector);
     Vec r1 = field(Vec(0.5)).real();
     Vec r2 = field(Vec(1.0)).real();
