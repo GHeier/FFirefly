@@ -64,10 +64,10 @@ function fill_energy_mesh_mpi!(band, ek)
 end
 
 function fill_energy_mesh(band)
-    ek = Array{Float32}(undef, 1, nx, ny, nz)
-    for i in 1:nx, j in 1:ny, k in 1:nz
+    ek = Array{Float32}(undef, nbnd, nx, ny, nz)
+    for n in 1:nbnd, i in 1:nx, j in 1:ny, k in 1:nz
         kvec = get_kvec(i - 1, j - 1, k - 1, nx, ny, nz)
-        ek[1, i, j, k] = band(1, kvec)
+        ek[n, i, j, k] = band(n, kvec)
     end
     return ek
 end
@@ -100,14 +100,14 @@ mutable struct ManyBodySolver
     mix      ::Float64
     verbose  ::Bool
     mu       ::Float64
-    gkio     ::Array{ComplexF32,4}
-    grit     ::Array{ComplexF32,4}
+    gkio     ::Array{ComplexF32,5}
+    grit     ::Array{ComplexF32,5}
     ckio     ::Array{ComplexF32,4}
     V        ::Array{ComplexF32,4}
-    sigma    ::Array{ComplexF32,4}
+    sigma    ::Array{ComplexF32,5}
     iw       ::Array{ComplexF32,4}
     iv       ::Array{ComplexF32,4}
-    ek       ::Array{Float32,4}
+    ek       ::Array{Float32,5}
     dim      ::Int64
     nk       ::Int64
 end
@@ -119,7 +119,7 @@ function make_ManyBodySolver(
         ek        ::Array{Float32, 4},
         U         ::Float64,
         mu         ::Float64,
-        sigma_init::Array{ComplexF32,4};
+        sigma_init::Array{ComplexF32,5};
         sfc_tol   ::Float64=1e-4,
         maxiter   ::Int64  =100,
         U_maxiter ::Int64  =10,
@@ -129,22 +129,35 @@ function make_ManyBodySolver(
     
         n::Float64 = 0.0
     
-        gkio  = Array{ComplexF32}(undef, mesh.fnw,   nk1, nk2, nk3)
-        grit  = Array{ComplexF32}(undef, mesh.fntau, nk1, nk2, nk3)
+        gkio  = Array{ComplexF32}(undef, nbnd, mesh.fnw,   nk1, nk2, nk3)
+        grit  = Array{ComplexF32}(undef, nbnd, mesh.fntau, nk1, nk2, nk3)
         ckio  = Array{ComplexF32}(undef, mesh.bnw,   nk1, nk2, nk3)
         V     = Array{ComplexF32}(undef, mesh.bntau, nk1, nk2, nk3)
         sigma = sigma_init
     
         iw, iv = get_iw_iv(mesh)
+        println("1")
         iw = reshape(iw, mesh.fnw, 1, 1, 1)
         iv = reshape(iv, mesh.bnw, 1, 1, 1)
+        ek = reshape(ek, nbnd, 1, nx, ny, nz)
+        println("2")
         solver = ManyBodySolver(mesh, beta, U, 0.0, n, sfc_tol, maxiter, U_maxiter, mix, verbose, mu, gkio, grit, ckio, V, sigma, iw, iv, ek, dim, nk)
+        println("3")
         solver.n = calc_electron_density(solver, mu)
+        println("4")
     
         solver.mu = mu_calc(solver)
-        solver.gkio .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.sigma)
-        solver.grit .= kw_to_rtau(solver.gkio, 'F', solver.mesh)
-        solver.ckio .= rtau_to_kw(solver.grit .* reverse(solver.grit, dims=1), 'B', solver.mesh)
+        solver.ckio .= 0.0
+        for i in 1:nbnd
+            gkio = view(solver.gkio, i, :, :, :, :)
+            grit = view(solver.grit, i, :, :, :, :)
+            sigma = view(solver.sigma, i, :, :, :, :)
+            ek = view(solver.ek, i, :, :, :)
+
+            gkio .= 1.0 ./ (solver.iw .- (ek .- solver.mu) .- sigma)
+            grit .= kw_to_rtau(gkio, 'F', solver.mesh)
+            solver.ckio .+= rtau_to_kw(grit .* reverse(grit, dims=1), 'B', solver.mesh)
+        end
         solver.UX = solver.U * maximum(abs, solver.ckio)
 
         return solver
@@ -193,8 +206,14 @@ function solve!(solver::ManyBodySolver, comm)
         end
         sigma_old .= copy(solver.sigma)
     end
-    solver.grit .= kw_to_rtau(solver.gkio, 'F', solver.mesh)
-    solver.ckio .= rtau_to_kw(solver.grit .* reverse(solver.grit, dims=1), 'B', solver.mesh)
+    solver.ckio .= 0.0
+    for n in 1:nbnd
+        grit = view(solver.grit, n, :, :, :, :)
+        gkio = view(solver.gkio, n, :, :, :, :)
+
+        grit .= kw_to_rtau(gkio, 'F', solver.mesh)
+        solver.ckio .+= rtau_to_kw(grit .* reverse(grit, dims=1), 'B', solver.mesh)
+    end
 end
     
 function FLEX_loop!(solver::ManyBodySolver, comm)
@@ -202,24 +221,45 @@ function FLEX_loop!(solver::ManyBodySolver, comm)
     gkio_old = copy(solver.gkio)
     
     V_calc(solver)
-    @inbounds @simd for i in eachindex(solver.V)
-        solver.grit[i] = solver.V[i] * solver.grit[i]
+    println("V calc'd")
+    for n in 1:nbnd
+        grit = view(solver.grit, n, :, :, :, :)
+        sigma = view(solver.sigma, n, :, :, :, :)
+
+        grit .= solver.V .* grit
+        rtau_to_kw!(sigma, grit, 'F', solver.mesh)
     end
-    rtau_to_kw!(solver.sigma, solver.grit, 'F', solver.mesh)
+    println("sigma'd")
+    #@inbounds @simd for i in eachindex(solver.V)
+    #    solver.grit[i] = solver.V[i] * solver.grit[i]
+    #end
         
     #local_sum = sum(real, solver.gkio)
     #global_sum = MPI.Allreduce(local_sum, +, comm)
     #total_size = solver.nk * solver.mesh.fnw
     #solver.mu = Float32(global_sum / total_size)
     solver.mu = mu_calc(solver)
-    solver.gkio .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.sigma)
+    for n in 1:nbnd
+        gkio = view(solver.gkio, n, :, :, :, :)
+        sigma = view(solver.sigma, n, :, :, :, :)
+
+        ek = view(solver.ek, n, :, :, :)
+        gkio .= 1.0 ./ (solver.iw .- (ek .- solver.mu) .- sigma)
+    end
     
     @inbounds @simd for i in eachindex(solver.gkio)
         solver.gkio[i] = solver.mix*solver.gkio[i] + (1-solver.mix)*gkio_old[i]
     end
         
-    kw_to_rtau!(solver.grit, solver.gkio, 'F', solver.mesh)        
-    rtau_to_kw!(solver.ckio, solver.grit .* reverse(solver.grit, dims=1), 'B', solver.mesh)        
+    solver.ckio .= 0.0
+    for n in 1:nbnd
+        gkio = view(solver.gkio, n, :, :, :, :)
+        grit = view(solver.grit, n, :, :, :, :)
+
+        kw_to_rtau!(grit, gkio, 'F', solver.mesh)        
+        #rtau_to_kw!(solver.ckio, grit .* reverse(grit, dims=1), 'B', solver.mesh)        
+        solver.ckio .+= rtau_to_kw(grit .* reverse(grit, dims=1), 'B', solver.mesh)
+    end
 end
 
 function DMFT_Sigma(solver::ManyBodySolver)
@@ -233,15 +273,22 @@ end
 
 function FLEX_local_Sigma(solver::ManyBodySolver)
     proj = ones(ComplexF32, nx, ny, nz)
-    g_loc = project_kernel(proj, solver.gkio)
-    gt = wn_to_tau(solver.mesh, Fermionic(), g_loc)
-    xt = gt .* reverse(gt)
-    xw = tau_to_wn(solver.mesh, Bosonic(), xt)
+    xw = zeros(ComplexF32, solver.mesh.bnw)
+    gt = zeros(ComplexF32, nbnd, solver.mesh.fnw)
+    for n in 1:nbnd
+        g_loc = project_kernel(proj, view(solver.gkio, n, :, :, :, :))
+        gt[n, :] .= wn_to_tau(solver.mesh, Fermionic(), g_loc)
+        xt = gt[n, :] .* reverse(gt[n, :])
+        xw .+= tau_to_wn(solver.mesh, Bosonic(), xt)
+    end
     vw = similar(xw)
     V_FLEX!(solver.U, xw, vw)
     vt = wn_to_tau(solver.mesh, Bosonic(), vw)
-    sigmat = vt .* gt
-    sigmaw = tau_to_wn(solver.mesh, Fermionic(), sigmat)
+    sigmaw = zeros(ComplexF32, nbnd, solver.mesh.fnw)
+    for n in 1:nbnd
+        sigmat = vt .* gt[n, :]
+        sigmaw[n, :] .= tau_to_wn(solver.mesh, Fermionic(), sigmat)
+    end
     return sigmaw
 end
 
@@ -366,14 +413,32 @@ end
 #%%%%%%%%%%% Setting chemical potential mu
 function calc_electron_density(solver::ManyBodySolver,mu::Float64)::Float64
     """ Calculate electron density from Green function """
-    solver.gkio .= 1.0 ./ (solver.iw .- (solver.ek .- mu) .- solver.sigma)
-    gio = dropdims(sum(solver.gkio,dims=(2,3)),dims=(2,3))/solver.mesh.nk
+    enum = 0
+    for n in 1:nbnd
+        gkio = view(solver.gkio, n, :, :, :, :)
+        sigma = view(solver.sigma, n, :, :, :, :)
+        ek = view(solver.ek, n, :, :, :)
 
-    g_l = fit(solver.mesh.IR_basis_set.smpl_wn_f,gio, dim=1)
-    g_tau0 = dot(solver.mesh.IR_basis_set.basis_f.u(0), g_l)
+        println("11")
+        println(size(gkio))
+        println(size(solver.iw))
+        println(size(ek))
+        println(size(sigma))
+        gkio .= 1.0 ./ (solver.iw .- (ek .- mu) .- sigma)
+        println("12")
+        gio = dropdims(sum(gkio,dims=(2,3,4)),dims=(2,3,4))/solver.mesh.nk
+        println("13")
 
-    n  = 1.0 + real(g_tau0)
-    n  = 2.0 * n #for spin
+        g_l = fit(solver.mesh.IR_basis_set.smpl_wn_f,gio, dim=1)
+        println("14")
+        g_tau0 = dot(solver.mesh.IR_basis_set.basis_f.u(0), g_l)
+        println("15")
+
+        n_tmp  = 1.0 + real(g_tau0)
+        n_tmp  = 2.0 * n_tmp #for spin
+        enum += n_tmp
+    end
+    return enum
 end
 
 function mu_calc(solver::ManyBodySolver)::Float64
@@ -409,7 +474,7 @@ function main()
     ek = fill_energy_mesh(band)
     mesh = IR_Mesh(ek)
 
-    sigma_init = zeros(ComplexF32,(mesh.fnw, nk1, nk2, nk3))
+    sigma_init = zeros(ComplexF32,(nbnd, mesh.fnw, nk1, nk2, nk3))
     verbose = cfg.verbosity == "high" 
     solver = make_ManyBodySolver(mesh, beta, ek, U, mu, sigma_init, sfc_tol=sfc_tol, maxiter=maxiter, U_maxiter=U_maxiter, mix=mix, verbose=verbose)
 
@@ -419,7 +484,7 @@ function main()
     end
     println("New mu=$(solver.mu)")
 
-    solver.grit = Array{ComplexF32,4}(undef, 0, 0, 0, 0)
+    solver.grit = Array{ComplexF32,5}(undef, 0, 0, 0, 0, 0)
     solver.V = Array{ComplexF32,4}(undef, 0, 0, 0, 0)
     V = similar(solver.ckio)
 
@@ -431,18 +496,6 @@ function main()
     println("Min Vertex: $(minimum(abs.(V)))")
     println("Max Chi: $(maximum(abs.(solver.ckio)))")
     println("Min Chi: $(minimum(abs.(solver.ckio)))")
-    #if nz > 1
-    #    sitp = interpolate((1:mesh.fnw, 1:nx, 1:ny, 1:nz), Sigma, Gridded(Linear()))
-    #    vitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:nz), V, Gridded(Linear()))
-    #    xitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:nz), X, Gridded(Linear()))
-    #else
-    #    Sigma = repeat(Sigma, 1, 1, 1, 2)
-    #    V = repeat(V, 1, 1, 1, 2)
-    #    X = repeat(X, 1, 1, 1, 2)
-    #    sitp = interpolate((1:mesh.fnw, 1:nx, 1:ny, 1:2), Sigma, Gridded(Linear()))
-    #    vitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:2), V, Gridded(Linear()))
-    #    xitp = interpolate((1:mesh.bnw, 1:nx, 1:ny, 1:2), X, Gridded(Linear()))
-    #end
 
     BZ_in = BZ
     kmesh = cfg.k_mesh
@@ -452,8 +505,8 @@ function main()
     end
 
     # Centers points correctly, so they go from (-pi,pi) to (pi,pi) instead of the current (0,0) to (2pi,2pi). Important for saving
-    for i in 1:mesh.fnw
-        solver.sigma[i, :, :, :] .= fftshift(solver.sigma[i, :, :, :])
+    for n in 1:nbnd, i in 1:mesh.fnw
+        solver.sigma[n, i, :, :, :] .= fftshift(solver.sigma[n, i, :, :, :])
     end
     for i in 1:mesh.bnw
         V[i, :, :, :] .= fftshift(V[i, :, :, :])
