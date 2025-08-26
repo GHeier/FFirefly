@@ -63,6 +63,8 @@ CMField::CMField(CMData &data) {
     inv_domain = invertMatrix(domain, data.dimension);
 
     make_values_2d(values, data);
+    nbnd = data.n_inds.size();
+    printf("nbnd = %d\n", nbnd);
     empty_CMData(data);
 }
 

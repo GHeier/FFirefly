@@ -40,7 +40,9 @@ float Field_R::operator()(int n, Vec point, float w) {
   return cmf(n, point, w).real().x;
 }
 
-Field_R::Field_R() { cmf = CMField(); }
+Field_R::Field_R() { 
+    cmf = CMField(); 
+}
 
 Field_R::Field_R(CMField cmf) { this->cmf = cmf; }
 

@@ -201,6 +201,7 @@ class Field_R:
         if not self.ptr:
             raise RuntimeError("Failed to initialize Field_R")
         self.nbnd = lib.Field_R_nbnd_export0(self.ptr)
+        print(f"pynbnd = {self.nbnd}")
 
 
     def __call__(self, *args):
@@ -245,6 +246,9 @@ lib.Field_R_export0.restype = c_void_p
 lib.Field_R_export2.argtypes = [c_char_p]
 lib.Field_R_export2.restype = c_void_p
 
+lib.Field_R_nbnd_export0.argtypes = [c_void_p]
+lib.Field_R_nbnd_export0.restype = c_int
+
 lib.Field_R_operator_export0.argtypes = [c_void_p, c_float]
 lib.Field_R_operator_export0.restype = c_float
 
@@ -264,6 +268,9 @@ lib.Field_C_export0.restype = ctypes.c_void_p
 lib.Field_C_export1.argtypes = [ctypes.c_char_p]
 lib.Field_C_export1.restype = ctypes.c_void_p
 lib.Field_C_export2.restype = c_void_p
+
+lib.Field_C_nbnd_export0.argtypes = [c_void_p]
+lib.Field_C_nbnd_export0.restype = c_int
 
 lib.Field_C_operator_export0.argtypes = [ctypes.c_void_p, ctypes.c_float, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
 lib.Field_C_operator_export0.restype = None

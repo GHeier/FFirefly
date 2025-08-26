@@ -247,8 +247,10 @@ extern "C" float CMField_nbnd_export0(CMField* a) {
     return a->nbnd;
 }
 
-extern "C" float Field_R_nbnd_export0(Field_R* a) {
-    return a->cmf.nbnd;
+extern "C" int Field_R_nbnd_export0(Field_R* a) {
+    int temp = a->cmf.nbnd;
+    printf("cnbnd = %d\n", temp);
+    return temp;
 }
 
 extern "C" float Field_C_nbnd_export0(Field_C* a) {
@@ -264,7 +266,8 @@ Field_C *Field_C_export2(const char *filename) {
 Field_R *Field_R_export0() { return new Field_R(); }
 Field_R *Field_R_export1(CMField cmf) { return new Field_R(cmf); }
 Field_R *Field_R_export2(const char *filename) { 
-    return new Field_R(filename); }
+    return new Field_R(filename); 
+}
 
 void Field_C_operator_export0(Field_C *obj, float w, float *real_result,
                               float *imag_result) {

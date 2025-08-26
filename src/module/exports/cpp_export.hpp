@@ -7,11 +7,11 @@ float epsilon_export(int n, float kx, float ky = 0, float kz = 0);
 CMData *CMData_export0();
 CMData *CMData_export1(const char *filename);
 float CMField_nbnd_export0();
+int Field_R_nbnd_export0(Field_R* a);
+int Field_C_nbnd_export0(Field_C* a);
 Field_R *Field_R_export0();
 Field_R *Field_R_export1(CMField cmf);
 Field_R *Field_R_export2(const char *filename);
-float Field_R_nbnd_export0(Field_R* a);
-float Field_C_nbnd_export0(Field_C* a);
 
 float Field_R_operator_export0(Field_R *obj, float w);
 float Field_R_operator_export1(Field_R *obj, int n, float w);
