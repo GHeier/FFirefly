@@ -40,13 +40,7 @@ beta = 1 / cfg.Temperature
 
 
 ### System parameters
-T    = cfg.Temperature
-beta = 1/T    # inverse temperature
 #n    = 0.85   # electron filling, here per spin per lattice site (n=1: half filling)
-nbnd = cfg.nbnd
-mu = cfg.fermi_energy
-U = cfg.onsite_U
-BZ = cfg.brillouin_zone
 
 ### Numerical parameters
 nk1, nk2, nk3  = cfg.k_mesh
@@ -406,8 +400,8 @@ end
 
 function main()
 
-    mpi_test2()
-    return
+    #mpi_test2()
+    #return
 
     comm = 1
 

@@ -122,9 +122,7 @@ function tau_to_wn(mesh::Mesh, statistics::T, obj_tau) where {T <: SparseIR.Stat
     #println(valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[1], beta))
 
     obj_l = fit(smpl_tau, obj_tau, dim=1)
-    println("obj_l max = $(maximum(abs, obj_l))")
     obj_wn = evaluate(smpl_wn, obj_l, dim=1)
-    println("obj_wn max = $(maximum(abs, obj_wn))")
     return obj_wn
 end
 
@@ -144,21 +142,21 @@ end
 
 function tau_to_wn!(out, obj_tau, particle, mesh)
     if particle == 'F'
-        fit!(mesh.obj_l, mesh.smpl_tau_F, obj_tau, dim=1)
-        evaluate!(out, mesh.smpl_wn_F, mesh.obj_l, dim=1)
+        fit!(mesh.obj_l_F, mesh.smpl_tau_F, obj_tau, dim=1)
+        evaluate!(out, mesh.smpl_wn_F, mesh.obj_l_F, dim=1)
     else
-        fit!(mesh.obj_l, mesh.smpl_tau_B, obj_tau, dim=1)
-        evaluate!(out, mesh.smpl_wn_B, mesh.obj_l, dim=1)
+        fit!(mesh.obj_l_B, mesh.smpl_tau_B, obj_tau, dim=1)
+        evaluate!(out, mesh.smpl_wn_B, mesh.obj_l_B, dim=1)
     end
 end
 
 function wn_to_tau!(out, obj_wn, particle, mesh)
     if particle == 'F'
-        fit!(mesh.obj_l, mesh.smpl_wn_F, obj_wn, dim=1)
-        evaluate!(out, mesh.smpl_tau_F, mesh.obj_l, dim=1)
+        fit!(mesh.obj_l_F, mesh.smpl_wn_F, obj_wn, dim=1)
+        evaluate!(out, mesh.smpl_tau_F, mesh.obj_l_F, dim=1)
     else
-        fit!(mesh.obj_l, mesh.smpl_wn_B, obj_wn, dim=1)
-        evaluate!(out, mesh.smpl_tau_B, mesh.obj_l, dim=1)
+        fit!(mesh.obj_l_B, mesh.smpl_wn_B, obj_wn, dim=1)
+        evaluate!(out, mesh.smpl_tau_B, mesh.obj_l_B, dim=1)
     end
 end
 
