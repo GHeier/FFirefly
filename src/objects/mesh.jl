@@ -13,6 +13,7 @@ using Firefly
 
 cfg = Firefly.Config
 
+nx, ny, nz = cfg.k_mesh
 BZ = cfg.brillouin_zone
 dim = cfg.dimension
 beta = 1 / cfg.Temperature
@@ -21,6 +22,7 @@ export Mesh, get_iw_iv
 export tau_to_wn, wn_to_tau, k_to_r, r_to_k, kw_to_rtau, rtau_to_kw, IR_Mesh
 export k_to_r!, r_to_k!, kw_to_rtau!, rtau_to_kw!, IR_Mesh
 export prepare_ir, project_kernel, smpl_obj
+export MultiField, make_MultiField
 
 """
 Holding struct for k-mesh and sparsely sampled imaginary time 'tau' / Matsubara frequency 'iw_n' grids.
@@ -251,11 +253,8 @@ function get_bandwidth()
     return maxval - minval
 end
 
-function IR_Mesh(energy_mesh::Array{Float32, 4}, pen = 0, IR_tol = 1e-10)
-    beta = 1 / cfg.Temperature
-    _, nx, ny, nz = size(energy_mesh)
-    wmax = maximum(energy_mesh) - minimum(energy_mesh)
-    IR_basis_set = FiniteTempBasisSet(beta, Float64(1.2*wmax), IR_tol)
+function IR_Mesh(wmax, pen = 0, IR_tol = 1e-10)
+    IR_basis_set = FiniteTempBasisSet(beta, Float64(wmax), IR_tol)
     mesh = Mesh(IR_basis_set, nx, ny, nz, pen)
     return mesh
 end
@@ -308,6 +307,14 @@ end
 
 function allocate_rt_boson(mesh)
     return allocate_input(mesh.plan_bnw)
+end
+
+struct MultiField
+    data :: Vector{Array{ComplexF32, 4}}
+end
+
+function make_MultiField(n, l, x, y, z)
+    return [Array{ComplexF32}(undef, l, x, y, z) for _ in 1:n]
 end
 
 end
