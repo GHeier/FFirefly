@@ -33,6 +33,8 @@ if dim == 2
 end
 nk = nx * ny * nz
 nbnd = cfg.nbnd
+nbnd = 1
+println("nbnd = $nbnd")
 mu = cfg.fermi_energy
 U = cfg.onsite_U
 BZ = cfg.brillouin_zone
@@ -147,26 +149,21 @@ function make_ManyBodySolver(
         Ekw = sigma_init
     
         iw, iv = get_iw_iv(mesh)
-        println("1")
         iw = reshape(iw, mesh.fnw, 1, 1, 1)
         iv = reshape(iv, mesh.bnw, 1, 1, 1)
         ek_new = [reshape(ek[n], (1, size(ek[n])...)) for n in 1:nbnd]
-        println("2")
         solver = ManyBodySolver(mesh, beta, U, 0.0, n, sfc_tol, maxiter, U_maxiter, mix, verbose, mu, Gkw, Grt, Xkw, V, Ekw, iw, iv, ek_new, dim, nk)
-        println("3")
         solver.n = calc_electron_density(solver, mu)
-        println("4")
     
         solver.mu = mu_calc(solver)
-        println("5")
         solver.Xkw[1] .= 0.0
-        println("6")
         for n in 1:nbnd
             solver.Gkw[n] .= 1.0 ./ (solver.iw .- (solver.ek[n] .- solver.mu) .- solver.Ekw[n])
             solver.Grt[n] .= kw_to_rtau(solver.Gkw[n], 'F', solver.mesh)
             solver.Xkw[1] .+= rtau_to_kw(solver.Grt[n] .* reverse(solver.Grt[n], dims=1), 'B', solver.mesh)
         end
         solver.UX = solver.U * maximum(abs, solver.Xkw[1])
+        println("Initial Max Chi = $(maximum(abs, solver.Xkw[1]))")
 
         return solver
 end
@@ -217,10 +214,10 @@ function solve!(S::ManyBodySolver, comm)
         end
         sigma_old .= copy(S.Ekw)
     end
-    S.Xkw .= 0.0
+    S.Xkw[1] .= 0.0
     for n in 1:nbnd
         S.Grt[n] .= kw_to_rtau(S.Gkw[n], 'F', S.mesh)
-        S.Xkw .+= rtau_to_kw(S.Grt[n] .* reverse(S.Grt[n], dims=1), 'B', S.mesh)
+        S.Xkw[1] .+= rtau_to_kw(S.Grt[n] .* reverse(S.Grt[n], dims=1), 'B', S.mesh)
     end
 end
     
@@ -229,12 +226,10 @@ function FLEX_loop!(S::ManyBodySolver, comm)
     gkio_old = copy(S.Gkw)
     
     V_calc(S)
-    println("V calc'd")
     for n in 1:nbnd
-        S.Grt[n] .= S.V .* S.Grt[n]
+        S.Grt[n] .= S.Vrt[1] .* S.Grt[n]
         rtau_to_kw!(S.Ekw[n], S.Grt[n], 'F', S.mesh)
     end
-    println("sigma'd")
     #@inbounds @simd for i in eachindex(S.V)
     #    S.grit[i] = S.V[i] * S.grit[i]
     #end
@@ -252,11 +247,11 @@ function FLEX_loop!(S::ManyBodySolver, comm)
         S.Gkw[i] = S.mix*S.Gkw[i] + (1-S.mix)*gkio_old[i]
     end
         
-    S.Xkw .= 0.0
+    S.Xkw[1] .= 0.0
     for n in 1:nbnd
         kw_to_rtau!(S.Grt[n], S.Gkw[n], 'F', S.mesh)        
         #rtau_to_kw!(S.ckio, grit .* reverse(grit, dims=1), 'B', S.mesh)        
-        S.Xkw .+= rtau_to_kw(S.Grt[n] .* reverse(S.Grt[n], dims=1), 'B', S.mesh)
+        S.Xkw[1] .+= rtau_to_kw(S.Grt[n] .* reverse(S.Grt[n], dims=1), 'B', S.mesh)
     end
 end
 
@@ -296,11 +291,22 @@ end
 
 function FLEX_sigma!(solver::ManyBodySolver)
     # G Creation
-    kw_to_rtau!(solver.Grt, solver.Gkw, 'F', solver.mesh)
-    rtau_to_kw!(solver.Xkw, solver.Grt .* reverse(solver.Grt, dims=1), 'B', solver.mesh)
+    println("1")
+    solver.Xkw[1] .= 0.0
+    for n in 1:nbnd
+        kw_to_rtau!(solver.Grt[n], solver.Gkw[n], 'F', solver.mesh)
+        solver.Xkw[1] .+= rtau_to_kw(solver.Grt[n] .* reverse(solver.Grt[n], dims=1), 'B', solver.mesh)
+    end
+    println("2")
+    #rtau_to_kw!(solver.Xkw[1], solver.Grt .* reverse(solver.Grt, dims=1), 'B', solver.mesh)
     solver.UX = solver.U * maximum(abs, solver.Xkw[1])
+    println("3")
     V_calc(solver)
-    rtau_to_kw!(solver.Ekw, solver.V .* solver.Gkw, 'F', solver.mesh)
+    println("4")
+    for n in 1:nbnd
+        rtau_to_kw!(solver.Ekw[n], solver.Vrt[1] .* solver.Gkw[n], 'F', solver.mesh)
+    end
+    println("5")
 end
 
 
@@ -393,8 +399,7 @@ function U_renormalization(solver::ManyBodySolver, comm)
 end
 
 function V_FLEX!(U, Xkw, out)
-    U2 = U^2
-    out .= (1.5*U^2) .* Xkw[1] ./ (1 .- U.*Xkw[1]) .+ (0.5*U^2) .* Xkw[1] ./ (1 .+ U.*Xkw[1]) - U^2 .* Xkw[1]
+    out[1] .= (1.5*U^2) .* Xkw[1] ./ (1 .- U.*Xkw[1]) .+ (0.5*U^2) .* Xkw[1] ./ (1 .+ U.*Xkw[1]) - U^2 .* Xkw[1]
     #@inbounds @simd for i in eachindex(Xkw)
     #    x = Xkw[i]
     #    term1 = (1.5*U^2) * x / (1 - U*x)
@@ -415,7 +420,7 @@ function V_calc(solver::ManyBodySolver)
     # In the single-band case, the Hartree term can be absorbed into the chemical potential.
 
     #solver.V .= kw_to_rtau(solver.ckio, 'B', solver.mesh)
-    kw_to_rtau!(solver.V, solver.Xkw, 'B', solver.mesh)
+    kw_to_rtau!(solver.Vrt[1], solver.Xkw[1], 'B', solver.mesh)
 end
 
 #%%%%%%%%%%% Setting chemical potential mu
@@ -423,23 +428,16 @@ function calc_electron_density(S::ManyBodySolver,mu::Float64)::Float64
     """ Calculate electron density from Green function """
     enum = 0
     for n in 1:nbnd
-        println("11")
         S.Gkw[n] .= 1.0 ./ (S.iw .- (S.ek[n] .- mu) .- S.Ekw[n])
-        println("12")
         gio = dropdims(sum(S.Gkw[n],dims=(2,3,4)),dims=(2,3,4))/S.mesh.nk
-        println("13")
 
         g_l = fit(S.mesh.IR_basis_set.smpl_wn_f,gio, dim=1)
-        println("14")
         g_tau0 = dot(S.mesh.IR_basis_set.basis_f.u(0), g_l)
-        println("15")
 
         n_tmp  = 1.0 + real(g_tau0)
         n_tmp  = 2.0 * n_tmp #for spin
-        println("ntmp = ", n_tmp)
         enum += n_tmp
     end
-    println(typeof(enum))
     return enum
 end
 
@@ -480,13 +478,10 @@ function main()
     D = maxval - minval
     mesh = IR_Mesh(D)
 
-    println("1")
     sigma_init = make_MultiField(nbnd, mesh.fnw, nk1, nk2, nk3)
-    println("2")
     for n in 1:nbnd
         sigma_init[n] .= 0.0
     end
-    println("3")
 
     verbose = cfg.verbosity == "high" 
     solver = make_ManyBodySolver(mesh, beta, ek, U, mu, sigma_init, sfc_tol=sfc_tol, maxiter=maxiter, U_maxiter=U_maxiter, mix=mix, verbose=verbose)
@@ -497,9 +492,9 @@ function main()
     end
     println("New mu=$(solver.mu)")
 
-    solver.Grt = Array{ComplexF32,5}(undef, 0, 0, 0, 0, 0)
-    solver.V = Array{ComplexF32,4}(undef, 0, 0, 0, 0)
-    V = similar(solver.Xkw)
+    #solver.Grt = Array{ComplexF32,5}(undef, 0, 0, 0, 0, 0)
+    #solver.Vrt = Array{ComplexF32,4}(undef, 0, 0, 0, 0)
+    V = [similar(x) for x in solver.Xkw]
 
     V_FLEX!(solver.U, solver.Xkw, V)
 
@@ -519,11 +514,11 @@ function main()
 
     # Centers points correctly, so they go from (-pi,pi) to (pi,pi) instead of the current (0,0) to (2pi,2pi). Important for saving
     for n in 1:nbnd, i in 1:mesh.fnw
-        solver.Ekw[n, i, :, :, :] .= fftshift(solver.Ekw[n, i, :, :, :])
+        solver.Ekw[n][i, :, :, :] .= fftshift(solver.Ekw[n][i, :, :, :])
     end
     for i in 1:mesh.bnw
-        V[i, :, :, :] .= fftshift(V[i, :, :, :])
-        solver.Xkw[i, :, :, :] .= fftshift(solver.Xkw[i, :, :, :])
+        V[1][i, :, :, :] .= fftshift(V[1][i, :, :, :])
+        solver.Xkw[1][i, :, :, :] .= fftshift(solver.Xkw[1][i, :, :, :])
     end
 
     save_field!(outdir * prefix * "_self_energy." * filetype, solver.Ekw, BZ_in, kmesh, imag.(solver.iw))

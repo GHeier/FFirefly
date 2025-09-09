@@ -45,8 +45,10 @@ struct Mesh
     smpl_wn_F
     smpl_tau_B
     smpl_wn_B
-    obj_l_F
-    obj_l_B
+    obj_l_F_tau
+    obj_l_F_wn
+    obj_l_B_tau
+    obj_l_B_wn
     plan_fnw
     plan_bnw
     plan_tau
@@ -85,15 +87,15 @@ function Mesh(
     bntau = length(IR_basis_set.smpl_tau_b.sampling_points)
 
 
-    temp = Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-    smpl_tau_F, smpl_wn_F, obj_l_F = prepare_ir(temp, Fermionic())
-    smpl_tau_B, smpl_wn_B, obj_l_B = prepare_ir(temp, Bosonic())
+    temp = Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    smpl_tau_F, smpl_wn_F, obj_l_F_wn, obj_l_F_tau = prepare_ir(temp, Fermionic())
+    smpl_tau_B, smpl_wn_B, obj_l_B_wn, obj_l_B_tau = prepare_ir(temp, Bosonic())
 
     if pen != 0
         println("MPI Transforms enabled")
     end
     if pen == 0
-        return Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, smpl_tau_F, smpl_wn_F, smpl_tau_B, smpl_wn_B, obj_l_F, obj_l_B, 0, 0, 0)
+        return Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, smpl_tau_F, smpl_wn_F, smpl_tau_B, smpl_wn_B, obj_l_F_wn, obj_l_F_tau, obj_l_B_wn, obj_l_B_tau, 0, 0, 0)
     end
     transform = Transforms.FFT()
     farg = Val(false)
@@ -102,7 +104,7 @@ function Mesh(
     plan_tau = PencilFFTPlan(pen, transform, extra_dims = (fntau,), permute_dims = farg)
     G = allocate_input(plan_fnw)
 
-    return Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, smpl_tau_F, smpl_wn_F, smpl_tau_B, smpl_wn_B, obj_l_F, obj_l_B, plan_fnw, plan_bnw, plan_tau)
+    return Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, smpl_tau_F, smpl_wn_F, smpl_tau_B, smpl_wn_B, obj_l_F_wn, obj_l_F_tau, obj_l_B_wn, obj_l_B_tau, plan_fnw, plan_bnw, plan_tau)
 end
 
 function smpl_obj(mesh::Mesh, statistics::SparseIR.Statistics)
@@ -144,21 +146,21 @@ end
 
 function tau_to_wn!(out, obj_tau, particle, mesh)
     if particle == 'F'
-        fit!(mesh.obj_l_F, mesh.smpl_tau_F, obj_tau, dim=1)
-        evaluate!(out, mesh.smpl_wn_F, mesh.obj_l_F, dim=1)
+        fit!(mesh.obj_l_F_wn, mesh.smpl_tau_F, obj_tau, dim=1)
+        evaluate!(out, mesh.smpl_wn_F, mesh.obj_l_F_wn, dim=1)
     else
-        fit!(mesh.obj_l_B, mesh.smpl_tau_B, obj_tau, dim=1)
-        evaluate!(out, mesh.smpl_wn_B, mesh.obj_l_B, dim=1)
+        fit!(mesh.obj_l_B_wn, mesh.smpl_tau_B, obj_tau, dim=1)
+        evaluate!(out, mesh.smpl_wn_B, mesh.obj_l_B_wn, dim=1)
     end
 end
 
 function wn_to_tau!(out, obj_wn, particle, mesh)
     if particle == 'F'
-        fit!(mesh.obj_l_F, mesh.smpl_wn_F, obj_wn, dim=1)
-        evaluate!(out, mesh.smpl_tau_F, mesh.obj_l_F, dim=1)
+        fit!(mesh.obj_l_F_wn, mesh.smpl_wn_F, obj_wn, dim=1)
+        evaluate!(out, mesh.smpl_tau_F, mesh.obj_l_F_wn, dim=1)
     else
-        fit!(mesh.obj_l_B, mesh.smpl_wn_B, obj_wn, dim=1)
-        evaluate!(out, mesh.smpl_tau_B, mesh.obj_l_B, dim=1)
+        fit!(mesh.obj_l_B_wn, mesh.smpl_wn_B, obj_wn, dim=1)
+        evaluate!(out, mesh.smpl_tau_B, mesh.obj_l_B_wn, dim=1)
     end
 end
 
@@ -227,9 +229,7 @@ function kw_to_rtau(obj_k, particle_type, mesh)
 end
 
 function rtau_to_kw(obj_r, particle_type, mesh)
-    println("max obj_r = $(maximum(abs, obj_r))")
     temp = r_to_k(obj_r, mesh)
-    println("max temp = $(maximum(abs, temp))")
     if particle_type == 'F'
         temp = tau_to_wn(mesh, Fermionic(), temp)
     elseif particle_type == 'B'
@@ -255,7 +255,11 @@ end
 
 function IR_Mesh(wmax, pen = 0, IR_tol = 1e-10)
     IR_basis_set = FiniteTempBasisSet(beta, Float64(wmax), IR_tol)
-    mesh = Mesh(IR_basis_set, nx, ny, nz, pen)
+    z = nz
+    if dim == 2
+        z = 1
+    end
+    mesh = Mesh(IR_basis_set, nx, ny, z, pen)
     return mesh
 end
 
@@ -280,9 +284,21 @@ end
 
 function prepare_ir(mesh::Mesh, stats)
     smpl_tau, smpl_wn = smpl_obj(mesh, stats)
-    lshape = (mesh.fnw, mesh.nk1, mesh.nk2, mesh.nk3)
-    obj_l = zeros(ComplexF32, lshape)
-    return smpl_tau, smpl_wn, obj_l
+    fnw_lshape = (mesh.fnw, mesh.nk1, mesh.nk2, mesh.nk3)
+    bnw_lshape = (mesh.bnw, mesh.nk1, mesh.nk2, mesh.nk3)
+    fntau_lshape = (mesh.fntau, mesh.nk1, mesh.nk2, mesh.nk3)
+    bntau_lshape = (mesh.bntau, mesh.nk1, mesh.nk2, mesh.nk3)
+    if stats == Fermionic()
+        obj_l_wn = zeros(ComplexF32, fnw_lshape)
+        obj_l_tau = zeros(ComplexF32, fntau_lshape)
+    else
+        obj_l_wn = zeros(ComplexF32, bnw_lshape)
+        obj_l_tau = zeros(ComplexF32, bntau_lshape)
+    end
+    #println("Sample object sizes:")
+    #println(size(obj_l_wn))
+    #println(size(obj_l_tau))
+    return smpl_tau, smpl_wn, obj_l_wn, obj_l_tau
 end
 
 function project_kernel(proj::Array{T,3}, A::Array{T,4}) where T
