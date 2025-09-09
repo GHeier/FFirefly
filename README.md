@@ -24,28 +24,29 @@ Let's say an individual wants to run some calculations on the ground state of a 
 
 ---
 ### **🔹 Installation**  
-The Ffirefly project grants access to a wide variety of extremely powerful algorithms with a simple interface, but depends on many packages that are listed below. Make sure you add /usr/local/lib to your $LD_LIBRARY_PATH.
+The Ffirefly project grants access to a wide variety of extremely powerful algorithms with a simple interface, but depends on many packages that are listed below. Make sure you add /usr/local/lib to your $LD_LIBRARY_PATH. 
 
 #### **1️⃣  Required Packages**  
-| Python     | Julia         | C++      | Fortran    | C    |
-|:----------:|:-------------:|:--------:|:----------:|:----:|
-| numpy      | PyCall        | g++      | gfortran   | gcc  |
-| scipy      | CUDA          | Cmake    | libtetrabz |      |
-| matplotlib | FFTW          | BLAS     |            |      |
-| h5py       | Roots         | openBLAS |            |      |
-| sparse_ir  | SparseIR      | LAPACK   |            |      |
-| pandas     | MPI           | LAPACKE  |            |      |
-| tbmodels   |               | Ninja    |            |      |
-|            |               | OpenMP   |            |      |
-|            |               | ccache   |            |      |
-|            |               | Boost    |            |      |
-|            |               | pybind   |            |      |
-|            |               | hdf5     |            |      |
+| Python     | Julia             | C++      | Fortran    | C    |
+|:----------:|:-----------------:|:--------:|:----------:|:----:|
+| numpy      | PyCall            | g++      | gfortran   | gcc  |
+| scipy      | CUDA              | Cmake    | libtetrabz |      |
+| matplotlib | FFTW              | BLAS     |            |      |
+| h5py       | Roots             | openBLAS |            |      |
+| sparse_ir  | SparseIR          | LAPACK   |            |      |
+| pandas     | MPI               | LAPACKE  |            |      |
+| tbmodels   | PencilFFTs        | Ninja    |            |      |
+|            | LoopVectorization | OpenMP   |            |      |
+|            |                   | ccache   |            |      |
+|            |                   | Boost    |            |      |
+|            |                   | pybind   |            |      |
+|            |                   | hdf5     |            |      |
 
 ---
 #### **2️⃣ Build Instructions**  
  1) Go to the "scripts" folder and run "./fly-build.sh -vv" to build the code. -v indicates a verbose output, -vv indicates a very verbose output, and a -v option exists for regular verbosity. However, for the first time building, using -vv is recommended in the event of an error. If you are a dev, I recommend setting fly-build.sh to a custom terminal command, so recompilation can be done from outside folders. This may be useful while running tests and material calculations.
  2) To ensure Ffirefly has been properly installed, simply run "fly.x". The default tests will run, and if all pass, then you have downloaded the packages correctly. If not, the package that failed will be listed.
+ 3) For categories that use julia, precompile packages with "julia --project=~/Research/FFirefly/jlpkg/Firefly -e 'using Pkg; Pkg.Registry.update(); Pkg.instantiate(); Pkg.precompile()'"
 
 ---
 

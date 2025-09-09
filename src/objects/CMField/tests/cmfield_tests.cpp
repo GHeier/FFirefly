@@ -1,6 +1,7 @@
 #include "../../vec.hpp"
 #include "../cmfield.hpp"
 #include "../fields.hpp"
+#include <filesystem>
 
 #include "../../../config/load/c_config.h"
 
@@ -570,5 +571,6 @@ bool cmfield_tests() {
         interp_test_2d_vector(), interp_test_3d_vector(),
         interp_test_1d(),        interp_test_1d_complex(),
     };
+    filesystem::remove("testfield.h5");
     return print_test_results(all_tests, num_tests, "CMField tests");
 }

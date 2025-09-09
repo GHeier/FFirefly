@@ -148,5 +148,6 @@ bool field_tests() {
         Field_C_interp_test_2d(),
         Field_C_interp_test_2d_with_w(),
     };
+    remove("temp.dat");
     return print_test_results(all_tests, num_tests, "Field tests");
 }

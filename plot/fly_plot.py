@@ -1,8 +1,9 @@
-from plot import plot_path
-from plot import basic
-from plot import colorplot
-from plot import gap_function
-from plot import plot_bands
+from . import plot_path, basic, colorplot, gap_function, plot_bands
+#from plot import plot_path
+#from plot import basic
+#from plot import colorplot
+#from plot import gap_function
+#from plot import plot_bands
 
 import argparse
 import sys

@@ -38,6 +38,7 @@ bool CMData_tests() {
         readwrite_3d_with_w_with_n(),
     };
     remove("testfile.dat");
+    remove("hdf5file.h5");
     return print_test_results(all_tests, num_tests, "CMData tests");
 }
 
