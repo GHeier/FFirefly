@@ -41,31 +41,31 @@ position = [0.0, 0.0, 0.0]
 
 #[BANDS]
 band = []
-band.append('fermi_gas')
+#band.append('fermi_gas')
 eff_mass = []
-eff_mass.append(1.0)
+#eff_mass.append(1.0)
 t0 = []
-t0.append(1.0)
+#t0.append(1.0)
 t1 = []
-t1.append(0.0)
+#t1.append(0.0)
 t2 = []
-t2.append(0.0)
+#t2.append(0.0)
 t3 = []
-t3.append(0.0)
+#t3.append(0.0)
 t4 = []
-t4.append(0.0)
+#t4.append(0.0)
 t5 = []
-t5.append(0.0)
+#t5.append(0.0)
 t6 = []
-t6.append(0.0)
+#t6.append(0.0)
 t7 = []
-t7.append(0.0)
+#t7.append(0.0)
 t8 = []
-t8.append(0.0)
+#t8.append(0.0)
 t9 = []
-t9.append(0.0)
+#t9.append(0.0)
 t10 = []
-t10.append(0.0)
+#t10.append(0.0)
 
 #[SUPERCONDUCTOR]
 FS_only = True
@@ -276,6 +276,7 @@ def load_config():
         if not brillouin_zone:
             print("Error: Brillouin zone not specified.")
             brillouin_zone = BZ_from_cell(cell)
+        #band = band[1:]
         if len(band) != nbnd and nbnd != 1:
             print("Error: Number of bands does not match number of bands specified in input.")
             sys.exit(1)

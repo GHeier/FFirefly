@@ -64,7 +64,6 @@ CMField::CMField(CMData &data) {
 
     make_values_2d(values, data);
     nbnd = data.n_inds.size();
-    printf("nbnd = %d\n", nbnd);
     empty_CMData(data);
 }
 

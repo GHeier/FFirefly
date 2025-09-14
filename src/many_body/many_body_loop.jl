@@ -33,8 +33,6 @@ if dim == 2
 end
 nk = nx * ny * nz
 nbnd = cfg.nbnd
-nbnd = 1
-println("nbnd = $nbnd")
 mu = cfg.fermi_energy
 U = cfg.onsite_U
 BZ = cfg.brillouin_zone
@@ -257,7 +255,7 @@ end
 
 function DMFT_Sigma(solver::ManyBodySolver)
     proj = ones(ComplexF32, nx, ny, nz)
-    g_loc = project_kernel(proj, solver.Gkw)
+    g_loc = project_kernel(proj, solver.Gkw[1])
     gt = wn_to_tau(solver.mesh, Fermionic(), g_loc)
     sigma_t = solver.U^2 * gt.^3
     sigma_w = tau_to_wn(solver.mesh, Fermionic(), sigma_t)
@@ -269,7 +267,7 @@ function FLEX_local_Sigma(solver::ManyBodySolver)
     xw = zeros(ComplexF32, solver.mesh.bnw)
     gt = zeros(ComplexF32, nbnd, solver.mesh.fnw)
     for n in 1:nbnd
-        g_loc = project_kernel(proj, view(solver.Gkw, n, :, :, :, :))
+        g_loc = project_kernel(proj, solver.Gkw[1])
         gt[n, :] .= wn_to_tau(solver.mesh, Fermionic(), g_loc)
         xt = gt[n, :] .* reverse(gt[n, :])
         xw .+= tau_to_wn(solver.mesh, Bosonic(), xt)
@@ -334,7 +332,7 @@ function DFMT_FLEX!(solver::ManyBodySolver)
     solver.Gkw .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.Ekw)
 end
 
-function DFMT_loop!(solver::ManyBodySolver)
+function DMFT_loop!(solver::ManyBodySolver)
     sigma_w = DMFT_Sigma(solver)
     combine_sigmas!(solver, sigma_w)
     solver.mu = mu_calc(solver)
@@ -492,6 +490,8 @@ function main()
     end
     println("New mu=$(solver.mu)")
 
+    println("Sample G(k,w) = $(solver.Gkw[1][1, 1, 1, 1])")
+
     #solver.Grt = Array{ComplexF32,5}(undef, 0, 0, 0, 0, 0)
     #solver.Vrt = Array{ComplexF32,4}(undef, 0, 0, 0, 0)
     V = [similar(x) for x in solver.Xkw]
@@ -520,6 +520,13 @@ function main()
         V[1][i, :, :, :] .= fftshift(V[1][i, :, :, :])
         solver.Xkw[1][i, :, :, :] .= fftshift(solver.Xkw[1][i, :, :, :])
     end
+
+    G_w0 = 0
+    for n in 1:nbnd
+        ind = Int(mesh.fnw / 2)
+        G_w0 += sum(solver.Gkw[n][ind, :, :, :]) / nk
+    end
+    println("DOS = $(G_w0.im / pi)")
 
     save_field!(outdir * prefix * "_self_energy." * filetype, solver.Ekw, BZ_in, kmesh, imag.(solver.iw))
     save_field!(outdir * prefix * "_vertex." * filetype, V, BZ_in, kmesh, imag.(solver.iv))
