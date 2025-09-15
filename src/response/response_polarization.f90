@@ -1,6 +1,6 @@
 module globals
     use, intrinsic :: iso_c_binding  ! Ensure C interoperability
-    use fcode
+    use ffirefly
     implicit none
     real(8), parameter :: pi = 3.1415926535897932384626433832795028841971
     integer :: nb, ne, nge(3), ngw(3), nke, nkw
@@ -21,7 +21,7 @@ module globals
             if (dimension == 2) then
                 VBZ = bvec(1,1) * bvec(2,2) - bvec(1,2) * bvec(2,1)
                 nge(3) = 2
-                ngw(3) = 2
+                ngw(3) = 1
             end if
             nke = product(nge)
             nkw = product(ngw)
@@ -210,10 +210,10 @@ module mesh
         filename = trim(adjustl(trim(outdir) // trim(prefix))) // '_chi.dat'
         if (dimension == 3) then
             header = "         x             y             z             f"
-        !else if (dimension == 2) then
-        !    header = "         x             y             f"
-        !else if (dimension == 1) then
-        !    header = "         x             f"
+        else if (dimension == 2) then
+            header = "         x             y             f"
+        else if (dimension == 1) then
+            header = "         x             f"
         end if
         open(10, file=filename, status='unknown')
         write(10, '(A)') header
@@ -222,7 +222,7 @@ module mesh
                 do i3 = 0, ngw(3) - 1
                     qvec = get_qvec(i1, i2, i3, ngw)
                     qvec(1:3) = matmul(bvec(1:3,1:3), qvec(1:3))
-                    write(10, '(1x, f13.6, 1x, f13.6, 1x, f13.6, 1x, f13.6)') qvec(1), qvec(2), qvec(3), chi_mesh(i1+1, i2+1, i3+1)
+                    write(10, '(1x, f13.6, 1x, f13.6, 1x, f13.6)') qvec(1), qvec(2), chi_mesh(i1+1, i2+1, i3+1)
                 end do
             end do
         end do

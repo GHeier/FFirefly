@@ -4,7 +4,11 @@
 #include <complex>
 
 float epsilon_export(int n, float kx, float ky = 0, float kz = 0);
-
+CMData *CMData_export0();
+CMData *CMData_export1(const char *filename);
+float CMField_nbnd_export0();
+int Field_R_nbnd_export0(Field_R* a);
+int Field_C_nbnd_export0(Field_C* a);
 Field_R *Field_R_export0();
 Field_R *Field_R_export1(CMField cmf);
 Field_R *Field_R_export2(const char *filename);
@@ -18,6 +22,16 @@ float Field_R_operator_export3(Field_R *obj, int n, const float *point, int len,
 
 Field_C *Field_C_export();
 Field_C *Field_C_export1(CMField cmf);
+Field_C *Field_C_export2(const char *filename);
+
+void Field_C_operator_export0(Field_C *obj, float w, float *real_result,
+                              float *imag_result);
+void Field_C_operator_export1(Field_C *obj, int n, float w, float *real_result,
+                              float *imag_result);
+void Field_C_operator_export2(Field_C *obj, const float *point, int len,
+                              float w, float *real_result, float *imag_result);
+void Field_C_operator_export3(Field_C *obj, int n, const float *point, int len,
+                              float w, float *real_result, float *imag_result);
 
 CMField *create_CMField();
 // Load CMField from a file

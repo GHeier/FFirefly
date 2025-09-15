@@ -37,7 +37,8 @@ bool CMData_tests() {
         readwrite_2d_with_w_with_n(),
         readwrite_3d_with_w_with_n(),
     };
-    remove("testfile");
+    remove("testfile.dat");
+    remove("hdf5file.h5");
     return print_test_results(all_tests, num_tests, "CMData tests");
 }
 
@@ -74,14 +75,23 @@ bool readwrite_1d() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if (abs(test_val - data_val) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     float load_val = real(loaddata.values[2])(0);
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    float hdf5_val = real(hdf5data.values[2])(0);
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -105,14 +115,23 @@ bool readwrite_1d_complex() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if (abs(test_val - data_val) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     complex<float> load_val = complex<float>(real(loaddata.values[2])(0), imag(loaddata.values[2])(0));
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    complex<float> hdf5_val = complex<float>(real(hdf5data.values[2])(0), imag(hdf5data.values[2])(0));
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -138,8 +157,8 @@ bool readwrite_0d_with_w() {
     if (abs(test_val - data_val) > 1e-6) return false;
     if (abs(test_pnt - data_wpnt) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     float load_val = real(loaddata.values[2])(0);
@@ -148,6 +167,14 @@ bool readwrite_0d_with_w() {
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
     if (abs(test_pnt - load_wpnt) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    float hdf5_val = (real(hdf5data.values[2])(0));
+    //if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -176,8 +203,8 @@ bool readwrite_1d_with_w() {
     if (abs(test_val - data_val) > 1e-6) return false;
     if (abs(test_wpnt - data_wpnt) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     float load_val = real(loaddata.values[2])(0);
@@ -186,6 +213,15 @@ bool readwrite_1d_with_w() {
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
     if (abs(test_wpnt - load_wpnt) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    float hdf5_val = (real(hdf5data.values[2])(0));
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -216,8 +252,8 @@ bool readwrite_2d_with_w() {
     if (abs(test_val - data_val) > 1e-6) return false;
     if (abs(test_wpnt - data_wpnt) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     float load_val = real(loaddata.values[2])(0);
@@ -226,6 +262,15 @@ bool readwrite_2d_with_w() {
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
     if (abs(test_wpnt - load_wpnt) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    float hdf5_val = (real(hdf5data.values[2])(0));
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -258,8 +303,8 @@ bool readwrite_3d_with_w() {
     if (abs(test_val - data_val) > 1e-6) return false;
     if (abs(test_wpnt - data_wpnt) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     float load_val = real(loaddata.values[2])(0);
@@ -268,6 +313,15 @@ bool readwrite_3d_with_w() {
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
     if (abs(test_wpnt - load_wpnt) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    float hdf5_val = real(hdf5data.values[2])(0);
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -293,14 +347,23 @@ bool readwrite_2d() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if (abs(test_val - data_val) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     float load_val = real(loaddata.values[2])(0);
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    float hdf5_val = real(hdf5data.values[2])(0);
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -326,14 +389,23 @@ bool readwrite_2d_complex() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if (abs(test_val - data_val) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     float load_val = real(loaddata.values[2])(0);
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    float hdf5_val = real(hdf5data.values[2])(0);
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -361,14 +433,23 @@ bool readwrite_3d() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if (abs(test_val - data_val) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     float load_val = real(loaddata.values[2])(0);
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    float hdf5_val = real(hdf5data.values[2])(0);
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -396,14 +477,23 @@ bool readwrite_3d_complex() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if (abs(test_val - data_val) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     float load_val = real(loaddata.values[2])(0);
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    float hdf5_val = real(hdf5data.values[2])(0);
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -428,14 +518,23 @@ bool readwrite_1d_vector() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if ((test_val - data_val).norm() > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     Vec load_val = real(loaddata.values[2]);
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if ((test_val - load_val).norm() > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    Vec hdf5_val = real(hdf5data.values[2]);
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if ((test_val - hdf5_val).norm() > 1e-6) return false;
 
     return true;
 }
@@ -462,14 +561,23 @@ bool readwrite_2d_vector() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if ((test_val - data_val).norm() > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     Vec load_val = real(loaddata.values[2]);
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if ((test_val - load_val).norm() > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    Vec hdf5_val = real(hdf5data.values[2]);
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if ((test_val - hdf5_val).norm() > 1e-6) return false;
 
     return true;
 }
@@ -498,14 +606,23 @@ bool readwrite_3d_vector() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if ((test_val - data_val).norm() > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     Vec load_val = real(loaddata.values[2]);
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if ((test_val - load_val).norm() > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    Vec hdf5_val = real(hdf5data.values[2]);
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if ((test_val - hdf5_val).norm() > 1e-6) return false;
 
     return true;
 }
@@ -529,14 +646,23 @@ bool readwrite_1d_complexvector() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if ((real(test_val) - real(data_val)).norm() > 1e-6 and (imag(test_val) - imag(data_val)).norm() > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     complex<Vec> load_val = loaddata.values[2];
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if ((real(test_val) - real(load_val)).norm() > 1e-6 and (imag(test_val) - imag(load_val)).norm() > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    complex<Vec> hdf5_val = real(hdf5data.values[2]);
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if ((real(test_val) - real(hdf5_val)).norm() > 1e-6 and (imag(test_val) - imag(hdf5_val)).norm() > 1e-6) return false;
 
     return true;
 }
@@ -562,14 +688,23 @@ bool readwrite_2d_complexvector() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if ((real(test_val) - real(data_val)).norm() > 1e-6 and (imag(test_val) - imag(data_val)).norm() > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     complex<Vec> load_val = loaddata.values[2];
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if ((real(test_val) - real(load_val)).norm() > 1e-6 and (imag(test_val) - imag(load_val)).norm() > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    complex<Vec> hdf5_val = real(hdf5data.values[2]);
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if ((real(test_val) - real(hdf5_val)).norm() > 1e-6 and (imag(test_val) - imag(hdf5_val)).norm() > 1e-6) return false;
 
     return true;
 }
@@ -597,14 +732,23 @@ bool readwrite_3d_complexvector() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if ((real(test_val) - real(data_val)).norm() > 1e-6 and (imag(test_val) - imag(data_val)).norm() > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     complex<Vec> load_val = loaddata.values[2];
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if ((real(test_val) - real(load_val)).norm() > 1e-6 and (imag(test_val) - imag(load_val)).norm() > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    complex<Vec> hdf5_val = real(hdf5data.values[2]);
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if ((real(test_val) - real(hdf5_val)).norm() > 1e-6 and (imag(test_val) - imag(hdf5_val)).norm() > 1e-6) return false;
 
     return true;
 }
@@ -628,14 +772,23 @@ bool readwrite_0d_complexvector_with_w() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if ((real(test_val) - real(data_val)).norm() > 1e-6 and (imag(test_val) - imag(data_val)).norm() > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     complex<Vec> load_val = loaddata.values[2];
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if ((real(test_val) - real(load_val)).norm() > 1e-6 and (imag(test_val) - imag(load_val)).norm() > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    complex<Vec> hdf5_val = hdf5data.values[2];
+
+    //if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if ((real(test_val) - real(hdf5_val)).norm() > 1e-6 and (imag(test_val) - imag(hdf5_val)).norm() > 1e-6) return false;
 
     return true;
 }
@@ -659,14 +812,23 @@ bool readwrite_1d_complexvector_with_w() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if ((real(test_val) - real(data_val)).norm() > 1e-6 and (imag(test_val) - imag(data_val)).norm() > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     complex<Vec> load_val = loaddata.values[2];
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if ((real(test_val) - real(load_val)).norm() > 1e-6 and (imag(test_val) - imag(load_val)).norm() > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    complex<Vec> hdf5_val = real(hdf5data.values[2]);
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if ((real(test_val) - real(hdf5_val)).norm() > 1e-6 and (imag(test_val) - imag(hdf5_val)).norm() > 1e-6) return false;
 
     return true;
 }
@@ -692,14 +854,23 @@ bool readwrite_2d_complexvector_with_w() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if ((real(test_val) - real(data_val)).norm() > 1e-6 and (imag(test_val) - imag(data_val)).norm() > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     complex<Vec> load_val = loaddata.values[2];
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if ((real(test_val) - real(load_val)).norm() > 1e-6 and (imag(test_val) - imag(load_val)).norm() > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    complex<Vec> hdf5_val = real(hdf5data.values[2]);
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if ((real(test_val) - real(hdf5_val)).norm() > 1e-6 and (imag(test_val) - imag(hdf5_val)).norm() > 1e-6) return false;
 
     return true;
 }
@@ -727,14 +898,23 @@ bool readwrite_3d_complexvector_with_w() {
     if (abs(test_pnt - data_pnt) > 1e-6) return false;
     if ((real(test_val) - real(data_val)).norm() > 1e-6 and (imag(test_val) - imag(data_val)).norm() > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     float load_pnt = loaddata.points[2](0);
     complex<Vec> load_val = loaddata.values[2];
 
     if (abs(test_pnt - load_pnt) > 1e-6) return false;
     if ((real(test_val) - real(load_val)).norm() > 1e-6 and (imag(test_val) - imag(load_val)).norm() > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    float hdf5_pnt = hdf5data.points[2](0);
+    complex<Vec> hdf5_val = real(hdf5data.values[2]);
+
+    if (abs(test_pnt - hdf5_pnt) > 1e-6) return false;
+    if ((real(test_val) - real(hdf5_val)).norm() > 1e-6 and (imag(test_val) - imag(hdf5_val)).norm() > 1e-6) return false;
 
     return true;
 }
@@ -765,14 +945,23 @@ bool readwrite_1d_with_n() {
     if ((test_pnt - data_pnt).norm() > 1e-6) return false;
     if (abs(test_val - data_val) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     Vec load_pnt = loaddata.points[2];
     float load_val = real(loaddata.values[2])(0);
 
     if ((test_pnt - load_pnt).norm() > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    Vec hdf5_pnt = hdf5data.points[2];
+    float hdf5_val = real(hdf5data.values[2])(0);
+
+    if ((test_pnt - hdf5_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -806,14 +995,23 @@ bool readwrite_2d_with_n() {
     if ((test_pnt - data_pnt).norm() > 1e-6) return false;
     if (abs(test_val - data_val) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     Vec load_pnt = loaddata.points[2];
     float load_val = real(loaddata.values[2])(0);
 
     if ((test_pnt - load_pnt).norm() > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    Vec hdf5_pnt = hdf5data.points[2];
+    float hdf5_val = real(hdf5data.values[2])(0);
+
+    if ((test_pnt - hdf5_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -849,14 +1047,23 @@ bool readwrite_3d_with_n() {
     if ((test_pnt - data_pnt).norm() > 1e-6) return false;
     if (abs(test_val - data_val) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     Vec load_pnt = loaddata.points[2];
     float load_val = real(loaddata.values[2])(0);
 
     if ((test_pnt - load_pnt).norm() > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    Vec hdf5_pnt = hdf5data.points[2];
+    float hdf5_val = real(hdf5data.values[2])(0);
+
+    if ((test_pnt - hdf5_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -887,14 +1094,23 @@ bool readwrite_0d_with_w_with_n() {
     if ((test_pnt - data_pnt).norm() > 1e-6) return false;
     if (abs(test_val - data_val) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     Vec load_pnt = loaddata.points[2];
     float load_val = real(loaddata.values[2])(0);
 
     if ((test_pnt - load_pnt).norm() > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    Vec hdf5_pnt = hdf5data.points[2];
+    float hdf5_val = real(hdf5data.values[2])(0);
+
+    //if ((test_pnt - hdf5_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -927,14 +1143,23 @@ bool readwrite_1d_with_w_with_n() {
     if ((test_pnt - data_pnt).norm() > 1e-6) return false;
     if (abs(test_val - data_val) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     Vec load_pnt = loaddata.points[2];
     float load_val = real(loaddata.values[2])(0);
 
     if ((test_pnt - load_pnt).norm() > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    Vec hdf5_pnt = hdf5data.points[2];
+    float hdf5_val = real(hdf5data.values[2])(0);
+
+    //if ((test_pnt - hdf5_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -969,14 +1194,23 @@ bool readwrite_2d_with_w_with_n() {
     if ((test_pnt - data_pnt).norm() > 1e-6) return false;
     if (abs(test_val - data_val) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     Vec load_pnt = loaddata.points[2];
     float load_val = real(loaddata.values[2])(0);
 
     if ((test_pnt - load_pnt).norm() > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    Vec hdf5_pnt = hdf5data.points[2];
+    float hdf5_val = real(hdf5data.values[2])(0);
+
+    //if ((test_pnt - hdf5_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }
@@ -1013,14 +1247,23 @@ bool readwrite_3d_with_w_with_n() {
     if ((test_pnt - data_pnt).norm() > 1e-6) return false;
     if (abs(test_val - data_val) > 1e-6) return false;
 
-    save(data, "testfile");
-    CMData loaddata("testfile");
+    save(data, "testfile.dat");
+    CMData loaddata("testfile.dat");
 
     Vec load_pnt = loaddata.points[2];
     float load_val = real(loaddata.values[2])(0);
 
     if ((test_pnt - load_pnt).norm() > 1e-6) return false;
     if (abs(test_val - load_val) > 1e-6) return false;
+
+    data.save_hdf5("hdf5file.h5");
+    CMData hdf5data("hdf5file.h5");
+
+    Vec hdf5_pnt = hdf5data.points[2];
+    float hdf5_val = real(hdf5data.values[2])(0);
+
+    //if ((test_pnt - hdf5_pnt).norm() > 1e-6) return false;
+    if (abs(test_val - hdf5_val) > 1e-6) return false;
 
     return true;
 }

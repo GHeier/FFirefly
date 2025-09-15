@@ -6,7 +6,7 @@ project(Ffirefly VERSION 1.0 LANGUAGES C CXX Fortran)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
+add_definitions(-D_GLIBCXX_USE_CXX11_ABI=1)
 
 # Use ccache to speed up compilation
 set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
@@ -25,7 +25,7 @@ set(CMAKE_C_FLAGS "-fopenmp -fPIC")
 set(CMAKE_Fortran_FLAGS "-O3 -fopenmp -fPIC -L/usr/local/lib -I/usr/local/include -ltetrabz")
 
 # Libraries to link
-set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -ltetrabz -lopenblas -ljulia)
+set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -ltetrabz -lopenblas -ljulia -lhdf5_cpp -lhdf5)
 
 # Find Python3 headers and libraries
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
@@ -101,5 +101,5 @@ add_executable(fly.x $<TARGET_OBJECTS:objlib_c> $<TARGET_OBJECTS:objlib_cpp> $<T
 set_target_properties(fly.x PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
 # Link necessary libraries (but NOT the shared library!)
-target_link_libraries(fly.x PRIVATE ${Python3_LIBRARIES} ${LIBS})
+target_link_libraries(fly.x PRIVATE ${LIBS} ${Python3_LIBRARIES})
 target_link_libraries(fly PRIVATE ${Python3_LIBRARIES} ${LIBS})

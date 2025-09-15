@@ -4,20 +4,25 @@ import ast
 #[CONTROL]
 category = 'test'
 calculation = 'test'
+method = 'none'
 outdir = './'
+indir = './'
 prefix = 'sample'
 verbosity = 'low'
-input_data_file = 'input.dat'
-output_data_file = 'output.dat'
+automatic_file_read = True
+write_result = True
+filetype = 'h5'
 
 #[SYSTEM]
 interaction = 'none'
 dimension = 3
-ibrav = 0
+celltype = ''
 nbnd = 0
+natoms = 0
 fermi_energy = 0.0
 Temperature = 0.0
 onsite_U = 0.0
+cutoff_energy = 0.05
 
 #[MESH]
 k_mesh = [10, 10, 10]
@@ -29,6 +34,10 @@ cell = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
 
 #[BRILLOUIN_ZONE]
 brillouin_zone = [[6.283185307179586, 0.0, 0.0], [0.0, 6.283185307179586, 0.0], [0.0, 0.0, 6.283185307179586]]
+
+#[ATOMS]
+atom = 'X'
+position = [0.0, 0.0, 0.0]
 
 #[BANDS]
 band = []
@@ -59,15 +68,16 @@ t10 = []
 t10.append(0.0)
 
 #[SUPERCONDUCTOR]
-method = 'none'
 FS_only = True
-bcs_cutoff_frequency = 0.05
 num_eigenvalues_to_save = 1
 frequency_pts = 5
 projections = ''
 
 #[RESPONSE]
 dynamic = False
+
+#[MANY_BODY]
+self_consistent = False
 ### End Variables ###
 nbnd += 1
 ### Functions ###
@@ -87,7 +97,7 @@ def load_config():
     import os
 
     current_file = os.path.abspath(__file__)
-    input_file = current_file[:-27] + "build/bin/input.cfg"
+    input_file = current_file[:-39] + "build/bin/input.cfg"
     key, value, section = "", "", ""
     got_dimension = False
     index = 0
@@ -112,21 +122,30 @@ def load_config():
             if "calculation" in key:
                 global calculation
                 calculation = value
+            if "method" in key:
+                global method
+                method = value
             if "outdir" in key:
                 global outdir
                 outdir = value
+            if "indir" in key:
+                global indir
+                indir = value
             if "prefix" in key:
                 global prefix
                 prefix = value
             if "verbosity" in key:
                 global verbosity
                 verbosity = value
-            if "input_data_file" in key:
-                global input_data_file
-                input_data_file = value
-            if "output_data_file" in key:
-                global output_data_file
-                output_data_file = value
+            if "automatic_file_read" in key:
+                global automatic_file_read
+                automatic_file_read = value == 'true'
+            if "write_result" in key:
+                global write_result
+                write_result = value == 'true'
+            if "filetype" in key:
+                global filetype
+                filetype = value
 
 #[SYSTEM]
             if "interaction" in key:
@@ -136,12 +155,15 @@ def load_config():
                 global dimension
                 dimension = int(value)
                 got_dimension = True
-            if "ibrav" in key:
-                global ibrav
-                ibrav = int(value)
+            if "celltype" in key:
+                global celltype
+                celltype = value
             if "nbnd" in key:
                 global nbnd
                 nbnd = int(value)
+            if "natoms" in key:
+                global natoms
+                natoms = int(value)
             if "fermi_energy" in key:
                 global fermi_energy
                 fermi_energy = float(value)
@@ -151,6 +173,9 @@ def load_config():
             if "onsite_U" in key:
                 global onsite_U
                 onsite_U = float(value)
+            if "cutoff_energy" in key:
+                global cutoff_energy
+                cutoff_energy = float(value)
 
 #[MESH]
             if "k_mesh" in key:
@@ -174,6 +199,14 @@ def load_config():
                 global brillouin_zone
                 brillouin_zone.append([float(line.split()[i]) for i in range(3)])
                 index += 1
+
+#[ATOMS]
+            if "atom" in key:
+                global atom
+                atom = value
+            if "position" in key:
+                global position
+                position = [float(value.split()[i]) for i in range(3)]
 
 #[BANDS]
             if "band" in key:
@@ -217,15 +250,9 @@ def load_config():
                 t10.append(float(value))
 
 #[SUPERCONDUCTOR]
-            if "method" in key:
-                global method
-                method = value
             if "FS_only" in key:
                 global FS_only
                 FS_only = value == 'true'
-            if "bcs_cutoff_frequency" in key:
-                global bcs_cutoff_frequency
-                bcs_cutoff_frequency = float(value)
             if "num_eigenvalues_to_save" in key:
                 global num_eigenvalues_to_save
                 num_eigenvalues_to_save = int(value)
@@ -240,14 +267,23 @@ def load_config():
             if "dynamic" in key:
                 global dynamic
                 dynamic = value == 'true'
+
+#[MANY_BODY]
+            if "self_consistent" in key:
+                global self_consistent
+                self_consistent = value == 'true'
             # Finished setting variables
         if not brillouin_zone:
             print("Error: Brillouin zone not specified.")
             brillouin_zone = BZ_from_cell(cell)
+        #band = band[1:]
         if len(band) != nbnd and nbnd != 1:
             print("Error: Number of bands does not match number of bands specified in input.")
             sys.exit(1)
-        nbnd = len(band)
+
+        #nbnd = len(band)
+        if outdir[-1] != '/':
+            outdir += '/'
     return input_file
 
 def printv(format_string: str, *args):

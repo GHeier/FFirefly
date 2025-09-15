@@ -1,11 +1,11 @@
+#include "../config/load/cpp_config.hpp"
 #include <math.h>
 #include <vector>
-#include "../config/load/cpp_config.hpp"
 
 int n = k_mesh[0];
 int m = q_mesh[0];
 int l = 5;
-float wc = bcs_cutoff_frequency;
+float wc = cutoff_energy;
 float mu = fermi_energy;
 float U = onsite_U;
 
@@ -20,7 +20,7 @@ void load_cpp_cfg() {
     n = k_mesh[0];
     m = q_mesh[0];
     l = 5;
-    wc = bcs_cutoff_frequency;
+    wc = cutoff_energy;
     mu = fermi_energy;
     U = onsite_U;
 
@@ -31,4 +31,3 @@ void load_cpp_cfg() {
     k_max = M_PI;
     dim = dimension;
 }
-

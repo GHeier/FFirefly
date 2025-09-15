@@ -1,6 +1,6 @@
 import numpy as np
 import sparse_ir
-from fcode import *
+from ffirefly import *
 
 [nk1, nk2, nk3] = k_mesh
 nk = nk1*nk2*nk3

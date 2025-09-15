@@ -9,9 +9,12 @@
 using namespace std;
 
 class Surface {
-public:
-  vector<Vec> faces;
-  vector<vector<Vec>> vertices;
+  public:
+    vector<Vec> faces;
+    vector<vector<Vec>> vertices;
+
+    Surface() {};
+    Surface(function<float(Vec k)> func, float s_val);
 };
 
 /**

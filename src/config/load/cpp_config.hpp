@@ -10,20 +10,25 @@ using namespace std;
 //[CONTROL]
 extern string category;
 extern string calculation;
+extern string method;
 extern string outdir;
+extern string indir;
 extern string prefix;
 extern string verbosity;
-extern string input_data_file;
-extern string output_data_file;
+extern bool automatic_file_read;
+extern bool write_result;
+extern string filetype;
 
 //[SYSTEM]
 extern string interaction;
 extern int dimension;
-extern int ibrav;
+extern string celltype;
 extern int nbnd;
+extern int natoms;
 extern float fermi_energy;
 extern float Temperature;
 extern float onsite_U;
+extern float cutoff_energy;
 
 //[MESH]
 extern vector<int> k_mesh;
@@ -35,6 +40,12 @@ extern vector<vector<float>> cell;
 
 //[BRILLOUIN_ZONE]
 extern vector<vector<float>> brillouin_zone;
+
+//[ATOMS]
+extern vector<string> atom;
+
+extern vector<vector<float>> position;
+
 
 //[BANDS]
 extern vector<string> band;
@@ -53,15 +64,16 @@ extern vector<float> t9;
 extern vector<float> t10;
 
 //[SUPERCONDUCTOR]
-extern string method;
 extern bool FS_only;
-extern float bcs_cutoff_frequency;
 extern int num_eigenvalues_to_save;
 extern int frequency_pts;
 extern string projections;
 
 //[RESPONSE]
 extern bool dynamic;
+
+//[MANY_BODY]
+extern bool self_consistent;
 // End of Global Variables
 
 
@@ -78,6 +90,7 @@ inline void set_global(float &a, float b) {
 //
 //void set_global(string &a, string b);
 void set_global(string &a, const char* b);
+void set_global(vector<int> &a, vector<int> b);
 
 extern "C" {
     void set_nbnd(int nbnd_);
@@ -100,3 +113,4 @@ void printv(const std::string& format, Args... args) {
     if (verbosity == "high") printf(format.c_str(), args...);
 }
 void read_c_config_wrapper(string path);
+bool isDirectoryExisting(const std::string& path);

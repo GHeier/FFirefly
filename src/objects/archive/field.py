@@ -1,4 +1,4 @@
-import fcode.config as cfg
+import ffirefly.config as cfg
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator, RegularGridInterpolator
 

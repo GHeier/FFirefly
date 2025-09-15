@@ -2,28 +2,33 @@ module Config
 
 using PyCall
 
-fcode = pyimport("fcode")
-cfg = fcode.config
+firefly = pyimport("firefly")
+cfg = firefly.config
 
 # Start variable definitions
 
 #[CONTROL]
 category::String = cfg.category
 calculation::String = cfg.calculation
+method::String = cfg.method
 outdir::String = cfg.outdir
+indir::String = cfg.indir
 prefix::String = cfg.prefix
 verbosity::String = cfg.verbosity
-input_data_file::String = cfg.input_data_file
-output_data_file::String = cfg.output_data_file
+automatic_file_read::Bool = cfg.automatic_file_read
+write_result::Bool = cfg.write_result
+filetype::String = cfg.filetype
 
 #[SYSTEM]
 interaction::String = cfg.interaction
 dimension::Int = cfg.dimension
-ibrav::Int = cfg.ibrav
+celltype::String = cfg.celltype
 nbnd::Int = cfg.nbnd
+natoms::Int = cfg.natoms
 fermi_energy::Float64 = cfg.fermi_energy
 Temperature::Float64 = cfg.Temperature
 onsite_U::Float64 = cfg.onsite_U
+cutoff_energy::Float64 = cfg.cutoff_energy
 
 #[MESH]
 k_mesh::Array{Int} = cfg.k_mesh
@@ -35,6 +40,10 @@ cell::Array{Float64} = cfg.cell
 
 #[BRILLOUIN_ZONE]
 brillouin_zone::Array{Float64} = cfg.brillouin_zone
+
+#[ATOMS]
+atom::String = cfg.atom
+position::Array{Float64} = cfg.position
 
 #[BANDS]
 band::Vector{String} = cfg.band
@@ -53,15 +62,16 @@ t9::Vector{Float64} = cfg.t9
 t10::Vector{Float64} = cfg.t10
 
 #[SUPERCONDUCTOR]
-method::String = cfg.method
 FS_only::Bool = cfg.FS_only
-bcs_cutoff_frequency::Float64 = cfg.bcs_cutoff_frequency
 num_eigenvalues_to_save::Int = cfg.num_eigenvalues_to_save
 frequency_pts::Int = cfg.frequency_pts
 projections::String = cfg.projections
 
 #[RESPONSE]
 dynamic::Bool = cfg.dynamic
+
+#[MANY_BODY]
+self_consistent::Bool = cfg.self_consistent
 # End variable definitions
 
 end

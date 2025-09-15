@@ -16,7 +16,7 @@ public:
 
   complex<float> operator()(Vec point, float w = 0);
   complex<float> operator()(float w);
-  complex<float> operator()(int n, double w);
+  complex<float> operator()(int n, float w);
   complex<float> operator()(int n, Vec point, float w = 0);
 };
 

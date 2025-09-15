@@ -6,18 +6,23 @@ using Roots
 using SparseIR
 import SparseIR: Statistics, value, valueim
 using PyCall
+using PencilFFTs
+using MPI
 
-include("../qmodule/src/cpp_imports.jl")
-using .Quasi
+using Firefly
 
-fcode = pyimport("fcode")
-cfg = fcode.config
+cfg = Firefly.Config
 
+nx, ny, nz = cfg.k_mesh
 BZ = cfg.brillouin_zone
 dim = cfg.dimension
+beta = 1 / cfg.Temperature
 
-export Mesh
+export Mesh, get_iw_iv
 export tau_to_wn, wn_to_tau, k_to_r, r_to_k, kw_to_rtau, rtau_to_kw, IR_Mesh
+export k_to_r!, r_to_k!, kw_to_rtau!, rtau_to_kw!, IR_Mesh
+export prepare_ir, project_kernel, smpl_obj
+export MultiField, make_MultiField
 
 """
 Holding struct for k-mesh and sparsely sampled imaginary time 'tau' / Matsubara frequency 'iw_n' grids.
@@ -26,6 +31,7 @@ Additionally we defines the Fourier transform routines 'r <-> k'  and 'tau <-> l
 struct Mesh
     nk1         ::Int64
     nk2         ::Int64
+    nk3         ::Int64
     nk          ::Int64
     iw0_f       ::Int64
     iw0_b       ::Int64
@@ -35,6 +41,17 @@ struct Mesh
     bntau       ::Int64
     IR_basis_set::FiniteTempBasisSet
     dimension   ::Int64
+    smpl_tau_F
+    smpl_wn_F
+    smpl_tau_B
+    smpl_wn_B
+    obj_l_F_tau
+    obj_l_F_wn
+    obj_l_B_tau
+    obj_l_B_wn
+    plan_fnw
+    plan_bnw
+    plan_tau
 end
 
 """Initialize function"""
@@ -43,23 +60,21 @@ function Mesh(
         nk1         ::Int64 = 0,
         nk2         ::Int64 = 0,
         nk3         ::Int64 = 0,
+        pen                 = 0,
         )::Mesh
 
     nk::Int64 = nk1 * nk2 * nk3
     dimension = 3
-    if nk3 == 0
+    if nk3 == 1
         dimension = 2
-        nk = nk1 * nk2
     end
-    if nk2 == 0
+    if nk2 == 1
         dimension = 1
-        nk = nk1
     end
-    if nk1 == 0
+    if nk1 == 1
         dimension = 0
-        nk = 0
     end
-    println("nk = ", nk, " dimension = ", dimension)
+    println("IRMesh: nk = ", nk, " dimension = ", dimension)
 
     # lowest Matsubara frequency index
     iw0_f = findall(x->x==FermionicFreq(1), IR_basis_set.smpl_wn_f.sampling_points)[1]
@@ -71,8 +86,25 @@ function Mesh(
     bnw   = length(IR_basis_set.smpl_wn_b.sampling_points)
     bntau = length(IR_basis_set.smpl_tau_b.sampling_points)
 
-    # Return
-    Mesh(nk1, nk2, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension)
+
+    temp = Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    smpl_tau_F, smpl_wn_F, obj_l_F_wn, obj_l_F_tau = prepare_ir(temp, Fermionic())
+    smpl_tau_B, smpl_wn_B, obj_l_B_wn, obj_l_B_tau = prepare_ir(temp, Bosonic())
+
+    if pen != 0
+        println("MPI Transforms enabled")
+    end
+    if pen == 0
+        return Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, smpl_tau_F, smpl_wn_F, smpl_tau_B, smpl_wn_B, obj_l_F_wn, obj_l_F_tau, obj_l_B_wn, obj_l_B_tau, 0, 0, 0)
+    end
+    transform = Transforms.FFT()
+    farg = Val(false)
+    plan_fnw = PencilFFTPlan(pen, transform, extra_dims = (fnw,), permute_dims = farg)
+    plan_bnw = PencilFFTPlan(pen, transform, extra_dims = (bnw,), permute_dims = farg)
+    plan_tau = PencilFFTPlan(pen, transform, extra_dims = (fntau,), permute_dims = farg)
+    G = allocate_input(plan_fnw)
+
+    return Mesh(nk1, nk2, nk3, nk, iw0_f, iw0_b, fnw, fntau, bnw, bntau, IR_basis_set, dimension, smpl_tau_F, smpl_wn_F, smpl_tau_B, smpl_wn_B, obj_l_F_wn, obj_l_F_tau, obj_l_B_wn, obj_l_B_tau, plan_fnw, plan_bnw, plan_tau)
 end
 
 function smpl_obj(mesh::Mesh, statistics::SparseIR.Statistics)
@@ -91,6 +123,7 @@ end
 function tau_to_wn(mesh::Mesh, statistics::T, obj_tau) where {T <: SparseIR.Statistics}
     """ Fourier transform from tau to iw_n via IR basis """
     smpl_tau, smpl_wn = smpl_obj(mesh, statistics)
+    #println(valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[1], beta))
 
     obj_l = fit(smpl_tau, obj_tau, dim=1)
     obj_wn = evaluate(smpl_wn, obj_l, dim=1)
@@ -101,14 +134,34 @@ function wn_to_tau(mesh::Mesh, statistics::Statistics, obj_wn)
     """ Fourier transform from iw_n to tau via IR basis """
     smpl_tau, smpl_wn = smpl_obj(mesh, statistics)
     obj_l   = fit(smpl_wn, obj_wn, dim=1)
-    max_l = maximum(abs.(obj_l))
-    for i in 1:length(obj_l)
-        if abs(obj_l[i]) < 1e-5 * max_l
-            obj_l[i] = 0
-        end
-    end
+    #max_l = maximum(abs.(obj_l))
+    #for i in 1:length(obj_l)
+    #    if abs(obj_l[i]) < 1e-5 * max_l
+    #        obj_l[i] = 0
+    #    end
+    #end
     obj_tau = evaluate(smpl_tau, obj_l, dim=1)
     return obj_tau
+end
+
+function tau_to_wn!(out, obj_tau, particle, mesh)
+    if particle == 'F'
+        fit!(mesh.obj_l_F_wn, mesh.smpl_tau_F, obj_tau, dim=1)
+        evaluate!(out, mesh.smpl_wn_F, mesh.obj_l_F_wn, dim=1)
+    else
+        fit!(mesh.obj_l_B_wn, mesh.smpl_tau_B, obj_tau, dim=1)
+        evaluate!(out, mesh.smpl_wn_B, mesh.obj_l_B_wn, dim=1)
+    end
+end
+
+function wn_to_tau!(out, obj_wn, particle, mesh)
+    if particle == 'F'
+        fit!(mesh.obj_l_F_wn, mesh.smpl_wn_F, obj_wn, dim=1)
+        evaluate!(out, mesh.smpl_tau_F, mesh.obj_l_F_wn, dim=1)
+    else
+        fit!(mesh.obj_l_B_wn, mesh.smpl_wn_B, obj_wn, dim=1)
+        evaluate!(out, mesh.smpl_tau_B, mesh.obj_l_B_wn, dim=1)
+    end
 end
 
 function tau_to_wn_c(mesh::Mesh, statistics::Statistics, obj_tau)
@@ -147,6 +200,25 @@ function r_to_k(obj_r, mesh)
     return obj_k / mesh.nk
 end
 
+function k_to_r!(obj::AbstractArray, dim::Int64)
+    fft!(obj, ntuple(i -> i+1, dim))
+end
+
+function r_to_k!(obj::AbstractArray, dim::Int64, nk::Int64)
+    ifft!(obj, ntuple(i -> i+1, dim))
+    obj ./= nk
+end
+
+function kw_to_rtau!(out, obj_k, particle, mesh)
+    wn_to_tau!(out, obj_k, particle, mesh)
+    k_to_r!(out, dim)
+end
+
+function rtau_to_kw!(out, obj_r, particle, mesh)
+    tau_to_wn!(out, obj_r, particle, mesh)
+    r_to_k!(out, dim, mesh.nk)
+end
+
 function kw_to_rtau(obj_k, particle_type, mesh)
     temp = k_to_r(obj_k, mesh)
     if particle_type == 'F'
@@ -157,18 +229,22 @@ function kw_to_rtau(obj_k, particle_type, mesh)
 end
 
 function rtau_to_kw(obj_r, particle_type, mesh)
+    temp = r_to_k(obj_r, mesh)
     if particle_type == 'F'
-        temp = tau_to_wn(mesh, Fermionic(), obj_r)
+        temp = tau_to_wn(mesh, Fermionic(), temp)
     elseif particle_type == 'B'
-        temp = tau_to_wn(mesh, Bosonic(), obj_r)
+        temp = tau_to_wn(mesh, Bosonic(), temp)
     end
-    return r_to_k(temp, mesh)
 end
 
 function get_bandwidth()
     maxval = -1000
     minval = 1000
-    for i in 1:200, j in 1:200, k in 1:200
+    nz = 200
+    if dim == 2
+        nz = 1
+    end
+    for i in 1:200, j in 1:200, k in 1:nz
         kvec = BZ * [i / 200, j / 200, k / 200]
         eps = epsilon(1, kvec)
         maxval = max(maxval, eps)
@@ -177,19 +253,84 @@ function get_bandwidth()
     return maxval - minval
 end
 
-function IR_Mesh(IR_tol = 1e-10)
-    beta = 1 / cfg.Temperature
-    nx, ny, nz = cfg.k_mesh
-    wmax = get_bandwidth()
+function IR_Mesh(wmax, pen = 0, IR_tol = 1e-10)
     IR_basis_set = FiniteTempBasisSet(beta, Float64(wmax), IR_tol)
-    if dim == 1
-        mesh = Mesh(IR_basis_set, nx, 0, 0)
-    elseif dim == 2
-        mesh = Mesh(IR_basis_set, nx, ny, 0)
-    elseif dim == 3
-        mesh = Mesh(IR_basis_set, nx, ny, nz)
+    z = nz
+    if dim == 2
+        z = 1
     end
+    mesh = Mesh(IR_basis_set, nx, ny, z, pen)
     return mesh
+end
+
+
+function get_iw_iv(mesh)
+    fnw, bnw, fntau, bntau = mesh.fnw, mesh.bnw, mesh.fntau, mesh.bntau
+    println("fnw: ", fnw, " bnw: ", bnw, " fntau: ", fntau, " bntau: ", bntau)
+    println("Created IRMesh")
+    iw = Array{ComplexF32}(undef, fnw)
+    iv = Array{ComplexF32}(undef, bnw)
+    for i in 1:fnw
+        iw[i] = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta)
+    end
+    for i in 1:bnw
+        iv[i] = valueim(mesh.IR_basis_set.smpl_wn_b.sampling_points[i], beta)
+    end
+    println("Fermionic frequency from ", minimum(imag.(iw)), " to ", maximum(imag.(iw)))
+    println("Bosonic frequency from ", minimum(imag.(iv)), " to ", maximum(imag.(iv)))
+    return iw, iv 
+end
+
+
+function prepare_ir(mesh::Mesh, stats)
+    smpl_tau, smpl_wn = smpl_obj(mesh, stats)
+    fnw_lshape = (mesh.fnw, mesh.nk1, mesh.nk2, mesh.nk3)
+    bnw_lshape = (mesh.bnw, mesh.nk1, mesh.nk2, mesh.nk3)
+    fntau_lshape = (mesh.fntau, mesh.nk1, mesh.nk2, mesh.nk3)
+    bntau_lshape = (mesh.bntau, mesh.nk1, mesh.nk2, mesh.nk3)
+    if stats == Fermionic()
+        obj_l_wn = zeros(ComplexF32, fnw_lshape)
+        obj_l_tau = zeros(ComplexF32, fntau_lshape)
+    else
+        obj_l_wn = zeros(ComplexF32, bnw_lshape)
+        obj_l_tau = zeros(ComplexF32, bntau_lshape)
+    end
+    #println("Sample object sizes:")
+    #println(size(obj_l_wn))
+    #println(size(obj_l_tau))
+    return smpl_tau, smpl_wn, obj_l_wn, obj_l_tau
+end
+
+function project_kernel(proj::Array{T,3}, A::Array{T,4}) where T
+    @assert size(A)[2:4] == size(proj)
+    (nx, ny, nz) = size(proj)
+    nk = nx*ny*nz
+    wdim = size(A, 1)
+    A_w = zeros(T, wdim)
+    for w in 1:wdim
+        A_w[w] = sum(proj .* view(A, w, :, :, :) .* proj)
+    end
+    return A_w ./ nk
+end
+
+function allocate_kw_fermionic(mesh)
+    return allocate_input(mesh.plan_fnw)
+end
+
+function allocate_kw_boson(mesh)
+    return allocate_input(mesh.plan_bnw)
+end
+
+function allocate_rt_boson(mesh)
+    return allocate_input(mesh.plan_bnw)
+end
+
+struct MultiField
+    data :: Vector{Array{ComplexF32, 4}}
+end
+
+function make_MultiField(n, l, x, y, z)
+    return [Array{ComplexF32}(undef, l, x, y, z) for _ in 1:n]
 end
 
 end

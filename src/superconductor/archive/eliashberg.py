@@ -1,6 +1,6 @@
-import fcode
-import fcode.config as cfg
-from fcode import *
+import ffirefly
+import ffirefly.config as cfg
+from ffirefly import *
 
 import numpy as np
 import sparse_ir
@@ -20,7 +20,7 @@ def get_bandwidth():
     # Flatten the k-points into (N, 3) array
     k_points = np.stack((k1.ravel(), k2.ravel(), k3.ravel()), axis=-1)
     k_points = k_points @ BZ.T
-    e_pts = fcode.epsilon(1, k_points)
+    e_pts = ffirefly.epsilon(1, k_points)
     e_mesh = e_pts.reshape(nk1, nk2, nk3)
     emin = np.min(e_mesh)
     emax = np.max(e_mesh)
@@ -46,7 +46,7 @@ class EliashbergSolver:
         self.phi = np.ones(self.mesh.iwn_f.shape)
         self.Z = np.ones(self.mesh.iwn_f.shape)
 
-        self.file = "/home/g/Research/fcode/" + cfg.input_data_file[1:-1]
+        self.file = "/home/g/Research/ffirefly/" + cfg.input_data_file[1:-1]
         print("Reading susceptibility from", self.file)
         #self.chi0 = Susceptibility(file, 3)
         self.chi = field.load_field_from_file(self.file, 3, False, False)

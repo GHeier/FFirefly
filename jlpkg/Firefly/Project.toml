@@ -1,0 +1,10 @@
+name = "Firefly"
+uuid = "f0119071-79de-41eb-b75f-69c202aeece9"
+authors = ["Griffin Heier <griffinheier@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
+
+[compat]
+PyCall = "1.96.4"

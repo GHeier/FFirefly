@@ -1,4 +1,4 @@
-module fcode
+module ffirefly
     use iso_c_binding
     implicit none
     interface
@@ -31,26 +31,34 @@ module fcode
 ![CONTROL]
     character(len=50) :: category
     character(len=50) :: calculation
+    character(len=50) :: method
     character(len=50) :: outdir
+    character(len=50) :: indir
     character(len=50) :: prefix
     character(len=50) :: verbosity
-    character(len=50) :: input_data_file
-    character(len=50) :: output_data_file
+    logical(c_bool), bind(C, name="c_automatic_file_read") :: c_automatic_file_read
+    logical :: automatic_file_read
+    logical(c_bool), bind(C, name="c_write_result") :: c_write_result
+    logical :: write_result
+    character(len=50) :: filetype
 
 ![SYSTEM]
     character(len=50) :: interaction
     integer(c_int), bind(C, name="c_dimension") :: c_dimension
     integer :: dimension
-    integer(c_int), bind(C, name="c_ibrav") :: c_ibrav
-    integer :: ibrav
+    character(len=50) :: celltype
     integer(c_int), bind(C, name="c_nbnd") :: c_nbnd
     integer :: nbnd
+    integer(c_int), bind(C, name="c_natoms") :: c_natoms
+    integer :: natoms
     real(c_float), bind(C, name="c_fermi_energy") :: c_fermi_energy
     real :: fermi_energy
     real(c_float), bind(C, name="c_Temperature") :: c_Temperature
     real :: Temperature
     real(c_float), bind(C, name="c_onsite_U") :: c_onsite_U
     real :: onsite_U
+    real(c_float), bind(C, name="c_cutoff_energy") :: c_cutoff_energy
+    real :: cutoff_energy
 
 ![MESH]
     integer(c_int), bind(C, name="c_k_mesh") :: c_k_mesh(3)
@@ -67,6 +75,11 @@ module fcode
 ![BRILLOUIN_ZONE]
     real(c_float), bind(C, name="c_brillouin_zone") :: c_brillouin_zone(3,3)
     real :: brillouin_zone(3,3)
+
+![ATOMS]
+    character(len=50) :: atom
+    real(c_float), bind(C, name="c_position") :: c_position(3)
+    real :: position(3)
 
 ![BANDS]
     character(len=50) :: band(50,50)
@@ -96,11 +109,8 @@ module fcode
     real :: t10(50)
 
 ![SUPERCONDUCTOR]
-    character(len=50) :: method
     logical(c_bool), bind(C, name="c_FS_only") :: c_FS_only
     logical :: FS_only
-    real(c_float), bind(C, name="c_bcs_cutoff_frequency") :: c_bcs_cutoff_frequency
-    real :: bcs_cutoff_frequency
     integer(c_int), bind(C, name="c_num_eigenvalues_to_save") :: c_num_eigenvalues_to_save
     integer :: num_eigenvalues_to_save
     integer(c_int), bind(C, name="c_frequency_pts") :: c_frequency_pts
@@ -110,6 +120,10 @@ module fcode
 ![RESPONSE]
     logical(c_bool), bind(C, name="c_dynamic") :: c_dynamic
     logical :: dynamic
+
+![MANY_BODY]
+    logical(c_bool), bind(C, name="c_self_consistent") :: c_self_consistent
+    logical :: self_consistent
     ! End of global variables
 
     interface
@@ -124,10 +138,18 @@ module fcode
             use iso_c_binding
             type(c_ptr) :: get_calculation
     end function get_calculation
+        function get_method() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_method
+    end function get_method
         function get_outdir() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_outdir
     end function get_outdir
+        function get_indir() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_indir
+    end function get_indir
         function get_prefix() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_prefix
@@ -136,20 +158,23 @@ module fcode
             use iso_c_binding
             type(c_ptr) :: get_verbosity
     end function get_verbosity
-        function get_input_data_file() bind(C)
+
+
+        function get_filetype() bind(C)
             use iso_c_binding
-            type(c_ptr) :: get_input_data_file
-    end function get_input_data_file
-        function get_output_data_file() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_output_data_file
-    end function get_output_data_file
+            type(c_ptr) :: get_filetype
+    end function get_filetype
 
 ![SYSTEM]
         function get_interaction() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_interaction
     end function get_interaction
+
+        function get_celltype() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_celltype
+    end function get_celltype
 
 
 
@@ -166,6 +191,13 @@ module fcode
 
 
 ![BRILLOUIN_ZONE]
+
+
+![ATOMS]
+        function get_atom() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_atom
+    end function get_atom
 
 
 ![BANDS]
@@ -187,11 +219,6 @@ module fcode
 
 
 ![SUPERCONDUCTOR]
-        function get_method() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_method
-    end function get_method
-
 
 
 
@@ -201,6 +228,9 @@ module fcode
     end function get_projections
 
 ![RESPONSE]
+
+
+![MANY_BODY]
 
     ! End of global functions
 
@@ -231,20 +261,25 @@ contains
 ![CONTROL]
         category = get_string(get_category())
         calculation = get_string(get_calculation())
+        method = get_string(get_method())
         outdir = get_string(get_outdir())
+        indir = get_string(get_indir())
         prefix = get_string(get_prefix())
         verbosity = get_string(get_verbosity())
-        input_data_file = get_string(get_input_data_file())
-        output_data_file = get_string(get_output_data_file())
+        automatic_file_read = c_automatic_file_read
+        write_result = c_write_result
+        filetype = get_string(get_filetype())
 
 ![SYSTEM]
         interaction = get_string(get_interaction())
         dimension = c_dimension
-        ibrav = c_ibrav
+        celltype = get_string(get_celltype())
         nbnd = c_nbnd
+        natoms = c_natoms
         fermi_energy = c_fermi_energy
         Temperature = c_Temperature
         onsite_U = c_onsite_U
+        cutoff_energy = c_cutoff_energy
 
 ![MESH]
         k_mesh = c_k_mesh
@@ -256,6 +291,10 @@ contains
 
 ![BRILLOUIN_ZONE]
         brillouin_zone = c_brillouin_zone
+
+![ATOMS]
+        atom = get_string(get_atom())
+        position = c_position
 
 ![BANDS]
         band = get_string(get_band())
@@ -273,16 +312,17 @@ contains
         t10 = c_t10
 
 ![SUPERCONDUCTOR]
-        method = get_string(get_method())
         FS_only = c_FS_only
-        bcs_cutoff_frequency = c_bcs_cutoff_frequency
         num_eigenvalues_to_save = c_num_eigenvalues_to_save
         frequency_pts = c_frequency_pts
         projections = get_string(get_projections())
 
 ![RESPONSE]
         dynamic = c_dynamic
+
+![MANY_BODY]
+        self_consistent = c_self_consistent
         ! End of loading variables
     end subroutine load_f90_config
 
-end module fcode
+end module ffirefly
