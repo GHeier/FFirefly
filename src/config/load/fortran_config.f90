@@ -76,7 +76,7 @@ module ffirefly
     real(c_float), bind(C, name="c_brillouin_zone") :: c_brillouin_zone(3,3)
     real :: brillouin_zone(3,3)
 
-![ATOMIC_POSITIONS]
+![ATOMS]
     character(len=50) :: atom
     real(c_float), bind(C, name="c_position") :: c_position(3)
     real :: position(3)
@@ -193,7 +193,7 @@ module ffirefly
 ![BRILLOUIN_ZONE]
 
 
-![ATOMIC_POSITIONS]
+![ATOMS]
         function get_atom() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_atom
@@ -292,7 +292,7 @@ contains
 ![BRILLOUIN_ZONE]
         brillouin_zone = c_brillouin_zone
 
-![ATOMIC_POSITIONS]
+![ATOMS]
         atom = get_string(get_atom())
         position = c_position
 

@@ -35,37 +35,37 @@ cell = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
 #[BRILLOUIN_ZONE]
 brillouin_zone = [[6.283185307179586, 0.0, 0.0], [0.0, 6.283185307179586, 0.0], [0.0, 0.0, 6.283185307179586]]
 
-#[ATOMIC_POSITIONS]
+#[ATOMS]
 atom = 'X'
 position = [0.0, 0.0, 0.0]
 
 #[BANDS]
 band = []
-#band.append('fermi_gas')
+band.append('fermi_gas')
 eff_mass = []
-#eff_mass.append(1.0)
+eff_mass.append(1.0)
 t0 = []
-#t0.append(1.0)
+t0.append(1.0)
 t1 = []
-#t1.append(0.0)
+t1.append(0.0)
 t2 = []
-#t2.append(0.0)
+t2.append(0.0)
 t3 = []
-#t3.append(0.0)
+t3.append(0.0)
 t4 = []
-#t4.append(0.0)
+t4.append(0.0)
 t5 = []
-#t5.append(0.0)
+t5.append(0.0)
 t6 = []
-#t6.append(0.0)
+t6.append(0.0)
 t7 = []
-#t7.append(0.0)
+t7.append(0.0)
 t8 = []
-#t8.append(0.0)
+t8.append(0.0)
 t9 = []
-#t9.append(0.0)
+t9.append(0.0)
 t10 = []
-#t10.append(0.0)
+t10.append(0.0)
 
 #[SUPERCONDUCTOR]
 FS_only = True
@@ -200,7 +200,7 @@ def load_config():
                 brillouin_zone.append([float(line.split()[i]) for i in range(3)])
                 index += 1
 
-#[ATOMIC_POSITIONS]
+#[ATOMS]
             if "atom" in key:
                 global atom
                 atom = value
@@ -280,7 +280,8 @@ def load_config():
         if len(band) != nbnd and nbnd != 1:
             print("Error: Number of bands does not match number of bands specified in input.")
             sys.exit(1)
-        nbnd = len(band)
+
+        #nbnd = len(band)
         if outdir[-1] != '/':
             outdir += '/'
     return input_file

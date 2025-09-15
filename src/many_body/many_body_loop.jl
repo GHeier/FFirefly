@@ -172,7 +172,7 @@ function solve!(S::ManyBodySolver, comm)
     # check whether U < U_crit! Otherwise, U needs to be renormalized.
     old_U = S.U
     #println("U, X, = $(S.U), $(maximum(abs, S.ckio))")
-    if S.UX >= 1
+    if S.UX >= 1 && occursin("FLEX", interaction)
         println("U * max(X) = $(S.UX). U Renormalization Starting")
         U_renormalization(S, comm)
         println("New U = $(S.U)")
@@ -192,7 +192,7 @@ function solve!(S::ManyBodySolver, comm)
     for it in 1:S.maxiter
         #println("U, X, = $(S.U), $(maximum(abs, S.ckio))")
         loop!(S)
-        if S.UX >= 1 
+        if S.UX >= 1 && occursin("FLEX", interaction)
             println("Divergence in interaction found. Paramagnetic phase entered. Code exiting")
             exit()
         end
@@ -284,66 +284,59 @@ function FLEX_local_Sigma(solver::ManyBodySolver)
 end
 
 function FLEX_nonlocal_Sigma(solver::ManyBodySolver, local_sigma)
-    return solver.Ekw .- reshape(local_sigma, :, 1, 1, 1)
+    return solver.Ekw[1] .- reshape(local_sigma, :, 1, 1, 1)
 end
 
 function FLEX_sigma!(solver::ManyBodySolver)
     # G Creation
-    println("1")
     solver.Xkw[1] .= 0.0
     for n in 1:nbnd
         kw_to_rtau!(solver.Grt[n], solver.Gkw[n], 'F', solver.mesh)
         solver.Xkw[1] .+= rtau_to_kw(solver.Grt[n] .* reverse(solver.Grt[n], dims=1), 'B', solver.mesh)
     end
-    println("2")
     #rtau_to_kw!(solver.Xkw[1], solver.Grt .* reverse(solver.Grt, dims=1), 'B', solver.mesh)
     solver.UX = solver.U * maximum(abs, solver.Xkw[1])
-    println("3")
     V_calc(solver)
-    println("4")
     for n in 1:nbnd
         rtau_to_kw!(solver.Ekw[n], solver.Vrt[1] .* solver.Gkw[n], 'F', solver.mesh)
     end
-    println("5")
 end
 
 
 function combine_sigmas!(solver::ManyBodySolver, sigma_local)
-    solver.Ekw .= solver.Ekw .+ reshape(sigma_local, :, 1, 1, 1)
+    solver.Ekw[1] .= solver.Ekw[1] .+ reshape(sigma_local, :, 1, 1, 1)
 end
 
 
 function DFMT_FLEX!(solver::ManyBodySolver)
     # Loop 1
-    #println("1) U, X, = $(solver.U), $(maximum(abs, solver.ckio))")
     sigma_w = DMFT_Sigma(solver)
     combine_sigmas!(solver, sigma_w)
     solver.mu = mu_calc(solver)
-    solver.Gkw .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.Ekw)
-    #println("2) U, X, = $(solver.U), $(maximum(abs, solver.ckio))")
+    solver.Gkw[1] .= 1.0 ./ (solver.iw .- (solver.ek[1] .- solver.mu) .- solver.Ekw[1])
 
     FLEX_sigma!(solver)
 
     # Loop 2
     sigma_w .= FLEX_local_Sigma(solver)
-    solver.Ekw .= FLEX_nonlocal_Sigma(solver, sigma_w)
+    solver.Ekw[1] .= FLEX_nonlocal_Sigma(solver, sigma_w)
     combine_sigmas!(solver, sigma_w)
     solver.mu = mu_calc(solver)
-    solver.Gkw .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.Ekw)
+    solver.Gkw[1] .= 1.0 ./ (solver.iw .- (solver.ek[1] .- solver.mu) .- solver.Ekw[1])
 end
 
 function DMFT_loop!(solver::ManyBodySolver)
     sigma_w = DMFT_Sigma(solver)
     combine_sigmas!(solver, sigma_w)
     solver.mu = mu_calc(solver)
-    solver.Gkw .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.Ekw)
+    solver.Gkw[1] .= 1.0 ./ (solver.iw .- (solver.ek[1] .- solver.mu) .- solver.Ekw[1])
 end
 
 function loop!(solver::ManyBodySolver)
     if interaction == "FLEX"
         FLEX_loop!(solver, 1)
     elseif interaction == "DMFT"
-        DMFT_loop!(solver, 1)
+        DMFT_loop!(solver)
     elseif interaction == "DMFT+FLEX" || interaction == "FLEX+DMFT"
         DFMT_FLEX!(solver)
     else

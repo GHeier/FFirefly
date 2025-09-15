@@ -41,7 +41,7 @@ extern float c_cell[3][3];
 //[BRILLOUIN_ZONE]
 extern float c_brillouin_zone[3][3];
 
-//[ATOMIC_POSITIONS]
+//[ATOMS]
 extern char** c_atom; char** get_atom();
 extern float c_position[50][3];
 

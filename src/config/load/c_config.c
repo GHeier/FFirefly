@@ -56,10 +56,16 @@ float c_cell[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
 //[BRILLOUIN_ZONE]
 float c_brillouin_zone[3][3] = {{6.283185307179586, 0.0, 0.0}, {0.0, 6.283185307179586, 0.0}, {0.0, 0.0, 6.283185307179586}};
 
-//[ATOMIC_POSITIONS]
+//[ATOMS]
 char** c_atom = (char*[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 char** get_atom() {return (char**)c_atom;}
 float c_position[50][3] = {0};
+
+//[HAMILTONIAN]
+char* c_type = "tight_binding";
+char* get_type() {return c_type;}
+int c_basis_size = 1;
+float c_H0[1][1] = {{1.0}};
 
 //[BANDS]
 char** c_band = (char*[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -243,7 +249,7 @@ void read_c_config(const char *path) {
                 continue;
             }
         }
-        if (strstr(section, "ATOMIC_POSITIONS") != NULL && strlen(line) > 1) {
+        if (strstr(section, "ATOMS") != NULL && strlen(line) > 1) {
             char temp;
             sscanf(line, "%c %f %f %f", &temp, &c_position[atom_ind][0],
                    &c_position[atom_ind][1], &c_position[atom_ind][2]);
@@ -347,7 +353,7 @@ void read_c_config(const char *path) {
 
 //[BRILLOUIN_ZONE]
 
-//[ATOMIC_POSITIONS]
+//[ATOMS]
 
 //[BANDS]
             else if (strstr(key, "band") != NULL) {
@@ -542,7 +548,7 @@ void unload_c_config() {
     //        free(c_brillouin_zone[i]);
     //    }
     //
-    ////[ATOMIC_POSITIONS]
+    ////[ATOMS]
     //    free(c_atom);
     //    for (int i = 0; i < 50; i++) {
     //        free(c_position[i]);

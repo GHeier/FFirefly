@@ -42,7 +42,7 @@ ALL = {
             [0.0, 0.0, 2 * np.pi],
         ]
     },
-    "ATOMIC_POSITIONS": {"atom": "X", "position": [0.0, 0.0, 0.0]},
+    "ATOMS": {"atom": "X", "position": [0.0, 0.0, 0.0]},
     "BANDS": {
         "band": "fermi_gas",
         "eff_mass": 1.0,

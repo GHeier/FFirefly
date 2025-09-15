@@ -3,7 +3,7 @@ from .write_c import add_lines
 
 def format_var_line(key, value, section):
     makevec = False
-    if section == "BANDS" or section == "ATOMIC_POSITIONS":
+    if section == "BANDS" or section == "ATOMS":
         makevec = True
         if key == "band" or key == "atom":
             return f"vector<string> {key};\n"
@@ -42,7 +42,7 @@ def format_var_line(key, value, section):
 
 def format_config_line(key, value, section):
     makevec = False
-    if section == "BANDS" or section == "ATOMIC_POSITIONS":
+    if section == "BANDS" or section == "ATOMS":
         makevec = True
         if key == "band" or key == "atom":
             return f"    vector<string> {key};\n"
@@ -81,7 +81,7 @@ def format_config_line(key, value, section):
 
 def format_header_line(key, value, section):
     makevec = False
-    if section == "BANDS" or section == "ATOMIC_POSITIONS":
+    if section == "BANDS" or section == "ATOMS":
         makevec = True
         if key == "band" or key == "atom":
             return f"extern vector<string> {key};\n"
@@ -121,7 +121,7 @@ def format_header_line(key, value, section):
 def format_func_line(key, value, section):
     if section == "BANDS":
         return f"    for (int i = 0; i < nbnd; i++) {key}.push_back(c_{key}[i]);"
-    elif section == "ATOMIC_POSITIONS":
+    elif section == "ATOMS":
         if key == "position":
             return f"    for (int i = 0; i < natoms; i++) {key}.push_back(vector<float>(c_{key}[i], c_{key}[i] + 3));"
         return f"    for (int i = 0; i < natoms; i++) {key}.push_back(c_{key}[i]);"

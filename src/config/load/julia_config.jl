@@ -41,7 +41,7 @@ cell::Array{Float64} = cfg.cell
 #[BRILLOUIN_ZONE]
 brillouin_zone::Array{Float64} = cfg.brillouin_zone
 
-#[ATOMIC_POSITIONS]
+#[ATOMS]
 atom::String = cfg.atom
 position::Array{Float64} = cfg.position
 

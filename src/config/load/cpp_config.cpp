@@ -45,7 +45,7 @@ vector<vector<float>> cell(3, vector<float>(3));
 //[BRILLOUIN_ZONE]
 vector<vector<float>> brillouin_zone(3, vector<float>(3));
 
-//[ATOMIC_POSITIONS]
+//[ATOMS]
 vector<string> atom;
 
 vector<vector<float>> position;
@@ -118,7 +118,7 @@ extern "C" void load_cpp_config() {
 //[BRILLOUIN_ZONE]
     for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) brillouin_zone[i][j] = c_brillouin_zone[i][j];
 
-//[ATOMIC_POSITIONS]
+//[ATOMS]
     for (int i = 0; i < natoms; i++) atom.push_back(c_atom[i]);
     for (int i = 0; i < natoms; i++) position.push_back(vector<float>(c_position[i], c_position[i] + 3));
 

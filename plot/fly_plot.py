@@ -1,9 +1,9 @@
-from . import plot_path, basic, colorplot, gap_function, plot_bands
-#from plot import plot_path
-#from plot import basic
-#from plot import colorplot
-#from plot import gap_function
-#from plot import plot_bands
+#from . import plot_path, basic, colorplot, gap_function, plot_bands
+from plot import plot_path
+from plot import basic
+from plot import colorplot
+from plot import gap_function
+from plot import plot_bands
 
 import argparse
 import sys
@@ -149,7 +149,7 @@ if __name__ == "__main__":
         if (not any(result['flags'].values())):
             get_flags_from_files(result)
         #print(result) # For printing out input. Useful when debugging
-        plot_type = ''
+        plot_type = 'line'
         if result["flags"]["line"]:
             plot_type = 'line'
         elif "band" in result["flags"]:

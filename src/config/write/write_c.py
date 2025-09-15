@@ -52,13 +52,13 @@ def format_var_line(key, value, section):
             size = len(value)
             array_type = "float" if any(isinstance(x, float) for x in value) else "int"
             array_elements = ", ".join(map(str, value))
-            if section == "ATOMIC_POSITIONS":
+            if section == "ATOMS":
                 return f"{array_type} c_{key}[50][{size}] = {{0}};"
             return f"{array_type} c_{key}[{size}] = {{{array_elements}}};"
     else:
         if isinstance(value, str):
             # Handle strings
-            if section == "BANDS" or section == "ATOMIC_POSITIONS":
+            if section == "BANDS" or section == "ATOMS":
                 return (
                     f"char** c_{key} = (char*[]){{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};\n"
                     f"char** get_{key}() {{return (char**)c_{key};}}"
@@ -68,13 +68,13 @@ def format_var_line(key, value, section):
             )
         elif isinstance(value, bool):
             # Handle booleans
-            if section == "BANDS" or section == "ATOMIC_POSITIONS":
+            if section == "BANDS" or section == "ATOMS":
                 return f"bool c_{key}[50];"
             return f"bool c_{key} = {'true' if value else 'false'};"
         else:
             # Handle other scalar values
             value_type = "float" if isinstance(value, float) else "int"
-            if section == "BANDS" or section == "ATOMIC_POSITIONS":
+            if section == "BANDS" or section == "ATOMS":
                 return f"{value_type} c_{key}[50];"
             return f"{value_type} c_{key} = {value};"
 
@@ -84,12 +84,12 @@ def format_func_line(key, value, section):
     if key == "category":
         el = ""
     index = ""
-    if section == "BANDS" or section == "ATOMIC_POSITIONS":
+    if section == "BANDS" or section == "ATOMS":
         index = "[n]"
     if (
         section == "CELL"
         or section == "BRILLOUIN_ZONE"
-        or section == "ATOMIC_POSITIONS"
+        or section == "ATOMS"
     ):
         return ""
 
@@ -121,7 +121,7 @@ def format_func_line(key, value, section):
 
 def format_header_line(key, value, section):
     index = ""
-    if section == "BANDS" or section == "ATOMIC_POSITIONS":
+    if section == "BANDS" or section == "ATOMS":
         index = "[50]"
     if type(value) == str:
         if key == "band" or key == "atom":

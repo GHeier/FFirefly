@@ -41,7 +41,7 @@ extern vector<vector<float>> cell;
 //[BRILLOUIN_ZONE]
 extern vector<vector<float>> brillouin_zone;
 
-//[ATOMIC_POSITIONS]
+//[ATOMS]
 extern vector<string> atom;
 
 extern vector<vector<float>> position;
