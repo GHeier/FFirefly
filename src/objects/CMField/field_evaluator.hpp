@@ -41,20 +41,31 @@ inline vector<complex<Vec>> transform_data(DataVariant& f, int dim) {
             // 1D vector of cfloat
             result.reserve(container.size());
             for (auto const& val : container) {
-                Vec v(val.real(), val.imag(), 0.0f, 0.0f, 0.0f, dim, 1);
-                result.emplace_back(v);  // wraps Vec into complex<Vec>
+                Vec v1(val.real()); v1.dimension = dim;
+                Vec v2(val.imag()); v2.dimension = dim;
+                result.emplace_back(complex<Vec>(v1, v2));
             }
         } else if constexpr (is_same_v<T, vector<vector<cfloat>>>) {
             // 2D vector of cfloat
             size_t total = 0;
-            for (auto const& row : container) total += row.size();
+            size_t size = 0;
+            for (auto const& row : container) {
+                size = row.size();
+                total += size;
+            }
             result.reserve(total);
 
+            int ind1 = 0;
             for (auto const& row : container) {
+                Vec v1; v1.dimension = dim;
+                Vec v2; v2.dimension = dim;
+                int ind2 = 0;
                 for (auto const& val : row) {
-                    Vec v(val.real(), val.imag(), 0.0f, 0.0f, 0.0f, dim, 1);
-                    result.emplace_back(v);
+                    v1(ind2) = (val.real());
+                    v2(ind2) = (val.imag());
+                    ind2++;
                 }
+                result[ind1] = (complex<Vec>(v1, v2));
             }
         }
     }, f);
@@ -62,21 +73,22 @@ inline vector<complex<Vec>> transform_data(DataVariant& f, int dim) {
     return result;
 }
 
-ResultVariant Field_search_1d(float w_val, const vector<float>& w_points, const vector<complex<Vec>>& f);
-
 struct FieldEvaluator {
     vector<complex<Vec>> data;
     vector<float> w_points;
     bool is_complex;
     bool is_vector;
+    Vec first(-0.5, -0.5, -0.5, 0, 0, 1);
 
     FieldEvaluator(BaseField& f) {
         data = transform_data(f.data, f.dimension);
         is_complex = f.is_complex;
         is_vector = f.is_vector;
         w_points = f.w_points;
+        first.dimension = f.dimension;
     }
 
+    ResultVariant convert(complex<Vec>& answer);
     ResultVariant operator()(float w);
 };
 

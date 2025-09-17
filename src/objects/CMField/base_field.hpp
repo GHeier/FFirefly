@@ -20,6 +20,8 @@ struct BaseField {
     int dim_indices = 1;     
     vector<int> mesh;   
     int dimension = 1;       
+    vector<float> domain;
+    vector<float> inv_domain;
 
     vector<float> w_points;   
 

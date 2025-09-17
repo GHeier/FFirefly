@@ -20,6 +20,8 @@ BaseField load_field_from_hdf5(const std::string& filename) {
     file.openDataSet("/dimension").read(&field.dimension, PredType::NATIVE_INT);
     file.openDataSet("/as_mesh").read(&field.as_mesh, PredType::NATIVE_INT);
 
+    DataSet ds_domain = file.openDataSet("/domain");
+    DataSpace space = ds.getSpace();
     // -- Mesh --
     if (field.as_mesh) {
         DataSet ds = file.openDataSet("/mesh");

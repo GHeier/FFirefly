@@ -33,7 +33,8 @@ bool evaluate() {
     printf("getting esult\n");
     auto result = field(1.5);
     printf("gor esult\n");
-    if (auto* s = std::get_if<cfloat>(&result)) {
+    printf("result = %f\n", result);
+    if (auto* s = std::get_if<float>(&result)) {
             std::cout << "Got scalar: " << *s << "\n";
             return true;
     }
