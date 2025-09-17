@@ -1,0 +1,4 @@
+In file included from /home/g/Research/FFirefly/src/objects/CMField/tests/base_field_tests.cpp:2:
+/home/g/Research/FFirefly/src/objects/CMField/tests/../field_evaluator.hpp:9:8: warning: ‘FieldEvaluator’ has a field ‘std::variant<{anonymous}::tk::spline, std::vector<{anonymous}::tk::spline, std::allocator<{anonymous}::tk::spline> >, std::vector<std::vector<{anonymous}::tk::spline, std::allocator<{anonymous}::tk::spline> >, std::allocator<std::vector<{anonymous}::tk::spline, std::allocator<{anonymous}::tk::spline> > > > > FieldEvaluator::splines’ whose type has internal linkage [-Wsubobject-linkage]
+    9 | struct FieldEvaluator {
+      |        ^~~~~~~~~~~~~~

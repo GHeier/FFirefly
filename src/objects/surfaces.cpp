@@ -153,8 +153,6 @@ vector<Vec> points_in_tetrahedron(function<float(Vec k)> func, float s_val,
         return_points[2] = k13;
         return_points[3] = k14;
     }
-    return_points[3] = empty;
-  }
 
     // Run condition for when plane aligns with one of the planes of the
     // tetrahedron
@@ -270,11 +268,8 @@ vector<Vec> tetrahedron_method(function<float(Vec k)> func, float s_val) {
                     FS.push_back(k_point);
                 }
             }
->>>>>>> main
         }
       }
-    }
-  }
   return FS;
 }
 
@@ -343,7 +338,6 @@ vector<Vec> tetrahedron_method_2D(function<float(Vec k)> func, float s_val) {
             FS.push_back(k_point);
         }
     }
-  }
   return FS;
 }
 

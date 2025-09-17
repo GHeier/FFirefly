@@ -63,7 +63,7 @@ CMField::CMField(CMData &data) {
     inv_domain = invertMatrix(domain, data.dimension);
 
     make_values_2d(values, data);
-    nbnd = data.n_inds.size();
+    //nbnd = data.n_inds.size();
     empty_CMData(data);
 }
 
@@ -854,7 +854,6 @@ void load_from_hdf5(
     Vec& first,
     std::vector<int>& mesh,
     int& dimension,
-    int& nbnd,
     std::vector<float>& w_points,
     bool& is_complex,
     bool& is_vector,
@@ -862,79 +861,7 @@ void load_from_hdf5(
     bool& with_n,
     std::vector<std::vector<std::complex<Vec>>>& values
 ) {
-    H5::H5File file(filename, H5F_ACC_RDONLY);
-
-    // Scalars
-    read_scalar(file, "/dimension", dimension);
-    read_scalar(file, "/nbnd", nbnd);
-    read_scalar(file, "/is_complex", is_complex);
-    read_scalar(file, "/is_vector", is_vector);
-    read_scalar(file, "/with_w", with_w);
-    read_scalar(file, "/with_n", with_n);
-
-    // Vectors
-    std::vector<float> vec_first;
-    read_vector(file, "/first", vec_first);
-    for (int i = 0; i < vec_first.size(); ++i)
-        first(i) = vec_first[i];
-    read_vector(file, "/mesh", mesh);
-    read_vector(file, "/w_points", w_points);
-
-    // 2D domain
-    {
-        H5::DataSet dataset = file.openDataSet("/domain");
-        std::vector<float> flat(dimension * dimension);
-        dataset.read(flat.data(), H5::PredType::NATIVE_FLOAT);
-
-        domain.resize(dimension);
-        for (int i = 0; i < dimension; ++i) {
-            domain[i] = Vec();
-            for (int j = 0; j < dimension; ++j) {
-                domain[i](j) = flat[i * dimension + j];
-            }
-        }
-    }
-
-    // Read values from flattened HDF5 layout
-    size_t vec_len = is_vector ? dimension : 1;
-
-    // Read real part
-    H5::DataSet real_ds = file.openDataSet("/values/real");
-    H5::DataSpace real_space = real_ds.getSpace();
-    hsize_t dims[3];
-    real_space.getSimpleExtentDims(dims);
-    size_t nbnd_read = dims[0], nkpt = dims[1], len = dims[2];
-
-    if (nbnd_read != nbnd || len != vec_len)
-        throw std::runtime_error("HDF5 shape mismatch with expected nbnd/dimension");
-
-    std::vector<float> real_flat(nbnd * nkpt * vec_len);
-    real_ds.read(real_flat.data(), H5::PredType::NATIVE_FLOAT);
-
-    std::vector<float> imag_flat;
-    if (is_complex) {
-        H5::DataSet imag_ds = file.openDataSet("/values/imag");
-        imag_flat.resize(nbnd * nkpt * vec_len);
-        imag_ds.read(imag_flat.data(), H5::PredType::NATIVE_FLOAT);
-    }
-
-    // Reconstruct values
-    values.resize(nbnd);
-    for (int b = 0; b < nbnd; ++b) {
-        values[b].resize(nkpt);
-        for (int k = 0; k < nkpt; ++k) {
-            Vec real_vec, imag_vec;
-
-            for (int i = 0; i < vec_len; ++i) {
-                int idx = (b * nkpt + k) * vec_len + i;
-                real_vec(i) = real_flat[idx];
-                if (is_complex)
-                    imag_vec(i) = imag_flat[idx];
-            }
-
-            values[b][k] = std::complex<Vec>(real_vec, imag_vec);
-        }
-    }
+    is_complex = false;
 }
 
 CMField load_cmfield_from_hdf5(const string& filename) {
@@ -949,7 +876,7 @@ CMField load_cmfield_from_hdf5(const string& filename) {
     bool with_w;
     bool with_n;
     vector<vector<complex<Vec>>> values;
-    load_from_hdf5(filename, domain, first, mesh, dimension, nbnd, w_points, is_complex, is_vector, with_w, with_n, values);
+    load_from_hdf5(filename, domain, first, mesh, dimension, w_points, is_complex, is_vector, with_w, with_n, values);
     return CMField(values, w_points, domain, first, mesh, dimension, nbnd, with_w, with_n, is_complex, is_vector);
 }
 

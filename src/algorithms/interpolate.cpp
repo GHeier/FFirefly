@@ -3,6 +3,7 @@
 #include <complex>
 #include <iostream>
 #include <vector>
+#include "spline.h"
 
 using namespace std;
 
@@ -39,6 +40,8 @@ int binary_search(float x_val, vector<float> &x) {
 
     return result;
 }
+
+
 
 float interpolate_1D(float x_val, float x_min, float x_max, vector<float> &f) {
     // Interpolates a 1D function f(x) given on a grid between x_min and x_max
