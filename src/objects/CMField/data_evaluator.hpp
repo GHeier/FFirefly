@@ -1,8 +1,9 @@
-// field_evaluator.hpp
+// data_evaluator.hpp
 #pragma once
 
-#include "base_field.hpp"
+#include "base_data.hpp"
 #include "cmfield.hpp"
+#include "../vec.hpp"
 #include "../../algorithms/spline.h"  // from tk::spline
 
 #include <variant>
@@ -13,8 +14,8 @@ using namespace std;
 
 using cfloat = complex<float>;
 using DataVariant = variant<
-    vector<cfloat>,         
-    vector<vector<cfloat>>  
+    vector<cfloat>,
+    vector<vector<cfloat>>
 >;
 using ResultVariant = variant<
     float,
@@ -73,22 +74,47 @@ inline vector<complex<Vec>> transform_data(DataVariant& f, int dim) {
     return result;
 }
 
-struct FieldEvaluator {
+vector<Vec> invertMatrix2(vector<Vec> &matrix, int n);
+
+inline vector<Vec> float_matrix_to_vec(vector<vector<float>> a) {
+    int size = a.size();
+    vector<Vec> b(size);
+    for (int i = 0; i < size; i++) {
+        Vec temp(a[i]);
+        b[i] = temp;
+    }
+    return b;
+}
+
+struct DataEvaluator {
     vector<complex<Vec>> data;
     vector<float> w_points;
     bool is_complex;
     bool is_vector;
-    Vec first(-0.5, -0.5, -0.5, 0, 0, 1);
+    bool with_w;
+    int dimension;
+    vector<int> mesh;
+    vector<Vec> domain;
+    vector<Vec> inv_domain;
 
-    FieldEvaluator(BaseField& f) {
+    // Default constructor
+    DataEvaluator()
+        : is_complex(false), is_vector(false), with_w(false), dimension(1) {}
+
+    DataEvaluator(BaseData& f) {
         data = transform_data(f.data, f.dimension);
+        dimension = f.dimension;
+        mesh = f.mesh;
         is_complex = f.is_complex;
         is_vector = f.is_vector;
         w_points = f.w_points;
-        first.dimension = f.dimension;
+        with_w = w_points.size() > 0;
+        domain = float_matrix_to_vec(f.domain);
+        inv_domain = invertMatrix2(domain, f.dimension);
     }
 
     ResultVariant convert(complex<Vec>& answer);
     ResultVariant operator()(float w);
+    ResultVariant operator()(Vec point, float w = 0);
 };
 

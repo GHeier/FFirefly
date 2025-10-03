@@ -1,51 +1,89 @@
 #include "fields.hpp"
-#include "cmfield.hpp"
-
+#include "field.hpp"
 #include "../vec.hpp"
 
-complex<float> Field_C::operator()(int n, float w) {
-  return complex<float>(cmf(n, w).real().x, cmf(n, w).imag().x);
-}
+// Field_C implementation
+Field_C::Field_C()
+    : cmf({}, true, false, {}, {}, {}) {}
+
+Field_C::Field_C(const BaseData::DataVariant& data,
+                 const vector<int>& mesh,
+                 const vector<vector<float>>& domain,
+                 const vector<float>& w_points)
+    : cmf(data, true, false, mesh, domain, w_points) {}
+
+Field_C::Field_C(Field f) : cmf(f) {}
+
+Field_C::Field_C(const string& filename) : cmf(filename) {}
 
 complex<float> Field_C::operator()(float w) {
-  return complex<float>(cmf(w).real().x, cmf(w).imag().x);
-}
-
-complex<float> Field_C::operator()(int n, Vec point, float w) {
-  return complex<float>(cmf(n, point, w).real().x, cmf(n, point, w).imag().x);
+    auto result = cmf(w);
+    if (auto* c = std::get_if<cfloat>(&result)) {
+        return *c;
+    }
+    // Shouldn't reach here for complex scalar field
+    return complex<float>(0, 0);
 }
 
 complex<float> Field_C::operator()(Vec point, float w) {
-  return complex<float>(cmf(point, w).real().x, cmf(point, w).imag().x);
+    auto result = cmf(point, w);
+    if (auto* c = std::get_if<cfloat>(&result)) {
+        return *c;
+    }
+    // Shouldn't reach here for complex scalar field
+    return complex<float>(0, 0);
 }
 
-Field_C::Field_C() { cmf = CMField(); }
-
-Field_C::Field_C(CMField cmf) { this->cmf = cmf; }
-
-Field_C::Field_C(string filename) { 
-    cmf = load_CMField(filename); 
+Field_C& Field_C::operator=(const Field_C& other) {
+    if (this != &other) {
+        cmf = other.cmf;
+    }
+    return *this;
 }
 
-float Field_R::operator()(double w) { 
-    return cmf(w).real().x; }
+void Field_C::save(const string& filename) {
+    cmf.save(filename);
+}
 
-float Field_R::operator()(int n, double w) {
-    return cmf(n, w).real().x; }
+// Field_R implementation
+Field_R::Field_R()
+    : cmf({}, false, false, {}, {}, {}) {}
+
+Field_R::Field_R(const BaseData::DataVariant& data,
+                 const vector<int>& mesh,
+                 const vector<vector<float>>& domain,
+                 const vector<float>& w_points)
+    : cmf(data, false, false, mesh, domain, w_points) {}
+
+Field_R::Field_R(Field f) : cmf(f) {}
+
+Field_R::Field_R(const string& filename) : cmf(filename) {}
+
+float Field_R::operator()(float w) {
+    auto result = cmf(w);
+    if (auto* r = std::get_if<float>(&result)) {
+        return *r;
+    }
+    // Shouldn't reach here for real scalar field
+    return 0.0f;
+}
 
 float Field_R::operator()(Vec point, float w) {
-    return cmf(point, w).real().x; }
-
-float Field_R::operator()(int n, Vec point, float w) {
-  return cmf(n, point, w).real().x;
+    auto result = cmf(point, w);
+    if (auto* r = std::get_if<float>(&result)) {
+        return *r;
+    }
+    // Shouldn't reach here for real scalar field
+    return 0.0f;
 }
 
-Field_R::Field_R() { 
-    cmf = CMField(); 
+Field_R& Field_R::operator=(const Field_R& other) {
+    if (this != &other) {
+        cmf = other.cmf;
+    }
+    return *this;
 }
 
-Field_R::Field_R(CMField cmf) { this->cmf = cmf; }
-
-Field_R::Field_R(string filename) { 
-    cmf = load_CMField(filename); 
+void Field_R::save(const string& filename) {
+    cmf.save(filename);
 }

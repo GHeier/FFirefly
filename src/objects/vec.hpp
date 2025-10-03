@@ -32,6 +32,7 @@ class Vec {
     Vec(vector<float> input);
     Vec(const float *points, int len);
     float &operator()(int i);
+    float operator()(int i) const;
     Vec round(int precision = 4);
     float norm();
 };

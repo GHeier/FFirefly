@@ -10,6 +10,7 @@ using Roots
 using SparseIR
 import SparseIR: Statistics, value, valueim
 using Printf
+using DelimitedFiles
 #using Interpolations
 include("../objects/mesh.jl")
 using .IRMesh
@@ -515,9 +516,16 @@ function main()
     end
 
     G_w0 = 0
+    Gwsave = Vector{Float64}(undef, mesh.fnw)
     for n in 1:nbnd
         ind = Int(mesh.fnw / 2)
         G_w0 += sum(solver.Gkw[n][ind, :, :, :]) / nk
+    end
+    for i in mesh.fnw
+        Gwsave[i] = sum(imag(solver.Gkw[1][i, :, :, :])) / nk
+    end
+    open("output_vector1.txt", "w") do io
+        writedlm(io, Gwsave)
     end
     println("DOS = $(G_w0.im / pi)")
 

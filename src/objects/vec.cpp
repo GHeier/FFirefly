@@ -75,6 +75,19 @@ float &Vec::operator()(int i) {
     exit(1);
 }
 
+float Vec::operator()(int i) const {
+    if (i == 0)
+        return x;
+    if (i == 1)
+        return y;
+    if (i == 2)
+        return z;
+    if (i == 3)
+        return w;
+    printf("Invalid index of %d for Vec\n", i);
+    exit(1);
+}
+
 Vec Vec::round(int precision) {
     float r = pow(16, precision);
     Vec result(std::round(x * r) / r, std::round(y * r) / r,

@@ -62,9 +62,9 @@ void call_flex() {
     }
     printf("Saving Vertex\n");
     string file = outdir + prefix + "_vertex." + filetype;
-    if (filetype == "dat" || filetype == "txt")
-        save_to_file(file, points, values, chi.cmf.data.dimension, chi.cmf.data.with_w, chi.cmf.data.with_n, chi.cmf.data.is_complex, chi.cmf.data.is_vector);
-    else if (filetype == "hdf5" || filetype == "h5") {
+    //if (filetype == "dat" || filetype == "txt")
+    //    save_to_file(file, points, values, chi.cmf.data.dimension, chi.cmf.data.with_w, chi.cmf.data.with_n, chi.cmf.data.is_complex, chi.cmf.data.is_vector);
+    if (filetype == "hdf5" || filetype == "h5") {
         vector<vector<float>> BZ = brillouin_zone;
         BZ.resize(dimension);
         for (auto &row : BZ)

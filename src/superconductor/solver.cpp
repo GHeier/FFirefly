@@ -21,7 +21,7 @@
 #include "../objects/vec.hpp"
 #include "../objects/CMField/fields.hpp"
 #include "../objects/CMField/self_energy.hpp"
-#include "../objects/CMField/bands.hpp"
+//#include "../objects/CMField/bands.hpp"
 #include "../config/load/cpp_config.hpp"
 #include "cfg.hpp"
 #include "frequency_inclusion.hpp"
@@ -143,7 +143,7 @@ float get_renormalization(vector<Vec> &FS) {
 
 float get_renormalization_off_FS(vector<vector<Vec>> &FS) {
     Field_C lam_z(outdir + prefix + "_renormalization." + filetype);
-    Bands band;
+    //Bands band;
     float renorm = 0;
     float norm = 0;
     int size = FS.size();
@@ -156,7 +156,8 @@ float get_renormalization_off_FS(vector<vector<Vec>> &FS) {
                 for (int b = 0; b < FS[a].size(); b++) {
                     Vec k2 = FS[a][b];
                     float f2 = (k2.area / vp(k2.n, k2)) * weights[l - 1][a];
-                    float w = band(k2.n, k2) - band(k1.n, k1);
+                    //float w = band(k2.n, k2) - band(k1.n, k1);
+                    float w = 0.0; // temporary
                     renorm += real(lam_z(k2 - k1, w) * f1 * f2);
                 }
             }

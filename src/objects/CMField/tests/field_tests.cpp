@@ -1,153 +1,284 @@
-#include "../../vec.hpp"
 #include "../fields.hpp"
+#include <filesystem>
+#include <iostream>
+
 #include "../../../config/load/c_config.h"
 
-int fpnts = 10;
+using namespace std;
 
-complex<Vec> fieldfunc(Vec point) {
-    Vec p(point(0) + point(1) + point(2) + point(3));
-    return complex<Vec>(p, Vec());
+namespace field_tests_ns {
+
+static int mpts = 3;
+
+static cfloat func_linear(Vec p, int dim) {
+    float val = 0.0;
+    for (int i = 0; i < dim; i++)
+        val += p(i);
+    return cfloat(val, val / 10);
 }
 
-bool Field_R_interp_test_2d() {
-    vector<Vec> points;
-    vector<complex<Vec>> values;
-    int dimension = 2;
-    bool is_complex = false;
-    bool is_vector = false;
-    bool with_w = false;
-    bool with_n = false;
-
-    for (int i = 0; i <= fpnts; i++) {
-        for (int j = 0; j <= fpnts; j++) {
-            float x = 2.0 * (i - fpnts / 2.0) / (fpnts - 1);
-            float y = 2.0 * (j - fpnts / 2.0) / (fpnts - 1);
-            Vec point(x, y);
-            point.dimension = dimension;
-            points.push_back(point);
-            values.push_back(fieldfunc(point));
-        }
-    }
-    CMData data(points, values, dimension, with_w, with_n, is_complex, is_vector);
-    save(data, "temp.dat");
-
-    auto real_field = Field_R("temp.dat");
-
-    float r1 = real_field(Vec(0.5, 0.5));
-    float r2 = real_field(Vec(1.0, 1.0));
-    float r3 = real_field(Vec(0.0, 0.0));
-
-    float e1 = 1.0;
-    float e2 = 2.0;
-    float e3 = 0.0;
-
-    bool test1 = fabs(r1 - e1) < 1e-2;
-    bool test2 = fabs(r2 - e2) < 1e-2;
-    bool test3 = fabs(r3 - e3) < 1e-2;
-
-
-    // printf("\nExpected: 1.0, 2.0, 0.0\n");
-    // printf("Got: %f, %f, %f\n\n", r1, r2, r3);
-
-    return test1 && test2 && test3;
+static float get_pnt(int i, int pnts) {
+    return 1.0 * i / (pnts - 1);
 }
 
-bool Field_C_interp_test_2d() {
-    vector<Vec> points;
-    vector<complex<Vec>> values;
-    int dimension = 2;
-    bool is_complex = true;
-    bool is_vector = false;
-    bool with_w = false;
-    bool with_n = false;
-
-    for (int i = 0; i <= fpnts; i++) {
-        for (int j = 0; j <= fpnts; j++) {
-            float x = 2.0 * (i - fpnts / 2.0) / (fpnts - 1);
-            float y = 2.0 * (j - fpnts / 2.0) / (fpnts - 1);
-            Vec point(x, y);
-            point.dimension = dimension;
-            points.push_back(point);
-            values.push_back(fieldfunc(point));
-        }
-    }
-    CMData data(points, values, dimension, with_w, with_n, is_complex, is_vector);
-    save(data, "temp.dat");
-
-    auto complex_field = Field_C("temp.dat");
-    complex<float> r1 = complex_field(Vec(0.5, 0.5));
-    complex<float> r2 = complex_field(Vec(1.0, 1.0));
-    complex<float> r3 = complex_field(Vec(0.0, 0.0));
-
-    complex<float> e1 = complex<float>(1.0, 0);
-    complex<float> e2 = complex<float>(2.0, 0);
-    complex<float> e3 = complex<float>(0.0, 0);
-
-
-
-    bool test1 = fabs(r1 - e1) < 1e-2;
-    bool test2 = fabs(r2 - e2) < 1e-2;
-    bool test3 = fabs(r3 - e3) < 1e-2;
-
-    // printf("\nExpected: 1.0, 2.0, 0.0\n");
-    // printf("Got: %f, %f, %f\n\n", r1, r2, r3);
-
-    return test1 && test2 && test3;
+static Vec get_vec(int i, int j, int k, int pnts) {
+    return Vec(
+            get_pnt(i, pnts),
+            get_pnt(j, pnts),
+            get_pnt(k, pnts)
+            );
 }
 
+static vector<cfloat> create_data(int dim, int pnts, vector<float> w_points = {}) {
+    vector<cfloat> values;
+    int w_pts = w_points.empty() ? 1 : w_points.size();
 
-bool Field_C_interp_test_2d_with_w() {
-    vector<Vec> points;
-    vector<complex<Vec>> values;
-    int dimension = 2;
-    bool is_complex = true;
-    bool is_vector = false;
-    bool with_w = true;
-    bool with_n = false;
-
-    for (int i = 0; i <= fpnts; i++) {
-        for (int j = 0; j <= fpnts; j++) {
-            for (int k = 0; k <= fpnts; k++) {
-                float x = 2.0 * (i - fpnts / 2.0) / (fpnts - 1);
-                float y = 2.0 * (j - fpnts / 2.0) / (fpnts - 1);
-                float w = 2.0 * (k - fpnts / 2.0) / (fpnts - 1);
-                Vec point(x, y, w);
-                point.dimension = dimension + 1;
-                //cout << "p: " << point << endl;
-                points.push_back(point);
-                values.push_back(fieldfunc(point));
+    if (dim == 3) {
+        for (int i = 0; i < pnts; i++) {
+            for (int j = 0; j < pnts; j++) {
+                for (int k = 0; k < pnts; k++) {
+                    for (int w = 0; w < w_pts; w++) {
+                        float w_val = w_points.empty() ? 0.0 : w_points[w];
+                        Vec point = get_vec(i, j, k, pnts);
+                        cfloat base = func_linear(point, dim);
+                        cfloat value = base + cfloat(w_val, w_val / 10);
+                        values.push_back(value);
+                    }
+                }
             }
         }
     }
-    CMData data(points, values, dimension, with_w, with_n, is_complex, is_vector);
-    save(data, "temp.dat");
-
-    auto complex_field = Field_C("temp.dat");
-    complex<float> r1 = complex_field(Vec(0.5, 0.5));
-    complex<float> r2 = complex_field(Vec(1.0, 1.0));
-    complex<float> r3 = complex_field(Vec(0.0, 0.0));
-
-    complex<float> e1 = complex<float>(1.0, 0);
-    complex<float> e2 = complex<float>(2.0, 0);
-    complex<float> e3 = complex<float>(0.0, 0);
-
-    bool test1 = fabs(r1 - e1) < 1e-2;
-    bool test2 = fabs(r2 - e2) < 1e-2;
-    bool test3 = fabs(r3 - e3) < 1e-2;
-
-    // printf("\nExpected: 1.0, 2.0, 0.0\n");
-    // printf("Got: %f, %f, %f\n\n", r1, r2, r3);
-
-    return test1 && test2 && test3;
+    if (dim == 2) {
+        for (int i = 0; i < pnts; i++) {
+            for (int j = 0; j < pnts; j++) {
+                for (int w = 0; w < w_pts; w++) {
+                    float w_val = w_points.empty() ? 0.0 : w_points[w];
+                    Vec point = get_vec(i, j, 0, pnts);
+                    cfloat base = func_linear(point, dim);
+                    cfloat value = base + cfloat(w_val, w_val / 10);
+                    values.push_back(value);
+                }
+            }
+        }
+    }
+    if (dim == 1) {
+        for (int i = 0; i < pnts; i++) {
+            for (int w = 0; w < w_pts; w++) {
+                float w_val = w_points.empty() ? 0.0 : w_points[w];
+                Vec point = get_vec(i, 0, 0, pnts);
+                cfloat base = func_linear(point, dim);
+                cfloat value = base + cfloat(w_val, w_val / 10);
+                values.push_back(value);
+            }
+        }
+    }
+    return values;
 }
 
+static bool field_r_1d_k() {
+    vector<int> mesh = {mpts};
+    vector<vector<float>> domain = {{1.0}};
+    vector<cfloat> data = create_data(1, mpts);
+
+    Field_R field(data, mesh, domain);
+
+    Vec v(0.0);  // Centered at origin, corresponds to x=0.5 in [0,1]
+    float result = field(v);
+
+    return fabs(result - 0.5) < 1e-6;
+}
+
+static bool field_c_1d_k() {
+    vector<int> mesh = {mpts};
+    vector<vector<float>> domain = {{1.0}};
+    vector<cfloat> data = create_data(1, mpts);
+
+    Field_C field(data, mesh, domain);
+
+    Vec v(0.0);
+    cfloat result = field(v);
+
+    return fabs(result - cfloat(0.5, 0.05)) < 1e-6;
+}
+
+static bool field_r_2d_k() {
+    vector<int> mesh = {mpts, mpts};
+    vector<vector<float>> domain = {{1.0, 0.0}, {0.0, 1.0}};
+    vector<cfloat> data = create_data(2, mpts);
+
+    Field_R field(data, mesh, domain);
+
+    Vec v(0.0, 0.0);  // Center corresponds to (0.5, 0.5)
+    float result = field(v);
+
+    return fabs(result - 1.0) < 1e-6;
+}
+
+static bool field_c_2d_k() {
+    vector<int> mesh = {mpts, mpts};
+    vector<vector<float>> domain = {{1.0, 0.0}, {0.0, 1.0}};
+    vector<cfloat> data = create_data(2, mpts);
+
+    Field_C field(data, mesh, domain);
+
+    Vec v(0.0, 0.0);
+    cfloat result = field(v);
+
+    return fabs(result - cfloat(1.0, 0.1)) < 1e-6;
+}
+
+static bool field_r_3d_k() {
+    vector<int> mesh = {mpts, mpts, mpts};
+    vector<vector<float>> domain = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+    vector<cfloat> data = create_data(3, mpts);
+
+    Field_R field(data, mesh, domain);
+
+    Vec v(0.0, 0.0, 0.0);  // Center corresponds to (0.5, 0.5, 0.5)
+    float result = field(v);
+
+    return fabs(result - 1.5) < 1e-6;
+}
+
+static bool field_c_3d_k() {
+    vector<int> mesh = {mpts, mpts, mpts};
+    vector<vector<float>> domain = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+    vector<cfloat> data = create_data(3, mpts);
+
+    Field_C field(data, mesh, domain);
+
+    Vec v(0.0, 0.0, 0.0);
+    cfloat result = field(v);
+
+    return fabs(result - cfloat(1.5, 0.15)) < 1e-6;
+}
+
+static bool field_r_1d_w() {
+    vector<int> mesh = {mpts};
+    vector<vector<float>> domain = {{1.0}};
+    vector<float> w_points = {1.0, 2.0, 3.0};
+    vector<cfloat> data = create_data(1, mpts, w_points);
+
+    Field_R field(data, mesh, domain, w_points);
+
+    Vec v(0.0);
+    float result = field(v, 1.5);
+
+    // At centered v=0 (original 0.5), w=1.5: val = 0.5 + 1.5 = 2.0
+    return fabs(result - 2.0) < 1e-6;
+}
+
+static bool field_c_1d_w() {
+    vector<int> mesh = {mpts};
+    vector<vector<float>> domain = {{1.0}};
+    vector<float> w_points = {1.0, 2.0, 3.0};
+    vector<cfloat> data = create_data(1, mpts, w_points);
+
+    Field_C field(data, mesh, domain, w_points);
+
+    Vec v(0.0);
+    cfloat result = field(v, 1.5);
+
+    return fabs(result - cfloat(2.0, 0.20)) < 1e-6;
+}
+
+static bool field_r_2d_w() {
+    vector<int> mesh = {mpts, mpts};
+    vector<vector<float>> domain = {{1.0, 0.0}, {0.0, 1.0}};
+    vector<float> w_points = {1.0, 2.0, 3.0};
+    vector<cfloat> data = create_data(2, mpts, w_points);
+
+    Field_R field(data, mesh, domain, w_points);
+
+    Vec v(0.1, 0.1);  // Centered coords
+    float result = field(v, 1.1);
+
+    // Original point at (0.6, 0.6): spatial = 1.2, w = 1.1, total = 2.3
+    return fabs(result - 2.3) < 1e-6;
+}
+
+static bool field_c_2d_w() {
+    vector<int> mesh = {mpts, mpts};
+    vector<vector<float>> domain = {{1.0, 0.0}, {0.0, 1.0}};
+    vector<float> w_points = {1.0, 2.0, 3.0};
+    vector<cfloat> data = create_data(2, mpts, w_points);
+
+    Field_C field(data, mesh, domain, w_points);
+
+    Vec v(0.1, 0.1);
+    cfloat result = field(v, 1.1);
+
+    return fabs(result - cfloat(2.3, 0.23)) < 1e-6;
+}
+
+static bool field_r_3d_w() {
+    vector<int> mesh = {mpts, mpts, mpts};
+    vector<vector<float>> domain = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+    vector<float> w_points = {1.0, 2.0, 3.0};
+    vector<cfloat> data = create_data(3, mpts, w_points);
+
+    Field_R field(data, mesh, domain, w_points);
+
+    Vec v(-0.25, -0.25, -0.25);  // Centered coords -> original (0.25, 0.25, 0.25)
+    float result = field(v, 1.5);
+
+    // At (0.25, 0.25, 0.25), w=1.5: spatial = 0.75, w = 1.5, total = 2.25
+    return fabs(result - 2.25) < 1e-6;
+}
+
+static bool field_c_3d_w() {
+    vector<int> mesh = {mpts, mpts, mpts};
+    vector<vector<float>> domain = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+    vector<float> w_points = {1.0, 2.0, 3.0};
+    vector<cfloat> data = create_data(3, mpts, w_points);
+
+    Field_C field(data, mesh, domain, w_points);
+
+    Vec v(-0.25, -0.25, -0.25);
+    cfloat result = field(v, 1.5);
+
+    return fabs(result - cfloat(2.25, 0.225)) < 1e-6;
+}
+
+static bool create_destroy() {
+    vector<int> mesh = {mpts};
+    vector<vector<float>> domain = {{1.0}};
+    vector<cfloat> data = create_data(1, mpts);
+
+    Field_C field(data, mesh, domain);
+
+    string fname = "testfield.h5";
+    field.save(fname);
+
+    Field_C loaded(fname);
+
+    Vec v(0.0);
+    cfloat result1 = field(v);
+    cfloat result2 = loaded(v);
+
+    return fabs(result1 - result2) < 1e-6;
+}
+
+} // namespace field_tests_ns
+
 bool field_tests() {
-    int num_tests = 3;
+    using namespace field_tests_ns;
+    int num_tests = 13;
     bool all_tests[num_tests] = {
-        Field_R_interp_test_2d(),
-        Field_C_interp_test_2d(),
-        Field_C_interp_test_2d_with_w(),
+        create_destroy(),
+        field_r_1d_k(),
+        field_c_1d_k(),
+        field_r_2d_k(),
+        field_c_2d_k(),
+        field_r_3d_k(),
+        field_c_3d_k(),
+        field_r_1d_w(),
+        field_c_1d_w(),
+        field_r_2d_w(),
+        field_c_2d_w(),
+        field_r_3d_w(),
+        field_c_3d_w(),
     };
-    remove("temp.dat");
+    filesystem::remove("testfield.h5");
     return print_test_results(all_tests, num_tests, "Field tests");
 }

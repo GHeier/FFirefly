@@ -2,6 +2,7 @@
 #include "linalg_tests.hpp"
 
 extern "C" bool algorithm_tests() {
+  printf("\nRunning Algorithm tests\n");
 
   int num_tests = 1;
   bool all_tests[num_tests] = {

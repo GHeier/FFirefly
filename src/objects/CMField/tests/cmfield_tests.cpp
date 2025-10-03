@@ -38,6 +38,7 @@ bool interp_test_2d() {
             values.push_back(func_linear(point));
         }
     }
+    printf("Data found\n");
     auto field = CMField(points, values, dimension, 0, with_w, with_n, is_complex,
                          is_vector);
     float r1 = field(Vec(0.5, 0.5)).real()(0);

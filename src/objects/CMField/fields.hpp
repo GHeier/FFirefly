@@ -3,33 +3,50 @@
 #include <complex>
 
 #include "../vec.hpp"
-#include "cmfield.hpp"
+#include "field.hpp"
 
 using namespace std;
+
 class Field_C {
 public:
-  CMField cmf;
+  Field cmf;
 
   Field_C();
-  Field_C(CMField cmf);
-  Field_C(string filename);
+  Field_C(const BaseData::DataVariant& data,
+          const vector<int>& mesh = {},
+          const vector<vector<float>>& domain = {},
+          const vector<float>& w_points = {});
+  Field_C(Field f);
+  Field_C(const string& filename);
+
+  // Copy assignment operator
+  Field_C& operator=(const Field_C& other);
+
+  // Save to file
+  void save(const string& filename);
 
   complex<float> operator()(Vec point, float w = 0);
   complex<float> operator()(float w);
-  complex<float> operator()(int n, float w);
-  complex<float> operator()(int n, Vec point, float w = 0);
 };
 
 class Field_R {
 public:
-  CMField cmf;
+  Field cmf;
 
   Field_R();
-  Field_R(CMField cmf);
-  Field_R(string filename);
+  Field_R(const BaseData::DataVariant& data,
+          const vector<int>& mesh = {},
+          const vector<vector<float>>& domain = {},
+          const vector<float>& w_points = {});
+  Field_R(Field f);
+  Field_R(const string& filename);
+
+  // Copy assignment operator
+  Field_R& operator=(const Field_R& other);
+
+  // Save to file
+  void save(const string& filename);
 
   float operator()(Vec point, float w = 0);
-  float operator()(double w);
-  float operator()(int n, double w);
-  float operator()(int n, Vec point, float w = 0);
+  float operator()(float w);
 };

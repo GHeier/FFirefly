@@ -1,13 +1,14 @@
 // base_field.cpp
-#include "base_field.hpp"
+#include "base_data.hpp"
 #include <H5Cpp.h>
 #include <stdexcept>
 #include <iostream>
+#include <cmath>
 
 using namespace H5;
 
-BaseField load_field_from_hdf5(const std::string& filename) {
-    BaseField field;
+BaseData load_data_from_hdf5(const std::string& filename) {
+    BaseData field;
     H5File file(filename, H5F_ACC_RDONLY);
 
     // -- Metadata --
@@ -20,9 +21,20 @@ BaseField load_field_from_hdf5(const std::string& filename) {
     file.openDataSet("/dimension").read(&field.dimension, PredType::NATIVE_INT);
     file.openDataSet("/as_mesh").read(&field.as_mesh, PredType::NATIVE_INT);
 
-    DataSet ds_domain = file.openDataSet("/domain");
-    DataSpace space = ds.getSpace();
-    // -- Mesh --
+    // -- Domain (optional) --
+    if (field.with_k) {
+        DataSet ds_domain = file.openDataSet("/domain");
+        DataSpace space_domain = ds_domain.getSpace();
+        int rank = space_domain.getSimpleExtentNdims();
+        if (rank == 2) {
+            hsize_t dims[2];
+            space_domain.getSimpleExtentDims(dims);
+            field.domain.assign(dims[0], std::vector<float>(dims[1]));
+            ds_domain.read(&field.domain[0][0], PredType::NATIVE_FLOAT);
+        }
+    }
+
+    // -- Mesh (optional) --
     if (field.as_mesh) {
         DataSet ds = file.openDataSet("/mesh");
         DataSpace space = ds.getSpace();
@@ -47,7 +59,7 @@ BaseField load_field_from_hdf5(const std::string& filename) {
     }
 
     // -- Compute sizes --
-    int total_indices = pow(field.dim_indices, field.n_indices);
+    int total_indices = std::pow(field.dim_indices, field.n_indices);
     int nk = field.nk();
     int nw = field.nw();
     int vec_len = field.vec_len();
@@ -57,9 +69,9 @@ BaseField load_field_from_hdf5(const std::string& filename) {
     H5::DataSet real_ds = file.openDataSet("/values/real");
     H5::DataSpace real_space = real_ds.getSpace();
     hsize_t dims[1];
-    real_space.getSimpleExtentDims(dims);  // number of elements
+    real_space.getSimpleExtentDims(dims);
 
-    std::vector<float> real_flat(dims[0]); // resize to correct size
+    std::vector<float> real_flat(dims[0]);
     real_ds.read(real_flat.data(), H5::PredType::NATIVE_FLOAT);
 
     // --- Imag part (if complex) ---
@@ -73,18 +85,18 @@ BaseField load_field_from_hdf5(const std::string& filename) {
         imag_flat.resize(dims_imag[0]);
         imag_ds.read(imag_flat.data(), H5::PredType::NATIVE_FLOAT);
     }
+
     // -- Populate variant --
     if (vec_len == 1) {
-        // Matrix of scalars (flattened as vector<cfloat>)
-        vector<cfloat> flat(total_elements);
+        // Flat vector of scalars
+        std::vector<cfloat> flat(total_elements);
         for (int i = 0; i < total_elements; ++i) {
             flat[i] = cfloat(real_flat[i], field.is_complex ? imag_flat[i] : 0.0f);
         }
         field.data = flat;
-    }
-    else {
-        // Matrix of vectors (2D: nk × vec_len)
-        vector<vector<cfloat>> mat(nk, vector<cfloat>(vec_len));
+    } else {
+        // 2D: nk × vec_len
+        std::vector<std::vector<cfloat>> mat(nk, std::vector<cfloat>(vec_len));
         for (int i = 0; i < nk; ++i) {
             for (int v = 0; v < vec_len; ++v) {
                 int idx = i * vec_len + v;
@@ -97,15 +109,48 @@ BaseField load_field_from_hdf5(const std::string& filename) {
     return field;
 }
 
-void save_field_to_hdf5(BaseField& field, const std::string& filename) {
-    save_field_to_hdf5(filename, field.is_complex, field.is_vector, field.with_k, field.with_w, field.as_mesh, field.n_indices, field.dim_indices, field.mesh, field.dimension, field.w_points, field.data);
+void save_data_to_hdf5(BaseData& field, const std::string& filename) {
+    save_data_to_hdf5(filename,
+                       field.is_complex,
+                       field.is_vector,
+                       field.with_k,
+                       field.with_w,
+                       field.as_mesh,
+                       field.n_indices,
+                       field.dim_indices,
+                       field.mesh,
+                       field.domain,
+                       field.dimension,
+                       field.w_points,
+                       field.data);
 }
 
-void save_field_to_hdf5(const std::string& filename, bool is_complex, bool is_vector, bool with_k, bool with_w, bool as_mesh, int n_indices, int dim_indices, vector<int> &mesh, int dimension, vector<float> &w_points, const BaseField::DataVariant& data) {
+void save_data(string filename, BaseData::DataVariant& data, bool is_complex, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, int n_indices, int dim_indices) {
+    bool is_vector = false; // Will add vector support when it becomes relevant
+    bool with_k = mesh.size() > 0;
+    bool with_w = w_points.size() > 0;
+    bool as_mesh = true; // Would be false if points were given
+    int dim = mesh.size();
+    save_data_to_hdf5(filename, is_complex, is_vector, with_k, with_w, as_mesh, n_indices, dim_indices, mesh, domain, dim, w_points, data);
+}
+
+void save_data_to_hdf5(const std::string& filename,
+                        bool is_complex,
+                        bool is_vector,
+                        bool with_k,
+                        bool with_w,
+                        bool as_mesh,
+                        int n_indices,
+                        int dim_indices,
+                        std::vector<int>& mesh,
+                        std::vector<std::vector<float>>& domain,
+                        int dimension,
+                        std::vector<float>& w_points,
+                        const BaseData::DataVariant& data) {
     H5File file(filename, H5F_ACC_TRUNC);
 
-    // -- Write metadata scalars --
-    auto write_scalar = [&](const string& name, int value) {
+    // -- Metadata scalars --
+    auto write_scalar = [&](const std::string& name, int value) {
         DataSpace scalar_space(H5S_SCALAR);
         DataSet ds = file.createDataSet(name, PredType::NATIVE_INT, scalar_space);
         ds.write(&value, PredType::NATIVE_INT);
@@ -128,6 +173,21 @@ void save_field_to_hdf5(const std::string& filename, bool is_complex, bool is_ve
         ds.write(mesh.data(), PredType::NATIVE_INT);
     }
 
+    // -- Domain --
+    if (!domain.empty()) {
+        hsize_t dims[2] = { domain.size(), domain[0].size() };
+        DataSpace space(2, dims);
+        DataSet ds = file.createDataSet("/domain", PredType::NATIVE_FLOAT, space);
+
+        // flatten 2D into 1D buffer
+        std::vector<float> flat;
+        flat.reserve(domain.size() * domain[0].size());
+        for (auto const& row : domain) {
+            flat.insert(flat.end(), row.begin(), row.end());
+        }
+        ds.write(flat.data(), PredType::NATIVE_FLOAT);
+    }
+
     // -- w_points --
     if (!w_points.empty()) {
         hsize_t dims[1] = { w_points.size() };
@@ -137,22 +197,16 @@ void save_field_to_hdf5(const std::string& filename, bool is_complex, bool is_ve
     }
 
     // -- Flatten real/imag parts depending on variant --
-    vector<float> real_flat, imag_flat;
+    std::vector<float> real_flat, imag_flat;
 
-    auto flatten = [&](const auto& container) {
-        using T = decay_t<decltype(container)>;
-
-        if constexpr (is_same_v<T, cfloat>) {
-            real_flat.push_back(container.real());
-            if (is_complex) imag_flat.push_back(container.imag());
-        }
-        else if constexpr (is_same_v<T, vector<cfloat>>) {
+    auto flatten = [&](auto const& container) {
+        using T = std::decay_t<decltype(container)>;
+        if constexpr (std::is_same_v<T, std::vector<cfloat>>) {
             for (auto& v : container) {
                 real_flat.push_back(v.real());
                 if (is_complex) imag_flat.push_back(v.imag());
             }
-        }
-        else if constexpr (is_same_v<T, vector<vector<cfloat>>>) {
+        } else if constexpr (std::is_same_v<T, std::vector<std::vector<cfloat>>>) {
             for (auto& row : container) {
                 for (auto& v : row) {
                     real_flat.push_back(v.real());
@@ -167,17 +221,13 @@ void save_field_to_hdf5(const std::string& filename, bool is_complex, bool is_ve
     hsize_t dims[1] = { real_flat.size() };
     DataSpace space(1, dims);
 
-    file.createGroup("/values");
-    // Create /values group if missing
-    Group values_group = [&]() {
-            return file.openGroup("/values");
-    }();
-
+    // Ensure /values group exists
+    Group values_group = file.createGroup("/values");
     // Real part
     DataSet ds_real = values_group.createDataSet("real", PredType::NATIVE_FLOAT, space);
     ds_real.write(real_flat.data(), PredType::NATIVE_FLOAT);
 
-    // Imag part (if complex)
+    // Imag part
     if (is_complex) {
         DataSet ds_imag = values_group.createDataSet("imag", PredType::NATIVE_FLOAT, space);
         ds_imag.write(imag_flat.data(), PredType::NATIVE_FLOAT);
