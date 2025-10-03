@@ -56,13 +56,15 @@ private:
         shift_vectors.resize(1);
         shift_vectors[0].dimension = dimension;
 
-        for (int i = 0; i < dimension; i++) {
-            // Calculate shift to center the domain
-            float shift = 0.0;
-            for (int j = 0; j < dimension; j++) {
-                shift += data.domain[i][j] * 0.5;
+        if (!data.domain.empty()) {
+            for (int i = 0; i < dimension; i++) {
+                // Calculate shift to center the domain
+                float shift = 0.0;
+                for (int j = 0; j < dimension; j++) {
+                    shift += data.domain[i][j] * 0.5;
+                }
+                shift_vectors[0](i) = shift;
             }
-            shift_vectors[0](i) = shift;
         }
 
         // Initialize evaluator
@@ -76,7 +78,9 @@ public:
           bool is_vector = false,
           const vector<int>& mesh = {},
           const vector<vector<float>>& domain = {},
-          const vector<float>& w_points = {})
+          const vector<float>& w_points = {},
+          int n_indices = 0,
+          int dim_indices = 1)
     {
         data.data = data_variant;
         data.is_complex = is_complex;
@@ -84,6 +88,8 @@ public:
         data.mesh = mesh;
         data.domain = domain;
         data.w_points = w_points;
+        data.n_indices = n_indices;
+        data.dim_indices = dim_indices;
 
         // Infer with_w based on w_points
         data.with_w = !w_points.empty();
@@ -120,6 +126,34 @@ public:
         }
 
         return evaluator(shifted_point, w);
+    }
+
+    // Operator for indexed spatial evaluation (e.g., matrix elements H_ab(k))
+    ResultVariant operator()(Vec point, vector<int> indices, float w = 0) {
+        // Apply periodic boundary conditions
+        Vec periodic_point = apply_periodic_bc(point);
+
+        // Shift to DataEvaluator's coordinate system (which starts at 0)
+        Vec shifted_point = periodic_point;
+        for (int i = 0; i < dimension; i++) {
+            shifted_point(i) = periodic_point(i) + shift_vectors[0](i);
+        }
+
+        return evaluator(shifted_point, indices, w);
+    }
+
+    // Get full array at point (e.g., H(k) returns full matrix)
+    ResultVariant get_array(Vec point, float w = 0) {
+        // Apply periodic boundary conditions
+        Vec periodic_point = apply_periodic_bc(point);
+
+        // Shift to DataEvaluator's coordinate system (which starts at 0)
+        Vec shifted_point = periodic_point;
+        for (int i = 0; i < dimension; i++) {
+            shifted_point(i) = periodic_point(i) + shift_vectors[0](i);
+        }
+
+        return evaluator.get_array(shifted_point, w);
     }
 
     // Copy assignment operator

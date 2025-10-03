@@ -45,6 +45,7 @@ void Field_C::save(const string& filename) {
     cmf.save(filename);
 }
 
+
 // Field_R implementation
 Field_R::Field_R()
     : cmf({}, false, false, {}, {}, {}) {}
@@ -86,4 +87,74 @@ Field_R& Field_R::operator=(const Field_R& other) {
 
 void Field_R::save(const string& filename) {
     cmf.save(filename);
+}
+
+// Field_CM implementation (Complex Matrix)
+Field_CM::Field_CM()
+    : cmf(vector<vector<vector<cfloat>>>(), true, false, {}, {}, {}, 2, 1) {}
+
+Field_CM::Field_CM(const BaseData::DataVariant& data,
+                   int dim_indices,
+                   const vector<int>& mesh,
+                   const vector<vector<float>>& domain,
+                   const vector<float>& w_points)
+    : cmf(data, true, false, mesh, domain, w_points, 2, dim_indices) {}
+
+Field_CM::Field_CM(Field f) : cmf(f) {}
+
+Field_CM::Field_CM(const string& filename) : cmf(filename) {}
+
+Field_CM& Field_CM::operator=(const Field_CM& other) {
+    if (this != &other) {
+        cmf = other.cmf;
+    }
+    return *this;
+}
+
+void Field_CM::save(const string& filename) {
+    cmf.save(filename);
+}
+
+vector<vector<cfloat>> Field_CM::operator()(Vec point, float w) {
+    auto result = cmf.get_array(point, w);
+    if (auto* mat = std::get_if<vector<vector<cfloat>>>(&result)) {
+        return *mat;
+    }
+    // Return empty matrix on error
+    return vector<vector<cfloat>>();
+}
+
+// Field_RM implementation (Real Matrix)
+Field_RM::Field_RM()
+    : cmf(vector<vector<vector<cfloat>>>(), false, false, {}, {}, {}, 2, 1) {}
+
+Field_RM::Field_RM(const BaseData::DataVariant& data,
+                   int dim_indices,
+                   const vector<int>& mesh,
+                   const vector<vector<float>>& domain,
+                   const vector<float>& w_points)
+    : cmf(data, false, false, mesh, domain, w_points, 2, dim_indices) {}
+
+Field_RM::Field_RM(Field f) : cmf(f) {}
+
+Field_RM::Field_RM(const string& filename) : cmf(filename) {}
+
+Field_RM& Field_RM::operator=(const Field_RM& other) {
+    if (this != &other) {
+        cmf = other.cmf;
+    }
+    return *this;
+}
+
+void Field_RM::save(const string& filename) {
+    cmf.save(filename);
+}
+
+vector<vector<float>> Field_RM::operator()(Vec point, float w) {
+    auto result = cmf.get_array(point, w);
+    if (auto* mat = std::get_if<vector<vector<float>>>(&result)) {
+        return *mat;
+    }
+    // Return empty matrix on error
+    return vector<vector<float>>();
 }

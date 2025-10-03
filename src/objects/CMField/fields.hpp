@@ -7,6 +7,7 @@
 
 using namespace std;
 
+// Scalar fields
 class Field_C {
 public:
   Field cmf;
@@ -49,4 +50,51 @@ public:
 
   float operator()(Vec point, float w = 0);
   float operator()(float w);
+};
+
+// Matrix fields
+class Field_CM {
+public:
+  Field cmf;
+
+  Field_CM();
+  Field_CM(const BaseData::DataVariant& data,
+           int dim_indices,
+           const vector<int>& mesh = {},
+           const vector<vector<float>>& domain = {},
+           const vector<float>& w_points = {});
+  Field_CM(Field f);
+  Field_CM(const string& filename);
+
+  // Copy assignment operator
+  Field_CM& operator=(const Field_CM& other);
+
+  // Save to file
+  void save(const string& filename);
+
+  // Returns full matrix at point
+  vector<vector<cfloat>> operator()(Vec point, float w = 0);
+};
+
+class Field_RM {
+public:
+  Field cmf;
+
+  Field_RM();
+  Field_RM(const BaseData::DataVariant& data,
+           int dim_indices,
+           const vector<int>& mesh = {},
+           const vector<vector<float>>& domain = {},
+           const vector<float>& w_points = {});
+  Field_RM(Field f);
+  Field_RM(const string& filename);
+
+  // Copy assignment operator
+  Field_RM& operator=(const Field_RM& other);
+
+  // Save to file
+  void save(const string& filename);
+
+  // Returns full matrix at point
+  vector<vector<float>> operator()(Vec point, float w = 0);
 };

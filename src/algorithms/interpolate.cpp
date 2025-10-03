@@ -6,6 +6,7 @@
 #include "spline.h"
 
 using namespace std;
+using cfloat = complex<float>;
 
 float sanitize_within_bounds(float value, float min_bound, float max_bound,
                              float tolerance = 1e-5) {
@@ -1005,5 +1006,186 @@ complex<Vec> interpolate_4D(float x_val, float y_val, float z_val, float w_val,
         x_rel * y_rel * z_rel * w_rel *
             f[(i + 1) * nx * nx * nx + (j + 1) * ny * ny + k * nz + l + 1];
 
+    return result;
+}
+// Interpolation for indexed fields - vectors
+vector<cfloat> interpolate_1D_vec(float x_val, float x_min, float x_max, int nx, const vector<vector<cfloat>>& f) {
+    x_val = sanitize_within_bounds(x_val, x_min, x_max);
+    if (x_val < x_min || x_val > x_max)
+        throw out_of_range("x_val out of bounds");
+    if (f.size() < 2)
+        throw invalid_argument("f size too small");
+
+    float dx = (x_max - x_min) / (nx - 1);
+    int i = (x_val - x_min) / dx;
+    if (i >= nx - 1) i = nx - 2;
+
+    float x_rel = (x_val - x_min) / dx - i;
+    
+    // Interpolate each element of the vector
+    int vec_size = f[i].size();
+    vector<cfloat> result(vec_size);
+    for (int k = 0; k < vec_size; k++) {
+        result[k] = f[i][k] + x_rel * (f[i + 1][k] - f[i][k]);
+    }
+    return result;
+}
+
+vector<cfloat> interpolate_2D_vec(float x_val, float y_val, float x_min, float x_max, float y_min, float y_max, int nx, int ny, const vector<vector<cfloat>>& f) {
+    x_val = sanitize_within_bounds(x_val, x_min, x_max);
+    y_val = sanitize_within_bounds(y_val, y_min, y_max);
+
+    float dx = (x_max - x_min) / (nx - 1);
+    float dy = (y_max - y_min) / (ny - 1);
+    
+    int i = (x_val - x_min) / dx;
+    int j = (y_val - y_min) / dy;
+    if (i >= nx - 1) i = nx - 2;
+    if (j >= ny - 1) j = ny - 2;
+
+    float x_rel = (x_val - x_min) / dx - i;
+    float y_rel = (y_val - y_min) / dy - j;
+
+    int vec_size = f[0].size();
+    vector<cfloat> result(vec_size);
+    for (int k = 0; k < vec_size; k++) {
+        result[k] = 
+            (1 - x_rel) * (1 - y_rel) * f[i * ny + j][k] +
+            x_rel * (1 - y_rel) * f[(i + 1) * ny + j][k] +
+            (1 - x_rel) * y_rel * f[i * ny + (j + 1)][k] +
+            x_rel * y_rel * f[(i + 1) * ny + (j + 1)][k];
+    }
+    return result;
+}
+
+vector<cfloat> interpolate_3D_vec(float x_val, float y_val, float z_val, float x_min, float x_max, float y_min, float y_max, float z_min, float z_max, int nx, int ny, int nz, const vector<vector<cfloat>>& f) {
+    x_val = sanitize_within_bounds(x_val, x_min, x_max);
+    y_val = sanitize_within_bounds(y_val, y_min, y_max);
+    z_val = sanitize_within_bounds(z_val, z_min, z_max);
+
+    float dx = (x_max - x_min) / (nx - 1);
+    float dy = (y_max - y_min) / (ny - 1);
+    float dz = (z_max - z_min) / (nz - 1);
+    
+    int i = (x_val - x_min) / dx;
+    int j = (y_val - y_min) / dy;
+    int k = (z_val - z_min) / dz;
+    if (i >= nx - 1) i = nx - 2;
+    if (j >= ny - 1) j = ny - 2;
+    if (k >= nz - 1) k = nz - 2;
+
+    float x_rel = (x_val - x_min) / dx - i;
+    float y_rel = (y_val - y_min) / dy - j;
+    float z_rel = (z_val - z_min) / dz - k;
+
+    int vec_size = f[0].size();
+    vector<cfloat> result(vec_size);
+    for (int idx = 0; idx < vec_size; idx++) {
+        result[idx] = 
+            (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * f[i * ny * nz + j * nz + k][idx] +
+            x_rel * (1 - y_rel) * (1 - z_rel) * f[(i + 1) * ny * nz + j * nz + k][idx] +
+            (1 - x_rel) * y_rel * (1 - z_rel) * f[i * ny * nz + (j + 1) * nz + k][idx] +
+            x_rel * y_rel * (1 - z_rel) * f[(i + 1) * ny * nz + (j + 1) * nz + k][idx] +
+            (1 - x_rel) * (1 - y_rel) * z_rel * f[i * ny * nz + j * nz + (k + 1)][idx] +
+            x_rel * (1 - y_rel) * z_rel * f[(i + 1) * ny * nz + j * nz + (k + 1)][idx] +
+            (1 - x_rel) * y_rel * z_rel * f[i * ny * nz + (j + 1) * nz + (k + 1)][idx] +
+            x_rel * y_rel * z_rel * f[(i + 1) * ny * nz + (j + 1) * nz + (k + 1)][idx];
+    }
+    return result;
+}
+
+// Interpolation for indexed fields - matrices
+vector<vector<cfloat>> interpolate_1D_mat(float x_val, float x_min, float x_max, int nx, const vector<vector<vector<cfloat>>>& f) {
+    x_val = sanitize_within_bounds(x_val, x_min, x_max);
+    if (x_val < x_min || x_val > x_max)
+        throw out_of_range("x_val out of bounds");
+    if (f.size() < 2)
+        throw invalid_argument("f size too small");
+
+    float dx = (x_max - x_min) / (nx - 1);
+    int i = (x_val - x_min) / dx;
+    if (i >= nx - 1) i = nx - 2;
+
+    float x_rel = (x_val - x_min) / dx - i;
+    
+    // Interpolate each element of the matrix
+    int rows = f[i].size();
+    int cols = f[i][0].size();
+    vector<vector<cfloat>> result(rows, vector<cfloat>(cols));
+    for (int r = 0; r < rows; r++) {
+        for (int c = 0; c < cols; c++) {
+            result[r][c] = f[i][r][c] + x_rel * (f[i + 1][r][c] - f[i][r][c]);
+        }
+    }
+    return result;
+}
+
+vector<vector<cfloat>> interpolate_2D_mat(float x_val, float y_val, float x_min, float x_max, float y_min, float y_max, int nx, int ny, const vector<vector<vector<cfloat>>>& f) {
+    x_val = sanitize_within_bounds(x_val, x_min, x_max);
+    y_val = sanitize_within_bounds(y_val, y_min, y_max);
+
+    float dx = (x_max - x_min) / (nx - 1);
+    float dy = (y_max - y_min) / (ny - 1);
+    
+    int i = (x_val - x_min) / dx;
+    int j = (y_val - y_min) / dy;
+    if (i >= nx - 1) i = nx - 2;
+    if (j >= ny - 1) j = ny - 2;
+
+    float x_rel = (x_val - x_min) / dx - i;
+    float y_rel = (y_val - y_min) / dy - j;
+
+    int rows = f[0].size();
+    int cols = f[0][0].size();
+    vector<vector<cfloat>> result(rows, vector<cfloat>(cols));
+    for (int r = 0; r < rows; r++) {
+        for (int c = 0; c < cols; c++) {
+            result[r][c] = 
+                (1 - x_rel) * (1 - y_rel) * f[i * ny + j][r][c] +
+                x_rel * (1 - y_rel) * f[(i + 1) * ny + j][r][c] +
+                (1 - x_rel) * y_rel * f[i * ny + (j + 1)][r][c] +
+                x_rel * y_rel * f[(i + 1) * ny + (j + 1)][r][c];
+        }
+    }
+    return result;
+}
+
+vector<vector<cfloat>> interpolate_3D_mat(float x_val, float y_val, float z_val, float x_min, float x_max, float y_min, float y_max, float z_min, float z_max, int nx, int ny, int nz, const vector<vector<vector<cfloat>>>& f) {
+    x_val = sanitize_within_bounds(x_val, x_min, x_max);
+    y_val = sanitize_within_bounds(y_val, y_min, y_max);
+    z_val = sanitize_within_bounds(z_val, z_min, z_max);
+
+    float dx = (x_max - x_min) / (nx - 1);
+    float dy = (y_max - y_min) / (ny - 1);
+    float dz = (z_max - z_min) / (nz - 1);
+
+    int i = (x_val - x_min) / dx;
+    int j = (y_val - y_min) / dy;
+    int k = (z_val - z_min) / dz;
+    if (i >= nx - 1) i = nx - 2;
+    if (j >= ny - 1) j = ny - 2;
+    if (k >= nz - 1) k = nz - 2;
+
+    float x_rel = (x_val - x_min) / dx - i;
+    float y_rel = (y_val - y_min) / dy - j;
+    float z_rel = (z_val - z_min) / dz - k;
+
+    int rows = f[0].size();
+    int cols = f[0][0].size();
+    vector<vector<cfloat>> result(rows, vector<cfloat>(cols));
+    for (int r = 0; r < rows; r++) {
+        for (int c = 0; c < cols; c++) {
+            // Use same indexing as scalar 3D interpolation
+            result[r][c] =
+                (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * f[i * nx * nx + j * ny + k][r][c] +
+                x_rel * (1 - y_rel) * (1 - z_rel) * f[(i + 1) * nx * nx + j * ny + k][r][c] +
+                (1 - x_rel) * y_rel * (1 - z_rel) * f[i * nx * nx + (j + 1) * ny + k][r][c] +
+                x_rel * y_rel * (1 - z_rel) * f[(i + 1) * nx * nx + (j + 1) * ny + k][r][c] +
+                (1 - x_rel) * (1 - y_rel) * z_rel * f[i * nx * nx + j * ny + k + 1][r][c] +
+                x_rel * (1 - y_rel) * z_rel * f[(i + 1) * nx * nx + j * ny + k + 1][r][c] +
+                (1 - x_rel) * y_rel * z_rel * f[i * nx * nx + (j + 1) * ny + k + 1][r][c] +
+                x_rel * y_rel * z_rel * f[(i + 1) * nx * nx + (j + 1) * ny + k + 1][r][c];
+        }
+    }
     return result;
 }

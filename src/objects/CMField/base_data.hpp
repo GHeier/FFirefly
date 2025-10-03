@@ -28,7 +28,9 @@ public:
 
     using DataVariant = variant<
         vector<cfloat>,
-        vector<vector<cfloat>>
+        vector<vector<cfloat>>,
+        vector<vector<vector<cfloat>>>,  // For n_indices arrays at each point
+        vector<vector<vector<vector<cfloat>>>>  // For nested multi-dimensional indices
     >;
 
     DataVariant data;

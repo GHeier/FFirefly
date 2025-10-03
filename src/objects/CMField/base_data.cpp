@@ -87,7 +87,25 @@ BaseData load_data_from_hdf5(const std::string& filename) {
     }
 
     // -- Populate variant --
-    if (vec_len == 1) {
+    if (field.n_indices == 2) {
+        // Matrix data: 3D structure [nk*nw][mat_dim][mat_dim]
+        int mat_dim = field.dim_indices;
+        int total_matrices = nk * nw;
+        std::vector<std::vector<std::vector<cfloat>>> matrices(total_matrices);
+
+        int idx = 0;
+        for (int m = 0; m < total_matrices; ++m) {
+            matrices[m].resize(mat_dim);
+            for (int i = 0; i < mat_dim; ++i) {
+                matrices[m][i].resize(mat_dim);
+                for (int j = 0; j < mat_dim; ++j) {
+                    matrices[m][i][j] = cfloat(real_flat[idx], field.is_complex ? imag_flat[idx] : 0.0f);
+                    idx++;
+                }
+            }
+        }
+        field.data = matrices;
+    } else if (vec_len == 1) {
         // Flat vector of scalars
         std::vector<cfloat> flat(total_elements);
         for (int i = 0; i < total_elements; ++i) {
@@ -211,6 +229,16 @@ void save_data_to_hdf5(const std::string& filename,
                 for (auto& v : row) {
                     real_flat.push_back(v.real());
                     if (is_complex) imag_flat.push_back(v.imag());
+                }
+            }
+        } else if constexpr (std::is_same_v<T, std::vector<std::vector<std::vector<cfloat>>>>) {
+            // For matrix data (3D)
+            for (auto& matrix : container) {
+                for (auto& row : matrix) {
+                    for (auto& v : row) {
+                        real_flat.push_back(v.real());
+                        if (is_complex) imag_flat.push_back(v.imag());
+                    }
                 }
             }
         }

@@ -28,6 +28,19 @@ float interpolate_4D(float x_val, float y_val, float z_val, float w_val,
 complex<Vec> interpolate_1D(float x_val, float x_min, float x_max, vector<complex<Vec>> &f);
 complex<Vec> interpolate_2D(float x_val, float y_val, float x_min, float x_max, float y_min, float y_max, int nx, int ny, vector<complex<Vec>> &f);
 complex<Vec> interpolate_3D(float x_val, float y_val, float z_val, float x_min, float x_max, float y_min, float y_max, float z_min, float z_max, int nx, int ny, int nz, vector<complex<Vec>> &f);
-complex<Vec> interpolate_4D(float x_val, float y_val, float z_val, float w_val, 
-        float x_min, float x_max, float y_min, float y_max, float z_min, float z_max, 
+complex<Vec> interpolate_4D(float x_val, float y_val, float z_val, float w_val,
+        float x_min, float x_max, float y_min, float y_max, float z_min, float z_max,
         float w_min, float w_max, int nx, int ny, int nz, int nw, vector<complex<Vec>> &f);
+
+// Interpolation for indexed fields (vectors and matrices)
+using cfloat = std::complex<float>;
+
+// 1D spatial interpolation returning vector
+vector<cfloat> interpolate_1D_vec(float x_val, float x_min, float x_max, int nx, const vector<vector<cfloat>>& f);
+vector<cfloat> interpolate_2D_vec(float x_val, float y_val, float x_min, float x_max, float y_min, float y_max, int nx, int ny, const vector<vector<cfloat>>& f);
+vector<cfloat> interpolate_3D_vec(float x_val, float y_val, float z_val, float x_min, float x_max, float y_min, float y_max, float z_min, float z_max, int nx, int ny, int nz, const vector<vector<cfloat>>& f);
+
+// 1D spatial interpolation returning matrix
+vector<vector<cfloat>> interpolate_1D_mat(float x_val, float x_min, float x_max, int nx, const vector<vector<vector<cfloat>>>& f);
+vector<vector<cfloat>> interpolate_2D_mat(float x_val, float y_val, float x_min, float x_max, float y_min, float y_max, int nx, int ny, const vector<vector<vector<cfloat>>>& f);
+vector<vector<cfloat>> interpolate_3D_mat(float x_val, float y_val, float z_val, float x_min, float x_max, float y_min, float y_max, float z_min, float z_max, int nx, int ny, int nz, const vector<vector<vector<cfloat>>>& f);

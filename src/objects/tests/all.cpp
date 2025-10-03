@@ -8,6 +8,7 @@
 #include "../CMField/tests/base_data_tests.hpp"
 #include "../CMField/tests/field_tests.hpp"
 #include "../CMField/tests/field_wrapper_tests.hpp"
+#include "../CMField/tests/matrix_field_tests.hpp"
 #include "all.hpp"
 #include "surface_tests.hpp"
 
@@ -15,11 +16,12 @@ using namespace std;
 
 extern "C" bool object_tests() {
     printf("\nRunning Object tests\n");
-    int num_tests = 5;
+    int num_tests = 6;
     bool all_tests[num_tests] = {
         base_data_tests(),
         field_tests(),
         field_wrapper_tests(),
+        matrix_field_tests(),
         CMData_tests(),
         //cmfield_tests(),
         //bands_tests(),
