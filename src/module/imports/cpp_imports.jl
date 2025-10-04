@@ -16,7 +16,10 @@ export epsilon,
        save_field_to_file!,
        save_data,
        data_save!,
-       save_field!
+       save_field!,
+       save_data_scalar,
+       save_data_vector,
+       save_data_matrix
 
 # Struct for Vec
 struct RawVec
@@ -631,6 +634,111 @@ end
 
 function load_config!(path::String)
     ccall((:load_config_export0, libfly), Cvoid, (Cstring,), path)
+end
+
+# Helper function to interleave complex data
+function interleave_complex(data::AbstractArray{<:Complex})
+    flat = vec(data)
+    n = length(flat)
+    interleaved = Vector{Float32}(undef, 2*n)
+    for i in 1:n
+        interleaved[2*i-1] = Float32(real(flat[i]))
+        interleaved[2*i] = Float32(imag(flat[i]))
+    end
+    return interleaved
+end
+
+function flatten_real(data::AbstractArray{<:Real})
+    return Float32.(vec(data))
+end
+
+# Save data functions
+function save_data_scalar(filename::String, data::AbstractArray,
+                          is_complex::Bool, mesh::Vector{<:Integer}, domain::Matrix{<:Real},
+                          w_points::Vector{<:Real}=Float32[])
+    # Flatten and interleave data
+    if is_complex
+        data_interleaved = interleave_complex(data)
+    else
+        data_interleaved = flatten_real(data)
+    end
+
+    total_size = length(vec(data))
+    mesh_i32 = Int32.(mesh)
+    mesh_size = length(mesh_i32)
+    domain_f32 = Float32.(domain)
+    domain_rows, domain_cols = size(domain_f32)
+    w_points_f32 = Float32.(w_points)
+    w_size = length(w_points_f32)
+
+    # Flatten domain
+    domain_flat = reshape(domain_f32', :)
+
+    ccall((:save_data_scalar_export0, libfly), Cvoid,
+          (Cstring, Ptr{Float32}, Cint, Bool,
+           Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint),
+          filename, data_interleaved, total_size, is_complex,
+          mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size)
+end
+
+function save_data_vector(filename::String, data::AbstractArray,
+                          nk::Integer, vec_len::Integer, is_complex::Bool,
+                          mesh::Vector{<:Integer}, domain::Matrix{<:Real},
+                          w_points::Vector{<:Real}=Float32[])
+    # Flatten and interleave data
+    if is_complex
+        data_interleaved = interleave_complex(data)
+    else
+        data_interleaved = flatten_real(data)
+    end
+
+    nk_i32 = Int32(nk)
+    vec_len_i32 = Int32(vec_len)
+    mesh_i32 = Int32.(mesh)
+    mesh_size = length(mesh_i32)
+    domain_f32 = Float32.(domain)
+    domain_rows, domain_cols = size(domain_f32)
+    w_points_f32 = Float32.(w_points)
+    w_size = length(w_points_f32)
+
+    # Flatten domain
+    domain_flat = reshape(domain_f32', :)
+
+    ccall((:save_data_vector_export0, libfly), Cvoid,
+          (Cstring, Ptr{Float32}, Cint, Cint, Bool,
+           Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint),
+          filename, data_interleaved, nk_i32, vec_len_i32, is_complex,
+          mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size)
+end
+
+function save_data_matrix(filename::String, data::AbstractArray,
+                          num_matrices::Integer, mat_dim::Integer, is_complex::Bool,
+                          mesh::Vector{<:Integer}, domain::Matrix{<:Real},
+                          w_points::Vector{<:Real}=Float32[])
+    # Flatten and interleave data
+    if is_complex
+        data_interleaved = interleave_complex(data)
+    else
+        data_interleaved = flatten_real(data)
+    end
+
+    num_matrices_i32 = Int32(num_matrices)
+    mat_dim_i32 = Int32(mat_dim)
+    mesh_i32 = Int32.(mesh)
+    mesh_size = length(mesh_i32)
+    domain_f32 = Float32.(domain)
+    domain_rows, domain_cols = size(domain_f32)
+    w_points_f32 = Float32.(w_points)
+    w_size = length(w_points_f32)
+
+    # Flatten domain
+    domain_flat = reshape(domain_f32', :)
+
+    ccall((:save_data_matrix_export0, libfly), Cvoid,
+          (Cstring, Ptr{Float32}, Cint, Cint, Bool,
+           Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint),
+          filename, data_interleaved, num_matrices_i32, mat_dim_i32, is_complex,
+          mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size)
 end
 
 end # module Imports

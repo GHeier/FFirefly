@@ -85,3 +85,22 @@ void get_w_max_min(CMField *cmf, float &wmax, float &wmin);
 void get_is_complex(CMField *cmf, bool &is_complex);
 void get_is_vector(CMField *cmf, bool &is_vector);
 void get_with_w(CMField *cmf, bool &with_w);
+
+// Save data exports
+void save_data_scalar_export0(const char *filename, const float *data_interleaved,
+                               int total_size, bool is_complex,
+                               const int *mesh, int mesh_size,
+                               const float *domain_flat, int domain_rows, int domain_cols,
+                               const float *w_points, int w_size);
+
+void save_data_vector_export0(const char *filename, const float *data_interleaved,
+                               int nk, int vec_len, bool is_complex,
+                               const int *mesh, int mesh_size,
+                               const float *domain_flat, int domain_rows, int domain_cols,
+                               const float *w_points, int w_size);
+
+void save_data_matrix_export0(const char *filename, const float *data_interleaved,
+                               int num_matrices, int mat_dim, bool is_complex,
+                               const int *mesh, int mesh_size,
+                               const float *domain_flat, int domain_rows, int domain_cols,
+                               const float *w_points, int w_size);

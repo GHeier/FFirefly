@@ -44,7 +44,7 @@ if cfg.hamiltonian == "tight_binding":
         model.add_hop(-t0, 0, 0, R[i])
 
     Hk = model.hamilton(k=kpts).reshape((nx, ny, nz, nstates, nstates))
-    fly.save_data(outdir + prefix + "_Hk.h5", Hk, True, [nx, ny, nz], BZ)
+    fly.save_data_matrix(outdir + prefix + "_Hk.h5", Hk, 1, 1, True, [nx, ny, nz], BZ)
 
 
 #

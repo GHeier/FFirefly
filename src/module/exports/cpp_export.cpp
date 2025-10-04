@@ -7,6 +7,7 @@
 #include "../../objects/CMField/vertex.hpp"
 #include "../../objects/CMField/self_energy.hpp"
 #include "../../objects/CMField/hamiltonian.hpp"
+#include "../../objects/CMField/base_data.hpp"
 //#include "../../objects/CMField/bands.hpp"
 #include "../../objects/surfaces.hpp"
 #include "../../hamiltonian/band_structure.hpp"
@@ -467,5 +468,125 @@ void destroy_Vec(Vec *a) { delete a; }
 //void CMF_with_w_export0(CMField *cmf, bool &with_w) { with_w = cmf->data.with_w; }
 //}
 
+// Save data exports - handles BaseData::DataVariant conversion
+// For scalar fields (n_indices = 0)
+// data_interleaved format: [real0, imag0, real1, imag1, ...]
+void save_data_scalar_export0(const char *filename, const float *data_interleaved,
+                               int total_size, bool is_complex,
+                               const int *mesh, int mesh_size,
+                               const float *domain_flat, int domain_rows, int domain_cols,
+                               const float *w_points, int w_size) {
+    // Convert flat arrays to C++ types
+    vector<int> mesh_vec(mesh, mesh + mesh_size);
+    vector<vector<float>> domain_vec(domain_rows, vector<float>(domain_cols));
+    for (int i = 0; i < domain_rows; i++) {
+        for (int j = 0; j < domain_cols; j++) {
+            domain_vec[i][j] = domain_flat[i * domain_cols + j];
+        }
+    }
+    vector<float> w_vec(w_points, w_points + w_size);
+
+    // Convert interleaved data to complex vector (DataVariant type 0)
+    vector<cfloat> data_vec(total_size);
+    if (is_complex) {
+        for (int i = 0; i < total_size; i++) {
+            data_vec[i] = cfloat(data_interleaved[2*i], data_interleaved[2*i + 1]);
+        }
+    } else {
+        for (int i = 0; i < total_size; i++) {
+            data_vec[i] = cfloat(data_interleaved[i], 0.0f);
+        }
+    }
+
+    // Create DataVariant and call save_data
+    BaseData::DataVariant data = data_vec;
+    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, 0, 0);
+}
+
+// For vector fields (n_indices = 0, but is_vector = true)
+void save_data_vector_export0(const char *filename, const float *data_interleaved,
+                               int nk, int vec_len, bool is_complex,
+                               const int *mesh, int mesh_size,
+                               const float *domain_flat, int domain_rows, int domain_cols,
+                               const float *w_points, int w_size) {
+    // Convert flat arrays to C++ types
+    vector<int> mesh_vec(mesh, mesh + mesh_size);
+    vector<vector<float>> domain_vec(domain_rows, vector<float>(domain_cols));
+    for (int i = 0; i < domain_rows; i++) {
+        for (int j = 0; j < domain_cols; j++) {
+            domain_vec[i][j] = domain_flat[i * domain_cols + j];
+        }
+    }
+    vector<float> w_vec(w_points, w_points + w_size);
+
+    // Convert interleaved data to 2D complex vector (DataVariant type 1)
+    vector<vector<cfloat>> data_vec(nk, vector<cfloat>(vec_len));
+    int idx = 0;
+    if (is_complex) {
+        for (int i = 0; i < nk; i++) {
+            for (int j = 0; j < vec_len; j++) {
+                data_vec[i][j] = cfloat(data_interleaved[idx], data_interleaved[idx + 1]);
+                idx += 2;
+            }
+        }
+    } else {
+        for (int i = 0; i < nk; i++) {
+            for (int j = 0; j < vec_len; j++) {
+                data_vec[i][j] = cfloat(data_interleaved[idx], 0.0f);
+                idx++;
+            }
+        }
+    }
+
+    // Create DataVariant and call save_data
+    BaseData::DataVariant data = data_vec;
+    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, 0, 0);
+}
+
+// For matrix fields (n_indices = 2)
+void save_data_matrix_export0(const char *filename, const float *data_interleaved,
+                               int num_matrices, int mat_dim, bool is_complex,
+                               const int *mesh, int mesh_size,
+                               const float *domain_flat, int domain_rows, int domain_cols,
+                               const float *w_points, int w_size) {
+    // Convert flat arrays to C++ types
+    vector<int> mesh_vec(mesh, mesh + mesh_size);
+    vector<vector<float>> domain_vec(domain_rows, vector<float>(domain_cols));
+    for (int i = 0; i < domain_rows; i++) {
+        for (int j = 0; j < domain_cols; j++) {
+            domain_vec[i][j] = domain_flat[i * domain_cols + j];
+        }
+    }
+    vector<float> w_vec(w_points, w_points + w_size);
+
+    // Convert interleaved data to 3D complex vector (DataVariant type 2)
+    vector<vector<vector<cfloat>>> data_vec(num_matrices,
+        vector<vector<cfloat>>(mat_dim, vector<cfloat>(mat_dim)));
+
+    int idx = 0;
+    if (is_complex) {
+        for (int m = 0; m < num_matrices; m++) {
+            for (int i = 0; i < mat_dim; i++) {
+                for (int j = 0; j < mat_dim; j++) {
+                    data_vec[m][i][j] = cfloat(data_interleaved[idx], data_interleaved[idx + 1]);
+                    idx += 2;
+                }
+            }
+        }
+    } else {
+        for (int m = 0; m < num_matrices; m++) {
+            for (int i = 0; i < mat_dim; i++) {
+                for (int j = 0; j < mat_dim; j++) {
+                    data_vec[m][i][j] = cfloat(data_interleaved[idx], 0.0f);
+                    idx++;
+                }
+            }
+        }
+    }
+
+    // Create DataVariant and call save_data
+    BaseData::DataVariant data = data_vec;
+    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, 2, mat_dim);
+}
 
 }

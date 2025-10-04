@@ -707,6 +707,165 @@ lib.load_config_export0.restype = None  # Equivalent to Cvoid
 def load_config(path: str) -> None:
     lib.load_config_export0(path.encode("utf-8"))
 
+# Save data functions
+lib.save_data_scalar_export0.argtypes = [
+    c_char_p, POINTER(c_float), c_int, c_bool,
+    POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int
+]
+lib.save_data_scalar_export0.restype = None
+
+def save_data_scalar(filename: str, data: np.ndarray,
+                     is_complex: bool, mesh, domain: np.ndarray,
+                     w_points = None):
+    """Save scalar field data to HDF5 file.
+
+    Args:
+        filename: Output filename
+        data: nD array (complex or real)
+        is_complex: Whether data is complex
+        mesh: Mesh dimensions (e.g., [nx, ny, nz])
+        domain: Domain vectors (2D array, shape [dimension, dimension])
+        w_points: Frequency points (optional)
+    """
+    if w_points is None:
+        w_points = np.array([], dtype=np.float32)
+
+    # Flatten and interleave data
+    data_flat = data.ravel()
+    if is_complex or np.iscomplexobj(data):
+        data_interleaved = interleave_complex(data_flat)
+        is_complex = True
+    else:
+        data_interleaved = np.asarray(data_flat, dtype=np.float32)
+
+    total_size = data_flat.size
+    mesh = np.asarray(mesh, dtype=np.int32)
+    mesh_size = len(mesh)
+    domain = np.asarray(domain, dtype=np.float32)
+    domain_rows, domain_cols = domain.shape
+    w_points = np.asarray(w_points, dtype=np.float32)
+    w_size = len(w_points)
+
+    # Flatten domain (row-major)
+    domain_flat = domain.flatten()
+
+    lib.save_data_scalar_export0(
+        filename.encode('utf-8'),
+        data_interleaved.ctypes.data_as(POINTER(c_float)),
+        c_int(total_size), c_bool(is_complex),
+        mesh.ctypes.data_as(POINTER(c_int)), c_int(mesh_size),
+        domain_flat.ctypes.data_as(POINTER(c_float)),
+        c_int(domain_rows), c_int(domain_cols),
+        w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size)
+    )
+
+lib.save_data_vector_export0.argtypes = [
+    c_char_p, POINTER(c_float), c_int, c_int, c_bool,
+    POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int
+]
+lib.save_data_vector_export0.restype = None
+
+def save_data_vector(filename: str, data: np.ndarray,
+                     nk: int, vec_len: int, is_complex: bool,
+                     mesh, domain: np.ndarray,
+                     w_points = None):
+    """Save vector field data to HDF5 file.
+
+    Args:
+        filename: Output filename
+        data: nD array (complex or real)
+        nk: Number of k-points
+        vec_len: Vector length (dimension)
+        is_complex: Whether data is complex
+        mesh: Mesh dimensions
+        domain: Domain vectors
+        w_points: Frequency points (optional)
+    """
+    if w_points is None:
+        w_points = np.array([], dtype=np.float32)
+
+    # Flatten and interleave data
+    data_flat = data.ravel()
+    if is_complex or np.iscomplexobj(data):
+        data_interleaved = interleave_complex(data_flat)
+        is_complex = True
+    else:
+        data_interleaved = np.asarray(data_flat, dtype=np.float32)
+
+    mesh = np.asarray(mesh, dtype=np.int32)
+    mesh_size = len(mesh)
+    domain = np.asarray(domain, dtype=np.float32)
+    domain_rows, domain_cols = domain.shape
+    w_points = np.asarray(w_points, dtype=np.float32)
+    w_size = len(w_points)
+
+    # Flatten domain
+    domain_flat = domain.flatten()
+
+    lib.save_data_vector_export0(
+        filename.encode('utf-8'),
+        data_interleaved.ctypes.data_as(POINTER(c_float)),
+        c_int(nk), c_int(vec_len), c_bool(is_complex),
+        mesh.ctypes.data_as(POINTER(c_int)), c_int(mesh_size),
+        domain_flat.ctypes.data_as(POINTER(c_float)),
+        c_int(domain_rows), c_int(domain_cols),
+        w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size)
+    )
+
+lib.save_data_matrix_export0.argtypes = [
+    c_char_p, POINTER(c_float), c_int, c_int, c_bool,
+    POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int
+]
+lib.save_data_matrix_export0.restype = None
+
+def save_data_matrix(filename: str, data: np.ndarray,
+                     num_states: int, mat_dim: int, is_complex: bool,
+                     mesh, domain: np.ndarray,
+                     w_points = None):
+    """Save matrix field data to HDF5 file.
+
+    Args:
+        filename: Output filename
+        data: nD array (complex or real)
+        num_states: Number of states (matrix size)
+        mat_dim: Matrix dimension
+        is_complex: Whether data is complex
+        mesh: Mesh dimensions
+        domain: Domain vectors
+        w_points: Frequency points (optional)
+    """
+    if w_points is None:
+        w_points = np.array([], dtype=np.float32)
+
+    # Flatten and interleave data
+    data_flat = data.ravel()
+    if is_complex or np.iscomplexobj(data):
+        data_interleaved = interleave_complex(data_flat)
+        is_complex = True
+    else:
+        data_interleaved = np.asarray(data_flat, dtype=np.float32)
+
+    mesh = np.asarray(mesh, dtype=np.int32)
+    mesh_size = len(mesh)
+    domain = np.asarray(domain, dtype=np.float32)
+    domain_rows, domain_cols = domain.shape
+    w_points = np.asarray(w_points, dtype=np.float32)
+    w_size = len(w_points)
+
+    # Flatten domain
+    domain_flat = domain.flatten()
+    num_matrices = data_flat.size // (mat_dim * mat_dim)
+
+    lib.save_data_matrix_export0(
+        filename.encode('utf-8'),
+        data_interleaved.ctypes.data_as(POINTER(c_float)),
+        c_int(num_matrices), c_int(mat_dim), c_bool(is_complex),
+        mesh.ctypes.data_as(POINTER(c_int)), c_int(mesh_size),
+        domain_flat.ctypes.data_as(POINTER(c_float)),
+        c_int(domain_rows), c_int(domain_cols),
+        w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size)
+    )
+
 
 # field = Field_R("sample_bands.dat")
 # print(field(1, [-0.9, -0.9]))
