@@ -2,12 +2,6 @@ from .write_c import add_lines
 from .write_py import replace_comments
 def format_var_line(key, value, section):
     makevec = False
-    if section == 'BANDS':
-        makevec = True
-        if (key == "band"):
-            return (
-                    f"{key}::Vector{{String}} = cfg.{key}\n"
-                    )
     if (type(value) == str):
         if makevec:
             return f"{key}::Vector{{String}} = cfg.{key}"
@@ -42,12 +36,6 @@ def format_var_line(key, value, section):
 
 def format_config_line(key, value, section):
     makevec = False
-    if section == 'BANDS':
-        makevec = True
-        if (key == "band"):
-            return (
-                    f"    vector<string> {key};\n"
-                    )
     if (type(value) == str):
         if makevec:
             return f"    vector<string> {key};"
@@ -80,12 +68,6 @@ def format_config_line(key, value, section):
 
 def format_header_line(key, value, section):
     makevec = False
-    if section == 'BANDS':
-        makevec = True
-        if (key == "band"):
-            return (
-                    f"extern vector<string> {key};\n"
-                    )
     if (type(value) == str):
         if makevec:
             return f"extern vector<string> {key};"
@@ -121,8 +103,6 @@ def format_func_line(key, value, section):
         if (type(value[0]) == list):
             return f"    for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) {key}[i][j] = c_{key}[i][j];"
         return f"    for (int i = 0; i < 3; i++) {key}[i] = c_{key}[i];"
-    elif (section == 'BANDS'):
-        return f"    for (int i = 0; i < nbnd; i++) {key}.push_back(c_{key}[i]);"
     return f"    {key} = c_{key};"
 
 start_phrase = '# Start variable definitions'

@@ -200,8 +200,6 @@ class Field_R:
             self.ptr = lib.Field_R_export2(c_char_p(filename.encode('utf-8')))
         if not self.ptr:
             raise RuntimeError("Failed to initialize Field_R")
-        self.nbnd = lib.Field_R_nbnd_export0(self.ptr)
-        print(f"pynbnd = {self.nbnd}")
 
 
     def __call__(self, *args):
@@ -210,26 +208,26 @@ class Field_R:
             w = c_float(args[0])
             return lib.Field_R_operator_export0(self.ptr, w)
 
-        # Overload for (n: int, w: float)
-        if len(args) == 2 and isinstance(args[0], int) and isinstance(args[1], float):
-            n = c_int(args[0])
-            w = c_float(args[1])
-            return lib.Field_R_operator_export1(self.ptr, n, w)
+        ## Overload for (n: int, w: float) - COMMENTED OUT, no export
+        #if len(args) == 2 and isinstance(args[0], int) and isinstance(args[1], float):
+        #    n = c_int(args[0])
+        #    w = c_float(args[1])
+        #    return lib.Field_R_operator_export1(self.ptr, n, w)
 
         # Overload for (k: list[float], w=0.0)
-        if len(args) >= 1 and isinstance(args[0], (list, tuple)):
+        if len(args) >= 1 and isinstance(args[0], (list, tuple, np.ndarray)):
             k = (c_float * len(args[0]))(*[float(v) for v in args[0]])
             len_k = c_int(len(args[0]))
             w = c_float(args[1]) if len(args) == 2 else c_float(0.0)
             return lib.Field_R_operator_export2(self.ptr, k, len_k, w)
 
-        # Overload for (n: int, k: list[float], w=0.0)
-        if len(args) >= 2 and isinstance(args[0], int) and isinstance(args[1], (list, tuple)):
-            n = c_int(args[0])
-            k = (c_float * len(args[1]))(*[float(v) for v in args[1]])
-            len_k = c_int(len(args[1]))
-            w = c_float(args[2]) if len(args) == 3 else c_float(0.0)
-            return lib.Field_R_operator_export3(self.ptr, n, k, len_k, w)
+        ## Overload for (n: int, k: list[float], w=0.0) - COMMENTED OUT, no export
+        #if len(args) >= 2 and isinstance(args[0], int) and isinstance(args[1], (list, tuple)):
+        #    n = c_int(args[0])
+        #    k = (c_float * len(args[1]))(*[float(v) for v in args[1]])
+        #    len_k = c_int(len(args[1]))
+        #    w = c_float(args[2]) if len(args) == 3 else c_float(0.0)
+        #    return lib.Field_R_operator_export3(self.ptr, n, k, len_k, w)
 
         raise TypeError("Invalid arguments to Field_R.__call__")
 
@@ -246,40 +244,43 @@ lib.Field_R_export0.restype = c_void_p
 lib.Field_R_export2.argtypes = [c_char_p]
 lib.Field_R_export2.restype = c_void_p
 
-lib.Field_R_nbnd_export0.argtypes = [c_void_p]
-lib.Field_R_nbnd_export0.restype = c_int
+# nbnd removed - not part of Field objects anymore
+#lib.Field_R_nbnd_export0.argtypes = [c_void_p]
+#lib.Field_R_nbnd_export0.restype = c_int
 
 lib.Field_R_operator_export0.argtypes = [c_void_p, c_float]
 lib.Field_R_operator_export0.restype = c_float
 
-lib.Field_R_operator_export1.argtypes = [c_void_p, c_int, c_float]
-lib.Field_R_operator_export1.restype = c_float
+#lib.Field_R_operator_export1.argtypes = [c_void_p, c_int, c_float]
+#lib.Field_R_operator_export1.restype = c_float
 
 lib.Field_R_operator_export2.argtypes = [c_void_p, POINTER(c_float), c_int, c_float]
 lib.Field_R_operator_export2.restype = c_float
 
-lib.Field_R_operator_export3.argtypes = [c_void_p, c_int, POINTER(c_float), c_int, c_float]
-lib.Field_R_operator_export3.restype = c_float
+#lib.Field_R_operator_export3.argtypes = [c_void_p, c_int, POINTER(c_float), c_int, c_float]
+#lib.Field_R_operator_export3.restype = c_float
 
 #End Objects
 
 lib.Field_C_export0.argtypes = []
 lib.Field_C_export0.restype = ctypes.c_void_p
-lib.Field_C_export1.argtypes = [ctypes.c_char_p]
-lib.Field_C_export1.restype = ctypes.c_void_p
+#lib.Field_C_export1.argtypes = [ctypes.c_char_p]
+#lib.Field_C_export1.restype = ctypes.c_void_p
+lib.Field_C_export2.argtypes = [ctypes.c_char_p]
 lib.Field_C_export2.restype = c_void_p
 
-lib.Field_C_nbnd_export0.argtypes = [c_void_p]
-lib.Field_C_nbnd_export0.restype = c_int
+# nbnd removed - not part of Field objects anymore
+#lib.Field_C_nbnd_export0.argtypes = [c_void_p]
+#lib.Field_C_nbnd_export0.restype = c_int
 
 lib.Field_C_operator_export0.argtypes = [ctypes.c_void_p, ctypes.c_float, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
 lib.Field_C_operator_export0.restype = None
-lib.Field_C_operator_export1.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_float, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
-lib.Field_C_operator_export1.restype = None
+#lib.Field_C_operator_export1.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_float, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+#lib.Field_C_operator_export1.restype = None
 lib.Field_C_operator_export2.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_float, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
 lib.Field_C_operator_export2.restype = None
-lib.Field_C_operator_export3.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_float, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
-lib.Field_C_operator_export3.restype = None
+#lib.Field_C_operator_export3.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_float, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+#lib.Field_C_operator_export3.restype = None
 
 class Field_C:
     def __init__(self, filename=None):
@@ -289,26 +290,25 @@ class Field_C:
             self.ptr = lib.Field_C_export2(c_char_p(filename.encode('utf-8')))
         if not self.ptr:
             raise RuntimeError('Failed to initialize Field_C')
-        self.nbnd = lib.Field_C_nbnd_export0(self.ptr)
 
     def __call__(self, *args):
-        # Overload for args=1, required=1
-        if len(args) >= 1 and len(args) <= 1 and isinstance(args[0], (int, float)):
+        # Overload for args=1, required=1 (w: float)
+        if len(args) == 1 and isinstance(args[0], (int, float)):
             real = ctypes.c_float()
             imag = ctypes.c_float()
             arg0 = ctypes.c_float(args[0])
             lib.Field_C_operator_export0(self.ptr, arg0, ctypes.byref(real), ctypes.byref(imag))
             return complex(real.value, imag.value)
-        # Overload for args=2, required=2
-        if len(args) >= 2 and len(args) <= 2 and isinstance(args[0], int) and isinstance(args[1], (int, float)):
-            real = ctypes.c_float()
-            imag = ctypes.c_float()
-            arg0 = ctypes.c_int(args[0])
-            arg1 = ctypes.c_float(args[1])
-            lib.Field_C_operator_export1(self.ptr, arg0, arg1, ctypes.byref(real), ctypes.byref(imag))
-            return complex(real.value, imag.value)
-        # Overload for args=2, required=1
-        if len(args) >= 1 and len(args) <= 2:
+        ## Overload for args=2, required=2 (n: int, w: float) - COMMENTED OUT, no export
+        #if len(args) == 2 and isinstance(args[0], int) and isinstance(args[1], (int, float)):
+        #    real = ctypes.c_float()
+        #    imag = ctypes.c_float()
+        #    arg0 = ctypes.c_int(args[0])
+        #    arg1 = ctypes.c_float(args[1])
+        #    lib.Field_C_operator_export1(self.ptr, arg0, arg1, ctypes.byref(real), ctypes.byref(imag))
+        #    return complex(real.value, imag.value)
+        # Overload for args=1-2 (k: list[float], w=0.0)
+        if len(args) >= 1 and len(args) <= 2 and isinstance(args[0], (list, tuple, np.ndarray)):
             real = ctypes.c_float()
             imag = ctypes.c_float()
             arg0 = (ctypes.c_float * len(args[0]))(*[float(x) for x in args[0]])
@@ -316,16 +316,16 @@ class Field_C:
             arg2 = ctypes.c_float(args[1]) if len(args) > 1 else ctypes.c_float(0.0)
             lib.Field_C_operator_export2(self.ptr, arg0, arg0_len, arg2, ctypes.byref(real), ctypes.byref(imag))
             return complex(real.value, imag.value)
-        # Overload for args=3, required=2
-        if len(args) >= 2 and len(args) <= 3 and isinstance(args[0], int):
-            real = ctypes.c_float()
-            imag = ctypes.c_float()
-            arg0 = ctypes.c_int(args[0])
-            arg1 = (ctypes.c_float * len(args[1]))(*[float(x) for x in args[1]])
-            arg1_len = ctypes.c_int(len(args[1]))
-            arg3 = ctypes.c_float(args[2]) if len(args) > 2 else ctypes.c_float(0.0)
-            lib.Field_C_operator_export3(self.ptr, arg0, arg1, arg1_len, arg3, ctypes.byref(real), ctypes.byref(imag))
-            return complex(real.value, imag.value)
+        ## Overload for args=2-3 (n: int, k: list[float], w=0.0) - COMMENTED OUT, no export
+        #if len(args) >= 2 and len(args) <= 3 and isinstance(args[0], int):
+        #    real = ctypes.c_float()
+        #    imag = ctypes.c_float()
+        #    arg0 = ctypes.c_int(args[0])
+        #    arg1 = (ctypes.c_float * len(args[1]))(*[float(x) for x in args[1]])
+        #    arg1_len = ctypes.c_int(len(args[1]))
+        #    arg3 = ctypes.c_float(args[2]) if len(args) > 2 else ctypes.c_float(0.0)
+        #    lib.Field_C_operator_export3(self.ptr, arg0, arg1, arg1_len, arg3, ctypes.byref(real), ctypes.byref(imag))
+        #    return complex(real.value, imag.value)
         raise TypeError('Invalid arguments to __call__')
 
     def __del__(self):
@@ -336,69 +336,127 @@ class Field_C:
         except AttributeError:
             print("failed to clear memory")
 
-lib.Bands_export0.restype = c_void_p
+# Hamiltonian class
+lib.Hamiltonian_export0.restype = c_void_p
+lib.Hamiltonian_operator_export0.argtypes = [c_void_p, POINTER(c_float), c_int, c_float, POINTER(c_float), POINTER(c_float), POINTER(c_int)]
+lib.Hamiltonian_operator_export0.restype = None
 
-lib.Bands_operator_export0.restype = c_float
-lib.Bands_operator_export0.argtypes = [c_void_p, c_int, POINTER(c_float), c_int]
-
-lib.Bands_operator_export0_numpy.restype = None
-lib.Bands_operator_export0_numpy.argtypes = [
-    ctypes.c_void_p,            # Bands* obj
-    ctypes.c_int,               # int n
-    ctypes.POINTER(ctypes.c_float),  # const float* points
-    ctypes.c_int,               # int num_points
-    ctypes.c_int,               # int len
-    ctypes.POINTER(ctypes.c_float)   # float* output
-]
-
-class Bands:
+class Hamiltonian:
     def __init__(self):
-        self.ptr = lib.Bands_export0()
+        self.ptr = lib.Hamiltonian_export0()
         if not self.ptr:
-            raise RuntimeError('Failed to initialize Bands')
+            raise RuntimeError('Failed to initialize Hamiltonian')
 
-    def __call__(self, *args):
-        # Overload for args=1, required=1
-        if len(args) == 2 and isinstance(args[0], int) and isinstance(args[1], list):
-            n = ctypes.c_int(args[0])
-            k = (ctypes.c_float * len(args[1]))(*[float(x) for x in args[1]])
-            klen = len(args[1])
-            return lib.Bands_operator_export0(self.ptr, n, k, klen)
-        # Numpy call
-        else:
-            if not isinstance(args[1], np.ndarray) or args[1].ndim != 2:
-                raise ValueError("points must be a 2D numpy array")
-            kpts = args[1]
-            if args[1].dtype != np.float32:
-                kpts = args[1].astype(np.float32)
+    def __call__(self, k, w=0.0):
+        """
+        Evaluate Hamiltonian H(k, w) and return as numpy matrix.
 
-            num_points, klen = kpts.shape
+        Args:
+            k: momentum point (list or array)
+            w: frequency (default 0.0)
 
-            # Allocate output array
-            output = np.empty(num_points, dtype=np.float32)
+        Returns:
+            numpy array of shape (n, n) with complex values
+        """
+        k_array = (c_float * len(k))(*[float(x) for x in k])
+        k_len = c_int(len(k))
+        w_val = c_float(w)
 
-            # Convert input and output to ctypes pointers
-            points_ctypes = kpts.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-            output_ctypes = output.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+        # Matrix size will be determined by the C++ function
+        matrix_size = c_int(0)
 
-            lib.Bands_operator_export0_numpy(
-                self.ptr,
-                ctypes.c_int(args[0]),
-                points_ctypes,
-                ctypes.c_int(num_points),
-                ctypes.c_int(klen),
-                output_ctypes
-            )
+        # Allocate space for a maximum size matrix (e.g., 100x100)
+        max_size = 100
+        real_result = (c_float * (max_size * max_size))()
+        imag_result = (c_float * (max_size * max_size))()
 
-            return output
+        lib.Hamiltonian_operator_export0(
+            self.ptr, k_array, k_len, w_val,
+            real_result, imag_result, ctypes.byref(matrix_size)
+        )
+
+        n = matrix_size.value
+        if n == 0:
+            return np.array([[]], dtype=np.complex64)
+
+        # Reshape flattened arrays to matrices
+        real_matrix = np.array([real_result[i] for i in range(n*n)]).reshape(n, n)
+        imag_matrix = np.array([imag_result[i] for i in range(n*n)]).reshape(n, n)
+
+        return real_matrix + 1j * imag_matrix
 
     def __del__(self):
         try:
-            destroy = lib.destroy_Bands
+            destroy = lib.destroy_Hamiltonian
             destroy.argtypes = [ctypes.c_void_p]
             destroy(self.ptr)
         except AttributeError:
-            pass
+            print("failed to clear memory")
+
+# Bands object removed - not currently in use
+#lib.Bands_export0.restype = c_void_p
+#
+#lib.Bands_operator_export0.restype = c_float
+#lib.Bands_operator_export0.argtypes = [c_void_p, c_int, POINTER(c_float), c_int]
+#
+#lib.Bands_operator_export0_numpy.restype = None
+#lib.Bands_operator_export0_numpy.argtypes = [
+#    ctypes.c_void_p,            # Bands* obj
+#    ctypes.c_int,               # int n
+#    ctypes.POINTER(ctypes.c_float),  # const float* points
+#    ctypes.c_int,               # int num_points
+#    ctypes.c_int,               # int len
+#    ctypes.POINTER(ctypes.c_float)   # float* output
+#]
+#
+#class Bands:
+#    def __init__(self):
+#        self.ptr = lib.Bands_export0()
+#        if not self.ptr:
+#            raise RuntimeError('Failed to initialize Bands')
+#
+#    def __call__(self, *args):
+#        # Overload for args=1, required=1
+#        if len(args) == 2 and isinstance(args[0], int) and isinstance(args[1], list):
+#            n = ctypes.c_int(args[0])
+#            k = (ctypes.c_float * len(args[1]))(*[float(x) for x in args[1]])
+#            klen = len(args[1])
+#            return lib.Bands_operator_export0(self.ptr, n, k, klen)
+#        # Numpy call
+#        else:
+#            if not isinstance(args[1], np.ndarray) or args[1].ndim != 2:
+#                raise ValueError("points must be a 2D numpy array")
+#            kpts = args[1]
+#            if args[1].dtype != np.float32:
+#                kpts = args[1].astype(np.float32)
+#
+#            num_points, klen = kpts.shape
+#
+#            # Allocate output array
+#            output = np.empty(num_points, dtype=np.float32)
+#
+#            # Convert input and output to ctypes pointers
+#            points_ctypes = kpts.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+#            output_ctypes = output.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+#
+#            lib.Bands_operator_export0_numpy(
+#                self.ptr,
+#                ctypes.c_int(args[0]),
+#                points_ctypes,
+#                ctypes.c_int(num_points),
+#                ctypes.c_int(klen),
+#                output_ctypes
+#            )
+#
+#            return output
+#
+#    def __del__(self):
+#        try:
+#            destroy = lib.destroy_Bands
+#            destroy.argtypes = [ctypes.c_void_p]
+#            destroy(self.ptr)
+#        except AttributeError:
+#            pass
 
 ctypes.POINTER(ctypes.c_float)
 lib.data_save_export0.argtypes = [c_char_p, POINTER(c_float), POINTER(c_float), c_int, c_bool, c_bool, c_bool, c_bool]

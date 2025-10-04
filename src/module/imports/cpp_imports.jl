@@ -8,6 +8,7 @@ export epsilon,
        norm,
        Vertex,
        Self_Energy,
+       Hamiltonian,
        Field_C,
        Field_R,
        destroy!,
@@ -193,52 +194,54 @@ end
 
 
 # Begin Functions
-export Bands, Field_C, Field_R, Vertex, epsilon
+# Bands removed - not currently in use
+export Field_C, Field_R, Vertex, epsilon
 
 function epsilon(arg0::Int, arg1::Vector{Float64})
     newarg1 = Float32.(arg1)
     return ccall((:epsilon_export0, libfly), Float32, (Cint, Ptr{Float32}, Cint), arg0, newarg1, length(arg1))
 end
 
-mutable struct Bands
-    ptr::Ptr{Cvoid}
-end
-
-function Bands()
-    ptr = ccall((:Bands_export0, libfly), Ptr{Cvoid}, ())
-    return Bands(ptr)
-end
-
-function (self::Bands)(arg0::Int, arg1::Vector{Float64})::Float32
-    newarg1 = Float32.(arg1)
-    lenarg1 = length(arg1)
-    return ccall((:Bands_operator_export0, libfly), Float32, (Ptr{Cvoid}, Cint, Ptr{Float32}, Cint), self.ptr, arg0, newarg1, lenarg1)
-end
-
-function (self::Bands)(arg0::Int, arg1::RawVec)::Float32
-    lenarg1 = arg1.dimension
-    newarg1 = zeros(Float32, lenarg1)
-    newarg1[1] = arg1.x
-    if lenarg1 > 1 
-        newarg1[2] = arg1.y
-        if lenarg1 > 2 
-            newarg1[3] = arg1.z
-        end 
-    end
-    return ccall((:Bands_operator_export0, libfly), Float32, (Ptr{Cvoid}, Cint, Ptr{Float32}, Cint), self.ptr, arg0, newarg1, lenarg1)
-end
-
-function vk(n, k::Vec, band::Bands)::Vec
-    nint = Int32(n)
-    newk = RawVec(k.x, k.y, k.z, k.w, k.area, k.dimension, k.n)
-    result = ccall((:vk_export0, libfly), Ptr{RawVec}, (Cint, Ref{RawVec}, Ptr{Cvoid}), nint, newk, band.ptr) 
-    q = unsafe_load(result)
-    return Vec(q.x, q.y, q.z, q.w, q.area, q.dimension, q.n)
-end
-
-function Base.finalize(obj::Bands)
-    destroy!(obj)
-end
+# Bands removed - not currently in use
+#mutable struct Bands
+#    ptr::Ptr{Cvoid}
+#end
+#
+#function Bands()
+#    ptr = ccall((:Bands_export0, libfly), Ptr{Cvoid}, ())
+#    return Bands(ptr)
+#end
+#
+#function (self::Bands)(arg0::Int, arg1::Vector{Float64})::Float32
+#    newarg1 = Float32.(arg1)
+#    lenarg1 = length(arg1)
+#    return ccall((:Bands_operator_export0, libfly), Float32, (Ptr{Cvoid}, Cint, Ptr{Float32}, Cint), self.ptr, arg0, newarg1, lenarg1)
+#end
+#
+#function (self::Bands)(arg0::Int, arg1::RawVec)::Float32
+#    lenarg1 = arg1.dimension
+#    newarg1 = zeros(Float32, lenarg1)
+#    newarg1[1] = arg1.x
+#    if lenarg1 > 1
+#        newarg1[2] = arg1.y
+#        if lenarg1 > 2
+#            newarg1[3] = arg1.z
+#        end
+#    end
+#    return ccall((:Bands_operator_export0, libfly), Float32, (Ptr{Cvoid}, Cint, Ptr{Float32}, Cint), self.ptr, arg0, newarg1, lenarg1)
+#end
+#
+#function vk(n, k::Vec, band::Bands)::Vec
+#    nint = Int32(n)
+#    newk = RawVec(k.x, k.y, k.z, k.w, k.area, k.dimension, k.n)
+#    result = ccall((:vk_export0, libfly), Ptr{RawVec}, (Cint, Ref{RawVec}, Ptr{Cvoid}), nint, newk, band.ptr)
+#    q = unsafe_load(result)
+#    return Vec(q.x, q.y, q.z, q.w, q.area, q.dimension, q.n)
+#end
+#
+#function Base.finalize(obj::Bands)
+#    destroy!(obj)
+#end
 
 mutable struct Self_Energy
     ptr::Ptr{Cvoid}
@@ -360,10 +363,11 @@ function (self::Field_R)(arg0)::Float32
     return ccall((:Field_R_operator_export0, libfly), Float32, (Ptr{Cvoid}, Float32), self.ptr, newarg0)
 end
 
-function (self::Field_R)(arg0::Int, arg1)::Float32
-    newarg1 = Float32(arg1)
-    return ccall((:Field_R_operator_export1, libfly), Float32, (Ptr{Cvoid}, Cint, Float32), self.ptr, arg0, newarg1)
-end
+# COMMENTED OUT - no corresponding export
+#function (self::Field_R)(arg0::Int, arg1)::Float32
+#    newarg1 = Float32(arg1)
+#    return ccall((:Field_R_operator_export1, libfly), Float32, (Ptr{Cvoid}, Cint, Float32), self.ptr, arg0, newarg1)
+#end
 
 function (self::Field_R)(arg0::Vector{Float64}, arg1=0.0)::Float32
     newarg0 = Float32.(arg0)
@@ -372,12 +376,13 @@ function (self::Field_R)(arg0::Vector{Float64}, arg1=0.0)::Float32
     return ccall((:Field_R_operator_export2, libfly), Float32, (Ptr{Cvoid}, Ptr{Float32}, Cint, Float32), self.ptr, newarg0, lenarg0, newarg1)
 end
 
-function (self::Field_R)(arg0::Int, arg1::Vector{Float64}, arg2=0.0)::Float32
-    newarg1 = Float32.(arg1)
-    lenarg1 = length(arg1)
-    newarg2 = Float32(arg2)
-    return ccall((:Field_R_operator_export3, libfly), Float32, (Ptr{Cvoid}, Cint, Ptr{Float32}, Cint, Float32), self.ptr, arg0, newarg1, lenarg1, newarg2)
-end
+# COMMENTED OUT - no corresponding export
+#function (self::Field_R)(arg0::Int, arg1::Vector{Float64}, arg2=0.0)::Float32
+#    newarg1 = Float32.(arg1)
+#    lenarg1 = length(arg1)
+#    newarg2 = Float32(arg2)
+#    return ccall((:Field_R_operator_export3, libfly), Float32, (Ptr{Cvoid}, Cint, Ptr{Float32}, Cint, Float32), self.ptr, arg0, newarg1, lenarg1, newarg2)
+#end
 
 function Base.finalize(obj::Field_R)
     destroy!(obj)
@@ -393,7 +398,7 @@ function Field_C()
 end
 
 function Field_C(filename::String)
-    ptr = ccall((:Field_C_export1, libfly), Ptr{Cvoid}, (Cstring,), filename)
+    ptr = ccall((:Field_C_export2, libfly), Ptr{Cvoid}, (Cstring,), filename)
     return Field_C(ptr)
 end
 
@@ -405,13 +410,14 @@ function (self::Field_C)(arg0)::ComplexF32
     return complex(real[], imag[])
 end
 
-function (self::Field_C)(arg0::Int, arg1)::ComplexF32
-    newarg1 = Float32(arg1)
-    real = Ref{Float32}()
-    imag = Ref{Float32}()
-    ccall((:Field_C_operator_export1, libfly), Nothing, (Ptr{Cvoid}, Cint, Float32, Ptr{Float32}, Ptr{Float32}), self.ptr, arg0, newarg1, real, imag)
-    return complex(real[], imag[])
-end
+# COMMENTED OUT - no corresponding export
+#function (self::Field_C)(arg0::Int, arg1)::ComplexF32
+#    newarg1 = Float32(arg1)
+#    real = Ref{Float32}()
+#    imag = Ref{Float32}()
+#    ccall((:Field_C_operator_export1, libfly), Nothing, (Ptr{Cvoid}, Cint, Float32, Ptr{Float32}, Ptr{Float32}), self.ptr, arg0, newarg1, real, imag)
+#    return complex(real[], imag[])
+#end
 
 function (self::Field_C)(arg0::Vector{Float64}, arg1=0.0)::ComplexF32
     newarg0 = Float32.(arg0)
@@ -423,15 +429,16 @@ function (self::Field_C)(arg0::Vector{Float64}, arg1=0.0)::ComplexF32
     return complex(real[], imag[])
 end
 
-function (self::Field_C)(arg0::Int, arg1::Vector{Float64}, arg2=0.0)::ComplexF32
-    newarg1 = Float32.(arg1)
-    lenarg1 = length(arg1)
-    newarg2 = Float32(arg2)
-    real = Ref{Float32}()
-    imag = Ref{Float32}()
-    ccall((:Field_C_operator_export3, libfly), Nothing, (Ptr{Cvoid}, Cint, Ptr{Float32}, Cint, Float32, Ptr{Float32}, Ptr{Float32}), self.ptr, arg0, newarg1, lenarg1, newarg2, real, imag)
-    return complex(real[], imag[])
-end
+# COMMENTED OUT - no corresponding export
+#function (self::Field_C)(arg0::Int, arg1::Vector{Float64}, arg2=0.0)::ComplexF32
+#    newarg1 = Float32.(arg1)
+#    lenarg1 = length(arg1)
+#    newarg2 = Float32(arg2)
+#    real = Ref{Float32}()
+#    imag = Ref{Float32}()
+#    ccall((:Field_C_operator_export3, libfly), Nothing, (Ptr{Cvoid}, Cint, Ptr{Float32}, Cint, Float32, Ptr{Float32}, Ptr{Float32}), self.ptr, arg0, newarg1, lenarg1, newarg2, real, imag)
+#    return complex(real[], imag[])
+#end
 
 function destroy!(csf::Field_C)
     ccall((:destroy_Field_C, libfly), Cvoid, (Ptr{Cvoid},), csf.cmf)
@@ -439,6 +446,50 @@ end
 
 function Base.finalize(obj::Field_C)
     destroy!(obj)
+end
+
+# Hamiltonian
+mutable struct Hamiltonian
+    ptr::Ptr{Cvoid}
+
+    function Hamiltonian()
+        ptr = ccall((:Hamiltonian_export0, libfly), Ptr{Cvoid}, ())
+        if ptr == C_NULL
+            error("Failed to initialize Hamiltonian")
+        end
+        obj = new(ptr)
+        finalizer(obj) do x
+            ccall((:destroy_Hamiltonian, libfly), Cvoid, (Ptr{Cvoid},), x.ptr)
+        end
+        return obj
+    end
+end
+
+function (self::Hamiltonian)(k::Vector{Float64}, w::Float64=0.0)::Matrix{ComplexF32}
+    k_arr = Float32.(k)
+    k_len = Cint(length(k))
+    w_val = Float32(w)
+
+    # Allocate space for matrix results
+    max_size = 100
+    real_result = zeros(Float32, max_size * max_size)
+    imag_result = zeros(Float32, max_size * max_size)
+    matrix_size = Ref{Cint}(0)
+
+    ccall((:Hamiltonian_operator_export0, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Float32}, Cint, Float32, Ptr{Float32}, Ptr{Float32}, Ptr{Cint}),
+          self.ptr, k_arr, k_len, w_val, real_result, imag_result, matrix_size)
+
+    n = matrix_size[]
+    if n == 0
+        return Matrix{ComplexF32}(undef, 0, 0)
+    end
+
+    # Reshape to matrix
+    real_mat = reshape(real_result[1:n*n], n, n)
+    imag_mat = reshape(imag_result[1:n*n], n, n)
+
+    return complex.(real_mat, imag_mat)
 end
 
 # End Functions

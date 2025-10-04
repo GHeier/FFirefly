@@ -47,19 +47,19 @@ extern char** c_states; char** get_states();
 extern float c_positions[50][3];
 
 //[BANDS]
-extern char** c_band; char** get_band();
-extern float c_eff_mass[50];
-extern float c_t0[50];
-extern float c_t1[50];
-extern float c_t2[50];
-extern float c_t3[50];
-extern float c_t4[50];
-extern float c_t5[50];
-extern float c_t6[50];
-extern float c_t7[50];
-extern float c_t8[50];
-extern float c_t9[50];
-extern float c_t10[50];
+extern char* c_band; char* get_band();
+extern float c_eff_mass;
+extern float c_t0;
+extern float c_t1;
+extern float c_t2;
+extern float c_t3;
+extern float c_t4;
+extern float c_t5;
+extern float c_t6;
+extern float c_t7;
+extern float c_t8;
+extern float c_t9;
+extern float c_t10;
 
 //[SUPERCONDUCTOR]
 extern bool c_FS_only;

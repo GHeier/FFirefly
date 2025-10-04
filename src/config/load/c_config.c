@@ -40,7 +40,7 @@ char* get_interaction() {return c_interaction;}
 int c_dimension = 3;
 char* c_celltype = "";
 char* get_celltype() {return c_celltype;}
-int c_nbnd = 1;
+int c_nbnd = 0;
 int c_nstates = 1;
 float c_fermi_energy = 0.0;
 float c_Temperature = 0.0;
@@ -64,20 +64,20 @@ char** get_states() {return (char**)c_states;}
 float c_positions[50][3] = {{0.0, 0.0, 0.0}};
 
 //[BANDS]
-char** c_band = (char*[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-char** get_band() {return (char**)c_band;}
-float c_eff_mass[50];
-float c_t0[50];
-float c_t1[50];
-float c_t2[50];
-float c_t3[50];
-float c_t4[50];
-float c_t5[50];
-float c_t6[50];
-float c_t7[50];
-float c_t8[50];
-float c_t9[50];
-float c_t10[50];
+char* c_band = "fermi_gas";
+char* get_band() {return c_band;}
+float c_eff_mass = 1.0;
+float c_t0 = 1.0;
+float c_t1 = 0.0;
+float c_t2 = 0.0;
+float c_t3 = 0.0;
+float c_t4 = 0.0;
+float c_t5 = 0.0;
+float c_t6 = 0.0;
+float c_t7 = 0.0;
+float c_t8 = 0.0;
+float c_t9 = 0.0;
+float c_t10 = 0.0;
 
 //[SUPERCONDUCTOR]
 bool c_FS_only = true;
@@ -170,10 +170,9 @@ void set_section(char *dest, const char *src) {
 }
 
 void load_default_band_values() {
-    c_band[0] =
-        (char *)malloc(50 * sizeof(char)); // Allocating space for 50 characters
-    strcpy(c_band[0], "fermi_gas");
-    c_eff_mass[0] = 1.0;
+    // c_band is already initialized to "fermi_gas" in the defaults
+    // c_eff_mass is already initialized to 1.0 in the defaults
+    // This function is kept for compatibility but does nothing
 }
 
 void make_save_file() {
@@ -359,44 +358,43 @@ void read_c_config(const char *path) {
 
 //[BANDS]
             else if (strstr(key, "band") != NULL) {
-                n = atoi(key + 4)-1;
-                set_string(&c_band[n], value);
+                set_string(&c_band, value);
             }
             else if (strstr(key, "eff_mass") != NULL) {
-                c_eff_mass[n] = atof(value);
+                c_eff_mass = atof(value);
             }
             else if (strstr(key, "t0") != NULL) {
-                c_t0[n] = atof(value);
+                c_t0 = atof(value);
             }
             else if (strstr(key, "t1") != NULL) {
-                c_t1[n] = atof(value);
+                c_t1 = atof(value);
             }
             else if (strstr(key, "t2") != NULL) {
-                c_t2[n] = atof(value);
+                c_t2 = atof(value);
             }
             else if (strstr(key, "t3") != NULL) {
-                c_t3[n] = atof(value);
+                c_t3 = atof(value);
             }
             else if (strstr(key, "t4") != NULL) {
-                c_t4[n] = atof(value);
+                c_t4 = atof(value);
             }
             else if (strstr(key, "t5") != NULL) {
-                c_t5[n] = atof(value);
+                c_t5 = atof(value);
             }
             else if (strstr(key, "t6") != NULL) {
-                c_t6[n] = atof(value);
+                c_t6 = atof(value);
             }
             else if (strstr(key, "t7") != NULL) {
-                c_t7[n] = atof(value);
+                c_t7 = atof(value);
             }
             else if (strstr(key, "t8") != NULL) {
-                c_t8[n] = atof(value);
+                c_t8 = atof(value);
             }
             else if (strstr(key, "t9") != NULL) {
-                c_t9[n] = atof(value);
+                c_t9 = atof(value);
             }
             else if (strstr(key, "t10") != NULL) {
-                c_t10[n] = atof(value);
+                c_t10 = atof(value);
             }
 
 //[SUPERCONDUCTOR]

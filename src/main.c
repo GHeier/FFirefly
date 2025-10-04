@@ -143,7 +143,6 @@ int main() {
 
     print_banner_bottom(start);
 
-    printf("1\n");
     // Set the number of threads used in parallelization to one less than the
     // maximum
     int num_procs = omp_get_num_procs();
@@ -151,7 +150,6 @@ int main() {
     if (!strcmp(c_verbosity, "high"))
         printf("Number of threads used in CPU parallelization: %d\n",
                num_procs - 1);
-    printf("2\n");
 
     for (int i = 0; i < count; i++) {
         char *category = tokens[i];
@@ -165,13 +163,11 @@ int main() {
             ind = ccount - 1;
         if (c_calculation[0] != '\0')
             c_calculation = calc_tokens[ind];
-    printf("3\n");
         load_cpp_config_wrapper(); 
     /*
         * ADDING A CATEGORY OCCURS BELOW
         * FOLLOW THE PATTERN
     */
-    printf("4\n");
         if (!strcmp(category, "DOS"))
             DOS();
         else if (!strcmp(category, "fermi_surface"))

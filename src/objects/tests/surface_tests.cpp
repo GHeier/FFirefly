@@ -9,7 +9,7 @@ using namespace std;
 bool surface_test_3D() {
     set_global(nbnd, 1);
     set_global(dimension, 3);
-    eff_mass.push_back(0.5);
+    eff_mass = 0.5;
     set_global(k_mesh, {34, 34, 34});
 
     float s_val = 1.0;

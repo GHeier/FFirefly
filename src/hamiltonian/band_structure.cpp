@@ -18,14 +18,14 @@ float epsilon(int n, Vec k) {
             "\nThe band index is negative/too small. Counting starts at 1\n");
         throw("The band index is negative/too small. Counting starts at 1\n");
     }
-    if (band[n] == "tight_binding" && celltype == "SC")
+    if (band == "tight_binding" && celltype == "SC")
         return epsilon_SC(n, k);
-    if (band[n] == "fermi_gas")
+    if (band == "fermi_gas")
         return epsilon_fermi_gas(n, k);
-    if (band[n] == "noband") {
+    if (band == "noband") {
         throw("The 0 band index is empty. Counting starts at 1\n");
     } else {
-        cout << "Unknown Band structure: " << band[n] << endl;
+        cout << "Unknown Band structure: " << band << endl;
         exit(1);
     }
 }
@@ -36,15 +36,15 @@ float e_diff(int n, Vec k, Vec q) { return epsilon(n, k + q) - epsilon(n, k); }
 // Fermi Velocity corresponds to energy band functions above
 float vp(int n, Vec k) {
     n--;
-    if (band[n] == "simple_cubic_layered")
+    if (band == "simple_cubic_layered")
         return fermi_velocity_SC_layered(n, k).norm();
-    if (band[n] == "tight_binding" && celltype == "SC") {
+    if (band == "tight_binding" && celltype == "SC") {
         return fermi_velocity_SC(n, k).norm();
     }
-    if (band[n] == "fermi_gas")
+    if (band == "fermi_gas")
         return fermi_velocity_fermi_gas(n, k).norm();
     else {
-        cout << "Fermi velocity not available for band structure: " << band[n]
+        cout << "Fermi velocity not available for band structure: " << band
              << endl;
         exit(1);
     }
@@ -52,12 +52,12 @@ float vp(int n, Vec k) {
 
 float vp_diff(int n, Vec k, Vec q) {
     Vec v;
-    if (band[n] == "simple_cubic_layered")
+    if (band == "simple_cubic_layered")
         v = fermi_velocity_SC_layered(n, k + q) -
             fermi_velocity_SC_layered(n, k);
-    else if (band[n] == "simple_cubic")
+    else if (band == "simple_cubic")
         v = fermi_velocity_SC(n, k + q) - fermi_velocity_SC(n, k);
-    else if (band[n] == "fermi_gas")
+    else if (band == "fermi_gas")
         v = fermi_velocity_fermi_gas(n, k + q) - fermi_velocity_fermi_gas(n, k);
     else {
         cout << "No band structure specified\n";
@@ -76,7 +76,7 @@ float epsilon_fermi_gas(int n, Vec k) {
         k.z = 0;
     if (dimension < 4)
         k.w = 0;
-    return pow(k.norm(), 2) / (2 * eff_mass[n]);
+    return pow(k.norm(), 2) / (2 * eff_mass);
 }
 
 Vec fermi_velocity_fermi_gas(int n, Vec k) {
@@ -84,17 +84,17 @@ Vec fermi_velocity_fermi_gas(int n, Vec k) {
         k.z = 0;
     if (dimension < 4)
         k.w = 0;
-    return 2 * k / (2 * eff_mass[n]);
+    return 2 * k / (2 * eff_mass);
 }
 
 // Cubic Lattice
 float epsilon_SC(int n, Vec k) {
     float val = 0.0;
     for (int i = 0; i < dimension; i++) {
-        val += -2 * t0[n] * cos(k(i));
-        val += -2 * t2[n] * cos(k(i));
+        val += -2 * t0 * cos(k(i));
+        val += -2 * t2 * cos(k(i));
     }
-    val += -4 * t1[n] * cos(k(0)) * cos(k(1));
+    val += -4 * t1 * cos(k(0)) * cos(k(1));
     return val;
 }
 
@@ -103,7 +103,7 @@ Vec fermi_velocity_SC(int n, Vec k) {
     for (int i = 0; i < dimension; i++) {
         v(i) = -sin(k(i));
     }
-    v = -2 * t0[n] * v;
+    v = -2 * t0 * v;
     return v;
 }
 
@@ -112,9 +112,9 @@ float epsilon_SC_layered(int n, Vec k) {
     float val = 0.0;
     for (int i = 0; i < dimension; i++) {
         if (i < 2)
-            val += (-2 * t0[n]) * (cos(k(i)));
+            val += (-2 * t0) * (cos(k(i)));
         else
-            val += (-2 * t1[n]) * (cos(k(i)));
+            val += (-2 * t1) * (cos(k(i)));
     }
     return val;
 }
@@ -123,9 +123,9 @@ Vec fermi_velocity_SC_layered(int n, Vec k) {
     Vec v;
     for (int i = 0; i < dimension; i++) {
         if (i < 2)
-            v(i) = (-2 * t0[n]) * (-sin(k(i)));
+            v(i) = (-2 * t0) * (-sin(k(i)));
         else
-            v(i) = (-2 * t1[n]) * (-sin(k(i)));
+            v(i) = (-2 * t1) * (-sin(k(i)));
     }
     return v;
 }

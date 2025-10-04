@@ -6,6 +6,7 @@
 #include "../../objects/CMField/fields.hpp"
 #include "../../objects/CMField/vertex.hpp"
 #include "../../objects/CMField/self_energy.hpp"
+#include "../../objects/CMField/hamiltonian.hpp"
 //#include "../../objects/CMField/bands.hpp"
 #include "../../objects/surfaces.hpp"
 #include "../../hamiltonian/band_structure.hpp"
@@ -225,6 +226,31 @@ void Self_Energy_operator_export0(Self_Energy *obj, const float *point, int len,
     *imag_result = imag(r);
 }
 
+Hamiltonian *Hamiltonian_export0() { return new Hamiltonian(); }
+
+void Hamiltonian_operator_export0(Hamiltonian *obj, const float *point, int len, float w,
+                                   float *real_result, float *imag_result, int *matrix_size) {
+    Vec v(point, len);
+    vector<vector<complex<float>>> H = obj->operator()(v, w);
+
+    if (H.empty()) {
+        *matrix_size = 0;
+        return;
+    }
+
+    int n = H.size();
+    *matrix_size = n;
+
+    // Flatten matrix to 1D array: real[0,0], imag[0,0], real[0,1], imag[0,1], ...
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            int idx = i * n + j;
+            real_result[idx] = real(H[i][j]);
+            imag_result[idx] = imag(H[i][j]);
+        }
+    }
+}
+
 CMData *CMData_export0() { return new CMData();}
 CMData *CMData_export1(const char *filename) { return new CMData(filename);}
 extern "C" float CMData_dimension_export0(CMData* a) {
@@ -247,15 +273,17 @@ extern "C" float CMData_with_n_export0(CMData* a) {
 //    return a->nbnd;
 //}
 
-//extern "C" int Field_R_nbnd_export0(Field_R* a) {
-//    int temp = a->cmf.nbnd;
-//    printf("cnbnd = %d\n", temp);
-//    return temp;
-//}
-//
-//extern "C" float Field_C_nbnd_export0(Field_C* a) {
-//    return a->cmf.nbnd;
-//}
+extern "C" int Field_R_nbnd_export0(Field_R* a) {
+    // nbnd is always 1 now (no multi-band support)
+    int temp = 1;
+    printf("cnbnd = %d\n", temp);
+    return temp;
+}
+
+extern "C" int Field_C_nbnd_export0(Field_C* a) {
+    // nbnd is always 1 now (no multi-band support)
+    return 1;
+}
 
 Field_C *Field_C_export0() { return new Field_C(); }
 //Field_C *Field_C_export1(CMField cmf) { return new Field_C(cmf); }
@@ -337,6 +365,8 @@ void destroy_Field_R(Field_R *a) { delete a; }
 void destroy_Vertex(Vertex *a) { delete a; }
 
 void destroy_Self_Energy(Self_Energy *a) { delete a; }
+
+void destroy_Hamiltonian(Hamiltonian *a) { delete a; }
 
 void destroy_Surface(Surface *a) { delete a; }
 

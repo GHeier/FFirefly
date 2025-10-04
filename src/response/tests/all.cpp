@@ -24,8 +24,8 @@ bool sparse_ir_response_test_3D() {
     set_global(fermi_energy, 0);
     set_global(dynamic, false);
     set_global(nbnd, 1);
-    band.push_back("tight_binding");
-    t0.push_back(1.0);
+    band = "tight_binding";
+    t0 = 1.0;
 
     string folder = "response/";
     string file = "sparse_ir_response";

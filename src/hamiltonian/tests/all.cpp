@@ -24,8 +24,8 @@ bool DOS_test_3d() {
   // Set global variables for testing
   set_global(nbnd, 1);
   set_global(dimension, 3);
-  band.push_back("fermi_gas");
-  eff_mass.push_back(0.5);
+  band = "fermi_gas";
+  eff_mass = 0.5;
   set_global(fermi_energy, 1.0);
   set_global(k_mesh, {18, 18, 18});
 
@@ -51,8 +51,8 @@ bool DOS_test_2d() {
   // Set global variables for testing
   set_global(nbnd, 1);
   set_global(dimension, 2);
-  band.push_back("fermi_gas");
-  eff_mass.push_back(0.5);
+  band = "fermi_gas";
+  eff_mass = 0.5;
   set_global(fermi_energy, 1.0);
   set_global(k_mesh, {16, 16, 16});
 

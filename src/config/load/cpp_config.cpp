@@ -51,20 +51,19 @@ vector<string> states;
 vector<vector<float>> positions(50, vector<float>(3));
 
 //[BANDS]
-vector<string> band;
-
-vector<float> eff_mass;
-vector<float> t0;
-vector<float> t1;
-vector<float> t2;
-vector<float> t3;
-vector<float> t4;
-vector<float> t5;
-vector<float> t6;
-vector<float> t7;
-vector<float> t8;
-vector<float> t9;
-vector<float> t10;
+string band;
+float eff_mass;
+float t0;
+float t1;
+float t2;
+float t3;
+float t4;
+float t5;
+float t6;
+float t7;
+float t8;
+float t9;
+float t10;
 
 //[SUPERCONDUCTOR]
 bool FS_only;
@@ -119,27 +118,23 @@ extern "C" void load_cpp_config() {
     for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) brillouin_zone[i][j] = c_brillouin_zone[i][j];
 
 //[BASIS]
-    printf("A.1\n");
     for (int i = 0; i < nstates; i++) states.push_back(c_states[i]);
-    printf("A.2\n");
     for (int i = 0; i < nstates; i++) for (int j = 0; j < 3; j++) positions[i][j] = c_positions[i][j];
-    printf("A.3\n");
 
 //[BANDS]
-    for (int i = 0; i < nbnd; i++) band.push_back(c_band[i]);
-    for (int i = 0; i < nbnd; i++) eff_mass.push_back(c_eff_mass[i]);
-    for (int i = 0; i < nbnd; i++) t0.push_back(c_t0[i]);
-    for (int i = 0; i < nbnd; i++) t1.push_back(c_t1[i]);
-    for (int i = 0; i < nbnd; i++) t2.push_back(c_t2[i]);
-    for (int i = 0; i < nbnd; i++) t3.push_back(c_t3[i]);
-    for (int i = 0; i < nbnd; i++) t4.push_back(c_t4[i]);
-    for (int i = 0; i < nbnd; i++) t5.push_back(c_t5[i]);
-    for (int i = 0; i < nbnd; i++) t6.push_back(c_t6[i]);
-    for (int i = 0; i < nbnd; i++) t7.push_back(c_t7[i]);
-    for (int i = 0; i < nbnd; i++) t8.push_back(c_t8[i]);
-    for (int i = 0; i < nbnd; i++) t9.push_back(c_t9[i]);
-    for (int i = 0; i < nbnd; i++) t10.push_back(c_t10[i]);
-    printf("A.4\n");
+    band = c_band;
+    eff_mass = c_eff_mass;
+    t0 = c_t0;
+    t1 = c_t1;
+    t2 = c_t2;
+    t3 = c_t3;
+    t4 = c_t4;
+    t5 = c_t5;
+    t6 = c_t6;
+    t7 = c_t7;
+    t8 = c_t8;
+    t9 = c_t9;
+    t10 = c_t10;
 
 //[SUPERCONDUCTOR]
     FS_only = c_FS_only;
@@ -182,19 +177,19 @@ void set_nbnd(int nbnd_) {
 }
 
 void set_band(int n, const char* band_) {
-    band[n] = band_;
+    band = band_;
 }
 
 void set_eff_mass(int n, float eff_mass_) {
-    eff_mass[n] = eff_mass_;
+    eff_mass = eff_mass_;
 }
 
 void set_t0(int n, float t0_) {
-    t0[n] = t0_;
+    t0 = t0_;
 }
 
 void set_t1(int n, float t1_) {
-    t1[n] = t1_;
+    t1 = t1_;
 }
 
 void read_c_config_wrapper(string path) {

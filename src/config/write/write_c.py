@@ -68,23 +68,18 @@ def format_var_line(key, value, section):
     else:
         if isinstance(value, str):
             # Handle strings
-            if section == "BANDS" or section == "BASIS":
-                return (
-                    f"char** c_{key} = (char*[]){{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};\n"
-                    f"char** get_{key}() {{return (char**)c_{key};}}"
-                )
             return (
                 f'char* c_{key} = "{value}";\n' f"char* get_{key}() {{return c_{key};}}"
             )
         elif isinstance(value, bool):
             # Handle booleans
-            if section == "BANDS" or section == "BASIS":
+            if section == "BASIS":
                 return f"bool c_{key}[50];"
             return f"bool c_{key} = {'true' if value else 'false'};"
         else:
             # Handle other scalar values
             value_type = "float" if isinstance(value, float) else "int"
-            if section == "BANDS" or section == "BASIS":
+            if section == "BASIS":
                 return f"{value_type} c_{key}[50];"
             return f"{value_type} c_{key} = {value};"
 
@@ -94,7 +89,7 @@ def format_func_line(key, value, section):
     if key == "category":
         el = ""
     index = ""
-    if section == "BANDS" or section == "BASIS":
+    if section == "BASIS":
         index = "[n]"
     if (
         section == "CELL"
@@ -104,7 +99,7 @@ def format_func_line(key, value, section):
         return ""
 
     if type(value) == str:
-        if key == "band" or key == "state":
+        if key == "state":
             return f'            {el}if (strstr(key, "{key}") != NULL) {{\n                n = atoi(key + 4)-1;\n                set_string(&c_{key}{index}, value);\n            }}'
         return f'            {el}if (strstr(key, "{key}") != NULL) {{\n                set_string(&c_{key}, value);\n            }}'
     elif type(value) == int:
@@ -131,8 +126,6 @@ def format_func_line(key, value, section):
 
 def format_header_line(key, value, section):
     index = ""
-    if section == "BANDS":
-        index = "[50]"
 
     # Special handling for BASIS section
     if section == "BASIS":
@@ -142,8 +135,6 @@ def format_header_line(key, value, section):
             return f"extern float c_{key}[50][3];"
 
     if type(value) == str:
-        if key == "band":
-            return f"extern char** c_{key}; char** get_{key}();"
         return f"extern char* c_{key}; char* get_{key}();"
     elif type(value) == int:
         return f"extern int c_{key}{index};"

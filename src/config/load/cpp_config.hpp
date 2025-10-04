@@ -47,20 +47,19 @@ extern vector<string> states;
 extern vector<vector<float>> positions;
 
 //[BANDS]
-extern vector<string> band;
-
-extern vector<float> eff_mass;
-extern vector<float> t0;
-extern vector<float> t1;
-extern vector<float> t2;
-extern vector<float> t3;
-extern vector<float> t4;
-extern vector<float> t5;
-extern vector<float> t6;
-extern vector<float> t7;
-extern vector<float> t8;
-extern vector<float> t9;
-extern vector<float> t10;
+extern string band;
+extern float eff_mass;
+extern float t0;
+extern float t1;
+extern float t2;
+extern float t3;
+extern float t4;
+extern float t5;
+extern float t6;
+extern float t7;
+extern float t8;
+extern float t9;
+extern float t10;
 
 //[SUPERCONDUCTOR]
 extern bool FS_only;

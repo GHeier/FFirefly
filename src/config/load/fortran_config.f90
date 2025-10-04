@@ -83,31 +83,31 @@ module ffirefly
     real :: positions(50,3)
 
 ![BANDS]
-    character(len=50) :: band(50,50)
-    real(c_float), bind(C, name="c_eff_mass") :: c_eff_mass(50)
-    real :: eff_mass(50)
-    real(c_float), bind(C, name="c_t0") :: c_t0(50)
-    real :: t0(50)
-    real(c_float), bind(C, name="c_t1") :: c_t1(50)
-    real :: t1(50)
-    real(c_float), bind(C, name="c_t2") :: c_t2(50)
-    real :: t2(50)
-    real(c_float), bind(C, name="c_t3") :: c_t3(50)
-    real :: t3(50)
-    real(c_float), bind(C, name="c_t4") :: c_t4(50)
-    real :: t4(50)
-    real(c_float), bind(C, name="c_t5") :: c_t5(50)
-    real :: t5(50)
-    real(c_float), bind(C, name="c_t6") :: c_t6(50)
-    real :: t6(50)
-    real(c_float), bind(C, name="c_t7") :: c_t7(50)
-    real :: t7(50)
-    real(c_float), bind(C, name="c_t8") :: c_t8(50)
-    real :: t8(50)
-    real(c_float), bind(C, name="c_t9") :: c_t9(50)
-    real :: t9(50)
-    real(c_float), bind(C, name="c_t10") :: c_t10(50)
-    real :: t10(50)
+    character(len=50) :: band
+    real(c_float), bind(C, name="c_eff_mass") :: c_eff_mass
+    real :: eff_mass
+    real(c_float), bind(C, name="c_t0") :: c_t0
+    real :: t0
+    real(c_float), bind(C, name="c_t1") :: c_t1
+    real :: t1
+    real(c_float), bind(C, name="c_t2") :: c_t2
+    real :: t2
+    real(c_float), bind(C, name="c_t3") :: c_t3
+    real :: t3
+    real(c_float), bind(C, name="c_t4") :: c_t4
+    real :: t4
+    real(c_float), bind(C, name="c_t5") :: c_t5
+    real :: t5
+    real(c_float), bind(C, name="c_t6") :: c_t6
+    real :: t6
+    real(c_float), bind(C, name="c_t7") :: c_t7
+    real :: t7
+    real(c_float), bind(C, name="c_t8") :: c_t8
+    real :: t8
+    real(c_float), bind(C, name="c_t9") :: c_t9
+    real :: t9
+    real(c_float), bind(C, name="c_t10") :: c_t10
+    real :: t10
 
 ![SUPERCONDUCTOR]
     logical(c_bool), bind(C, name="c_FS_only") :: c_FS_only

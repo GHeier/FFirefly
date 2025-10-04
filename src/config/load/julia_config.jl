@@ -47,20 +47,19 @@ states::Vector{String} = cfg.states
 positions::Array{Float64} = cfg.positions
 
 #[BANDS]
-band::Vector{String} = cfg.band
-
-eff_mass::Vector{Float64} = cfg.eff_mass
-t0::Vector{Float64} = cfg.t0
-t1::Vector{Float64} = cfg.t1
-t2::Vector{Float64} = cfg.t2
-t3::Vector{Float64} = cfg.t3
-t4::Vector{Float64} = cfg.t4
-t5::Vector{Float64} = cfg.t5
-t6::Vector{Float64} = cfg.t6
-t7::Vector{Float64} = cfg.t7
-t8::Vector{Float64} = cfg.t8
-t9::Vector{Float64} = cfg.t9
-t10::Vector{Float64} = cfg.t10
+band::String = cfg.band
+eff_mass::Float64 = cfg.eff_mass
+t0::Float64 = cfg.t0
+t1::Float64 = cfg.t1
+t2::Float64 = cfg.t2
+t3::Float64 = cfg.t3
+t4::Float64 = cfg.t4
+t5::Float64 = cfg.t5
+t6::Float64 = cfg.t6
+t7::Float64 = cfg.t7
+t8::Float64 = cfg.t8
+t9::Float64 = cfg.t9
+t10::Float64 = cfg.t10
 
 #[SUPERCONDUCTOR]
 FS_only::Bool = cfg.FS_only

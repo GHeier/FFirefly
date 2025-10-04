@@ -9,10 +9,6 @@ end_load_phrase = '        ! End of loading variables'
 
 def format_var_line(key, value, section):
     index = ''
-    if section == 'BANDS':
-        index = '(50)'
-        if key == 'band':
-            return f"    character(len=50) :: band(50,50)"
     if (type(value) == str):
         return f"    character(len=50) :: {key}{index}"
     elif (type(value) == int):

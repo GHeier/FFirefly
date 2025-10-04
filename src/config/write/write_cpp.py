@@ -3,9 +3,9 @@ from .write_c import add_lines
 
 def format_var_line(key, value, section):
     makevec = False
-    if section == "BANDS" or section == "BASIS":
+    if section == "BASIS":
         makevec = True
-        if key == "band" or key == "state":
+        if key == "state":
             return f"vector<string> {key};\n"
         if key == "position":
             return f"vector<vector<float>> {key};\n"
@@ -47,9 +47,9 @@ def format_var_line(key, value, section):
 
 def format_config_line(key, value, section):
     makevec = False
-    if section == "BANDS" or section == "BASIS":
+    if section == "BASIS":
         makevec = True
-        if key == "band" or key == "state":
+        if key == "state":
             return f"    vector<string> {key};\n"
         if key == "position":
             return f"vector<vector<float>> {key};\n"
@@ -88,9 +88,9 @@ def format_config_line(key, value, section):
 
 def format_header_line(key, value, section):
     makevec = False
-    if section == "BANDS" or section == "BASIS":
+    if section == "BASIS":
         makevec = True
-        if key == "band" or key == "state":
+        if key == "state":
             return f"extern vector<string> {key};\n"
         if key == "position":
             return f"extern vector<vector<float>> {key};\n"
@@ -128,9 +128,7 @@ def format_header_line(key, value, section):
 
 
 def format_func_line(key, value, section):
-    if section == "BANDS":
-        return f"    for (int i = 0; i < nbnd; i++) {key}.push_back(c_{key}[i]);"
-    elif section == "BASIS" and key != "positions":
+    if section == "BASIS" and key != "positions":
         return f"    for (int i = 0; i < nstates; i++) {key}.push_back(c_{key}[i]);"
     elif type(value) == list:
         if type(value[0]) == list:
