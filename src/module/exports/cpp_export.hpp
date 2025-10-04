@@ -33,6 +33,16 @@ void Field_C_operator_export2(Field_C *obj, const float *point, int len,
 void Field_C_operator_export3(Field_C *obj, int n, const float *point, int len,
                               float w, float *real_result, float *imag_result);
 
+Field_RM *Field_RM_export0();
+Field_RM *Field_RM_export2(const char *filename);
+void Field_RM_operator_export0(Field_RM *obj, const float *point, int len,
+                               float w, float **result, int *matrix_size);
+
+Field_CM *Field_CM_export0();
+Field_CM *Field_CM_export2(const char *filename);
+void Field_CM_operator_export0(Field_CM *obj, const float *point, int len,
+                               float w, float **real_result, float **imag_result, int *matrix_size);
+
 CMField *create_CMField();
 // Load CMField from a file
 CMField *load_CMField(const char *filename);
@@ -57,6 +67,8 @@ void save_data(string filename, vector<Vec> &points,
 // Destroy field instance
 void destroy_Field_C(Field_C *field);
 void destroy_Field_R(Field_R *field);
+void destroy_Field_RM(Field_RM *field);
+void destroy_Field_CM(Field_CM *field);
 
 CMField *create_cmf();
 CMField *load_cmf(const char *filename);

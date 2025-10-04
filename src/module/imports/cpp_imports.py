@@ -393,6 +393,128 @@ class Hamiltonian:
         except AttributeError:
             print("failed to clear memory")
 
+# Field_RM class (Real Matrix field)
+lib.Field_RM_export0.restype = c_void_p
+lib.Field_RM_export2.argtypes = [c_char_p]
+lib.Field_RM_export2.restype = c_void_p
+lib.Field_RM_operator_export0.argtypes = [c_void_p, POINTER(c_float), c_int, c_float, POINTER(c_float), POINTER(c_int)]
+lib.Field_RM_operator_export0.restype = None
+
+class Field_RM:
+    def __init__(self, filename=None):
+        if filename is None:
+            self.ptr = lib.Field_RM_export0()
+        else:
+            self.ptr = lib.Field_RM_export2(c_char_p(filename.encode('utf-8')))
+        if not self.ptr:
+            raise RuntimeError('Failed to initialize Field_RM')
+
+    def __call__(self, k, w=0.0):
+        """
+        Evaluate Field_RM at point k with frequency w and return as numpy matrix.
+
+        Args:
+            k: momentum point (list or array)
+            w: frequency (default 0.0)
+
+        Returns:
+            numpy array of shape (n, n) with real values
+        """
+        k_array = (c_float * len(k))(*[float(x) for x in k])
+        k_len = c_int(len(k))
+        w_val = c_float(w)
+
+        # Matrix size will be determined by the C++ function
+        matrix_size = c_int(0)
+
+        # Allocate space for a maximum size matrix (e.g., 100x100)
+        max_size = 100
+        result = (c_float * (max_size * max_size))()
+
+        lib.Field_RM_operator_export0(
+            self.ptr, k_array, k_len, w_val,
+            result, ctypes.byref(matrix_size)
+        )
+
+        n = matrix_size.value
+        if n == 0:
+            return np.array([[]], dtype=np.float32)
+
+        # Reshape flattened array to matrix
+        matrix = np.array([result[i] for i in range(n*n)]).reshape(n, n)
+
+        return matrix
+
+    def __del__(self):
+        try:
+            destroy = lib.destroy_Field_RM
+            destroy.argtypes = [c_void_p]
+            destroy(self.ptr)
+        except AttributeError:
+            print("failed to clear memory")
+
+# Field_CM class (Complex Matrix field)
+lib.Field_CM_export0.restype = c_void_p
+lib.Field_CM_export2.argtypes = [c_char_p]
+lib.Field_CM_export2.restype = c_void_p
+lib.Field_CM_operator_export0.argtypes = [c_void_p, POINTER(c_float), c_int, c_float, POINTER(c_float), POINTER(c_float), POINTER(c_int)]
+lib.Field_CM_operator_export0.restype = None
+
+class Field_CM:
+    def __init__(self, filename=None):
+        if filename is None:
+            self.ptr = lib.Field_CM_export0()
+        else:
+            self.ptr = lib.Field_CM_export2(c_char_p(filename.encode('utf-8')))
+        if not self.ptr:
+            raise RuntimeError('Failed to initialize Field_CM')
+
+    def __call__(self, k, w=0.0):
+        """
+        Evaluate Field_CM at point k with frequency w and return as numpy matrix.
+
+        Args:
+            k: momentum point (list or array)
+            w: frequency (default 0.0)
+
+        Returns:
+            numpy array of shape (n, n) with complex values
+        """
+        k_array = (c_float * len(k))(*[float(x) for x in k])
+        k_len = c_int(len(k))
+        w_val = c_float(w)
+
+        # Matrix size will be determined by the C++ function
+        matrix_size = c_int(0)
+
+        # Allocate space for a maximum size matrix (e.g., 100x100)
+        max_size = 100
+        real_result = (c_float * (max_size * max_size))()
+        imag_result = (c_float * (max_size * max_size))()
+
+        lib.Field_CM_operator_export0(
+            self.ptr, k_array, k_len, w_val,
+            real_result, imag_result, ctypes.byref(matrix_size)
+        )
+
+        n = matrix_size.value
+        if n == 0:
+            return np.array([[]], dtype=np.complex64)
+
+        # Reshape flattened arrays to matrices
+        real_matrix = np.array([real_result[i] for i in range(n*n)]).reshape(n, n)
+        imag_matrix = np.array([imag_result[i] for i in range(n*n)]).reshape(n, n)
+
+        return real_matrix + 1j * imag_matrix
+
+    def __del__(self):
+        try:
+            destroy = lib.destroy_Field_CM
+            destroy.argtypes = [c_void_p]
+            destroy(self.ptr)
+        except AttributeError:
+            print("failed to clear memory")
+
 # Bands object removed - not currently in use
 #lib.Bands_export0.restype = c_void_p
 #

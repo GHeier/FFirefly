@@ -4,13 +4,14 @@ module Imports
 const libfly = abspath(@__FILE__)[1:end-51] * "build/lib/libfly.so"
 export load_config!, Vec, Surface, get_faces
 export epsilon,
-       vk,
        norm,
        Vertex,
        Self_Energy,
        Hamiltonian,
        Field_C,
        Field_R,
+       Field_RM,
+       Field_CM,
        destroy!,
        save_field_to_file!,
        save_data,
@@ -195,7 +196,7 @@ end
 
 # Begin Functions
 # Bands removed - not currently in use
-export Field_C, Field_R, Vertex, epsilon
+export Field_C, Field_R, Field_RM, Field_CM, Vertex, epsilon
 
 function epsilon(arg0::Int, arg1::Vector{Float64})
     newarg1 = Float32.(arg1)
@@ -445,6 +446,94 @@ function destroy!(csf::Field_C)
 end
 
 function Base.finalize(obj::Field_C)
+    destroy!(obj)
+end
+
+mutable struct Field_RM
+    ptr::Ptr{Cvoid}
+end
+
+function Field_RM()
+    ptr = ccall((:Field_RM_export0, libfly), Ptr{Cvoid}, ())
+    return Field_RM(ptr)
+end
+
+function Field_RM(filename::String)
+    ptr = ccall((:Field_RM_export2, libfly), Ptr{Cvoid}, (Cstring,), filename)
+    return Field_RM(ptr)
+end
+
+function (self::Field_RM)(arg0::Vector{Float64}, arg1=0.0)::Matrix{Float32}
+    newarg0 = Float32.(arg0)
+    lenarg0 = length(arg0)
+    newarg1 = Float32(arg1)
+
+    # Allocate space for matrix results
+    max_size = 100
+    result = zeros(Float32, max_size * max_size)
+    matrix_size = Ref{Cint}(0)
+
+    ccall((:Field_RM_operator_export0, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Float32}, Cint, Float32, Ptr{Float32}, Ptr{Cint}),
+          self.ptr, newarg0, lenarg0, newarg1, result, matrix_size)
+
+    n = matrix_size[]
+    if n == 0
+        return Matrix{Float32}(undef, 0, 0)
+    end
+
+    # Reshape to matrix
+    mat = reshape(result[1:n*n], n, n)
+
+    return mat
+end
+
+function Base.finalize(obj::Field_RM)
+    destroy!(obj)
+end
+
+mutable struct Field_CM
+    ptr::Ptr{Cvoid}
+end
+
+function Field_CM()
+    ptr = ccall((:Field_CM_export0, libfly), Ptr{Cvoid}, ())
+    return Field_CM(ptr)
+end
+
+function Field_CM(filename::String)
+    ptr = ccall((:Field_CM_export2, libfly), Ptr{Cvoid}, (Cstring,), filename)
+    return Field_CM(ptr)
+end
+
+function (self::Field_CM)(arg0::Vector{Float64}, arg1=0.0)::Matrix{ComplexF32}
+    newarg0 = Float32.(arg0)
+    lenarg0 = length(arg0)
+    newarg1 = Float32(arg1)
+
+    # Allocate space for matrix results
+    max_size = 100
+    real_result = zeros(Float32, max_size * max_size)
+    imag_result = zeros(Float32, max_size * max_size)
+    matrix_size = Ref{Cint}(0)
+
+    ccall((:Field_CM_operator_export0, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Float32}, Cint, Float32, Ptr{Float32}, Ptr{Float32}, Ptr{Cint}),
+          self.ptr, newarg0, lenarg0, newarg1, real_result, imag_result, matrix_size)
+
+    n = matrix_size[]
+    if n == 0
+        return Matrix{ComplexF32}(undef, 0, 0)
+    end
+
+    # Reshape to matrix
+    real_mat = reshape(real_result[1:n*n], n, n)
+    imag_mat = reshape(imag_result[1:n*n], n, n)
+
+    return complex.(real_mat, imag_mat)
+end
+
+function Base.finalize(obj::Field_CM)
     destroy!(obj)
 end
 

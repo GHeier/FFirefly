@@ -341,6 +341,61 @@ float Field_R_operator_export2(Field_R *obj, const float *point, int len,
 //    return obj->operator()(n, v, w);
 //}
 
+Field_RM *Field_RM_export0() { return new Field_RM(); }
+Field_RM *Field_RM_export2(const char *filename) {
+    return new Field_RM(filename);
+}
+
+void Field_RM_operator_export0(Field_RM *obj, const float *point, int len,
+                               float w, float **result, int *matrix_size) {
+    Vec v(point, len);
+    vector<vector<float>> mat = obj->operator()(v, w);
+
+    if (mat.empty()) {
+        *matrix_size = 0;
+        return;
+    }
+
+    int n = mat.size();
+    *matrix_size = n;
+
+    // Flatten matrix to 1D array
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            int idx = i * n + j;
+            (*result)[idx] = mat[i][j];
+        }
+    }
+}
+
+Field_CM *Field_CM_export0() { return new Field_CM(); }
+Field_CM *Field_CM_export2(const char *filename) {
+    return new Field_CM(filename);
+}
+
+void Field_CM_operator_export0(Field_CM *obj, const float *point, int len,
+                               float w, float **real_result, float **imag_result, int *matrix_size) {
+    Vec v(point, len);
+    vector<vector<complex<float>>> mat = obj->operator()(v, w);
+
+    if (mat.empty()) {
+        *matrix_size = 0;
+        return;
+    }
+
+    int n = mat.size();
+    *matrix_size = n;
+
+    // Flatten matrix to 1D arrays (real and imaginary parts)
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            int idx = i * n + j;
+            (*real_result)[idx] = real(mat[i][j]);
+            (*imag_result)[idx] = imag(mat[i][j]);
+        }
+    }
+}
+
 // Create a new CMF instance and return a pointer
 //CMField *create_CMField() { return new CMField(); }
 //
@@ -359,6 +414,10 @@ float Field_R_operator_export2(Field_R *obj, const float *point, int len,
 void destroy_Field_C(Field_C *a) { delete a; }
 
 void destroy_Field_R(Field_R *a) { delete a; }
+
+void destroy_Field_RM(Field_RM *a) { delete a; }
+
+void destroy_Field_CM(Field_CM *a) { delete a; }
 
 //void destroy_Bands(Bands *a) { delete a; }
 
