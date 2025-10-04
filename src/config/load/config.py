@@ -41,32 +41,19 @@ states = ['H']
 positions = [[0.0, 0.0, 0.0]]
 
 #[BANDS]
-band = []
-band.append('fermi_gas')
-eff_mass = []
-eff_mass.append(1.0)
-t0 = []
-t0.append(1.0)
-t1 = []
-t1.append(0.0)
-t2 = []
-t2.append(0.0)
-t3 = []
-t3.append(0.0)
-t4 = []
-t4.append(0.0)
-t5 = []
-t5.append(0.0)
-t6 = []
-t6.append(0.0)
-t7 = []
-t7.append(0.0)
-t8 = []
-t8.append(0.0)
-t9 = []
-t9.append(0.0)
-t10 = []
-t10.append(0.0)
+band = 'fermi_gas'
+eff_mass = 1.0
+t0 = 1.0
+t1 = 0.0
+t2 = 0.0
+t3 = 0.0
+t4 = 0.0
+t5 = 0.0
+t6 = 0.0
+t7 = 0.0
+t8 = 0.0
+t9 = 0.0
+t10 = 0.0
 
 #[SUPERCONDUCTOR]
 FS_only = True
@@ -111,6 +98,7 @@ def load_config():
             if "=" in line:
                 key, value = line.split('=', 1)
             key = key.strip()
+            value = value.split('#')[0]  # Remove comments
             value = value.strip()
             value = value.replace("'", "")
             value = value.replace('"', '')
@@ -216,43 +204,43 @@ def load_config():
 #[BANDS]
             if "band" in key:
                 global band
-                band.append(value)
+                band = value
             if "eff_mass" in key:
                 global eff_mass
-                eff_mass.append(float(value))
+                eff_mass = float(value)
             if "t0" in key:
                 global t0
-                t0.append(float(value))
+                t0 = float(value)
             if "t1" in key:
                 global t1
-                t1.append(float(value))
+                t1 = float(value)
             if "t2" in key:
                 global t2
-                t2.append(float(value))
+                t2 = float(value)
             if "t3" in key:
                 global t3
-                t3.append(float(value))
+                t3 = float(value)
             if "t4" in key:
                 global t4
-                t4.append(float(value))
+                t4 = float(value)
             if "t5" in key:
                 global t5
-                t5.append(float(value))
+                t5 = float(value)
             if "t6" in key:
                 global t6
-                t6.append(float(value))
+                t6 = float(value)
             if "t7" in key:
                 global t7
-                t7.append(float(value))
+                t7 = float(value)
             if "t8" in key:
                 global t8
-                t8.append(float(value))
+                t8 = float(value)
             if "t9" in key:
                 global t9
-                t9.append(float(value))
+                t9 = float(value)
             if "t10" in key:
                 global t10
-                t10.append(float(value))
+                t10 = float(value)
 
 #[SUPERCONDUCTOR]
             if "FS_only" in key:

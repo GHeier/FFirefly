@@ -15,8 +15,6 @@ end_module_phrase = "    // End the Config class"
 def format_var_line(key, value, section):
     if type(value) == str:
         value = "'" + value + "'"
-    if section == 'BANDS':
-        return f"{key} = []\n{key}.append({value})"
     return f"{key} = {value}"
 
 def format_module_line(key, value, section):
@@ -27,22 +25,14 @@ def format_init_line(key, value, section):
 
 def format_set_line(key, value, section):
     if type(value) == str:
-        if section == 'BANDS':
-            return f"            if \"{key}\" in key:\n                global {key}\n                {key}.append(value)"
         return f"            if \"{key}\" in key:\n                global {key}\n                {key} = value"
     if type(value) == int:
-        if section == 'BANDS':
-            return f"            if \"{key}\" in key:\n                global {key}\n                {key}.append(int(value))"
         if key == 'dimension':
             return f"            if \"{key}\" in key:\n                global {key}\n                {key} = int(value)\n                got_dimension = True"
         return f"            if \"{key}\" in key:\n                global {key}\n                {key} = int(value)"
     if type(value) == float:
-        if section == 'BANDS':
-            return f"            if \"{key}\" in key:\n                global {key}\n                {key}.append(float(value))"
         return f"            if \"{key}\" in key:\n                global {key}\n                {key} = float(value)"
     if type(value) == bool:
-        if section == 'BANDS':
-            return f"            if \"{key}\" in key:\n                global {key}\n                {key}.append(value == 'true')"
         return f"            if \"{key}\" in key:\n                global {key}\n                {key} = value == 'true'"
     if type(value) == list:
         if type(value[0]) == str:

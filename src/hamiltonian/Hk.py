@@ -1,26 +1,23 @@
 import numpy as np
 import tbmodels as tb
+import itertools
 import matplotlib.pyplot as plt
 
+import firefly as fly
 import firefly.config as cfg
+
+outdir = cfg.outdir
+prefix = cfg.prefix
 
 nstates = cfg.nstates
 nx, ny, nz = cfg.k_mesh
 dim = cfg.dimension
+BZ = cfg.brillouin_zone
 if dim == 2:
     nz = 1
+    BZ = BZ[:2, :2]
 
 t0 = cfg.t0
-
-if cfg.hamiltonian_type == "tight_binding":
-    # one orbital per cell at the origin
-    model = tb.Model(on_site=[0.0], dim=dim, pos=[[0.0]*dim])
-
-    # H(R) entries for NN on a square lattice, basis size = 1
-    # add both R and -R to keep H Hermitian
-    R = [(1,0,0), (-1,0,0), (0,1,0), (0,-1,0), (0,0,1), (0,0,-1)]
-    for i in range(2*dim):
-        model.add_hop(-t0, 0, 0, R[i])
 
 
 
@@ -29,13 +26,27 @@ kx = (np.arange(nx) + 0.5) / nx
 ky = (np.arange(ny) + 0.5) / ny
 kz = (np.arange(nz) + 0.5) / nz
 KX, KY, KZ = np.meshgrid(kx, ky, kz, indexing="ij")
-kpts = np.stack([KX.ravel(), KY.ravel(), KZ.ravel(), np.zeros(nx*ny*nz)], axis=1)
-Hk = model.hamilton(k=kpts).reshape((nx, ny, nz, nstates, nstates))
-print(Hk)
+kpts = np.stack([KX.ravel(), KY.ravel(), KZ.ravel()], axis=1)
 
-# sample: Bloch Hamiltonian at kx=0.2π, ky=0.3π
-#print("H(k) =", model.hamilton(k=k))      # 1x1 matrix
-#print("E(k) =", model.eigenval(k=k))      # scalar band energy
+
+
+
+# TIGHT BINDING 
+
+if cfg.hamiltonian == "tight_binding":
+    # one orbital per cell at the origin
+    model = tb.Model(on_site=[0.0], dim=dim, pos=[[0.0]*dim])
+
+    # H(R) entries for NN on a square lattice, basis size = 1
+    # add both R and -R to keep H Hermitian
+    R = [(1,0,0), (0,1,0), (0,0,1)]
+    for i in range(dim):
+        model.add_hop(-t0, 0, 0, R[i])
+
+    Hk = model.hamilton(k=kpts).reshape((nx, ny, nz, nstates, nstates))
+    fly.save_data(outdir + prefix + "_Hk.h5", Hk, True, [nx, ny, nz], BZ)
+
+
 #
 ## optional: band on a simple path Γ→X→M→Γ
 #def kline(a, b, n):
