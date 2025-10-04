@@ -23,11 +23,12 @@ ALL = {
         "filetype": 'h5',
     },
     "SYSTEM": {
+        "hamiltonian": "tight_binding",
         "interaction": "none",
         "dimension": 3,
         "celltype": "",
         "nbnd": 0,
-        "natoms": 0,
+        "nstates": 1,
         "fermi_energy": 0.0,
         "Temperature": 0.0,
         "onsite_U": 0.0,
@@ -42,7 +43,7 @@ ALL = {
             [0.0, 0.0, 2 * np.pi],
         ]
     },
-    "ATOMS": {"atom": "X", "position": [0.0, 0.0, 0.0]},
+    "BASIS": {"states": ["H"], "positions": [[0.0, 0.0, 0.0]]},  # Max 50 states
     "BANDS": {
         "band": "fermi_gas",
         "eff_mass": 1.0,

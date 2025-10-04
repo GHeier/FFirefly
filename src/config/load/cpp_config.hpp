@@ -20,11 +20,12 @@ extern bool write_result;
 extern string filetype;
 
 //[SYSTEM]
+extern string hamiltonian;
 extern string interaction;
 extern int dimension;
 extern string celltype;
 extern int nbnd;
-extern int natoms;
+extern int nstates;
 extern float fermi_energy;
 extern float Temperature;
 extern float onsite_U;
@@ -41,11 +42,9 @@ extern vector<vector<float>> cell;
 //[BRILLOUIN_ZONE]
 extern vector<vector<float>> brillouin_zone;
 
-//[ATOMS]
-extern vector<string> atom;
-
-extern vector<vector<float>> position;
-
+//[BASIS]
+extern vector<string> states;
+extern vector<vector<float>> positions;
 
 //[BANDS]
 extern vector<string> band;

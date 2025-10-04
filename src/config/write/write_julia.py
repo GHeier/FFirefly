@@ -25,7 +25,9 @@ def format_var_line(key, value, section):
             return f"{key}::Vector{{Bool}} = cfg.{key}"
         return f"{key}::Bool = cfg.{key}"
     elif (type(value) == list):
-        if (type(value[0]) == int):
+        if (type(value[0]) == str):
+            return f"{key}::Vector{{String}} = cfg.{key}"
+        elif (type(value[0]) == int):
             return f"{key}::Array{{Int}} = cfg.{key}"
         elif (type(value[0]) == float):
             return f"{key}::Array{{Float64}} = cfg.{key}"

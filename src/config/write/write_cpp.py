@@ -3,9 +3,9 @@ from .write_c import add_lines
 
 def format_var_line(key, value, section):
     makevec = False
-    if section == "BANDS" or section == "ATOMS":
+    if section == "BANDS" or section == "BASIS":
         makevec = True
-        if key == "band" or key == "atom":
+        if key == "band" or key == "state":
             return f"vector<string> {key};\n"
         if key == "position":
             return f"vector<vector<float>> {key};\n"
@@ -26,7 +26,9 @@ def format_var_line(key, value, section):
             return f"vector<bool> {key};"
         return f"bool {key};"
     elif type(value) == list:
-        if type(value[0]) == int:
+        if type(value[0]) == str:
+            return f"vector<string> {key};"
+        elif type(value[0]) == int:
             return f"vector<int> {key}(3);"
         elif type(value[0]) == float:
             return f"vector<float> {key}(3);"
@@ -34,7 +36,10 @@ def format_var_line(key, value, section):
             if type(value[0][0]) == int:
                 return f"vector<vector<int>> {key}(3, vector<int>(3));"
             elif type(value[0][0]) == float:
-                return f"vector<vector<float>> {key}(3, vector<float>(3));"
+                vsize = 3
+                if makevec:
+                    vsize = 50
+                return f"vector<vector<float>> {key}({vsize}, vector<float>(3));"
         else:
             print("Error: Unsupported type in config file ")
             exit(1)
@@ -42,9 +47,9 @@ def format_var_line(key, value, section):
 
 def format_config_line(key, value, section):
     makevec = False
-    if section == "BANDS" or section == "ATOMS":
+    if section == "BANDS" or section == "BASIS":
         makevec = True
-        if key == "band" or key == "atom":
+        if key == "band" or key == "state":
             return f"    vector<string> {key};\n"
         if key == "position":
             return f"vector<vector<float>> {key};\n"
@@ -65,7 +70,9 @@ def format_config_line(key, value, section):
             return f"    vector<bool> {key};"
         return f"    bool {key};"
     elif type(value) == list:
-        if type(value[0]) == int:
+        if type(value[0]) == str:
+            return f"    vector<string> {key};"
+        elif type(value[0]) == int:
             return f"    vector<int> {key};"
         elif type(value[0]) == float:
             return f"    vector<float> {key};"
@@ -81,9 +88,9 @@ def format_config_line(key, value, section):
 
 def format_header_line(key, value, section):
     makevec = False
-    if section == "BANDS" or section == "ATOMS":
+    if section == "BANDS" or section == "BASIS":
         makevec = True
-        if key == "band" or key == "atom":
+        if key == "band" or key == "state":
             return f"extern vector<string> {key};\n"
         if key == "position":
             return f"extern vector<vector<float>> {key};\n"
@@ -104,7 +111,9 @@ def format_header_line(key, value, section):
             return f"extern vector<bool> {key};"
         return f"extern bool {key};"
     elif type(value) == list:
-        if type(value[0]) == int:
+        if type(value[0]) == str:
+            return f"extern vector<string> {key};"
+        elif type(value[0]) == int:
             return f"extern vector<int> {key};"
         elif type(value[0]) == float:
             return f"extern vector<float> {key};"
@@ -121,13 +130,14 @@ def format_header_line(key, value, section):
 def format_func_line(key, value, section):
     if section == "BANDS":
         return f"    for (int i = 0; i < nbnd; i++) {key}.push_back(c_{key}[i]);"
-    elif section == "ATOMS":
-        if key == "position":
-            return f"    for (int i = 0; i < natoms; i++) {key}.push_back(vector<float>(c_{key}[i], c_{key}[i] + 3));"
-        return f"    for (int i = 0; i < natoms; i++) {key}.push_back(c_{key}[i]);"
+    elif section == "BASIS" and key != "positions":
+        return f"    for (int i = 0; i < nstates; i++) {key}.push_back(c_{key}[i]);"
     elif type(value) == list:
         if type(value[0]) == list:
-            return f"    for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) {key}[i][j] = c_{key}[i][j];"
+            vsize = "3"
+            if key == "positions":
+                vsize = "nstates"
+            return f"    for (int i = 0; i < {vsize}; i++) for (int j = 0; j < 3; j++) {key}[i][j] = c_{key}[i][j];"
         return f"    for (int i = 0; i < 3; i++) {key}[i] = c_{key}[i];"
     return f"    {key} = c_{key};"
 

@@ -33,6 +33,18 @@ def add_lines_between_phrases(lines, new_lines, start, end):
 
 def format_var_line(key, value, section):
     if isinstance(value, list):
+        # Special handling for BASIS section
+        if section == "BASIS":
+            if key == "states":
+                # states is a list of strings - create array of char pointers
+                return (
+                    f"char** c_{key} = (char*[]){{\"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\", \"H\"}};\n"
+                    f"char** get_{key}() {{return (char**)c_{key};}}"
+                )
+            elif key == "positions":
+                # positions is a list of 3D vectors - create float array[50][3]
+                return f"float c_{key}[50][3] = {{{{0.0, 0.0, 0.0}}}};"
+
         # Check if it's a 2D array
         if all(isinstance(sub, list) for sub in value):
             # Get dimensions and element type for 2D array
@@ -52,13 +64,11 @@ def format_var_line(key, value, section):
             size = len(value)
             array_type = "float" if any(isinstance(x, float) for x in value) else "int"
             array_elements = ", ".join(map(str, value))
-            if section == "ATOMS":
-                return f"{array_type} c_{key}[50][{size}] = {{0}};"
             return f"{array_type} c_{key}[{size}] = {{{array_elements}}};"
     else:
         if isinstance(value, str):
             # Handle strings
-            if section == "BANDS" or section == "ATOMS":
+            if section == "BANDS" or section == "BASIS":
                 return (
                     f"char** c_{key} = (char*[]){{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};\n"
                     f"char** get_{key}() {{return (char**)c_{key};}}"
@@ -68,13 +78,13 @@ def format_var_line(key, value, section):
             )
         elif isinstance(value, bool):
             # Handle booleans
-            if section == "BANDS" or section == "ATOMS":
+            if section == "BANDS" or section == "BASIS":
                 return f"bool c_{key}[50];"
             return f"bool c_{key} = {'true' if value else 'false'};"
         else:
             # Handle other scalar values
             value_type = "float" if isinstance(value, float) else "int"
-            if section == "BANDS" or section == "ATOMS":
+            if section == "BANDS" or section == "BASIS":
                 return f"{value_type} c_{key}[50];"
             return f"{value_type} c_{key} = {value};"
 
@@ -84,17 +94,17 @@ def format_func_line(key, value, section):
     if key == "category":
         el = ""
     index = ""
-    if section == "BANDS" or section == "ATOMS":
+    if section == "BANDS" or section == "BASIS":
         index = "[n]"
     if (
         section == "CELL"
         or section == "BRILLOUIN_ZONE"
-        or section == "ATOMS"
+        or section == "BASIS"
     ):
         return ""
 
     if type(value) == str:
-        if key == "band" or key == "atom":
+        if key == "band" or key == "state":
             return f'            {el}if (strstr(key, "{key}") != NULL) {{\n                n = atoi(key + 4)-1;\n                set_string(&c_{key}{index}, value);\n            }}'
         return f'            {el}if (strstr(key, "{key}") != NULL) {{\n                set_string(&c_{key}, value);\n            }}'
     elif type(value) == int:
@@ -121,10 +131,18 @@ def format_func_line(key, value, section):
 
 def format_header_line(key, value, section):
     index = ""
-    if section == "BANDS" or section == "ATOMS":
+    if section == "BANDS":
         index = "[50]"
+
+    # Special handling for BASIS section
+    if section == "BASIS":
+        if key == "states":
+            return f"extern char** c_{key}; char** get_{key}();"
+        elif key == "positions":
+            return f"extern float c_{key}[50][3];"
+
     if type(value) == str:
-        if key == "band" or key == "atom":
+        if key == "band":
             return f"extern char** c_{key}; char** get_{key}();"
         return f"extern char* c_{key}; char* get_{key}();"
     elif type(value) == int:
@@ -134,7 +152,10 @@ def format_header_line(key, value, section):
     elif type(value) == bool:
         return f"extern bool c_{key}{index};"
     elif type(value) == list:
-        if type(value[0]) == int:
+        if type(value[0]) == str:
+            # List of strings (only for BASIS states)
+            return f"extern char** c_{key}; char** get_{key}();"
+        elif type(value[0]) == int:
             return f"extern int c_{key}{index}[3];"
         elif type(value[0]) == float:
             return f"extern float c_{key}{index}[3];"
@@ -154,7 +175,7 @@ def format_header_line(key, value, section):
 def format_unload_line(key, value, section):
     if type(value) == str:
         return f"    free(c_{key});"
-    if key == "band" or "atom":
+    if key == "band" or "basis":
         return f"    for (int i = 0; i < 50; i++) {{\n        free(c_{key}[i]);\n    }}"
     return ""
 

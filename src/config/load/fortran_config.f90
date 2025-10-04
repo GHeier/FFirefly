@@ -43,14 +43,15 @@ module ffirefly
     character(len=50) :: filetype
 
 ![SYSTEM]
+    character(len=50) :: hamiltonian
     character(len=50) :: interaction
     integer(c_int), bind(C, name="c_dimension") :: c_dimension
     integer :: dimension
     character(len=50) :: celltype
     integer(c_int), bind(C, name="c_nbnd") :: c_nbnd
     integer :: nbnd
-    integer(c_int), bind(C, name="c_natoms") :: c_natoms
-    integer :: natoms
+    integer(c_int), bind(C, name="c_nstates") :: c_nstates
+    integer :: nstates
     real(c_float), bind(C, name="c_fermi_energy") :: c_fermi_energy
     real :: fermi_energy
     real(c_float), bind(C, name="c_Temperature") :: c_Temperature
@@ -76,10 +77,10 @@ module ffirefly
     real(c_float), bind(C, name="c_brillouin_zone") :: c_brillouin_zone(3,3)
     real :: brillouin_zone(3,3)
 
-![ATOMS]
-    character(len=50) :: atom
-    real(c_float), bind(C, name="c_position") :: c_position(3)
-    real :: position(3)
+![BASIS]
+    character(len=50) :: states(50)
+    real(c_float), bind(C, name="c_positions") :: c_positions(50,3)
+    real :: positions(50,3)
 
 ![BANDS]
     character(len=50) :: band(50,50)
@@ -166,6 +167,10 @@ module ffirefly
     end function get_filetype
 
 ![SYSTEM]
+        function get_hamiltonian() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_hamiltonian
+    end function get_hamiltonian
         function get_interaction() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_interaction
@@ -193,11 +198,11 @@ module ffirefly
 ![BRILLOUIN_ZONE]
 
 
-![ATOMS]
-        function get_atom() bind(C)
+![BASIS]
+        function get_states() bind(C)
             use iso_c_binding
-            type(c_ptr) :: get_atom
-    end function get_atom
+            type(c_ptr) :: get_states
+    end function get_states
 
 
 ![BANDS]
@@ -255,7 +260,36 @@ contains
         end do
     end function get_string
 
+    function get_string_from_array(c_string_array, index) result(fortran_string)
+        type(c_ptr), intent(in) :: c_string_array
+        integer, intent(in) :: index
+        character(len=:), allocatable :: fortran_string
+        type(c_ptr) :: c_string_ptr
+        type(c_ptr), pointer :: array_of_ptrs(:)
+        character(kind=c_char, len=1), pointer :: char_array(:)
+        integer :: i, length
+
+        ! Convert the c_ptr to an array of c_ptr
+        call c_f_pointer(c_string_array, array_of_ptrs, [50])
+
+        ! Get the pointer to the specific string
+        c_string_ptr = array_of_ptrs(index + 1)
+
+        ! Convert that string
+        call c_f_pointer(c_string_ptr, char_array, [1000])
+        length = 0
+        do i = 1, size(char_array)
+            if (char_array(i) == c_null_char) exit
+            length = length + 1
+        end do
+        allocate(character(len=length) :: fortran_string)
+        do i = 1, length
+            fortran_string(i:i) = char_array(i)
+        end do
+    end function get_string_from_array
+
     subroutine load_f90_config()
+        integer :: i, j
         ! Load variables
 
 ![CONTROL]
@@ -271,11 +305,12 @@ contains
         filetype = get_string(get_filetype())
 
 ![SYSTEM]
+        hamiltonian = get_string(get_hamiltonian())
         interaction = get_string(get_interaction())
         dimension = c_dimension
         celltype = get_string(get_celltype())
         nbnd = c_nbnd
-        natoms = c_natoms
+        nstates = c_nstates
         fermi_energy = c_fermi_energy
         Temperature = c_Temperature
         onsite_U = c_onsite_U
@@ -292,9 +327,15 @@ contains
 ![BRILLOUIN_ZONE]
         brillouin_zone = c_brillouin_zone
 
-![ATOMS]
-        atom = get_string(get_atom())
-        position = c_position
+![BASIS]
+        do i = 1, nstates
+            states(i) = get_string_from_array(get_states(), i-1)
+        end do
+        do i = 1, nstates
+            do j = 1, 3
+                positions(i,j) = c_positions(i,j)
+            end do
+        end do
 
 ![BANDS]
         band = get_string(get_band())

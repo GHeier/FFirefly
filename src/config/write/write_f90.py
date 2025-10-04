@@ -22,7 +22,12 @@ def format_var_line(key, value, section):
     elif (type(value) == bool):
         return f"    logical(c_bool), bind(C, name=\"c_{key}\") :: c_{key}{index}\n    logical :: {key}{index}"
     elif (type(value) == list):
-        if (type(value[0]) == int):
+        if (type(value[0]) == str):
+            # Handle list of strings (e.g., BASIS states)
+            if section == 'BASIS':
+                return f"    character(len=50) :: {key}(50)"
+            return f"    character(len=50) :: {key}"
+        elif (type(value[0]) == int):
             return f"    integer(c_int), bind(C, name=\"c_{key}\") :: c_{key}{index}(3)\n    integer :: {key}{index}(3)"
         elif (type(value[0]) == float):
             return f"    real(c_float), bind(C, name=\"c_{key}\") :: c_{key}{index}(3)\n    real :: {key}{index}(3)"
@@ -30,6 +35,9 @@ def format_var_line(key, value, section):
             if (type(value[0][0]) == int):
                 return f"    integer(c_int), bind(C, name=\"c_{key}\") :: c_{key}{index}(3,3)\n    integer :: {key}{index}(3,3)"
             elif (type(value[0][0]) == float):
+                # For BASIS positions, we need a larger array
+                if section == 'BASIS' and key == 'positions':
+                    return f"    real(c_float), bind(C, name=\"c_{key}\") :: c_{key}(50,3)\n    real :: {key}(50,3)"
                 return f"    real(c_float), bind(C, name=\"c_{key}\") :: c_{key}{index}(3,3)\n    real :: {key}{index}(3,3)"
         else:
             print("Error: Unsupported type in config file (list section)")
@@ -41,11 +49,24 @@ def format_var_line(key, value, section):
 def format_func_line(key, value, section):
     if (type(value) == str):
         return f"        function get_{key}() bind(C)\n            use iso_c_binding\n            type(c_ptr) :: get_{key}\n    end function get_{key}"
+    elif (type(value) == list and type(value[0]) == str):
+        # For list of strings, we need get_states function
+        return f"        function get_{key}() bind(C)\n            use iso_c_binding\n            type(c_ptr) :: get_{key}\n    end function get_{key}"
     return ""
 
 def format_load_line(key, value, section):
     if (type(value) == str):
         return f"        {key} = get_string(get_{key}())"
+    elif (type(value) == list and type(value[0]) == str):
+        # For list of strings, we need to load each string from the C array
+        if section == 'BASIS':
+            return f"        do i = 1, nstates\n            {key}(i) = get_string_from_array(get_{key}(), i-1)\n        end do"
+        return f"        {key} = get_string(get_{key}())"
+    elif (type(value) == list and type(value[0]) == list):
+        # For 2D arrays
+        if section == 'BASIS' and key == 'positions':
+            return f"        do i = 1, nstates\n            do j = 1, 3\n                {key}(i,j) = c_{key}(i,j)\n            end do\n        end do"
+        return f"        {key} = c_{key}"
     else:
         return f"        {key} = c_{key}"
 

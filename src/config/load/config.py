@@ -14,11 +14,12 @@ write_result = True
 filetype = 'h5'
 
 #[SYSTEM]
+hamiltonian = 'tight_binding'
 interaction = 'none'
 dimension = 3
 celltype = ''
-nbnd = 0
-natoms = 0
+nbnd = 1
+nstates = 1
 fermi_energy = 0.0
 Temperature = 0.0
 onsite_U = 0.0
@@ -35,9 +36,9 @@ cell = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
 #[BRILLOUIN_ZONE]
 brillouin_zone = [[6.283185307179586, 0.0, 0.0], [0.0, 6.283185307179586, 0.0], [0.0, 0.0, 6.283185307179586]]
 
-#[ATOMS]
-atom = 'X'
-position = [0.0, 0.0, 0.0]
+#[BASIS]
+states = ['H']
+positions = [[0.0, 0.0, 0.0]]
 
 #[BANDS]
 band = []
@@ -148,6 +149,9 @@ def load_config():
                 filetype = value
 
 #[SYSTEM]
+            if "hamiltonian" in key:
+                global hamiltonian
+                hamiltonian = value
             if "interaction" in key:
                 global interaction
                 interaction = value
@@ -161,9 +165,9 @@ def load_config():
             if "nbnd" in key:
                 global nbnd
                 nbnd = int(value)
-            if "natoms" in key:
-                global natoms
-                natoms = int(value)
+            if "nstates" in key:
+                global nstates
+                nstates = int(value)
             if "fermi_energy" in key:
                 global fermi_energy
                 fermi_energy = float(value)
@@ -200,13 +204,14 @@ def load_config():
                 brillouin_zone.append([float(line.split()[i]) for i in range(3)])
                 index += 1
 
-#[ATOMS]
-            if "atom" in key:
-                global atom
-                atom = value
-            if "position" in key:
-                global position
-                position = [float(value.split()[i]) for i in range(3)]
+#[BASIS]
+            if "states" in key:
+                global states
+                states = [value.split()[i] for i in range(3)]
+            if section == "BASIS" and index < 3:
+                global positions
+                positions.append([float(line.split()[i]) for i in range(3)])
+                index += 1
 
 #[BANDS]
             if "band" in key:

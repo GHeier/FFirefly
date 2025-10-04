@@ -33,13 +33,15 @@ char* c_filetype = "h5";
 char* get_filetype() {return c_filetype;}
 
 //[SYSTEM]
+char* c_hamiltonian = "tight_binding";
+char* get_hamiltonian() {return c_hamiltonian;}
 char* c_interaction = "none";
 char* get_interaction() {return c_interaction;}
 int c_dimension = 3;
 char* c_celltype = "";
 char* get_celltype() {return c_celltype;}
-int c_nbnd = 0;
-int c_natoms = 0;
+int c_nbnd = 1;
+int c_nstates = 1;
 float c_fermi_energy = 0.0;
 float c_Temperature = 0.0;
 float c_onsite_U = 0.0;
@@ -56,16 +58,10 @@ float c_cell[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
 //[BRILLOUIN_ZONE]
 float c_brillouin_zone[3][3] = {{6.283185307179586, 0.0, 0.0}, {0.0, 6.283185307179586, 0.0}, {0.0, 0.0, 6.283185307179586}};
 
-//[ATOMS]
-char** c_atom = (char*[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-char** get_atom() {return (char**)c_atom;}
-float c_position[50][3] = {0};
-
-//[HAMILTONIAN]
-char* c_type = "tight_binding";
-char* get_type() {return c_type;}
-int c_basis_size = 1;
-float c_H0[1][1] = {{1.0}};
+//[BASIS]
+char** c_states = (char*[]){"H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H", "H"};
+char** get_states() {return (char**)c_states;}
+float c_positions[50][3] = {{0.0, 0.0, 0.0}};
 
 //[BANDS]
 char** c_band = (char*[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -209,10 +205,11 @@ void read_c_config(const char *path) {
     char section[50];
     int row = 0;
     int n = 0;
-    int atom_ind = 0;
+    int state_ind = 0;
     bool got_dimension = false;
     bool got_bz = false;
     bool got_nbnd = false;
+    int nstates = 0;
     FILE *file = fopen(path, "r");
     if (file == NULL) {
         printf("Error opening file!\n");
@@ -242,22 +239,24 @@ void read_c_config(const char *path) {
         if (strstr(section, "BRILLOUIN_ZONE") != NULL && strlen(line) > 1) {
             sscanf(line, "%f %f %f", &c_brillouin_zone[row][0],
                    &c_brillouin_zone[row][1], &c_brillouin_zone[row][2]);
-            atom_ind++;
+            state_ind++;
             // Stop reading after filling 3 rows
             if (line[0] == '\0') {
                 section[0] = '\0';
                 continue;
             }
         }
-        if (strstr(section, "ATOMS") != NULL && strlen(line) > 1) {
-            char temp;
-            sscanf(line, "%c %f %f %f", &temp, &c_position[atom_ind][0],
-                   &c_position[atom_ind][1], &c_position[atom_ind][2]);
-            set_string(&c_atom[atom_ind], &temp);
-            // Stop reading after filling 3 rows
-            if (row == 3) {
-                section[0] = '\0';
-                continue;
+        if (strstr(section, "BASIS") != NULL && strlen(line) > 1) {
+            char state_name[256];
+            if (sscanf(line, "%s %f %f %f", state_name, &c_positions[nstates][0],
+                   &c_positions[nstates][1], &c_positions[nstates][2]) == 4) {
+                set_string(&c_states[nstates], state_name);
+                nstates++;
+                // Stop reading after filling 50 states
+                if (nstates >= 50) {
+                    section[0] = '\0';
+                    continue;
+                }
             }
         }
         if (strstr(line, "=") != NULL) {
@@ -308,6 +307,9 @@ void read_c_config(const char *path) {
             }
 
 //[SYSTEM]
+            else if (strstr(key, "hamiltonian") != NULL) {
+                set_string(&c_hamiltonian, value);
+            }
             else if (strstr(key, "interaction") != NULL) {
                 set_string(&c_interaction, value);
             }
@@ -322,8 +324,8 @@ void read_c_config(const char *path) {
                 c_nbnd = atoi(value);
                  got_nbnd = true;
             }
-            else if (strstr(key, "natoms") != NULL) {
-                c_natoms = atoi(value);
+            else if (strstr(key, "nstates") != NULL) {
+                c_nstates = atoi(value);
             }
             else if (strstr(key, "fermi_energy") != NULL) {
                 c_fermi_energy = atof(value);
@@ -353,7 +355,7 @@ void read_c_config(const char *path) {
 
 //[BRILLOUIN_ZONE]
 
-//[ATOMS]
+//[BASIS]
 
 //[BANDS]
             else if (strstr(key, "band") != NULL) {
@@ -548,8 +550,8 @@ void unload_c_config() {
     //        free(c_brillouin_zone[i]);
     //    }
     //
-    ////[ATOMS]
-    //    free(c_atom);
+    ////[BASIS]
+    //    free(c_state);
     //    for (int i = 0; i < 50; i++) {
     //        free(c_position[i]);
     //    }

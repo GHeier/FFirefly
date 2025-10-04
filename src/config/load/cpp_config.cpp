@@ -24,11 +24,12 @@ bool write_result;
 string filetype;
 
 //[SYSTEM]
+string hamiltonian;
 string interaction;
 int dimension;
 string celltype;
 int nbnd;
-int natoms;
+int nstates;
 float fermi_energy;
 float Temperature;
 float onsite_U;
@@ -45,11 +46,9 @@ vector<vector<float>> cell(3, vector<float>(3));
 //[BRILLOUIN_ZONE]
 vector<vector<float>> brillouin_zone(3, vector<float>(3));
 
-//[ATOMS]
-vector<string> atom;
-
-vector<vector<float>> position;
-
+//[BASIS]
+vector<string> states;
+vector<vector<float>> positions(50, vector<float>(3));
 
 //[BANDS]
 vector<string> band;
@@ -97,11 +96,12 @@ extern "C" void load_cpp_config() {
     filetype = c_filetype;
 
 //[SYSTEM]
+    hamiltonian = c_hamiltonian;
     interaction = c_interaction;
     dimension = c_dimension;
     celltype = c_celltype;
     nbnd = c_nbnd;
-    natoms = c_natoms;
+    nstates = c_nstates;
     fermi_energy = c_fermi_energy;
     Temperature = c_Temperature;
     onsite_U = c_onsite_U;
@@ -118,9 +118,12 @@ extern "C" void load_cpp_config() {
 //[BRILLOUIN_ZONE]
     for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) brillouin_zone[i][j] = c_brillouin_zone[i][j];
 
-//[ATOMS]
-    for (int i = 0; i < natoms; i++) atom.push_back(c_atom[i]);
-    for (int i = 0; i < natoms; i++) position.push_back(vector<float>(c_position[i], c_position[i] + 3));
+//[BASIS]
+    printf("A.1\n");
+    for (int i = 0; i < nstates; i++) states.push_back(c_states[i]);
+    printf("A.2\n");
+    for (int i = 0; i < nstates; i++) for (int j = 0; j < 3; j++) positions[i][j] = c_positions[i][j];
+    printf("A.3\n");
 
 //[BANDS]
     for (int i = 0; i < nbnd; i++) band.push_back(c_band[i]);
@@ -136,6 +139,7 @@ extern "C" void load_cpp_config() {
     for (int i = 0; i < nbnd; i++) t8.push_back(c_t8[i]);
     for (int i = 0; i < nbnd; i++) t9.push_back(c_t9[i]);
     for (int i = 0; i < nbnd; i++) t10.push_back(c_t10[i]);
+    printf("A.4\n");
 
 //[SUPERCONDUCTOR]
     FS_only = c_FS_only;

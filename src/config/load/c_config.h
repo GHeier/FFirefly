@@ -20,11 +20,12 @@ extern bool c_write_result;
 extern char* c_filetype; char* get_filetype();
 
 //[SYSTEM]
+extern char* c_hamiltonian; char* get_hamiltonian();
 extern char* c_interaction; char* get_interaction();
 extern int c_dimension;
 extern char* c_celltype; char* get_celltype();
 extern int c_nbnd;
-extern int c_natoms;
+extern int c_nstates;
 extern float c_fermi_energy;
 extern float c_Temperature;
 extern float c_onsite_U;
@@ -41,9 +42,9 @@ extern float c_cell[3][3];
 //[BRILLOUIN_ZONE]
 extern float c_brillouin_zone[3][3];
 
-//[ATOMS]
-extern char** c_atom; char** get_atom();
-extern float c_position[50][3];
+//[BASIS]
+extern char** c_states; char** get_states();
+extern float c_positions[50][3];
 
 //[BANDS]
 extern char** c_band; char** get_band();

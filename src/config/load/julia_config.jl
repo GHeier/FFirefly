@@ -20,11 +20,12 @@ write_result::Bool = cfg.write_result
 filetype::String = cfg.filetype
 
 #[SYSTEM]
+hamiltonian::String = cfg.hamiltonian
 interaction::String = cfg.interaction
 dimension::Int = cfg.dimension
 celltype::String = cfg.celltype
 nbnd::Int = cfg.nbnd
-natoms::Int = cfg.natoms
+nstates::Int = cfg.nstates
 fermi_energy::Float64 = cfg.fermi_energy
 Temperature::Float64 = cfg.Temperature
 onsite_U::Float64 = cfg.onsite_U
@@ -41,9 +42,9 @@ cell::Array{Float64} = cfg.cell
 #[BRILLOUIN_ZONE]
 brillouin_zone::Array{Float64} = cfg.brillouin_zone
 
-#[ATOMS]
-atom::String = cfg.atom
-position::Array{Float64} = cfg.position
+#[BASIS]
+states::Vector{String} = cfg.states
+positions::Array{Float64} = cfg.positions
 
 #[BANDS]
 band::Vector{String} = cfg.band
