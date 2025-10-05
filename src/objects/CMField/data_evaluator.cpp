@@ -29,6 +29,7 @@ DataEvaluator::DataEvaluator(BaseData& f) {
     mesh = f.mesh;
     is_complex = f.is_complex;
     is_vector = f.is_vector;
+    is_matrix = f.is_matrix;
     w_points = f.w_points;
     with_w = w_points.size() > 0;
     n_indices = f.n_indices;

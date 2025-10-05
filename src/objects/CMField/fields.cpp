@@ -4,13 +4,13 @@
 
 // Field_C implementation
 Field_C::Field_C()
-    : cmf({}, true, false, {}, {}, {}) {}
+    : cmf({}, true, false, false, {}, {}, {}) {}
 
 Field_C::Field_C(const BaseData::DataVariant& data,
                  const vector<int>& mesh,
                  const vector<vector<float>>& domain,
                  const vector<float>& w_points)
-    : cmf(data, true, false, mesh, domain, w_points) {}
+    : cmf(data, true, false, false, mesh, domain, w_points) {}
 
 Field_C::Field_C(Field f) : cmf(f) {}
 
@@ -48,13 +48,13 @@ void Field_C::save(const string& filename) {
 
 // Field_R implementation
 Field_R::Field_R()
-    : cmf({}, false, false, {}, {}, {}) {}
+    : cmf({}, false, false, false, {}, {}, {}) {}
 
 Field_R::Field_R(const BaseData::DataVariant& data,
                  const vector<int>& mesh,
                  const vector<vector<float>>& domain,
                  const vector<float>& w_points)
-    : cmf(data, false, false, mesh, domain, w_points) {}
+    : cmf(data, false, false, false, mesh, domain, w_points) {}
 
 Field_R::Field_R(Field f) : cmf(f) {}
 
@@ -91,14 +91,14 @@ void Field_R::save(const string& filename) {
 
 // Field_CM implementation (Complex Matrix)
 Field_CM::Field_CM()
-    : cmf(vector<vector<vector<cfloat>>>(), true, false, {}, {}, {}, 2, 1) {}
+    : cmf(vector<vector<vector<cfloat>>>(), true, false, true, {}, {}, {}, 2, 1) {}
 
 Field_CM::Field_CM(const BaseData::DataVariant& data,
                    int dim_indices,
                    const vector<int>& mesh,
                    const vector<vector<float>>& domain,
                    const vector<float>& w_points)
-    : cmf(data, true, false, mesh, domain, w_points, 2, dim_indices) {}
+    : cmf(data, true, false, true, mesh, domain, w_points, 2, dim_indices) {}
 
 Field_CM::Field_CM(Field f) : cmf(f) {}
 
@@ -126,14 +126,14 @@ vector<vector<cfloat>> Field_CM::operator()(Vec point, float w) {
 
 // Field_RM implementation (Real Matrix)
 Field_RM::Field_RM()
-    : cmf(vector<vector<vector<cfloat>>>(), false, false, {}, {}, {}, 2, 1) {}
+    : cmf(vector<vector<vector<cfloat>>>(), false, false, true, {}, {}, {}, 2, 1) {}
 
 Field_RM::Field_RM(const BaseData::DataVariant& data,
                    int dim_indices,
                    const vector<int>& mesh,
                    const vector<vector<float>>& domain,
                    const vector<float>& w_points)
-    : cmf(data, false, false, mesh, domain, w_points, 2, dim_indices) {}
+    : cmf(data, false, false, true, mesh, domain, w_points, 2, dim_indices) {}
 
 Field_RM::Field_RM(Field f) : cmf(f) {}
 

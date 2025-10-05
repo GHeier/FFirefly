@@ -105,6 +105,7 @@ struct DataEvaluator {
     vector<float> w_points;
     bool is_complex;
     bool is_vector;
+    bool is_matrix;
     bool with_w;
     int dimension;
     int n_indices;
@@ -115,7 +116,7 @@ struct DataEvaluator {
 
     // Default constructor
     DataEvaluator()
-        : is_complex(false), is_vector(false), with_w(false), dimension(1), n_indices(0), dim_indices(1) {}
+        : is_complex(false), is_vector(false), is_matrix(false), with_w(false), dimension(1), n_indices(0), dim_indices(1) {}
 
     DataEvaluator(BaseData& f);
 

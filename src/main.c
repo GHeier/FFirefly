@@ -10,6 +10,7 @@
 // Category nodes below
 #include "algorithms/electron_number.hpp"
 #include "hamiltonian/fs.hpp"
+#include "hamiltonian/node.hpp"
 #include "many_body/vertex.hpp"
 #include "many_body/self_energy.hpp"
 #include "many_body/renormalization.hpp"
@@ -40,6 +41,11 @@ void electron_number() {
 void fermi_surface() {
     printf("Starting Fermi Surface Calculation\n\n");
     save_FS();
+}
+
+void hamiltonian() {
+    printf("Starting Hamiltonian Calculation\n\n");
+    hamiltonian_wrapper();
 }
 
 void response() {
@@ -172,6 +178,8 @@ int main() {
             DOS();
         else if (!strcmp(category, "fermi_surface"))
             fermi_surface();
+        else if (!strcmp(category, "hamiltonian"))
+            hamiltonian();
         else if (!strcmp(category, "electron_num"))
             electron_number();
         else if (!strcmp(category, "response"))

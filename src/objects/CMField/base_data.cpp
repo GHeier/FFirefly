@@ -12,14 +12,26 @@ BaseData load_data_from_hdf5(const std::string& filename) {
     H5File file(filename, H5F_ACC_RDONLY);
 
     // -- Metadata --
-    file.openDataSet("/is_complex").read(&field.is_complex, PredType::NATIVE_INT);
-    file.openDataSet("/is_vector").read(&field.is_vector, PredType::NATIVE_INT);
-    file.openDataSet("/with_k").read(&field.with_k, PredType::NATIVE_INT);
-    file.openDataSet("/with_w").read(&field.with_w, PredType::NATIVE_INT);
+    // Read bools as ints to avoid size mismatch issues
+    int temp_is_complex, temp_is_vector, temp_is_matrix, temp_with_k, temp_with_w, temp_as_mesh;
+    file.openDataSet("/is_complex").read(&temp_is_complex, PredType::NATIVE_INT);
+    file.openDataSet("/is_vector").read(&temp_is_vector, PredType::NATIVE_INT);
+    file.openDataSet("/is_matrix").read(&temp_is_matrix, PredType::NATIVE_INT);
+    file.openDataSet("/with_k").read(&temp_with_k, PredType::NATIVE_INT);
+    file.openDataSet("/with_w").read(&temp_with_w, PredType::NATIVE_INT);
+
+    field.is_complex = temp_is_complex;
+    field.is_vector = temp_is_vector;
+    field.is_matrix = temp_is_matrix;
+    field.with_k = temp_with_k;
+    field.with_w = temp_with_w;
+
     file.openDataSet("/n_indices").read(&field.n_indices, PredType::NATIVE_INT);
     file.openDataSet("/dim_indices").read(&field.dim_indices, PredType::NATIVE_INT);
     file.openDataSet("/dimension").read(&field.dimension, PredType::NATIVE_INT);
-    file.openDataSet("/as_mesh").read(&field.as_mesh, PredType::NATIVE_INT);
+
+    file.openDataSet("/as_mesh").read(&temp_as_mesh, PredType::NATIVE_INT);
+    field.as_mesh = temp_as_mesh;
 
     // -- Domain (optional) --
     if (field.with_k) {
@@ -29,8 +41,15 @@ BaseData load_data_from_hdf5(const std::string& filename) {
         if (rank == 2) {
             hsize_t dims[2];
             space_domain.getSimpleExtentDims(dims);
+            // Read into flat buffer first, then populate 2D structure
+            std::vector<float> domain_flat(dims[0] * dims[1]);
+            ds_domain.read(domain_flat.data(), PredType::NATIVE_FLOAT);
             field.domain.assign(dims[0], std::vector<float>(dims[1]));
-            ds_domain.read(&field.domain[0][0], PredType::NATIVE_FLOAT);
+            for (size_t i = 0; i < dims[0]; i++) {
+                for (size_t j = 0; j < dims[1]; j++) {
+                    field.domain[i][j] = domain_flat[i * dims[1] + j];
+                }
+            }
         }
     }
 
@@ -131,6 +150,7 @@ void save_data_to_hdf5(BaseData& field, const std::string& filename) {
     save_data_to_hdf5(filename,
                        field.is_complex,
                        field.is_vector,
+                       field.is_matrix,
                        field.with_k,
                        field.with_w,
                        field.as_mesh,
@@ -149,12 +169,14 @@ void save_data(string filename, BaseData::DataVariant& data, bool is_complex, ve
     bool with_w = w_points.size() > 0;
     bool as_mesh = true; // Would be false if points were given
     int dim = mesh.size();
-    save_data_to_hdf5(filename, is_complex, is_vector, with_k, with_w, as_mesh, n_indices, dim_indices, mesh, domain, dim, w_points, data);
+    bool is_matrix = n_indices > 1;
+    save_data_to_hdf5(filename, is_complex, is_vector, is_matrix, with_k, with_w, as_mesh, n_indices, dim_indices, mesh, domain, dim, w_points, data);
 }
 
 void save_data_to_hdf5(const std::string& filename,
                         bool is_complex,
                         bool is_vector,
+                        bool is_matrix,
                         bool with_k,
                         bool with_w,
                         bool as_mesh,
@@ -176,6 +198,7 @@ void save_data_to_hdf5(const std::string& filename,
 
     write_scalar("/is_complex", is_complex);
     write_scalar("/is_vector", is_vector);
+    write_scalar("/is_matrix", is_matrix);
     write_scalar("/with_k", with_k);
     write_scalar("/with_w", with_w);
     write_scalar("/n_indices", n_indices);
@@ -208,6 +231,12 @@ void save_data_to_hdf5(const std::string& filename,
 
     // -- w_points --
     if (!w_points.empty()) {
+        hsize_t dims[1] = { w_points.size() };
+        DataSpace space(1, dims);
+        DataSet ds = file.createDataSet("/w_points", PredType::NATIVE_FLOAT, space);
+        ds.write(w_points.data(), PredType::NATIVE_FLOAT);
+    }
+    else {
         hsize_t dims[1] = { w_points.size() };
         DataSpace space(1, dims);
         DataSet ds = file.createDataSet("/w_points", PredType::NATIVE_FLOAT, space);

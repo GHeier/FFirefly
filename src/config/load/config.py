@@ -193,7 +193,7 @@ def load_config():
                 index += 1
 
 #[BASIS]
-            if "states" in key:
+            if "states" in key and len(value.split()) >= 3:
                 global states
                 states = [value.split()[i] for i in range(3)]
             if section == "BASIS" and index < 3:

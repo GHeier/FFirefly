@@ -14,6 +14,7 @@ struct BaseData {
 public:
     bool is_complex = false;
     bool is_vector = false;
+    bool is_matrix = false;
     bool with_k = false;
     bool with_w = false;
     bool as_mesh = false;
@@ -61,4 +62,4 @@ BaseData load_data_from_hdf5(const std::string& filename);
 void save_data_to_hdf5(BaseData& data, const std::string& filename);
 void save_data(string filename, BaseData::DataVariant& data, bool is_complex = false, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, int n_indices = 0, int dim_indices = 0);
 
-void save_data_to_hdf5(const std::string& filename, bool is_complex, bool is_vector, bool with_k, bool with_w, bool as_mesh, int n_indices, int dim_indices, vector<int> &mesh, vector<vector<float>> &domain, int dimension, vector<float> &w_points, const BaseData::DataVariant& data);
+void save_data_to_hdf5(const std::string& filename, bool is_complex, bool is_vector, bool is_matrix, bool with_k, bool with_w, bool as_mesh, int n_indices, int dim_indices, vector<int> &mesh, vector<vector<float>> &domain, int dimension, vector<float> &w_points, const BaseData::DataVariant& data);

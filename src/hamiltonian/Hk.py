@@ -6,45 +6,53 @@ import matplotlib.pyplot as plt
 import firefly as fly
 import firefly.config as cfg
 
-outdir = cfg.outdir
-prefix = cfg.prefix
 
-nstates = cfg.nstates
-nx, ny, nz = cfg.k_mesh
-dim = cfg.dimension
-BZ = cfg.brillouin_zone
-if dim == 2:
-    nz = 1
-    BZ = BZ[:2, :2]
+def generate_hamiltonian():
+    """Generate and save Hamiltonian on k-mesh."""
+    outdir = cfg.outdir
+    prefix = cfg.prefix
 
-t0 = cfg.t0
+    nstates = cfg.nstates
+    nx, ny, nz = cfg.k_mesh
+    dim = cfg.dimension
+    BZ = np.array(cfg.brillouin_zone)
+    if dim == 2:
+        nz = 1
+        BZ = BZ[:2, :2]
 
+    t0 = cfg.t0
 
+    # Create Mesh
+    kx = (np.arange(nx) + 0.5) / nx
+    ky = (np.arange(ny) + 0.5) / ny
+    kz = (np.arange(nz) + 0.5) / nz
+    KX, KY, KZ = np.meshgrid(kx, ky, kz, indexing="ij")
 
-# Create Mesh
-kx = (np.arange(nx) + 0.5) / nx
-ky = (np.arange(ny) + 0.5) / ny
-kz = (np.arange(nz) + 0.5) / nz
-KX, KY, KZ = np.meshgrid(kx, ky, kz, indexing="ij")
-kpts = np.stack([KX.ravel(), KY.ravel(), KZ.ravel()], axis=1)
+    if dim == 2:
+        kpts = np.stack([KX.ravel(), KY.ravel()], axis=1)
+    else:
+        kpts = np.stack([KX.ravel(), KY.ravel(), KZ.ravel()], axis=1)
 
+    # TIGHT BINDING
+    if cfg.hamiltonian == "tight_binding":
+        # one orbital per cell at the origin
+        model = tb.Model(on_site=[0.0], dim=dim, pos=[[0.0]*dim])
 
+        # H(R) entries for NN on a square lattice, basis size = 1
+        # add both R and -R to keep H Hermitian
+        if dim == 2:
+            R = [(1,0), (0,1)]
+        elif dim == 3:
+            R = [(1,0,0), (0,1,0), (0,0,1)]
+        else:
+            R = [(1,)]
 
+        for i in range(dim):
+            model.add_hop(-t0, 0, 0, R[i])
 
-# TIGHT BINDING 
-
-if cfg.hamiltonian == "tight_binding":
-    # one orbital per cell at the origin
-    model = tb.Model(on_site=[0.0], dim=dim, pos=[[0.0]*dim])
-
-    # H(R) entries for NN on a square lattice, basis size = 1
-    # add both R and -R to keep H Hermitian
-    R = [(1,0,0), (0,1,0), (0,0,1)]
-    for i in range(dim):
-        model.add_hop(-t0, 0, 0, R[i])
-
-    Hk = model.hamilton(k=kpts).reshape((nx, ny, nz, nstates, nstates))
-    fly.save_data_matrix(outdir + prefix + "_Hk.h5", Hk, 1, 1, True, [nx, ny, nz], BZ)
+        Hk = model.hamilton(k=kpts).reshape((nx, ny, nz, nstates, nstates))
+        fly.save_data_matrix(outdir + prefix + "_Hk.h5", Hk, nstates, nstates, True, [nx, ny, nz], BZ)
+        print(f"Hamiltonian saved to {outdir}{prefix}_Hk.h5")
 
 
 #

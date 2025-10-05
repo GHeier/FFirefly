@@ -637,15 +637,22 @@ void printcolor(Color color, const char *format, ...) {
 bool print_test_results(bool all_tests[], int num_tests,
                         const char *test_name) {
     int tests_passed = 0;
-    for (int i = 0; i < num_tests; i++)
+    int failed_tests[num_tests];
+    for (int i = 0; i < num_tests; i++) {
         if (all_tests[i])
             tests_passed++;
+        else
+            failed_tests[i] = (i + 1);
+    }
     if (tests_passed == num_tests) {
         printcolor(GREEN, "All %s passed!\n", test_name);
         return true;
     } else {
         printcolor(RED, " - %d/%d %s passed\n", tests_passed, num_tests,
                    test_name);
+        for (int i = 0; i < num_tests - tests_passed; i++) {
+            printcolor(RED, "   - Test %d failed\n", failed_tests[i]);
+        }
         return false;
     }
 }
