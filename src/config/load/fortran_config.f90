@@ -60,6 +60,8 @@ module ffirefly
     real :: onsite_U
     real(c_float), bind(C, name="c_cutoff_energy") :: c_cutoff_energy
     real :: cutoff_energy
+    real(c_float), bind(C, name="c_smearing") :: c_smearing
+    real :: smearing
 
 ![MESH]
     integer(c_int), bind(C, name="c_k_mesh") :: c_k_mesh(3)
@@ -180,6 +182,7 @@ module ffirefly
             use iso_c_binding
             type(c_ptr) :: get_celltype
     end function get_celltype
+
 
 
 
@@ -315,6 +318,7 @@ contains
         Temperature = c_Temperature
         onsite_U = c_onsite_U
         cutoff_energy = c_cutoff_energy
+        smearing = c_smearing
 
 ![MESH]
         k_mesh = c_k_mesh

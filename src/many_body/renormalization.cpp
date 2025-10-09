@@ -29,43 +29,53 @@ void self_energy_renormalization() {
     string filename = outdir + prefix + "_self_energy." + filetype;
     printf("Reading self_energy from %s\n", filename.c_str());
     Field_C sigma(filename);
-    int kx = k_mesh[0];
-    int ky = k_mesh[1];
-    int kz = k_mesh[2];
-    if (dimension == 2)
-        kz = 1;
-    vector<vector<vector<float>>> eff_mass(1);
+
+    vector<cfloat> vals;
     float maxval = 0;
-    for (int i = 0; i < kx; i++) {
-        for (int j = 0; j < ky; j++) {
-            for (int k = 0; k < kz; k++) {
-                Vec kvec = get_kvec(i, j, k);
-                float slope_r = real(sigma(kvec, 1e-4) - sigma(kvec, -1e-4)) / (2e-4);
-                float slope_i = imag(sigma(kvec, 1e-4) - sigma(kvec, -1e-4)) / (2e-4);
-                float slope = slope_r + slope_i;
-                if (maxval < fabs(slope))
-                    maxval = fabs(slope);
-                eff_mass[0].push_back({-slope});
-                if (dimension == 2)
-                    break;
+
+    if (!sigma.cmf.data.as_mesh) {
+        // Loop over stored points
+        for (const auto& point : sigma.cmf.data.points) {
+            Vec kvec(point.data(), dimension);
+            kvec.dimension = dimension;
+            float slope_r = real(sigma(kvec, 1e-4) - sigma(kvec, -1e-4)) / (2e-4);
+            float slope_i = imag(sigma(kvec, 1e-4) - sigma(kvec, -1e-4)) / (2e-4);
+            float slope = slope_r + slope_i;
+            if (maxval < fabs(slope))
+                maxval = fabs(slope);
+            vals.push_back(cfloat(-slope, 0.0f));
+        }
+    } else {
+        // Loop over mesh
+        int kx = k_mesh[0];
+        int ky = k_mesh[1];
+        int kz = k_mesh[2];
+        if (dimension == 2)
+            kz = 1;
+
+        for (int i = 0; i < kx; i++) {
+            for (int j = 0; j < ky; j++) {
+                for (int k = 0; k < kz; k++) {
+                    Vec kvec = get_kvec(i, j, k);
+                    float slope_r = real(sigma(kvec, 1e-4) - sigma(kvec, -1e-4)) / (2e-4);
+                    float slope_i = imag(sigma(kvec, 1e-4) - sigma(kvec, -1e-4)) / (2e-4);
+                    float slope = slope_r + slope_i;
+                    if (maxval < fabs(slope))
+                        maxval = fabs(slope);
+                    vals.push_back(cfloat(-slope, 0.0f));
+                    if (dimension == 2)
+                        break;
+                }
             }
         }
     }
+
     printf("Max m*(q) = %f\n", 1 + maxval);
     printf("Saving Renormalization\n");
     string file = outdir + prefix + "_renormalization." + filetype;
-    //if (filetype == "dat" || filetype == "txt")
-    //    save_to_file(file, points, values, chi.cmf.data.dimension, chi.cmf.data.with_w, chi.cmf.data.with_n, chi.cmf.data.is_complex, chi.cmf.data.is_vector);
     if (filetype == "hdf5" || filetype == "h5") {
-        vector<vector<float>> BZ = brillouin_zone;
-        BZ.resize(dimension);
-        for (auto &row : BZ)
-            row.resize(dimension);
-        Vec first = BZ * Vec(-0.5, -0.5, -0.5);
-        vector<int> mesh = k_mesh;
-        if (dimension == 2)
-            mesh = {k_mesh[0], k_mesh[1]};
-        save_to_field(file, eff_mass, BZ, mesh, {}, false, false);
+        sigma.cmf.data.data = vals;
+        sigma.save(file);
     }
     cout << "Saved to " << outdir + prefix + "_renormalization." + filetype << endl;
 
@@ -85,52 +95,62 @@ void FLEX_renormalization() {
     printf("Reading chi from %s\n", filename.c_str());
     Field_C chi(filename);
     float U = onsite_U;
-    float nx = q_mesh[0], ny = q_mesh[1], nz = q_mesh[2];
     int chidim = chi.cmf.data.dimension;
-    if (chidim == 2) nz = 1;
 
-    vector<Vec> points;
-    vector<complex<Vec>> values;
-    vector<vector<vector<float>>> vec_values(1);
-
+    vector<cfloat> vals;
     float maxval = 0;
+
     printf("Computing Renormalization\n");
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            for (int k = 0; k < nz; k++) {
-                Vec q = brillouin_zone * Vec(i / nx - 0.5, j / ny - 0.5, k / nz - 0.5);
-                q.dimension = chidim;
-                points.push_back(q);
-                complex<float> X = chi(q);
-                complex<float> val = (U*U*U * X*X) / complex<float>(1.0f - U * X) + (U*U * X) / complex<float>(1.0f - U * U * X * X);
-                if (maxval < val.real())
-                    maxval = val.real();
-                if (filetype == "dat" || filetype == "txt")
-                    values.push_back(complex<Vec>(Vec(val.real()), Vec(val.imag())));
-                else if (filetype == "h5" || filetype == "hdf5")
-                    vec_values[0].push_back({val.real(), val.imag()});
-                if (abs(U * X) >= 1) {
-                    printf("Geometric series not convergent: U*X = %f\n", U * X.real());
-                    exit(1);
+
+    if (!chi.cmf.data.as_mesh) {
+        // Loop over stored points
+        for (const auto& point : chi.cmf.data.points) {
+            Vec q(point.data(), chidim);
+            q.dimension = chidim;
+
+            cfloat X = chi(q);
+            cfloat val = (U*U*U * X*X) / cfloat(1.0f - U * X) + (U*U * X) / cfloat(1.0f - U * U * X * X);
+            vals.push_back(val);
+
+            if (maxval < val.real())
+                maxval = val.real();
+            if (abs(U * X) >= 1) {
+                printf("Geometric series not convergent: U*X = %f\n", U * X.real());
+                exit(1);
+            }
+        }
+    } else {
+        // Loop over mesh
+        float nx = q_mesh[0], ny = q_mesh[1], nz = q_mesh[2];
+        if (chidim == 2) nz = 1;
+
+        for (int i = 0; i < nx; i++) {
+            for (int j = 0; j < ny; j++) {
+                for (int k = 0; k < nz; k++) {
+                    Vec q = brillouin_zone * Vec(i / nx - 0.5, j / ny - 0.5, k / nz - 0.5);
+                    q.dimension = chidim;
+
+                    cfloat X = chi(q);
+                    cfloat val = (U*U*U * X*X) / cfloat(1.0f - U * X) + (U*U * X) / cfloat(1.0f - U * U * X * X);
+                    vals.push_back(val);
+
+                    if (maxval < val.real())
+                        maxval = val.real();
+                    if (abs(U * X) >= 1) {
+                        printf("Geometric series not convergent: U*X = %f\n", U * X.real());
+                        exit(1);
+                    }
                 }
             }
         }
     }
+
     printf("Max m*(q) = %f\n", 1 + maxval);
     printf("Saving Renormalization\n");
     string file = outdir + prefix + "_renormalization." + filetype;
-    //if (filetype == "dat" || filetype == "txt")
-    //    save_to_file(file, points, values, chi.cmf.data.dimension, chi.cmf.data.with_w, chi.cmf.data.with_n, chi.cmf.data.is_complex, chi.cmf.data.is_vector);
     if (filetype == "hdf5" || filetype == "h5") {
-        vector<vector<float>> BZ = brillouin_zone;
-        BZ.resize(dimension);
-        for (auto &row : BZ)
-            row.resize(dimension);
-        Vec first = BZ * Vec(-0.5, -0.5, -0.5);
-        vector<int> mesh = q_mesh;
-        if (chi.cmf.data.dimension == 2)
-            mesh = {q_mesh[0], q_mesh[1]};
-        save_to_field(file, vec_values, BZ, mesh, {}, false, false);
+        chi.cmf.data.data = vals;
+        chi.save(file);
     }
     cout << "Saved to " << outdir + prefix + "_renormalization." + filetype << endl;
 

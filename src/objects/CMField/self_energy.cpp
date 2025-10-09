@@ -2,7 +2,6 @@
 #include "../../config/load/cpp_config.hpp"
 #include "../../hamiltonian/interaction.hpp"
 #include "../vec.hpp"
-#include "cmfield.hpp"
 #include "fields.hpp"
 #include <filesystem>
 
@@ -14,7 +13,7 @@ namespace fs = std::filesystem;
 Self_Energy::Self_Energy() {
     string filename = outdir + prefix + "_self_energy." + filetype;
     if (fs::exists(filename) and automatic_file_read) {
-        field = load_CMField(filename);
+        field = Field_C(filename);
         file_found = true;
     } else {
         file_found = false;
@@ -26,8 +25,7 @@ complex<float> Self_Energy::operator()(Vec k, float w, string label1,
                                   string label2) {
     if (!file_found)
         return complex<float>(0, 0);
-    complex<Vec> val = field(k, w);
-    return complex<float>(val.real().x, val.imag().x);
+    return field(k, w);
 }
 
 complex<float> Self_Energy::operator()(Vec k, complex<float> w, string label1,

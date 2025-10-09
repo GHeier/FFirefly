@@ -100,7 +100,11 @@ void bcs() {
     }
     else if (method == "diagonalization") {
         cout << "Finding Eigenspace..." << endl;
-        lapack_hermitian_diagonalization(P, solutions);
+        vector<Eigenvector> temp_solutions = lapack_hermitian_diagonalization(P);
+        for (int i = 0; i < num_eigenvalues_to_save; i++) {
+            solutions[i] = temp_solutions[i];
+        }
+        temp_solutions.clear();
 
         // Sort solutions with highest eigenvalue/eigenvector pair first
         cout << "Sorting Eigenvectors..." << endl;

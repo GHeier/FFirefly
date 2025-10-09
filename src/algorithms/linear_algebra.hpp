@@ -50,12 +50,11 @@ Eigenvector power_iteration(Matrix &A, vector<float> eigs = {});
 void lapack_diagonalization(Matrix &A, Eigenvector *eigenvectors);
 
 /**
- * @brief Calculates the first n eigenvectors of a matrix using the LAPACK
+ * @brief Calculates the eigenvectors of a matrix using the LAPACK
  * library.
  *
  * @param A The matrix to calculate the eigenvectors of.
- * @param eigenvectors The eigenvectors to store the results in.
  *
- * @return nothing.
+ * @return eigenvectors.
  */
-void lapack_hermitian_diagonalization(Matrix &A, Eigenvector *eigenvectors);
+vector<Eigenvector> lapack_hermitian_diagonalization(Matrix &A);

@@ -33,6 +33,7 @@ ALL = {
         "Temperature": 0.0,
         "onsite_U": 0.0,
         "cutoff_energy": 0.05,
+        "smearing": 0.02,
     },
     "MESH": {"k_mesh": [10, 10, 10], "q_mesh": [10, 10, 10], "w_pts": 100},
     "CELL": {"cell": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]},

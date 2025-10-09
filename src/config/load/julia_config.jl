@@ -30,6 +30,7 @@ fermi_energy::Float64 = cfg.fermi_energy
 Temperature::Float64 = cfg.Temperature
 onsite_U::Float64 = cfg.onsite_U
 cutoff_energy::Float64 = cfg.cutoff_energy
+smearing::Float64 = cfg.smearing
 
 #[MESH]
 k_mesh::Array{Int} = cfg.k_mesh

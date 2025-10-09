@@ -6,7 +6,7 @@ using namespace std;
 
 class Self_Energy {
   public:
-    CMField field;
+    Field_C field;
     bool file_found;
 
     Self_Energy();

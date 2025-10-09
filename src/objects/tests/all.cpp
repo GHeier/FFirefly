@@ -4,7 +4,7 @@
 #include "../../config/load/c_config.h"
 #include "../CMData/tests/all.hpp"
 //#include "../CMField/tests/bands_tests.hpp"
-#include "../CMField/tests/cmfield_tests.hpp"
+//#include "../CMField/tests/cmfield_tests.hpp"
 #include "../CMField/tests/base_data_tests.hpp"
 #include "../CMField/tests/field_tests.hpp"
 #include "../CMField/tests/field_wrapper_tests.hpp"

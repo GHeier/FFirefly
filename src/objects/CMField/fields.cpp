@@ -1,6 +1,7 @@
 #include "fields.hpp"
 #include "field.hpp"
 #include "../vec.hpp"
+#include <openblas/lapacke.h>
 
 // Field_C implementation
 Field_C::Field_C()
@@ -43,6 +44,14 @@ Field_C& Field_C::operator=(const Field_C& other) {
 
 void Field_C::save(const string& filename) {
     cmf.save(filename);
+}
+
+vector<complex<float>> Field_C::operator()(const vector<Vec>& points, float w) {
+    vector<complex<float>> results(points.size());
+    for (size_t i = 0; i < points.size(); i++) {
+        results[i] = (*this)(points[i], w);
+    }
+    return results;
 }
 
 
@@ -89,6 +98,14 @@ void Field_R::save(const string& filename) {
     cmf.save(filename);
 }
 
+vector<float> Field_R::operator()(const vector<Vec>& points, float w) {
+    vector<float> results(points.size());
+    for (size_t i = 0; i < points.size(); i++) {
+        results[i] = (*this)(points[i], w);
+    }
+    return results;
+}
+
 // Field_CM implementation (Complex Matrix)
 Field_CM::Field_CM()
     : cmf(vector<vector<vector<cfloat>>>(), true, false, true, {}, {}, {}, 2, 1) {}
@@ -124,6 +141,88 @@ vector<vector<cfloat>> Field_CM::operator()(Vec point, float w) {
     return vector<vector<cfloat>>();
 }
 
+vector<float> Field_CM::diag(Vec point, float w) {
+    // Get matrix at the specified point
+    auto matrix = (*this)(point, w);
+    if (matrix.empty()) {
+        return vector<float>();
+    }
+
+    int N = matrix.size();
+
+    // Copy matrix data into lapack_complex_float array
+    vector<lapack_complex_float> A(N * N);
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            reinterpret_cast<float(&)[2]>(A[i * N + j])[0] = matrix[i][j].real();
+            reinterpret_cast<float(&)[2]>(A[i * N + j])[1] = matrix[i][j].imag();
+        }
+    }
+
+    // Array to store eigenvalues (real for Hermitian matrices)
+    vector<float> eigenvalues(N);
+
+    // Call LAPACK Hermitian eigenvalue solver (only eigenvalues, no eigenvectors)
+    int info = LAPACKE_cheev(LAPACK_ROW_MAJOR, 'N', 'U', N, A.data(), N, eigenvalues.data());
+
+    if (info != 0) {
+        std::cerr << "Error: LAPACKE_cheev returned " << info << std::endl;
+        return vector<float>();
+    }
+
+    return eigenvalues;
+}
+
+vector<Eigenvector> Field_CM::fulldiag(Vec point, float w) {
+    // Get matrix at the specified point
+    auto matrix = (*this)(point, w);
+    if (matrix.empty()) {
+        return vector<Eigenvector>();
+    }
+
+    int N = matrix.size();
+
+    // Copy matrix data into lapack_complex_float array
+    vector<lapack_complex_float> A(N * N);
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            reinterpret_cast<float(&)[2]>(A[i * N + j])[0] = matrix[i][j].real();
+            reinterpret_cast<float(&)[2]>(A[i * N + j])[1] = matrix[i][j].imag();
+        }
+    }
+
+    // Array to store eigenvalues (real for Hermitian matrices)
+    vector<float> eigenvalues(N);
+
+    // Call LAPACK Hermitian eigenvalue solver with eigenvectors ('V')
+    int info = LAPACKE_cheev(LAPACK_ROW_MAJOR, 'V', 'U', N, A.data(), N, eigenvalues.data());
+
+    if (info != 0) {
+        std::cerr << "Error: LAPACKE_cheev returned " << info << std::endl;
+        return vector<Eigenvector>();
+    }
+
+    // Convert to Eigenvector format
+    vector<Eigenvector> eigenvectors(N, Eigenvector(N));
+    for (int i = 0; i < N; i++) {
+        eigenvectors[i].eigenvalue = eigenvalues[i];
+        for (int j = 0; j < N; j++) {
+            // Eigenvectors are stored in columns
+            eigenvectors[i][j] = reinterpret_cast<float(&)[2]>(A[j * N + i])[0];
+        }
+    }
+
+    return eigenvectors;
+}
+
+vector<vector<vector<cfloat>>> Field_CM::operator()(const vector<Vec>& points, float w) {
+    vector<vector<vector<cfloat>>> results(points.size());
+    for (size_t i = 0; i < points.size(); i++) {
+        results[i] = (*this)(points[i], w);
+    }
+    return results;
+}
+
 // Field_RM implementation (Real Matrix)
 Field_RM::Field_RM()
     : cmf(vector<vector<vector<cfloat>>>(), false, false, true, {}, {}, {}, 2, 1) {}
@@ -157,4 +256,85 @@ vector<vector<float>> Field_RM::operator()(Vec point, float w) {
     }
     // Return empty matrix on error
     return vector<vector<float>>();
+}
+
+vector<float> Field_RM::diag(Vec point, float w) {
+    // Get matrix at the specified point
+    auto matrix = (*this)(point, w);
+    if (matrix.empty()) {
+        return vector<float>();
+    }
+
+    int N = matrix.size();
+
+    // Copy matrix data into a flat array (LAPACK expects row-major format)
+    vector<float> A(N * N);
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            A[i * N + j] = matrix[i][j];
+        }
+    }
+
+    // Array to store eigenvalues
+    vector<float> eigenvalues(N);
+
+    // Call LAPACK symmetric eigenvalue solver (only eigenvalues, no eigenvectors)
+    int info = LAPACKE_ssyev(LAPACK_ROW_MAJOR, 'N', 'U', N, A.data(), N, eigenvalues.data());
+
+    if (info != 0) {
+        std::cerr << "Error: LAPACKE_ssyev returned " << info << std::endl;
+        return vector<float>();
+    }
+
+    return eigenvalues;
+}
+
+vector<Eigenvector> Field_RM::fulldiag(Vec point, float w) {
+    // Get matrix at the specified point
+    auto matrix = (*this)(point, w);
+    if (matrix.empty()) {
+        return vector<Eigenvector>();
+    }
+
+    int N = matrix.size();
+
+    // Copy matrix data into a flat array (LAPACK expects row-major format)
+    vector<float> A(N * N);
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            A[i * N + j] = matrix[i][j];
+        }
+    }
+
+    // Array to store eigenvalues
+    vector<float> eigenvalues(N);
+
+    // Call LAPACK symmetric eigenvalue solver with eigenvectors ('V')
+    int info = LAPACKE_ssyev(LAPACK_ROW_MAJOR, 'V', 'U', N, A.data(), N, eigenvalues.data());
+
+    if (info != 0) {
+        std::cerr << "Error: LAPACKE_ssyev returned " << info << std::endl;
+        return vector<Eigenvector>();
+    }
+
+    // Convert to Eigenvector format
+    // After ssyev, A contains eigenvectors in columns
+    vector<Eigenvector> eigenvectors(N, Eigenvector(N));
+    for (int i = 0; i < N; i++) {
+        eigenvectors[i].eigenvalue = eigenvalues[i];
+        for (int j = 0; j < N; j++) {
+            // Eigenvectors are stored in columns
+            eigenvectors[i][j] = A[j * N + i];
+        }
+    }
+
+    return eigenvectors;
+}
+
+vector<vector<vector<float>>> Field_RM::operator()(const vector<Vec>& points, float w) {
+    vector<vector<vector<float>>> results(points.size());
+    for (size_t i = 0; i < points.size(); i++) {
+        results[i] = (*this)(points[i], w);
+    }
+    return results;
 }

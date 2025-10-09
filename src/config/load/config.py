@@ -24,6 +24,7 @@ fermi_energy = 0.0
 Temperature = 0.0
 onsite_U = 0.0
 cutoff_energy = 0.05
+smearing = 0.02
 
 #[MESH]
 k_mesh = [10, 10, 10]
@@ -168,6 +169,9 @@ def load_config():
             if "cutoff_energy" in key:
                 global cutoff_energy
                 cutoff_energy = float(value)
+            if "smearing" in key:
+                global smearing
+                smearing = float(value)
 
 #[MESH]
             if "k_mesh" in key:
@@ -193,7 +197,7 @@ def load_config():
                 index += 1
 
 #[BASIS]
-            if "states" in key and len(value.split()) >= 3:
+            if "states" in key:
                 global states
                 states = [value.split()[i] for i in range(3)]
             if section == "BASIS" and index < 3:

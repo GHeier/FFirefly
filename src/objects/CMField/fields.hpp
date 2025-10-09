@@ -3,6 +3,7 @@
 #include <complex>
 
 #include "../vec.hpp"
+#include "../eigenvec.hpp"
 #include "field.hpp"
 
 using namespace std;
@@ -28,6 +29,9 @@ public:
 
   complex<float> operator()(Vec point, float w = 0);
   complex<float> operator()(float w);
+
+  // List-based operator for multiple points
+  vector<complex<float>> operator()(const vector<Vec>& points, float w = 0);
 };
 
 class Field_R {
@@ -50,6 +54,9 @@ public:
 
   float operator()(Vec point, float w = 0);
   float operator()(float w);
+
+  // List-based operator for multiple points
+  vector<float> operator()(const vector<Vec>& points, float w = 0);
 };
 
 // Matrix fields
@@ -74,6 +81,15 @@ public:
 
   // Returns full matrix at point
   vector<vector<cfloat>> operator()(Vec point, float w = 0);
+
+  // List-based operator for multiple points
+  vector<vector<vector<cfloat>>> operator()(const vector<Vec>& points, float w = 0);
+
+  // Diagonalize matrix at point and return eigenvalues
+  vector<float> diag(Vec point, float w = 0);
+
+  // Diagonalize matrix at point and return eigenvalues and eigenvectors
+  vector<Eigenvector> fulldiag(Vec point, float w = 0);
 };
 
 class Field_RM {
@@ -97,4 +113,13 @@ public:
 
   // Returns full matrix at point
   vector<vector<float>> operator()(Vec point, float w = 0);
+
+  // List-based operator for multiple points
+  vector<vector<vector<float>>> operator()(const vector<Vec>& points, float w = 0);
+
+  // Diagonalize matrix at point and return eigenvalues
+  vector<float> diag(Vec point, float w = 0);
+
+  // Diagonalize matrix at point and return eigenvalues and eigenvectors
+  vector<Eigenvector> fulldiag(Vec point, float w = 0);
 };

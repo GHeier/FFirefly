@@ -1,16 +1,18 @@
 #pragma once
 
 #include "../../objects/CMField/fields.hpp" // Include field class
+#include "../../objects/CMField/bands.hpp"
 #include <complex>
 
 float epsilon_export(int n, float kx, float ky = 0, float kz = 0);
-CMData *CMData_export0();
-CMData *CMData_export1(const char *filename);
-float CMField_nbnd_export0();
+Bands *Bands_export0();
+float Bands_operator_export0(Bands *obj, int n, const float *point, int len);
+void Bands_operator_export0_numpy(Bands *obj, int n, const float *points, int num_points, int len, float *output);
+float Bands_operator_export1(Bands *obj, int n, const float *point, int len);
+void Bands_operator_export1_numpy(Bands *obj, int n, const float *points, int num_points, int len, float *output);
 int Field_R_nbnd_export0(Field_R* a);
 int Field_C_nbnd_export0(Field_C* a);
 Field_R *Field_R_export0();
-Field_R *Field_R_export1(CMField cmf);
 Field_R *Field_R_export2(const char *filename);
 
 float Field_R_operator_export0(Field_R *obj, float w);
@@ -19,9 +21,10 @@ float Field_R_operator_export2(Field_R *obj, const float *point, int len,
                                float w);
 float Field_R_operator_export3(Field_R *obj, int n, const float *point, int len,
                                float w);
+void Field_R_operator_export_list(Field_R *obj, const float *points, int num_points, int len,
+                                   float w, float *output);
 
 Field_C *Field_C_export();
-Field_C *Field_C_export1(CMField cmf);
 Field_C *Field_C_export2(const char *filename);
 
 void Field_C_operator_export0(Field_C *obj, float w, float *real_result,
@@ -32,20 +35,23 @@ void Field_C_operator_export2(Field_C *obj, const float *point, int len,
                               float w, float *real_result, float *imag_result);
 void Field_C_operator_export3(Field_C *obj, int n, const float *point, int len,
                               float w, float *real_result, float *imag_result);
+void Field_C_operator_export_list(Field_C *obj, const float *points, int num_points, int len,
+                                  float w, float *real_output, float *imag_output);
 
 Field_RM *Field_RM_export0();
 Field_RM *Field_RM_export2(const char *filename);
 void Field_RM_operator_export0(Field_RM *obj, const float *point, int len,
                                float w, float **result, int *matrix_size);
+void Field_RM_operator_export_list(Field_RM *obj, const float *points, int num_points, int len,
+                                   float w, float *output, int *matrix_size);
 
 Field_CM *Field_CM_export0();
 Field_CM *Field_CM_export2(const char *filename);
 void Field_CM_operator_export0(Field_CM *obj, const float *point, int len,
                                float w, float **real_result, float **imag_result, int *matrix_size);
+void Field_CM_operator_export_list(Field_CM *obj, const float *points, int num_points, int len,
+                                   float w, float *real_output, float *imag_output, int *matrix_size);
 
-CMField *create_CMField();
-// Load CMField from a file
-CMField *load_CMField(const char *filename);
 
 // Create a new field instance and return a pointer
 Field_C *create_field_CS();
@@ -69,22 +75,9 @@ void destroy_Field_C(Field_C *field);
 void destroy_Field_R(Field_R *field);
 void destroy_Field_RM(Field_RM *field);
 void destroy_Field_CM(Field_CM *field);
+void destroy_Bands(Bands *field);
 
-CMField *create_cmf();
-CMField *load_cmf(const char *filename);
 
-void get_points(CMField *cmf, vector<Vec> &points);
-void get_w_points(CMField *cmf, vector<float> &w_points);
-void get_values(CMField *cmf, vector<complex<Vec>> &values);
-void get_domain(CMField *cmf, vector<Vec> &domain);
-void get_inv_domain(CMField *cmf, vector<Vec> &inv_domain);
-void get_first(CMField *cmf, Vec &first);
-void get_num_points(CMField *cmf, int &nx, int &ny, int &nz, int &nw);
-void get_dimension(CMField *cmf, int &dimension);
-void get_w_max_min(CMField *cmf, float &wmax, float &wmin);
-void get_is_complex(CMField *cmf, bool &is_complex);
-void get_is_vector(CMField *cmf, bool &is_vector);
-void get_with_w(CMField *cmf, bool &with_w);
 
 // Save data exports
 void save_data_scalar_export0(const char *filename, const float *data_interleaved,

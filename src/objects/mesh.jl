@@ -325,12 +325,10 @@ function allocate_rt_boson(mesh)
     return allocate_input(mesh.plan_bnw)
 end
 
-struct MultiField
-    data :: Vector{Array{ComplexF32, 4}}
+struct BlockArray
+    data :: Array{Array{ComplexF32, 4}}
+    dim  :: Int64
 end
 
-function make_MultiField(n, l, x, y, z)
-    return [Array{ComplexF32}(undef, l, x, y, z) for _ in 1:n]
-end
 
 end

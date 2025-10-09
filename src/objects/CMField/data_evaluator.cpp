@@ -1,5 +1,5 @@
 #include "data_evaluator.hpp"
-#include "cmfield.hpp"
+#include "field_funcs.hpp"
 #include "../../algorithms/interpolate.hpp"
 #include <vector>
 #include <complex>

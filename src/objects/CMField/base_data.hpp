@@ -26,6 +26,7 @@ public:
     vector<vector<float>> domain;
 
     vector<float> w_points;
+    vector<vector<float>> points;  // k-point data storage when as_mesh = false
 
     using DataVariant = variant<
         vector<cfloat>,
@@ -37,8 +38,15 @@ public:
     DataVariant data;
 
     int total_index_size() const { return pow(dim_indices, n_indices); }
-    int nk() const { return with_k ? mesh[0] : 1; }
-    int nw() const { return with_w ? (with_k ? mesh[1] : mesh[0]) : 1; }
+    int nk() const {
+        if (!with_k) return 1;
+        return as_mesh ? mesh[0] : points.size();
+    }
+    int nw() const {
+        if (!with_w) return 1;
+        if (as_mesh) return with_k ? mesh[1] : mesh[0];
+        return w_points.size();
+    }
     int vec_len() const { return is_vector ? dimension : 1; }
     int total_size() const { return total_index_size() * nk() * nw() * vec_len(); }
 
@@ -62,4 +70,4 @@ BaseData load_data_from_hdf5(const std::string& filename);
 void save_data_to_hdf5(BaseData& data, const std::string& filename);
 void save_data(string filename, BaseData::DataVariant& data, bool is_complex = false, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, int n_indices = 0, int dim_indices = 0);
 
-void save_data_to_hdf5(const std::string& filename, bool is_complex, bool is_vector, bool is_matrix, bool with_k, bool with_w, bool as_mesh, int n_indices, int dim_indices, vector<int> &mesh, vector<vector<float>> &domain, int dimension, vector<float> &w_points, const BaseData::DataVariant& data);
+void save_data_to_hdf5(const std::string& filename, bool is_complex, bool is_vector, bool is_matrix, bool with_k, bool with_w, bool as_mesh, int n_indices, int dim_indices, vector<int> &mesh, vector<vector<float>> &domain, int dimension, vector<float> &w_points, vector<vector<float>> &points, const BaseData::DataVariant& data);

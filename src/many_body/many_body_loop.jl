@@ -1,4 +1,5 @@
 module ManyBodyLoop
+println("Loading ManyBodyLoop.jl")
 
 using Random
 using PencilFFTs
@@ -34,6 +35,7 @@ if dim == 2
 end
 nk = nx * ny * nz
 nbnd = cfg.nbnd
+nstates = cfg.nstates
 mu = cfg.fermi_energy
 U = cfg.onsite_U
 BZ = cfg.brillouin_zone
@@ -55,32 +57,27 @@ mix       = 0.2       # mixing parameter for new
 U_maxiter = 50       # maximal number of iteration steps in U renormalization loop
 
 interaction = cfg.interaction
+println("Loaded ManyBodyLoop.jl")
 
 function fill_energy_mesh_mpi!(band, ek)
     for i in 1:nx, j in 1:ny, k in 1:nz
         kvec = get_kvec(i - 1, j - 1, k - 1, nx, ny, nz)
-        ek[1, i, j, k] = band(1, kvec)
+        ek[i, j, k] = band(kvec)
     end
     return ek
 end
 
 function fill_energy_mesh(band)
-    ek = [Array{Float32}(undef, nx, ny, nz) for _ in 1:nbnd]
-    for n in 1:nbnd, i in 1:nx, j in 1:ny, k in 1:nz
+    ek = Array{Float32}(undef, nx, ny, nz)
+    for i in 1:nx, j in 1:ny, k in 1:nz
         kvec = get_kvec(i - 1, j - 1, k - 1, nx, ny, nz)
-        ek[n][i, j, k] = band(n, kvec)
+        ek[i, j, k] = band(kvec)
     end
     return ek
 end
 
 function get_energy_min_max(ek)
-    maxval = -Inf
-    minval = Inf
-    for n in 1:nbnd
-        maxval = max(maxval, maximum(ek[n]))
-        minval = min(minval, minimum(ek[n]))
-    end
-    return minval, maxval
+    return minimum(ek), maximum(ek)
 end
 
 function get_kvec(ix, iy, iz, nx, ny, nz)
@@ -111,14 +108,14 @@ mutable struct ManyBodySolver
     mix      ::Float64
     verbose  ::Bool
     mu       ::Float64
-    Gkw      ::Vector{Array{ComplexF32, 4}}
-    Grt      ::Vector{Array{ComplexF32, 4}}
-    Xkw      ::Vector{Array{ComplexF32, 4}}
-    Vrt      ::Vector{Array{ComplexF32, 4}}
-    Ekw      ::Vector{Array{ComplexF32, 4}}
+    Gkw      ::Array{ComplexF32, 4}
+    Grt      ::Array{ComplexF32, 4}
+    Xkw      ::Array{ComplexF32, 4}
+    Vrt      ::Array{ComplexF32, 4}
+    Ekw      ::Array{ComplexF32, 4}
     iw       ::Array{ComplexF32,4}
     iv       ::Array{ComplexF32,4}
-    ek       ::Vector{Array{Float32, 4}}
+    ek       ::Array{Float32, 4}
     dim      ::Int64
     nk       ::Int64
 end
@@ -128,10 +125,10 @@ end
 function make_ManyBodySolver(
         mesh      ::Mesh,
         beta      ::Float64,
-        ek        ::Vector{Array{Float32, 3}},
+        ek        ::Array{Float32, 3},
         U         ::Float64,
         mu         ::Float64,
-        sigma_init::Vector{Array{ComplexF32, 4}};
+        sigma_init::Array{ComplexF32, 4};
         sfc_tol   ::Float64=1e-4,
         maxiter   ::Int64  =100,
         U_maxiter ::Int64  =10,
@@ -141,28 +138,27 @@ function make_ManyBodySolver(
     
         n::Float64 = 0.0
     
-        Gkw  = make_MultiField(nbnd, mesh.fnw,   nk1, nk2, nk3)
-        Grt  = make_MultiField(nbnd, mesh.fntau, nk1, nk2, nk3)
-        Xkw  = make_MultiField(1, mesh.bnw,   nk1, nk2, nk3)
-        V     = make_MultiField(1, mesh.bntau, nk1, nk2, nk3)
+        #Gkw = Array{Array{ComplexF32,4},4}(undef, mesh.fnw, 
+        Gkw  = zeros(ComplexF32, mesh.fnw, nk1, nk2, nk3)
+        Grt  = zeros(ComplexF32, mesh.fntau, nk1, nk2, nk3)
+        Xkw  = zeros(ComplexF32, mesh.bnw, nk1, nk2, nk3)
+        V    = zeros(ComplexF32, mesh.bntau, nk1, nk2, nk3)
         Ekw = sigma_init
     
         iw, iv = get_iw_iv(mesh)
         iw = reshape(iw, mesh.fnw, 1, 1, 1)
         iv = reshape(iv, mesh.bnw, 1, 1, 1)
-        ek_new = [reshape(ek[n], (1, size(ek[n])...)) for n in 1:nbnd]
+        ek_new = reshape(ek, 1, nx, ny, nz)
         solver = ManyBodySolver(mesh, beta, U, 0.0, n, sfc_tol, maxiter, U_maxiter, mix, verbose, mu, Gkw, Grt, Xkw, V, Ekw, iw, iv, ek_new, dim, nk)
         solver.n = calc_electron_density(solver, mu)
     
         solver.mu = mu_calc(solver)
-        solver.Xkw[1] .= 0.0
-        for n in 1:nbnd
-            solver.Gkw[n] .= 1.0 ./ (solver.iw .- (solver.ek[n] .- solver.mu) .- solver.Ekw[n])
-            solver.Grt[n] .= kw_to_rtau(solver.Gkw[n], 'F', solver.mesh)
-            solver.Xkw[1] .+= rtau_to_kw(solver.Grt[n] .* reverse(solver.Grt[n], dims=1), 'B', solver.mesh)
-        end
-        solver.UX = solver.U * maximum(abs, solver.Xkw[1])
-        println("Initial Max Chi = $(maximum(abs, solver.Xkw[1]))")
+        solver.Xkw .= 0.0
+        solver.Gkw .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.Ekw)
+        solver.Grt .= kw_to_rtau(solver.Gkw, 'F', solver.mesh)
+        solver.Xkw .= rtau_to_kw(solver.Grt .* reverse(solver.Grt, dims=1), 'B', solver.mesh)
+        solver.UX = solver.U * maximum(abs, solver.Xkw)
+        println("Initial Max Chi = $(maximum(abs, solver.Xkw))")
 
         return solver
 end
@@ -199,10 +195,7 @@ function solve!(S::ManyBodySolver, comm)
         end
         
         # check whether solution is converged.
-        sfc_check = 0
-        for n in 1:nbnd
-            sfc_check += sum(abs.(S.Ekw[n].-sigma_old[n]))/sum(abs.(S.Ekw[n]))
-        end
+        sfc_check = sum(abs.(S.Ekw-sigma_old))/sum(abs.(S.Ekw))
 
         if S.verbose
             println(it, '\t', sfc_check)
@@ -213,11 +206,8 @@ function solve!(S::ManyBodySolver, comm)
         end
         sigma_old .= copy(S.Ekw)
     end
-    S.Xkw[1] .= 0.0
-    for n in 1:nbnd
-        S.Grt[n] .= kw_to_rtau(S.Gkw[n], 'F', S.mesh)
-        S.Xkw[1] .+= rtau_to_kw(S.Grt[n] .* reverse(S.Grt[n], dims=1), 'B', S.mesh)
-    end
+    S.Grt .= kw_to_rtau(S.Gkw, 'F', S.mesh)
+    S.Xkw .+= rtau_to_kw(S.Grt .* reverse(S.Grt, dims=1), 'B', S.mesh)
 end
     
 function FLEX_loop!(S::ManyBodySolver, comm)
@@ -225,10 +215,8 @@ function FLEX_loop!(S::ManyBodySolver, comm)
     gkio_old = copy(S.Gkw)
     
     V_calc(S)
-    for n in 1:nbnd
-        S.Grt[n] .= S.Vrt[1] .* S.Grt[n]
-        rtau_to_kw!(S.Ekw[n], S.Grt[n], 'F', S.mesh)
-    end
+    S.Grt .= S.Vrt .* S.Grt
+    rtau_to_kw!(S.Ekw, S.Grt, 'F', S.mesh)
     #@inbounds @simd for i in eachindex(S.V)
     #    S.grit[i] = S.V[i] * S.grit[i]
     #end
@@ -238,25 +226,17 @@ function FLEX_loop!(S::ManyBodySolver, comm)
     #total_size = S.nk * S.mesh.fnw
     #S.mu = Float32(global_sum / total_size)
     S.mu = mu_calc(S)
-    for n in 1:nbnd
-        S.Gkw[n] .= 1.0 ./ (S.iw .- (S.ek[n] .- S.mu) .- S.Ekw[n])
-    end
+    S.Gkw .= 1.0 ./ (S.iw .- (S.ek .- S.mu) .- S.Ekw)
     
-    @inbounds @simd for i in eachindex(S.Gkw)
-        S.Gkw[i] = S.mix*S.Gkw[i] + (1-S.mix)*gkio_old[i]
-    end
+    S.Gkw .= S.mix.*S.Gkw .+ (1-S.mix).*gkio_old
         
-    S.Xkw[1] .= 0.0
-    for n in 1:nbnd
-        kw_to_rtau!(S.Grt[n], S.Gkw[n], 'F', S.mesh)        
-        #rtau_to_kw!(S.ckio, grit .* reverse(grit, dims=1), 'B', S.mesh)        
-        S.Xkw[1] .+= rtau_to_kw(S.Grt[n] .* reverse(S.Grt[n], dims=1), 'B', S.mesh)
-    end
+    kw_to_rtau!(S.Grt, S.Gkw, 'F', S.mesh)        
+    S.Xkw .= rtau_to_kw(S.Grt .* reverse(S.Grt, dims=1), 'B', S.mesh)
 end
 
 function DMFT_Sigma(solver::ManyBodySolver)
     proj = ones(ComplexF32, nx, ny, nz)
-    g_loc = project_kernel(proj, solver.Gkw[1])
+    g_loc = project_kernel(proj, solver.Gkw)
     gt = wn_to_tau(solver.mesh, Fermionic(), g_loc)
     sigma_t = solver.U^2 * gt.^3
     sigma_w = tau_to_wn(solver.mesh, Fermionic(), sigma_t)
@@ -266,46 +246,37 @@ end
 function FLEX_local_Sigma(solver::ManyBodySolver)
     proj = ones(ComplexF32, nx, ny, nz)
     xw = zeros(ComplexF32, solver.mesh.bnw)
-    gt = zeros(ComplexF32, nbnd, solver.mesh.fnw)
-    for n in 1:nbnd
-        g_loc = project_kernel(proj, solver.Gkw[1])
-        gt[n, :] .= wn_to_tau(solver.mesh, Fermionic(), g_loc)
-        xt = gt[n, :] .* reverse(gt[n, :])
-        xw .+= tau_to_wn(solver.mesh, Bosonic(), xt)
-    end
+    gt = zeros(ComplexF32, solver.mesh.fnw)
+    g_loc = project_kernel(proj, solver.Gkw)
+    gt .= wn_to_tau(solver.mesh, Fermionic(), g_loc)
+    xt = gt .* reverse(gt)
+    xw .+= tau_to_wn(solver.mesh, Bosonic(), xt)
     vw = similar(xw)
     V_FLEX!(solver.U, xw, vw)
     vt = wn_to_tau(solver.mesh, Bosonic(), vw)
     sigmaw = zeros(ComplexF32, nbnd, solver.mesh.fnw)
-    for n in 1:nbnd
-        sigmat = vt .* gt[n, :]
-        sigmaw[n, :] .= tau_to_wn(solver.mesh, Fermionic(), sigmat)
-    end
+    sigmat = vt .* gt
+    sigmaw .= tau_to_wn(solver.mesh, Fermionic(), sigmat)
     return sigmaw
 end
 
 function FLEX_nonlocal_Sigma(solver::ManyBodySolver, local_sigma)
-    return solver.Ekw[1] .- reshape(local_sigma, :, 1, 1, 1)
+    return solver.Ekw .- reshape(local_sigma, :, 1, 1, 1)
 end
 
 function FLEX_sigma!(solver::ManyBodySolver)
     # G Creation
-    solver.Xkw[1] .= 0.0
-    for n in 1:nbnd
-        kw_to_rtau!(solver.Grt[n], solver.Gkw[n], 'F', solver.mesh)
-        solver.Xkw[1] .+= rtau_to_kw(solver.Grt[n] .* reverse(solver.Grt[n], dims=1), 'B', solver.mesh)
-    end
+    kw_to_rtau!(solver.Grt, solver.Gkw, 'F', solver.mesh)
+    solver.Xkw .+= rtau_to_kw(solver.Grt .* reverse(solver.Grt, dims=1), 'B', solver.mesh)
     #rtau_to_kw!(solver.Xkw[1], solver.Grt .* reverse(solver.Grt, dims=1), 'B', solver.mesh)
-    solver.UX = solver.U * maximum(abs, solver.Xkw[1])
+    solver.UX = solver.U * maximum(abs, solver.Xkw)
     V_calc(solver)
-    for n in 1:nbnd
-        rtau_to_kw!(solver.Ekw[n], solver.Vrt[1] .* solver.Gkw[n], 'F', solver.mesh)
-    end
+    rtau_to_kw!(solver.Ekw, solver.Vrt .* solver.Gkw, 'F', solver.mesh)
 end
 
 
 function combine_sigmas!(solver::ManyBodySolver, sigma_local)
-    solver.Ekw[1] .= solver.Ekw[1] .+ reshape(sigma_local, :, 1, 1, 1)
+    solver.Ekw .= solver.Ekw .+ reshape(sigma_local, :, 1, 1, 1)
 end
 
 
@@ -314,23 +285,23 @@ function DFMT_FLEX!(solver::ManyBodySolver)
     sigma_w = DMFT_Sigma(solver)
     combine_sigmas!(solver, sigma_w)
     solver.mu = mu_calc(solver)
-    solver.Gkw[1] .= 1.0 ./ (solver.iw .- (solver.ek[1] .- solver.mu) .- solver.Ekw[1])
+    solver.Gkw .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.Ekw)
 
     FLEX_sigma!(solver)
 
     # Loop 2
     sigma_w .= FLEX_local_Sigma(solver)
-    solver.Ekw[1] .= FLEX_nonlocal_Sigma(solver, sigma_w)
+    solver.Ekw .= FLEX_nonlocal_Sigma(solver, sigma_w)
     combine_sigmas!(solver, sigma_w)
     solver.mu = mu_calc(solver)
-    solver.Gkw[1] .= 1.0 ./ (solver.iw .- (solver.ek[1] .- solver.mu) .- solver.Ekw[1])
+    solver.Gkw .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.Ekw)
 end
 
 function DMFT_loop!(solver::ManyBodySolver)
     sigma_w = DMFT_Sigma(solver)
     combine_sigmas!(solver, sigma_w)
     solver.mu = mu_calc(solver)
-    solver.Gkw[1] .= 1.0 ./ (solver.iw .- (solver.ek[1] .- solver.mu) .- solver.Ekw[1])
+    solver.Gkw .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.Ekw)
 end
 
 function loop!(solver::ManyBodySolver)
@@ -386,12 +357,12 @@ function U_renormalization(solver::ManyBodySolver, comm)
         U_diff = abs(solver.U - prev_U)
         prev_U = solver.U
     end
-    solver.UX = solver.U * maximum(abs, solver.Xkw[1])
+    solver.UX = solver.U * maximum(abs, solver.Xkw)
     println("Leaving U renormalization...")
 end
 
 function V_FLEX!(U, Xkw, out)
-    out[1] .= (1.5*U^2) .* Xkw[1] ./ (1 .- U.*Xkw[1]) .+ (0.5*U^2) .* Xkw[1] ./ (1 .+ U.*Xkw[1]) - U^2 .* Xkw[1]
+    out .= (1.5*U^2) .* Xkw ./ (1 .- U.*Xkw) .+ (0.5*U^2) .* Xkw ./ (1 .+ U.*Xkw) - U^2 .* Xkw
     #@inbounds @simd for i in eachindex(Xkw)
     #    x = Xkw[i]
     #    term1 = (1.5*U^2) * x / (1 - U*x)
@@ -402,7 +373,7 @@ end
 
 function V_calc(solver::ManyBodySolver)
     #println("U, X, = $(solver.U), $(maximum(abs, solver.ckio))")
-    maxval = maximum(abs.(solver.Xkw[1]))*solver.U
+    maxval = maximum(abs.(solver.Xkw))*solver.U
     if maxval >= 1
         error("U*max(chi0) = $(maxval) >= 1! Paramagnetic phase is left and calculations will turn unstable!")
     end
@@ -412,25 +383,21 @@ function V_calc(solver::ManyBodySolver)
     # In the single-band case, the Hartree term can be absorbed into the chemical potential.
 
     #solver.V .= kw_to_rtau(solver.ckio, 'B', solver.mesh)
-    kw_to_rtau!(solver.Vrt[1], solver.Xkw[1], 'B', solver.mesh)
+    kw_to_rtau!(solver.Vrt, solver.Xkw, 'B', solver.mesh)
 end
 
 #%%%%%%%%%%% Setting chemical potential mu
 function calc_electron_density(S::ManyBodySolver,mu::Float64)::Float64
     """ Calculate electron density from Green function """
-    enum = 0
-    for n in 1:nbnd
-        S.Gkw[n] .= 1.0 ./ (S.iw .- (S.ek[n] .- mu) .- S.Ekw[n])
-        gio = dropdims(sum(S.Gkw[n],dims=(2,3,4)),dims=(2,3,4))/S.mesh.nk
+    S.Gkw .= 1.0 ./ (S.iw .- (S.ek .- mu) .- S.Ekw)
+    gio = dropdims(sum(S.Gkw,dims=(2,3,4)),dims=(2,3,4))/S.mesh.nk
 
-        g_l = fit(S.mesh.IR_basis_set.smpl_wn_f,gio, dim=1)
-        g_tau0 = dot(S.mesh.IR_basis_set.basis_f.u(0), g_l)
+    g_l = fit(S.mesh.IR_basis_set.smpl_wn_f,gio, dim=1)
+    g_tau0 = dot(S.mesh.IR_basis_set.basis_f.u(0), g_l)
 
-        n_tmp  = 1.0 + real(g_tau0)
-        n_tmp  = 2.0 * n_tmp #for spin
-        enum += n_tmp
-    end
-    return enum
+    n_tmp  = 1.0 + real(g_tau0)
+    n_tmp  = 2.0 * n_tmp #for spin
+    return n_tmp
 end
 
 function mu_calc(solver::ManyBodySolver)::Float64
@@ -463,17 +430,30 @@ function main()
     #return
 
     comm = 1
-
+    println("Constructing Bands")
     band = Bands()
+    println("Filling Energy Mesh")
     ek = fill_energy_mesh(band)
     minval, maxval = get_energy_min_max(ek)
     D = maxval - minval
     mesh = IR_Mesh(D)
 
-    sigma_init = make_MultiField(nbnd, mesh.fnw, nk1, nk2, nk3)
-    for n in 1:nbnd
-        sigma_init[n] .= 0.0
+    iw, iv = get_iw_iv(mesh)
+
+    Gkw = 1.0 ./ (reshape(iw, mesh.fnw, 1, 1, 1) .- (reshape(ek, 1, nx, ny, nz) .- mu) .+ 0.0)
+    Gwsave = Vector{Float64}(undef, mesh.fnw)
+    for i in mesh.fnw
+        Gwsave[i] = sum(imag(Gkw[i, :, :, :])) / nk
     end
+    open("output_vector0.txt", "w") do io
+        writedlm(io, Gwsave)
+    end
+    ind = Int(mesh.fnw / 2)
+    G_w0 = sum(Gkw[ind, :, :, :]) / nk
+    println("DOS = $(G_w0.im / pi)")
+
+
+    sigma_init = zeros(ComplexF32, mesh.fnw, nk1, nk2, nk3)
 
     verbose = cfg.verbosity == "high" 
     solver = make_ManyBodySolver(mesh, beta, ek, U, mu, sigma_init, sfc_tol=sfc_tol, maxiter=maxiter, U_maxiter=U_maxiter, mix=mix, verbose=verbose)
@@ -484,20 +464,20 @@ function main()
     end
     println("New mu=$(solver.mu)")
 
-    println("Sample G(k,w) = $(solver.Gkw[1][1, 1, 1, 1])")
+    println("Sample G(k,w) = $(solver.Gkw[1, 1, 1, 1])")
 
     #solver.Grt = Array{ComplexF32,5}(undef, 0, 0, 0, 0, 0)
     #solver.Vrt = Array{ComplexF32,4}(undef, 0, 0, 0, 0)
-    V = [similar(x) for x in solver.Xkw]
+    V = similar(solver.Xkw)
 
     V_FLEX!(solver.U, solver.Xkw, V)
 
     #println("Max Self-Energy: $(maximum(abs.(solver.Ekw)))")
     #println("Min Self-Energy: $(minimum(abs.(solver.Ekw)))")
-    println("Max Vertex: $(maximum(abs.(V[1])))")
-    println("Min Vertex: $(minimum(abs.(V[1])))")
-    println("Max Chi: $(maximum(abs.(solver.Xkw[1])))")
-    println("Min Chi: $(minimum(abs.(solver.Xkw[1])))")
+    println("Max Vertex: $(maximum(abs.(V)))")
+    println("Min Vertex: $(minimum(abs.(V)))")
+    println("Max Chi: $(maximum(abs.(solver.Xkw)))")
+    println("Min Chi: $(minimum(abs.(solver.Xkw)))")
 
     BZ_in = BZ
     kmesh = cfg.k_mesh
@@ -507,31 +487,31 @@ function main()
     end
 
     # Centers points correctly, so they go from (-pi,pi) to (pi,pi) instead of the current (0,0) to (2pi,2pi). Important for saving
-    for n in 1:nbnd, i in 1:mesh.fnw
-        solver.Ekw[n][i, :, :, :] .= fftshift(solver.Ekw[n][i, :, :, :])
+    for i in 1:mesh.fnw
+        solver.Ekw[i, :, :, :] .= fftshift(solver.Ekw[i, :, :, :])
     end
     for i in 1:mesh.bnw
-        V[1][i, :, :, :] .= fftshift(V[1][i, :, :, :])
-        solver.Xkw[1][i, :, :, :] .= fftshift(solver.Xkw[1][i, :, :, :])
+        V[i, :, :, :] .= fftshift(V[i, :, :, :])
+        solver.Xkw[i, :, :, :] .= fftshift(solver.Xkw[i, :, :, :])
     end
 
-    G_w0 = 0
     Gwsave = Vector{Float64}(undef, mesh.fnw)
-    for n in 1:nbnd
-        ind = Int(mesh.fnw / 2)
-        G_w0 += sum(solver.Gkw[n][ind, :, :, :]) / nk
-    end
     for i in mesh.fnw
-        Gwsave[i] = sum(imag(solver.Gkw[1][i, :, :, :])) / nk
+        Gwsave[i] = sum(imag(solver.Gkw[i, :, :, :])) / nk
     end
     open("output_vector1.txt", "w") do io
         writedlm(io, Gwsave)
     end
+    ind = Int(mesh.fnw / 2)
+    G_w0 = sum(solver.Gkw[ind, :, :, :]) / nk
     println("DOS = $(G_w0.im / pi)")
 
-    save_field!(outdir * prefix * "_self_energy." * filetype, solver.Ekw, BZ_in, kmesh, imag.(solver.iw))
-    save_field!(outdir * prefix * "_vertex." * filetype, V, BZ_in, kmesh, imag.(solver.iv))
-    save_field!(outdir * prefix * "_chi." * filetype, solver.Xkw, BZ_in, kmesh, imag.(solver.iv))
+    iw, iv = reshape(solver.iw, mesh.fnw), reshape(solver.iv, mesh.bnw)
+    save_data!(outdir * prefix * "_self_energy." * filetype, solver.Ekw, kmesh, BZ_in, imag.(iw))
+    save_data!(outdir * prefix * "_vertex." * filetype, V, kmesh, BZ_in, imag.(iv))
+    save_data!(outdir * prefix * "_chi." * filetype, solver.Xkw, kmesh, BZ_in, imag.(iv))
+    #save_field!(outdir * prefix * "_vertex." * filetype, V, kmesh, BZ_in, imag.(solver.iv))
+    #save_field!(outdir * prefix * "_chi." * filetype, solver.Xkw, BZ_in, kmesh, imag.(solver.iv))
 
 end
 

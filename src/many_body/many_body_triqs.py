@@ -1,5 +1,5 @@
 from triqs.lattice import BravaisLattice, BrillouinZone
-from triqs.gf import Gf, MeshProduct, MeshBrZone, MeshImFreq, MeshReFreq
+#from triqs.gf import Gf, MeshProduct, MeshBrZone, MeshImFreq, MeshReFreq
 import numpy as np
 from math import cos, pi
 
@@ -17,7 +17,9 @@ U = 4
 D = 4*t # Bandwidth
 
 BL = BravaisLattice([(1,0,0), (0,1,0)]) # Two unit vectors in R3
+print(BL)
 BZ = BrillouinZone(BL)
+print(BZ)
 
 # n_k denotes the number of k-points for each dimension
 n_k = 128
@@ -39,7 +41,9 @@ np_eps = np.vectorize(eps, signature='(d)->()')
 eps_arr = np_eps(k_arr)
 Gw.data[:] = 1.0 / (iw_arr[None,::] + mu - eps_arr[::,None])
 
-Gw0 = Gw.copy()
+#Gw0 = Gw.copy()
+Gw0 = Gf(mesh=iw_mesh, target_shape=[])
+Gw0 << SemiCircular(D)
 Ew = Gw.copy()
 tau_mesh = MeshDLRImTime(beta=beta, statistic='Fermion', w_max = 1.2*D, eps=1e-14)
 Gt = Gf(mesh=tau_mesh, target_shape=[1,1])
@@ -62,21 +66,17 @@ def loop(Gw, Gt, Ew, Et, U):
         err = np.linalg.norm((G1 - G2).data)
         iters += 1
 
-loop(Gw, Gt, Ew, Et, U)
-
+#loop(Gw, Gt, Ew, Et, U)
 #-----------------------------------------------------------------------------------------------
-#dlr_iw_mesh = MeshDLRImFreq(beta=50, statistic='Fermion', w_max=1.2, eps=1e-14)
-#Giw_dlr = Gf(mesh= dlr_iw_mesh, target_shape=[1,1])
-#Giw_dlr << SemiCircular(1.0)
-#
-#iw_mesh = MeshImFreq(beta=50, S='Fermion', n_iw=100)
-#Giw = Gf(mesh=iw_mesh, target_shape=[1,1])
-#Giw << SemiCircular(1.0)
-#
-#w_mesh = MeshReFreq(window=(-4,4), n_w=500)
-#Gw = Gf(mesh=w_mesh, target_shape=[1,1])
-#Giw_from_dlr = make_gf_imfreq(Giw_dlr, n_iw=100)
-#Gw.set_from_pade(Giw_from_dlr)
-#
-#oplot(-Gw.imag/pi, name=r"$\rho$")
-#plt.show()
+beta = 50
+dlr_iw_mesh = MeshDLRImFreq(beta=beta, statistic='Fermion', w_max=2.4, eps=1e-14)
+Giw_dlr = Gf(mesh= dlr_iw_mesh, target_shape=[1,1])
+Giw_dlr << SemiCircular(2.0)
+
+w_mesh = MeshReFreq(window=(-4,4), n_w=500)
+Gw = Gf(mesh=w_mesh, target_shape=[1,1])
+Giw_from_dlr = make_gf_imfreq(Giw_dlr, n_iw=100)
+Gw.set_from_pade(Giw_from_dlr)
+
+oplot(-Gw.imag/pi, name=r"$\rho$")
+plt.show()

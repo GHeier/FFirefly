@@ -30,6 +30,7 @@ extern float c_fermi_energy;
 extern float c_Temperature;
 extern float c_onsite_U;
 extern float c_cutoff_energy;
+extern float c_smearing;
 
 //[MESH]
 extern int c_k_mesh[3];

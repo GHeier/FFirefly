@@ -30,6 +30,7 @@ extern float fermi_energy;
 extern float Temperature;
 extern float onsite_U;
 extern float cutoff_energy;
+extern float smearing;
 
 //[MESH]
 extern vector<int> k_mesh;
@@ -76,6 +77,9 @@ extern bool self_consistent;
 
 
 extern "C" void load_cpp_config();
+
+// Ensure config is loaded (call this before using any C++ objects from Python/Julia)
+void ensure_cpp_config_loaded();
 
 template <typename T>
 void set_global(T &a, T b) {

@@ -1,6 +1,6 @@
 #include "../config/load/cpp_config.hpp"
 #include "../hamiltonian/band_structure.hpp"
-#include "../objects/CMField/cmfield.hpp"
+#include "../objects/CMField/base_data.hpp"
 #include <fstream>
 
 void get_band_min_max(float &emin, float &emax) {
@@ -34,37 +34,39 @@ extern "C" void surface_sum() {
     float emax = 0;
     get_band_min_max(emin, emax);
     float dx = (emax - emin) / w_pts;
-    vector<float> dos_list;
     vector<float> w_points;
     printf("Calculating DOS from %.5f to %.5f with %d points\n", emin, emax,
            w_pts);
     printf("Spacing is %.5f\n", dx);
     string filename = outdir + prefix + "_DOS." + filetype;
-    if (filetype == "dat" || filetype == "txt") {
-        ofstream file(filename);
-        file << "# w f" << endl;
+    //if (filetype == "dat" || filetype == "txt") {
+    //    ofstream file(filename);
+    //    file << "# w f" << endl;
+    //    for (float x = emin; x <= emax; x += dx) {
+    //        vector<Vec> FS = get_FS(x);
+    //        float DOS = get_DOS(FS);
+    //        dos_list.push_back(DOS);
+    //        file << x << " " << DOS << endl;
+    //        int index = (x - emin) / dx;
+    //        cout << "\rDOS Calculations: " << index + 1 << "/" << w_pts;
+    //    }
+    //}
+    if (filetype == "hdf5" || filetype == "h5") {
+        vector<cfloat> dos_vals;
         for (float x = emin; x <= emax; x += dx) {
-            vector<Vec> FS = get_FS(x);
-            float DOS = get_DOS(FS);
-            dos_list.push_back(DOS);
-            file << x << " " << DOS << endl;
             int index = (x - emin) / dx;
             cout << "\rDOS Calculations: " << index + 1 << "/" << w_pts;
-        }
-    }
-    else if (filetype == "hdf5" || filetype == "h5") {
-        vector<vector<vector<float>>> dos_vals(1);
-        for (float x = emin; x <= emax; x += dx) {
             vector<Vec> FS = get_FS(x);
             float DOS = get_DOS(FS);
-            int index = (x - emin) / dx;
-            cout << "\rDOS Calculations: " << index + 1 << "/" << w_pts;
-            vector<float> dos_vec = {DOS};
-            dos_vals[0].push_back(dos_vec);
+            //dos_vals.push_back(DOS);
+            dos_vals.push_back(cfloat(DOS, 0));
             w_points.push_back(x);
         }
         vector<vector<float>> earr = {{emax - emin}};
-        save_to_field(filename, dos_vals, earr, {w_pts}, w_points, false, false);
+
+        BaseData::DataVariant data = dos_vals;
+        save_data(filename, data, false, {}, {{}}, w_points);
+        //save_to_field(filename, dos_vals, earr, {w_pts}, w_points, false, false);
     }
     printf("\nSaved DOS to %s\n", filename.c_str());
 }

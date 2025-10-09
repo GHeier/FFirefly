@@ -118,7 +118,7 @@ Eigenvector power_iteration(Matrix &A, vector<float> eigs) {
     return x;
 }
 
-void lapack_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
+vector<Eigenvector> lapack_diagonalization(Matrix &A) {
     int N = A.size;
 
     // Allocate memory for eigenvalues and eigenvectors
@@ -141,12 +141,12 @@ void lapack_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
         delete[] val_r;
         delete[] val_i;
         delete[] vecs;
-        return;
+        return vector<Eigenvector>();
     }
 
     // Convert to Eigenvector format
-    for (int i = 0; i < num_eigenvalues_to_save; i++) {
-        eigenvectors[i] = Eigenvector(N);
+    vector<Eigenvector> eigenvectors(N, Eigenvector(N));
+    for (int i = 0; i < N; i++) {
         eigenvectors[i].eigenvalue = val_r[i];
         for (int j = 0; j < N; j++) {
             eigenvectors[i][j] = vecs[i * N + j];
@@ -157,9 +157,10 @@ void lapack_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
     delete[] val_r;
     delete[] val_i;
     delete[] vecs;
+    return eigenvectors;
 }
 
-void lapack_hermitian_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
+vector<Eigenvector> lapack_hermitian_diagonalization(Matrix &A) {
     const int N = A.size; // Dimension of the matrix
     const int lda = N;
     const int il =
@@ -194,7 +195,7 @@ void lapack_hermitian_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
         std::cerr << "Error: LAPACKE_ssyevr returned " << info << "\n";
         delete[] w;
         delete[] z;
-        return;
+        return vector<Eigenvector>();
     }
 
     printf("Diagonalization Successful\n");
@@ -209,8 +210,8 @@ void lapack_hermitian_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
 
     count = 0;
     // Convert to Eigenvector format
-    for (int i = 0; i < num_eigenvalues_to_save; ++i) {
-        eigenvectors[i] = Eigenvector(N);
+    vector<Eigenvector> eigenvectors(N, Eigenvector(N));
+    for (int i = 0; i < N; ++i) {
         eigenvectors[i].eigenvalue = w[i];
         for (int j = 0; j < N; ++j) {
             eigenvectors[i][j] = z[j * N + i];
@@ -222,4 +223,5 @@ void lapack_hermitian_diagonalization(Matrix &A, Eigenvector *eigenvectors) {
 
     delete[] w;
     delete[] z;
+    return eigenvectors;
 }

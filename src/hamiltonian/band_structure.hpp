@@ -14,6 +14,10 @@ float epsilon_SC(int n, Vec k);
 Vec fermi_velocity_SC(int n, Vec k);
 float epsilon_SC_layered(int n, Vec k);
 Vec fermi_velocity_SC_layered(int n, Vec k);
+float epsilon_BCC(int n, Vec k);
+Vec fermi_velocity_BCC(int n, Vec k);
+float epsilon_FCC(int n, Vec k);
+Vec fermi_velocity_FCC(int n, Vec k);
 
 extern "C" {
     double epsilon_c(int n, double k[3]);

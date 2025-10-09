@@ -2,13 +2,13 @@
 
 #include "../../config/load/c_config.h"
 #include "../../config/load/cpp_config.hpp"
-#include "../../objects/CMField/cmfield.hpp"
 #include "../../objects/CMField/fields.hpp"
 #include "../../objects/CMField/vertex.hpp"
 #include "../../objects/CMField/self_energy.hpp"
 #include "../../objects/CMField/hamiltonian.hpp"
 #include "../../objects/CMField/base_data.hpp"
-//#include "../../objects/CMField/bands.hpp"
+#include "../../objects/CMData/cmdata.hpp"
+#include "../../objects/CMField/bands.hpp"
 #include "../../objects/surfaces.hpp"
 #include "../../hamiltonian/band_structure.hpp"
 // Begin include
@@ -43,6 +43,7 @@ float call_func_adapter(Vec* k) {
     return user_callback(k);
 }
 extern "C" Surface* Surface_export0(callback_t func, float s_val) {
+    ensure_cpp_config_loaded();
     user_callback = func;
     return new Surface([](Vec k) {
         return call_func_adapter(&k);  // Pass pointer to callback
@@ -187,27 +188,40 @@ void data_save_export0(string filename, const float *points, const float *values
 //    save_to_hdf5(str_file, domain, first, mesh, dimension, nbnd, w_points, is_complex, is_vector, with_w, with_n, values);
 //}
 
-//Bands *Bands_export0() { return new Bands(); }
-//float Bands_operator_export0(Bands *obj, int n, const float *point, int len) {
-//    Vec v(point, len);
-//    return obj->operator()(n, v);
-//}
-//
-//void Bands_operator_export0_numpy(Bands *obj, int n, const float *points, int num_points, int len, float *output) {
-//    for (int i = 0; i < num_points; ++i) {
-//        const float* point_row = points + i * len;
-//        Vec v(point_row, len);
-//        output[i] = obj->operator()(n, v);
-//    }
-//}
+Bands *Bands_export0() {
+    ensure_cpp_config_loaded();
+    return new Bands();
+}
+float Bands_operator_export0(Bands *obj, int n, const float *point, int len) {
+    Vec v(point, len);
+    return obj->operator()(n, v);
+}
 
-//Vec* vk_export0(int n, Vec* k, Bands* band) {
-//    Vec temp = vk(n, *k, *band);
-//    Vec *result = new Vec(temp);
-//    return result;
-//}
+float Bands_operator_export1(Bands *obj, const float *point, int len) {
+    Vec v(point, len);
+    return obj->operator()(v);
+}
 
-Vertex *Vertex_export0() { return new Vertex(); }
+void Bands_operator_export0_numpy(Bands *obj, int n, const float *points, int num_points, int len, float *output) {
+    for (int i = 0; i < num_points; ++i) {
+        const float* point_row = points + i * len;
+        Vec v(point_row, len);
+        output[i] = obj->operator()(n, v);
+    }
+}
+
+void Bands_operator_export1_numpy(Bands *obj, const float *points, int num_points, int len, float *output) {
+    for (int i = 0; i < num_points; ++i) {
+        const float* point_row = points + i * len;
+        Vec v(point_row, len);
+        output[i] = obj->operator()(v);
+    }
+}
+
+Vertex *Vertex_export0() {
+    ensure_cpp_config_loaded();
+    return new Vertex();
+}
 
 void Vertex_operator_export0(Vertex *obj, const float *point, int len, float w,
                              float *real_result, float *imag_result) {
@@ -217,7 +231,10 @@ void Vertex_operator_export0(Vertex *obj, const float *point, int len, float w,
     *imag_result = imag(r);
 }
 
-Self_Energy *Self_Energy_export0() { return new Self_Energy(); }
+Self_Energy *Self_Energy_export0() {
+    ensure_cpp_config_loaded();
+    return new Self_Energy();
+}
 
 void Self_Energy_operator_export0(Self_Energy *obj, const float *point, int len, float w,
                              float *real_result, float *imag_result) {
@@ -227,7 +244,10 @@ void Self_Energy_operator_export0(Self_Energy *obj, const float *point, int len,
     *imag_result = imag(r);
 }
 
-Hamiltonian *Hamiltonian_export0() { return new Hamiltonian(); }
+Hamiltonian *Hamiltonian_export0() {
+    ensure_cpp_config_loaded();
+    return new Hamiltonian();
+}
 
 void Hamiltonian_operator_export0(Hamiltonian *obj, const float *point, int len, float w,
                                    float *real_result, float *imag_result, int *matrix_size) {
@@ -252,28 +272,6 @@ void Hamiltonian_operator_export0(Hamiltonian *obj, const float *point, int len,
     }
 }
 
-CMData *CMData_export0() { return new CMData();}
-CMData *CMData_export1(const char *filename) { return new CMData(filename);}
-extern "C" float CMData_dimension_export0(CMData* a) {
-    return a->dimension;
-}
-extern "C" float CMData_is_complex_export0(CMData* a) {
-    return a->is_complex;
-}
-extern "C" float CMData_is_vector_export0(CMData* a) {
-    return a->is_vector;
-}
-extern "C" float CMData_with_w_export0(CMData* a) {
-    return a->with_w;
-}
-extern "C" float CMData_with_n_export0(CMData* a) {
-    return a->with_n;
-}
-
-//extern "C" float CMField_nbnd_export0(CMField* a) {
-//    return a->nbnd;
-//}
-
 extern "C" int Field_R_nbnd_export0(Field_R* a) {
     // nbnd is always 1 now (no multi-band support)
     int temp = 1;
@@ -286,16 +284,22 @@ extern "C" int Field_C_nbnd_export0(Field_C* a) {
     return 1;
 }
 
-Field_C *Field_C_export0() { return new Field_C(); }
-//Field_C *Field_C_export1(CMField cmf) { return new Field_C(cmf); }
-Field_C *Field_C_export2(const char *filename) { 
-    return new Field_C(filename); 
+Field_C *Field_C_export0() {
+    ensure_cpp_config_loaded();
+    return new Field_C();
+}
+Field_C *Field_C_export2(const char *filename) {
+    ensure_cpp_config_loaded();
+    return new Field_C(filename);
 }
 
-Field_R *Field_R_export0() { return new Field_R(); }
-//Field_R *Field_R_export1(CMField cmf) { return new Field_R(cmf); }
-Field_R *Field_R_export2(const char *filename) { 
-    return new Field_R(filename); 
+Field_R *Field_R_export0() {
+    ensure_cpp_config_loaded();
+    return new Field_R();
+}
+Field_R *Field_R_export2(const char *filename) {
+    ensure_cpp_config_loaded();
+    return new Field_R(filename);
 }
 
 void Field_C_operator_export0(Field_C *obj, float w, float *real_result,
@@ -325,6 +329,21 @@ void Field_C_operator_export2(Field_C *obj, const float *point, int len,
 //    *imag_result = imag(r);
 //}
 
+void Field_C_operator_export_list(Field_C *obj, const float *points, int num_points, int len,
+                                  float w, float *real_output, float *imag_output) {
+    vector<Vec> vec_points;
+    vec_points.reserve(num_points);
+    for (int i = 0; i < num_points; ++i) {
+        const float* point_row = points + i * len;
+        vec_points.emplace_back(point_row, len);
+    }
+    vector<complex<float>> results = obj->operator()(vec_points, w);
+    for (int i = 0; i < num_points; ++i) {
+        real_output[i] = real(results[i]);
+        imag_output[i] = imag(results[i]);
+    }
+}
+
 float Field_R_operator_export0(Field_R *obj, float w) {
     return obj->operator()(w);
 }
@@ -342,8 +361,26 @@ float Field_R_operator_export2(Field_R *obj, const float *point, int len,
 //    return obj->operator()(n, v, w);
 //}
 
-Field_RM *Field_RM_export0() { return new Field_RM(); }
+void Field_R_operator_export_list(Field_R *obj, const float *points, int num_points, int len,
+                                   float w, float *output) {
+    vector<Vec> vec_points;
+    vec_points.reserve(num_points);
+    for (int i = 0; i < num_points; ++i) {
+        const float* point_row = points + i * len;
+        vec_points.emplace_back(point_row, len);
+    }
+    vector<float> results = obj->operator()(vec_points, w);
+    for (int i = 0; i < num_points; ++i) {
+        output[i] = results[i];
+    }
+}
+
+Field_RM *Field_RM_export0() {
+    ensure_cpp_config_loaded();
+    return new Field_RM();
+}
 Field_RM *Field_RM_export2(const char *filename) {
+    ensure_cpp_config_loaded();
     return new Field_RM(filename);
 }
 
@@ -369,8 +406,41 @@ void Field_RM_operator_export0(Field_RM *obj, const float *point, int len,
     }
 }
 
-Field_CM *Field_CM_export0() { return new Field_CM(); }
+void Field_RM_operator_export_list(Field_RM *obj, const float *points, int num_points, int len,
+                                   float w, float *output, int *matrix_size) {
+    vector<Vec> vec_points;
+    vec_points.reserve(num_points);
+    for (int i = 0; i < num_points; ++i) {
+        const float* point_row = points + i * len;
+        vec_points.emplace_back(point_row, len);
+    }
+    vector<vector<vector<float>>> results = obj->operator()(vec_points, w);
+
+    if (results.empty() || results[0].empty()) {
+        *matrix_size = 0;
+        return;
+    }
+
+    int n = results[0].size();
+    *matrix_size = n;
+
+    // Flatten all matrices to output array
+    for (int p = 0; p < num_points; ++p) {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                int idx = p * n * n + i * n + j;
+                output[idx] = results[p][i][j];
+            }
+        }
+    }
+}
+
+Field_CM *Field_CM_export0() {
+    ensure_cpp_config_loaded();
+    return new Field_CM();
+}
 Field_CM *Field_CM_export2(const char *filename) {
+    ensure_cpp_config_loaded();
     return new Field_CM(filename);
 }
 
@@ -397,19 +467,35 @@ void Field_CM_operator_export0(Field_CM *obj, const float *point, int len,
     }
 }
 
-// Create a new CMF instance and return a pointer
-//CMField *create_CMField() { return new CMField(); }
-//
-//// Load CMField from a file
-//CMField *load_CMField(const char *filename) {
-//    CMField *cmf = new CMField();
-//    *cmf = *load_CMField(filename);
-//    return cmf;
-//}
-//
-//void cmf_save(CMField *cmf, const char *filename) {
-//    save_CMField(filename, *cmf);
-//}
+void Field_CM_operator_export_list(Field_CM *obj, const float *points, int num_points, int len,
+                                   float w, float *real_output, float *imag_output, int *matrix_size) {
+    vector<Vec> vec_points;
+    vec_points.reserve(num_points);
+    for (int i = 0; i < num_points; ++i) {
+        const float* point_row = points + i * len;
+        vec_points.emplace_back(point_row, len);
+    }
+    vector<vector<vector<complex<float>>>> results = obj->operator()(vec_points, w);
+
+    if (results.empty() || results[0].empty()) {
+        *matrix_size = 0;
+        return;
+    }
+
+    int n = results[0].size();
+    *matrix_size = n;
+
+    // Flatten all matrices to output arrays
+    for (int p = 0; p < num_points; ++p) {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                int idx = p * n * n + i * n + j;
+                real_output[idx] = real(results[p][i][j]);
+                imag_output[idx] = imag(results[p][i][j]);
+            }
+        }
+    }
+}
 
 // Destroy CMField instance
 void destroy_Field_C(Field_C *a) { delete a; }
@@ -420,7 +506,7 @@ void destroy_Field_RM(Field_RM *a) { delete a; }
 
 void destroy_Field_CM(Field_CM *a) { delete a; }
 
-//void destroy_Bands(Bands *a) { delete a; }
+void destroy_Bands(Bands *a) { delete a; }
 
 void destroy_Vertex(Vertex *a) { delete a; }
 
@@ -432,41 +518,6 @@ void destroy_Surface(Surface *a) { delete a; }
 
 void destroy_Vec(Vec *a) { delete a; }
 
-//void CMF_points_export0(CMField *cmf, vector<Vec> &points) {
-//    points = cmf->data.points;
-//}
-//void CMF_w_points_export0(CMField *cmf, vector<float> &w_points) {
-//    w_points = cmf->data.w_points;
-//}
-//void CMF_values_export0(CMField *cmf, vector<complex<Vec>> &values) {
-//    values = cmf->data.values;
-//}
-//void CMF_domain_export0(CMField *cmf, vector<Vec> &domain) { domain = cmf->domain; }
-//void CMF_inv_domain_export0(CMField *cmf, vector<Vec> &inv_domain) {
-//    inv_domain = cmf->inv_domain;
-//}
-//void CMF_first_export0(CMField *cmf, Vec &first) { first = cmf->first; }
-//void CMF_num_points_export0(CMField *cmf, int &nx, int &ny, int &nz, int &nw) {
-//    nx = cmf->nx;
-//    ny = cmf->ny;
-//    nz = cmf->nz;
-//    nw = cmf->nw;
-//}
-//void CMF_dimension_export0(CMField *cmf, int &dimension) {
-//    dimension = cmf->data.dimension;
-//}
-//void CMF_w_max_min_export0(CMField *cmf, float &wmax, float &wmin) {
-//    wmax = cmf->wmax;
-//    wmin = cmf->wmin;
-//}
-//void CMF_is_complex_export0(CMField *cmf, bool &is_complex) {
-//    is_complex = cmf->data.is_complex;
-//}
-//void CMF_is_vector_export0(CMField *cmf, bool &is_vector) {
-//    is_vector = cmf->data.is_vector;
-//}
-//void CMF_with_w_export0(CMField *cmf, bool &with_w) { with_w = cmf->data.with_w; }
-//}
 
 // Save data exports - handles BaseData::DataVariant conversion
 // For scalar fields (n_indices = 0)

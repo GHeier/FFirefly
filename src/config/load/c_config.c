@@ -46,6 +46,7 @@ float c_fermi_energy = 0.0;
 float c_Temperature = 0.0;
 float c_onsite_U = 0.0;
 float c_cutoff_energy = 0.05;
+float c_smearing = 0.02;
 
 //[MESH]
 int c_k_mesh[3] = {10, 10, 10};
@@ -337,6 +338,9 @@ void read_c_config(const char *path) {
             }
             else if (strstr(key, "cutoff_energy") != NULL) {
                 c_cutoff_energy = atof(value);
+            }
+            else if (strstr(key, "smearing") != NULL) {
+                c_smearing = atof(value);
             }
 
 //[MESH]
@@ -645,7 +649,7 @@ bool print_test_results(bool all_tests[], int num_tests,
             failed_tests[i] = (i + 1);
     }
     if (tests_passed == num_tests) {
-        printcolor(GREEN, "All %s passed!\n", test_name);
+        printcolor(GREEN, "All %d %s passed!\n", num_tests, test_name);
         return true;
     } else {
         printcolor(RED, " - %d/%d %s passed\n", tests_passed, num_tests,

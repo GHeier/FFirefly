@@ -4,10 +4,11 @@ import numpy as np
 from pathlib import Path
 import os
 
+# Get the project root directory (FFirefly/)
 current_file_path = os.path.abspath(__file__)
-current_file_path = current_file_path[:-47] + "build/lib/libfly.so"
+lib_path = current_file_path.split("FFirefly")[0] + "FFirefly/build/lib/libfly.so"
 
-lib = ctypes.CDLL(current_file_path)
+lib = ctypes.CDLL(lib_path)
 
 
 class Vec(ctypes.Structure):
@@ -216,10 +217,31 @@ class Field_R:
 
         # Overload for (k: list[float], w=0.0)
         if len(args) >= 1 and isinstance(args[0], (list, tuple, np.ndarray)):
-            k = (c_float * len(args[0]))(*[float(v) for v in args[0]])
-            len_k = c_int(len(args[0]))
-            w = c_float(args[1]) if len(args) == 2 else c_float(0.0)
-            return lib.Field_R_operator_export2(self.ptr, k, len_k, w)
+            # Check if it's a list of points (list of lists)
+            if len(args[0]) > 0 and isinstance(args[0][0], (list, tuple, np.ndarray)):
+                # List of points
+                points = args[0]
+                num_points = len(points)
+                if num_points == 0:
+                    return np.array([], dtype=np.float32)
+
+                point_len = len(points[0])
+                points_flat = (c_float * (num_points * point_len))()
+                for i, p in enumerate(points):
+                    for j, val in enumerate(p):
+                        points_flat[i * point_len + j] = float(val)
+
+                w = c_float(args[1]) if len(args) == 2 else c_float(0.0)
+                output = (c_float * num_points)()
+
+                lib.Field_R_operator_export_list(self.ptr, points_flat, c_int(num_points), c_int(point_len), w, output)
+                return np.array([output[i] for i in range(num_points)], dtype=np.float32)
+            else:
+                # Single point
+                k = (c_float * len(args[0]))(*[float(v) for v in args[0]])
+                len_k = c_int(len(args[0]))
+                w = c_float(args[1]) if len(args) == 2 else c_float(0.0)
+                return lib.Field_R_operator_export2(self.ptr, k, len_k, w)
 
         ## Overload for (n: int, k: list[float], w=0.0) - COMMENTED OUT, no export
         #if len(args) >= 2 and isinstance(args[0], int) and isinstance(args[1], (list, tuple)):
@@ -260,6 +282,9 @@ lib.Field_R_operator_export2.restype = c_float
 #lib.Field_R_operator_export3.argtypes = [c_void_p, c_int, POINTER(c_float), c_int, c_float]
 #lib.Field_R_operator_export3.restype = c_float
 
+lib.Field_R_operator_export_list.argtypes = [c_void_p, POINTER(c_float), c_int, c_int, c_float, POINTER(c_float)]
+lib.Field_R_operator_export_list.restype = None
+
 #End Objects
 
 lib.Field_C_export0.argtypes = []
@@ -281,6 +306,9 @@ lib.Field_C_operator_export2.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.
 lib.Field_C_operator_export2.restype = None
 #lib.Field_C_operator_export3.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_float, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
 #lib.Field_C_operator_export3.restype = None
+
+lib.Field_C_operator_export_list.argtypes = [c_void_p, POINTER(c_float), c_int, c_int, c_float, POINTER(c_float), POINTER(c_float)]
+lib.Field_C_operator_export_list.restype = None
 
 class Field_C:
     def __init__(self, filename=None):
@@ -309,13 +337,35 @@ class Field_C:
         #    return complex(real.value, imag.value)
         # Overload for args=1-2 (k: list[float], w=0.0)
         if len(args) >= 1 and len(args) <= 2 and isinstance(args[0], (list, tuple, np.ndarray)):
-            real = ctypes.c_float()
-            imag = ctypes.c_float()
-            arg0 = (ctypes.c_float * len(args[0]))(*[float(x) for x in args[0]])
-            arg0_len = ctypes.c_int(len(args[0]))
-            arg2 = ctypes.c_float(args[1]) if len(args) > 1 else ctypes.c_float(0.0)
-            lib.Field_C_operator_export2(self.ptr, arg0, arg0_len, arg2, ctypes.byref(real), ctypes.byref(imag))
-            return complex(real.value, imag.value)
+            # Check if it's a list of points (list of lists)
+            if len(args[0]) > 0 and isinstance(args[0][0], (list, tuple, np.ndarray)):
+                # List of points
+                points = args[0]
+                num_points = len(points)
+                if num_points == 0:
+                    return np.array([], dtype=np.complex64)
+
+                point_len = len(points[0])
+                points_flat = (c_float * (num_points * point_len))()
+                for i, p in enumerate(points):
+                    for j, val in enumerate(p):
+                        points_flat[i * point_len + j] = float(val)
+
+                w = c_float(args[1]) if len(args) > 1 else c_float(0.0)
+                real_output = (c_float * num_points)()
+                imag_output = (c_float * num_points)()
+
+                lib.Field_C_operator_export_list(self.ptr, points_flat, c_int(num_points), c_int(point_len), w, real_output, imag_output)
+                return np.array([complex(real_output[i], imag_output[i]) for i in range(num_points)], dtype=np.complex64)
+            else:
+                # Single point
+                real = ctypes.c_float()
+                imag = ctypes.c_float()
+                arg0 = (ctypes.c_float * len(args[0]))(*[float(x) for x in args[0]])
+                arg0_len = ctypes.c_int(len(args[0]))
+                arg2 = ctypes.c_float(args[1]) if len(args) > 1 else ctypes.c_float(0.0)
+                lib.Field_C_operator_export2(self.ptr, arg0, arg0_len, arg2, ctypes.byref(real), ctypes.byref(imag))
+                return complex(real.value, imag.value)
         ## Overload for args=2-3 (n: int, k: list[float], w=0.0) - COMMENTED OUT, no export
         #if len(args) >= 2 and len(args) <= 3 and isinstance(args[0], int):
         #    real = ctypes.c_float()
@@ -399,6 +449,8 @@ lib.Field_RM_export2.argtypes = [c_char_p]
 lib.Field_RM_export2.restype = c_void_p
 lib.Field_RM_operator_export0.argtypes = [c_void_p, POINTER(c_float), c_int, c_float, POINTER(c_float), POINTER(c_int)]
 lib.Field_RM_operator_export0.restype = None
+lib.Field_RM_operator_export_list.argtypes = [c_void_p, POINTER(c_float), c_int, c_int, c_float, POINTER(c_float), POINTER(c_int)]
+lib.Field_RM_operator_export_list.restype = None
 
 class Field_RM:
     def __init__(self, filename=None):
@@ -411,39 +463,80 @@ class Field_RM:
 
     def __call__(self, k, w=0.0):
         """
-        Evaluate Field_RM at point k with frequency w and return as numpy matrix.
+        Evaluate Field_RM at point(s) k with frequency w and return as numpy matrix or list of matrices.
 
         Args:
-            k: momentum point (list or array)
+            k: momentum point (list or array) or list of momentum points
             w: frequency (default 0.0)
 
         Returns:
-            numpy array of shape (n, n) with real values
+            numpy array of shape (n, n) with real values, or list of such arrays
         """
-        k_array = (c_float * len(k))(*[float(x) for x in k])
-        k_len = c_int(len(k))
-        w_val = c_float(w)
+        # Check if k is a list of points (list of lists)
+        if len(k) > 0 and isinstance(k[0], (list, tuple, np.ndarray)):
+            # List of points
+            points = k
+            num_points = len(points)
+            if num_points == 0:
+                return []
 
-        # Matrix size will be determined by the C++ function
-        matrix_size = c_int(0)
+            point_len = len(points[0])
+            points_flat = (c_float * (num_points * point_len))()
+            for i, p in enumerate(points):
+                for j, val in enumerate(p):
+                    points_flat[i * point_len + j] = float(val)
 
-        # Allocate space for a maximum size matrix (e.g., 100x100)
-        max_size = 100
-        result = (c_float * (max_size * max_size))()
+            w_val = c_float(w)
+            matrix_size = c_int(0)
 
-        lib.Field_RM_operator_export0(
-            self.ptr, k_array, k_len, w_val,
-            result, ctypes.byref(matrix_size)
-        )
+            # Allocate space for multiple matrices
+            max_size = 100
+            output = (c_float * (num_points * max_size * max_size))()
 
-        n = matrix_size.value
-        if n == 0:
-            return np.array([[]], dtype=np.float32)
+            lib.Field_RM_operator_export_list(
+                self.ptr, points_flat, c_int(num_points), c_int(point_len), w_val,
+                output, ctypes.byref(matrix_size)
+            )
 
-        # Reshape flattened array to matrix
-        matrix = np.array([result[i] for i in range(n*n)]).reshape(n, n)
+            n = matrix_size.value
+            if n == 0:
+                return [np.array([[]], dtype=np.float32) for _ in range(num_points)]
 
-        return matrix
+            # Reshape to list of matrices
+            matrices = []
+            for i in range(num_points):
+                start_idx = i * n * n
+                end_idx = (i + 1) * n * n
+                matrix = np.array([output[j] for j in range(start_idx, end_idx)]).reshape(n, n)
+                matrices.append(matrix)
+
+            return matrices
+        else:
+            # Single point
+            k_array = (c_float * len(k))(*[float(x) for x in k])
+            k_len = c_int(len(k))
+            w_val = c_float(w)
+
+            # Matrix size will be determined by the C++ function
+            matrix_size = c_int(0)
+
+            # Allocate space for a maximum size matrix (e.g., 100x100)
+            max_size = 100
+            result = (c_float * (max_size * max_size))()
+
+            lib.Field_RM_operator_export0(
+                self.ptr, k_array, k_len, w_val,
+                result, ctypes.byref(matrix_size)
+            )
+
+            n = matrix_size.value
+            if n == 0:
+                return np.array([[]], dtype=np.float32)
+
+            # Reshape flattened array to matrix
+            matrix = np.array([result[i] for i in range(n*n)]).reshape(n, n)
+
+            return matrix
 
     def __del__(self):
         try:
@@ -459,6 +552,8 @@ lib.Field_CM_export2.argtypes = [c_char_p]
 lib.Field_CM_export2.restype = c_void_p
 lib.Field_CM_operator_export0.argtypes = [c_void_p, POINTER(c_float), c_int, c_float, POINTER(c_float), POINTER(c_float), POINTER(c_int)]
 lib.Field_CM_operator_export0.restype = None
+lib.Field_CM_operator_export_list.argtypes = [c_void_p, POINTER(c_float), c_int, c_int, c_float, POINTER(c_float), POINTER(c_float), POINTER(c_int)]
+lib.Field_CM_operator_export_list.restype = None
 
 class Field_CM:
     def __init__(self, filename=None):
@@ -471,31 +566,74 @@ class Field_CM:
 
     def __call__(self, k, w=0.0):
         """
-        Evaluate Field_CM at point k with frequency w and return as numpy matrix.
+        Evaluate Field_CM at point(s) k with frequency w and return as numpy matrix or list of matrices.
 
         Args:
-            k: momentum point (list or array)
+            k: momentum point (list or array) or list of momentum points
             w: frequency (default 0.0)
 
         Returns:
-            numpy array of shape (n, n) with complex values
+            numpy array of shape (n, n) with complex values, or list of such arrays
         """
-        k_array = (c_float * len(k))(*[float(x) for x in k])
-        k_len = c_int(len(k))
-        w_val = c_float(w)
+        # Check if k is a list of points (list of lists)
+        if len(k) > 0 and isinstance(k[0], (list, tuple, np.ndarray)):
+            # List of points
+            points = k
+            num_points = len(points)
+            if num_points == 0:
+                return []
 
-        # Matrix size will be determined by the C++ function
-        matrix_size = c_int(0)
+            point_len = len(points[0])
+            points_flat = (c_float * (num_points * point_len))()
+            for i, p in enumerate(points):
+                for j, val in enumerate(p):
+                    points_flat[i * point_len + j] = float(val)
 
-        # Allocate space for a maximum size matrix (e.g., 100x100)
-        max_size = 100
-        real_result = (c_float * (max_size * max_size))()
-        imag_result = (c_float * (max_size * max_size))()
+            w_val = c_float(w)
+            matrix_size = c_int(0)
 
-        lib.Field_CM_operator_export0(
-            self.ptr, k_array, k_len, w_val,
-            real_result, imag_result, ctypes.byref(matrix_size)
-        )
+            # Allocate space for multiple matrices
+            max_size = 100
+            real_output = (c_float * (num_points * max_size * max_size))()
+            imag_output = (c_float * (num_points * max_size * max_size))()
+
+            lib.Field_CM_operator_export_list(
+                self.ptr, points_flat, c_int(num_points), c_int(point_len), w_val,
+                real_output, imag_output, ctypes.byref(matrix_size)
+            )
+
+            n = matrix_size.value
+            if n == 0:
+                return [np.array([[]], dtype=np.complex64) for _ in range(num_points)]
+
+            # Reshape to list of matrices
+            matrices = []
+            for i in range(num_points):
+                start_idx = i * n * n
+                end_idx = (i + 1) * n * n
+                real_mat = np.array([real_output[j] for j in range(start_idx, end_idx)]).reshape(n, n)
+                imag_mat = np.array([imag_output[j] for j in range(start_idx, end_idx)]).reshape(n, n)
+                matrices.append(real_mat + 1j * imag_mat)
+
+            return matrices
+        else:
+            # Single point
+            k_array = (c_float * len(k))(*[float(x) for x in k])
+            k_len = c_int(len(k))
+            w_val = c_float(w)
+
+            # Matrix size will be determined by the C++ function
+            matrix_size = c_int(0)
+
+            # Allocate space for a maximum size matrix (e.g., 100x100)
+            max_size = 100
+            real_result = (c_float * (max_size * max_size))()
+            imag_result = (c_float * (max_size * max_size))()
+
+            lib.Field_CM_operator_export0(
+                self.ptr, k_array, k_len, w_val,
+                real_result, imag_result, ctypes.byref(matrix_size)
+            )
 
         n = matrix_size.value
         if n == 0:
@@ -515,70 +653,118 @@ class Field_CM:
         except AttributeError:
             print("failed to clear memory")
 
-# Bands object removed - not currently in use
-#lib.Bands_export0.restype = c_void_p
-#
-#lib.Bands_operator_export0.restype = c_float
-#lib.Bands_operator_export0.argtypes = [c_void_p, c_int, POINTER(c_float), c_int]
-#
-#lib.Bands_operator_export0_numpy.restype = None
-#lib.Bands_operator_export0_numpy.argtypes = [
-#    ctypes.c_void_p,            # Bands* obj
-#    ctypes.c_int,               # int n
-#    ctypes.POINTER(ctypes.c_float),  # const float* points
-#    ctypes.c_int,               # int num_points
-#    ctypes.c_int,               # int len
-#    ctypes.POINTER(ctypes.c_float)   # float* output
-#]
-#
-#class Bands:
-#    def __init__(self):
-#        self.ptr = lib.Bands_export0()
-#        if not self.ptr:
-#            raise RuntimeError('Failed to initialize Bands')
-#
-#    def __call__(self, *args):
-#        # Overload for args=1, required=1
-#        if len(args) == 2 and isinstance(args[0], int) and isinstance(args[1], list):
-#            n = ctypes.c_int(args[0])
-#            k = (ctypes.c_float * len(args[1]))(*[float(x) for x in args[1]])
-#            klen = len(args[1])
-#            return lib.Bands_operator_export0(self.ptr, n, k, klen)
-#        # Numpy call
-#        else:
-#            if not isinstance(args[1], np.ndarray) or args[1].ndim != 2:
-#                raise ValueError("points must be a 2D numpy array")
-#            kpts = args[1]
-#            if args[1].dtype != np.float32:
-#                kpts = args[1].astype(np.float32)
-#
-#            num_points, klen = kpts.shape
-#
-#            # Allocate output array
-#            output = np.empty(num_points, dtype=np.float32)
-#
-#            # Convert input and output to ctypes pointers
-#            points_ctypes = kpts.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-#            output_ctypes = output.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-#
-#            lib.Bands_operator_export0_numpy(
-#                self.ptr,
-#                ctypes.c_int(args[0]),
-#                points_ctypes,
-#                ctypes.c_int(num_points),
-#                ctypes.c_int(klen),
-#                output_ctypes
-#            )
-#
-#            return output
-#
-#    def __del__(self):
-#        try:
-#            destroy = lib.destroy_Bands
-#            destroy.argtypes = [ctypes.c_void_p]
-#            destroy(self.ptr)
-#        except AttributeError:
-#            pass
+# Bands object
+lib.Bands_export0.restype = c_void_p
+
+lib.Bands_operator_export0.restype = c_float
+lib.Bands_operator_export0.argtypes = [c_void_p, c_int, POINTER(c_float), c_int]
+
+lib.Bands_operator_export1.restype = c_float
+lib.Bands_operator_export1.argtypes = [c_void_p, POINTER(c_float), c_int]
+
+lib.Bands_operator_export0_numpy.restype = None
+lib.Bands_operator_export0_numpy.argtypes = [
+    ctypes.c_void_p,            # Bands* obj
+    ctypes.c_int,               # int n
+    ctypes.POINTER(ctypes.c_float),  # const float* points
+    ctypes.c_int,               # int num_points
+    ctypes.c_int,               # int len
+    ctypes.POINTER(ctypes.c_float)   # float* output
+]
+
+lib.Bands_operator_export1_numpy.restype = None
+lib.Bands_operator_export1_numpy.argtypes = [
+    ctypes.c_void_p,            # Bands* obj
+    ctypes.POINTER(ctypes.c_float),  # const float* points
+    ctypes.c_int,               # int num_points
+    ctypes.c_int,               # int len
+    ctypes.POINTER(ctypes.c_float)   # float* output
+]
+
+class Bands:
+    def __init__(self):
+        self.ptr = lib.Bands_export0()
+        if not self.ptr:
+            raise RuntimeError('Failed to initialize Bands')
+
+    def __call__(self, *args):
+        # Overload for (n: int, k: list/array) - single point
+        if len(args) == 2 and isinstance(args[0], int) and isinstance(args[1], (list, tuple)):
+            n = ctypes.c_int(args[0])
+            k = (ctypes.c_float * len(args[1]))(*[float(x) for x in args[1]])
+            klen = len(args[1])
+            return lib.Bands_operator_export0(self.ptr, n, k, klen)
+
+        # Overload for (n: int, points: np.ndarray) - multiple points
+        if len(args) == 2 and isinstance(args[0], int) and isinstance(args[1], np.ndarray):
+            kpts = args[1]
+            if kpts.ndim != 2:
+                raise ValueError("points must be a 2D numpy array")
+            if kpts.dtype != np.float32:
+                kpts = kpts.astype(np.float32)
+
+            num_points, klen = kpts.shape
+
+            # Allocate output array
+            output = np.empty(num_points, dtype=np.float32)
+
+            # Convert input and output to ctypes pointers
+            points_ctypes = kpts.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+            output_ctypes = output.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+
+            lib.Bands_operator_export0_numpy(
+                self.ptr,
+                ctypes.c_int(args[0]),
+                points_ctypes,
+                ctypes.c_int(num_points),
+                ctypes.c_int(klen),
+                output_ctypes
+            )
+
+            return output
+
+        # Overload for (k: list/array) - single point, no band index
+        if len(args) == 1 and isinstance(args[0], (list, tuple)):
+            k = (ctypes.c_float * len(args[0]))(*[float(x) for x in args[0]])
+            klen = len(args[0])
+            return lib.Bands_operator_export1(self.ptr, k, klen)
+
+        # Overload for (points: np.ndarray) - multiple points, no band index
+        if len(args) == 1 and isinstance(args[0], np.ndarray):
+            kpts = args[0]
+            if kpts.ndim != 2:
+                raise ValueError("points must be a 2D numpy array")
+            if kpts.dtype != np.float32:
+                kpts = kpts.astype(np.float32)
+
+            num_points, klen = kpts.shape
+
+            # Allocate output array
+            output = np.empty(num_points, dtype=np.float32)
+
+            # Convert input and output to ctypes pointers
+            points_ctypes = kpts.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+            output_ctypes = output.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+
+            lib.Bands_operator_export1_numpy(
+                self.ptr,
+                points_ctypes,
+                ctypes.c_int(num_points),
+                ctypes.c_int(klen),
+                output_ctypes
+            )
+
+            return output
+
+        raise TypeError(f"Invalid arguments to Bands.__call__: {args}")
+
+    def __del__(self):
+        try:
+            destroy = lib.destroy_Bands
+            destroy.argtypes = [ctypes.c_void_p]
+            destroy(self.ptr)
+        except AttributeError:
+            pass
 
 ctypes.POINTER(ctypes.c_float)
 lib.data_save_export0.argtypes = [c_char_p, POINTER(c_float), POINTER(c_float), c_int, c_bool, c_bool, c_bool, c_bool]
@@ -708,6 +894,42 @@ def load_config(path: str) -> None:
     lib.load_config_export0(path.encode("utf-8"))
 
 # Save data functions
+def save_data(filename: str, data: np.ndarray, mesh=None, domain=None,
+              w_points=None, n_indices=1, dim_indices=1):
+    """Save data to HDF5 file with automatic dispatch based on data type.
+
+    Args:
+        filename: Output filename
+        data: nD array (complex or real)
+        mesh: Mesh dimensions (default: empty array)
+        domain: Domain vectors (default: zeros)
+        w_points: Frequency points (default: empty array)
+        n_indices: Number of band indices (default: 1)
+        dim_indices: Dimension of indices (1=scalar, >1=matrix) (default: 1)
+    """
+    # Set defaults
+    if mesh is None:
+        mesh = np.array([], dtype=np.int32)
+    if domain is None:
+        domain = np.zeros((0, 0), dtype=np.float32)
+    if w_points is None:
+        w_points = np.array([], dtype=np.float32)
+
+    is_complex = np.iscomplexobj(data)
+
+    # Determine if data is matrix or scalar (ignoring vector for now)
+    if dim_indices > 1:
+        # Matrix data
+        # Calculate number of matrices based on data shape
+        data_shape = data.shape
+        num_matrices = np.prod(data_shape[:-2]) if len(data_shape) > 2 else 1
+        mat_dim = dim_indices
+        save_data_matrix(filename, data, num_matrices, mat_dim, is_complex,
+                        mesh, domain, w_points)
+    else:
+        # Scalar data
+        save_data_scalar(filename, data, is_complex, mesh, domain, w_points)
+
 lib.save_data_scalar_export0.argtypes = [
     c_char_p, POINTER(c_float), c_int, c_bool,
     POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int

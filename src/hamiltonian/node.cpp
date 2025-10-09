@@ -15,6 +15,12 @@ extern "C" void hamiltonian_wrapper() {
         string function = "generate_hamiltonian";
         call_python_func(folder.c_str(), filename.c_str(), function.c_str());
     }
+    else if (calculation == "DOS") {
+        string folder = "hamiltonian/";
+        string filename = "DOS";
+        string function = "get_DOS";
+        call_python_func(folder.c_str(), filename.c_str(), function.c_str());
+    }
     else {
         cout << "calculation " << calculation << " not recognized for hamiltonian category" << endl;
         cout << "Available calculations: generate" << endl;

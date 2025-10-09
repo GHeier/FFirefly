@@ -6,7 +6,7 @@ using namespace std;
 
 class Vertex {
   public:
-    CMField field;
+    Field_C field;
     bool file_found;
 
     Vertex();

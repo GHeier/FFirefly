@@ -63,6 +63,30 @@ BaseData load_data_from_hdf5(const std::string& filename) {
         ds.read(field.mesh.data(), PredType::NATIVE_INT);
     }
 
+    // -- Points (k-point data when as_mesh = false) --
+    if (!field.as_mesh && field.with_k) {
+        try {
+            DataSet ds = file.openDataSet("/points");
+            DataSpace space = ds.getSpace();
+            int rank = space.getSimpleExtentNdims();
+            if (rank == 2) {
+                hsize_t dims[2];
+                space.getSimpleExtentDims(dims);
+                // Read into flat buffer first, then populate 2D structure
+                std::vector<float> points_flat(dims[0] * dims[1]);
+                ds.read(points_flat.data(), PredType::NATIVE_FLOAT);
+                field.points.assign(dims[0], std::vector<float>(dims[1]));
+                for (size_t i = 0; i < dims[0]; i++) {
+                    for (size_t j = 0; j < dims[1]; j++) {
+                        field.points[i][j] = points_flat[i * dims[1] + j];
+                    }
+                }
+            }
+        } catch (...) {
+            // ignore if missing
+        }
+    }
+
     // -- w_points (optional) --
     if (field.with_w) {
         try {
@@ -160,6 +184,7 @@ void save_data_to_hdf5(BaseData& field, const std::string& filename) {
                        field.domain,
                        field.dimension,
                        field.w_points,
+                       field.points,
                        field.data);
 }
 
@@ -170,7 +195,8 @@ void save_data(string filename, BaseData::DataVariant& data, bool is_complex, ve
     bool as_mesh = true; // Would be false if points were given
     int dim = mesh.size();
     bool is_matrix = n_indices > 1;
-    save_data_to_hdf5(filename, is_complex, is_vector, is_matrix, with_k, with_w, as_mesh, n_indices, dim_indices, mesh, domain, dim, w_points, data);
+    vector<vector<float>> points = {}; // Empty for this wrapper function
+    save_data_to_hdf5(filename, is_complex, is_vector, is_matrix, with_k, with_w, as_mesh, n_indices, dim_indices, mesh, domain, dim, w_points, points, data);
 }
 
 void save_data_to_hdf5(const std::string& filename,
@@ -186,6 +212,7 @@ void save_data_to_hdf5(const std::string& filename,
                         std::vector<std::vector<float>>& domain,
                         int dimension,
                         std::vector<float>& w_points,
+                        std::vector<std::vector<float>>& points,
                         const BaseData::DataVariant& data) {
     H5File file(filename, H5F_ACC_TRUNC);
 
@@ -212,6 +239,21 @@ void save_data_to_hdf5(const std::string& filename,
         DataSpace space(1, dims);
         DataSet ds = file.createDataSet("/mesh", PredType::NATIVE_INT, space);
         ds.write(mesh.data(), PredType::NATIVE_INT);
+    }
+
+    // -- Points (k-point data when as_mesh = false) --
+    if (!points.empty()) {
+        hsize_t dims[2] = { points.size(), points[0].size() };
+        DataSpace space(2, dims);
+        DataSet ds = file.createDataSet("/points", PredType::NATIVE_FLOAT, space);
+
+        // Flatten 2D into 1D buffer
+        std::vector<float> flat;
+        flat.reserve(points.size() * points[0].size());
+        for (auto const& point : points) {
+            flat.insert(flat.end(), point.begin(), point.end());
+        }
+        ds.write(flat.data(), PredType::NATIVE_FLOAT);
     }
 
     // -- Domain --

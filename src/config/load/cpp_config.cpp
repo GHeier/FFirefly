@@ -34,6 +34,7 @@ float fermi_energy;
 float Temperature;
 float onsite_U;
 float cutoff_energy;
+float smearing;
 
 //[MESH]
 vector<int> k_mesh(3);
@@ -76,10 +77,13 @@ bool dynamic;
 
 //[MANY_BODY]
 bool self_consistent;
-// End of Global Variables 
+// End of Global Variables
 
+// Track if config has been loaded
+static bool cpp_config_loaded = false;
 
 extern "C" void load_cpp_config() {
+    cpp_config_loaded = true;
     // Load the C++ configuration file
 
 //[CONTROL]
@@ -105,6 +109,7 @@ extern "C" void load_cpp_config() {
     Temperature = c_Temperature;
     onsite_U = c_onsite_U;
     cutoff_energy = c_cutoff_energy;
+    smearing = c_smearing;
 
 //[MESH]
     for (int i = 0; i < 3; i++) k_mesh[i] = c_k_mesh[i];
@@ -194,9 +199,17 @@ void set_t1(int n, float t1_) {
 
 void read_c_config_wrapper(string path) {
     read_c_config(path.c_str());
+    //load_cpp_config();
 }
 
 bool isDirectoryExisting(const std::string& path) {
     std::filesystem::path dirPath(path);
     return std::filesystem::exists(dirPath) && std::filesystem::is_directory(dirPath);
+}
+
+void ensure_cpp_config_loaded() {
+    if (!cpp_config_loaded) {
+        read_c_config("/home/g/Research/FFirefly/build/bin/input.cfg");
+        load_cpp_config();
+    }
 }

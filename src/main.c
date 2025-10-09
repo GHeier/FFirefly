@@ -6,6 +6,7 @@
 
 #include "config/load/c_config.h"
 #include "config/load/py_interface.h"
+#include "config/load/jl_interface.h"
 
 // Category nodes below
 #include "algorithms/electron_number.hpp"
@@ -23,6 +24,8 @@
 #include "hamiltonian/tests/all.hpp"
 #include "objects/tests/all.hpp"
 #include "algorithms/tests/all.hpp"
+#include "config/load/tests/all.hpp"
+#include "module/tests/all.hpp"
 
 #define MAX_TOKENS 10 // Max number of substrings
 #define MAX_LENGTH 80 // Max length of each substring
@@ -95,14 +98,17 @@ void print_banner_bottom(time_t now) {
 void test() {
     printf("Starting Test Calculations\n");
 
-    int num_tests = 3;
+    int num_tests = 5;
 
     bool all_tests[num_tests];
     all_tests[0] = hamiltonian_tests();
     all_tests[1] = object_tests();
     all_tests[2] = algorithm_tests();
+    all_tests[3] = config_load_tests();
+    all_tests[4] = module_tests();
 
-    print_test_results(all_tests, num_tests, "tests");
+    printf("\n");
+    print_test_results(all_tests, num_tests, "Test Categories");
 }
 
 int main() {
@@ -157,6 +163,7 @@ int main() {
         printf("Number of threads used in CPU parallelization: %d\n",
                num_procs - 1);
 
+    load_julia();
     for (int i = 0; i < count; i++) {
         char *category = tokens[i];
         int ind = i;

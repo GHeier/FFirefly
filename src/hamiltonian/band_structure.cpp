@@ -20,6 +20,10 @@ float epsilon(int n, Vec k) {
     }
     if (band == "tight_binding" && celltype == "SC")
         return epsilon_SC(n, k);
+    if (band == "tight_binding" && celltype == "FCC")
+        return epsilon_FCC(n, k);
+    if (band == "tight_binding" && celltype == "BCC")
+        return epsilon_BCC(n, k);
     if (band == "fermi_gas")
         return epsilon_fermi_gas(n, k);
     if (band == "noband") {
@@ -40,6 +44,12 @@ float vp(int n, Vec k) {
         return fermi_velocity_SC_layered(n, k).norm();
     if (band == "tight_binding" && celltype == "SC") {
         return fermi_velocity_SC(n, k).norm();
+    }
+    if (band == "tight_binding" && celltype == "BCC") {
+        return fermi_velocity_BCC(n, k).norm();
+    }
+    if (band == "tight_binding" && celltype == "FCC") {
+        return fermi_velocity_FCC(n, k).norm();
     }
     if (band == "fermi_gas")
         return fermi_velocity_fermi_gas(n, k).norm();
@@ -126,6 +136,44 @@ Vec fermi_velocity_SC_layered(int n, Vec k) {
             v(i) = (-2 * t0) * (-sin(k(i)));
         else
             v(i) = (-2 * t1) * (-sin(k(i)));
+    }
+    return v;
+}
+
+float epsilon_BCC(int n, Vec k) {
+    float term = -8 * t0 * cos(k(0) / 2) * cos(k(1) / 2) * cos(k(2) / 2);
+    for (int i = 0; i < dimension; i++) {
+        term += -2 * t1 * cos(k(i));
+    }
+    return term;
+}
+
+Vec fermi_velocity_BCC(int n, Vec k) {
+    float term = cos(k(0) / 2) * cos(k(1) / 2) * cos(k(2) / 2);
+    Vec v;
+    for (int i = 0; i < dimension; i++) {
+        v(i) = -4 * t0 * sin(k(i) / 2) * term / cos(k(i) / 2);
+        v(i) += -2 * t1 * sin(k(i));
+    }
+    return v;
+}
+
+float epsilon_FCC(int n, Vec k) {
+    float val = 0.0;
+    for (int i = 0; i < dimension; i++) {
+        val += -4 * t0 * cos(k(i) / 2) * cos(k((i + 1) % dimension) / 2);
+        val += -2 * t1 * cos(k(i));
+    }
+    return val;
+}
+
+Vec fermi_velocity_FCC(int n, Vec k) {
+    Vec v;
+    for (int i = 0; i < dimension; i++) {
+        v(i) = 2 * t0 * (sin(k(i) / 2) * cos(k((i + 1) % dimension) / 2) +
+                 sin(k((i - 1 + dimension) % dimension) / 2) *
+                     cos(k(i) / 2));
+        v(i) += -2 * t1 * sin(k(i));
     }
     return v;
 }
