@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 #include "../objects/vec.hpp"
-#include "../response/susceptibility.hpp"
+#include "../many_body/susceptibility.hpp"
 
 using namespace std;
 

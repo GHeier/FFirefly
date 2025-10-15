@@ -9,13 +9,6 @@
 
 using namespace std;
 
-extern "C" void vertex_wrapper() {
-  if (interaction == "FLEX") {
-    call_flex();
-  }
-  else 
-      printf("Interaction '%s' not available\n", interaction.c_str());
-}
 
 //void call_flex() {
 //    string filename = outdir + prefix + "_chi." + filetype;

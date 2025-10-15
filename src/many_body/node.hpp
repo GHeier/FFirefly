@@ -10,6 +10,11 @@ void many_body_wrapper();
 }
 void many_body_loop();
 void renormalization_wrapper();
+void triqs_loop();
+void self_energy_wrapper();
+void response_wrapper();
+void ir_wrapper();
+void vertex_wrapper();
 
 #endif
 

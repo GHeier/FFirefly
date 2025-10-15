@@ -5,7 +5,7 @@
 #include "../objects/matrix.hpp"
 #include "../algorithms/interpolate.hpp"
 #include "../objects/vec.hpp"
-#include "../response/susceptibility.hpp"
+#include "../many_body/susceptibility.hpp"
 
 struct MatCube {
     vector<vector<vector<vector<complex<float>>>>> cube;

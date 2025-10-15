@@ -7,7 +7,7 @@
 using namespace std;
 
 static bool test_return_true() {
-    bool result = call_python_func_bool("config", "test_bool_interface", "return_true");
+    bool result = call_python_func_bool("config/tests", "test_bool_interface", "return_true");
     if (result != true) {
         return false;
     }
@@ -15,7 +15,7 @@ static bool test_return_true() {
 }
 
 static bool test_return_false() {
-    bool result = call_python_func_bool("config", "test_bool_interface", "return_false");
+    bool result = call_python_func_bool("config/tests", "test_bool_interface", "return_false");
     if (result != false) {
         return false;
     }
@@ -23,7 +23,7 @@ static bool test_return_false() {
 }
 
 static bool test_return_truthy_int() {
-    bool result = call_python_func_bool("config", "test_bool_interface", "return_truthy_int");
+    bool result = call_python_func_bool("config/tests", "test_bool_interface", "return_truthy_int");
     if (result != true) {
         return false;
     }
@@ -31,7 +31,7 @@ static bool test_return_truthy_int() {
 }
 
 static bool test_return_falsy_int() {
-    bool result = call_python_func_bool("config", "test_bool_interface", "return_falsy_int");
+    bool result = call_python_func_bool("config/tests", "test_bool_interface", "return_falsy_int");
     if (result != false) {
         return false;
     }
@@ -39,7 +39,7 @@ static bool test_return_falsy_int() {
 }
 
 static bool test_complex_check() {
-    bool result = call_python_func_bool("config", "test_bool_interface", "complex_check");
+    bool result = call_python_func_bool("config/tests", "test_bool_interface", "complex_check");
     if (result != true) {
         return false;
     }
@@ -47,7 +47,7 @@ static bool test_complex_check() {
 }
 
 static bool test_another_complex_check() {
-    bool result = call_python_func_bool("config", "test_bool_interface", "another_complex_check");
+    bool result = call_python_func_bool("config/tests", "test_bool_interface", "another_complex_check");
     if (result != false) {
         return false;
     }

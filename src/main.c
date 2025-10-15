@@ -12,12 +12,7 @@
 #include "algorithms/electron_number.hpp"
 #include "hamiltonian/fs.hpp"
 #include "hamiltonian/node.hpp"
-#include "many_body/vertex.hpp"
-#include "many_body/self_energy.hpp"
-#include "many_body/renormalization.hpp"
 #include "many_body/node.hpp"
-#include "response/DOS.h"
-#include "response/response.h"
 #include "superconductor/node.hpp"
 
 // Test nodes below
@@ -31,44 +26,10 @@
 #define MAX_LENGTH 80 // Max length of each substring
 
 // Global category calls
-void DOS() {
-    printf("Starting DOS Calculation\n\n");
-    DOS_spectrum();
-}
-
-void electron_number() {
-    printf("Starting Electron Number Calculation\n\n");
-    electron_number_wrapper();
-}
-
-void fermi_surface() {
-    printf("Starting Fermi Surface Calculation\n\n");
-    save_FS();
-}
 
 void hamiltonian() {
     printf("Starting Hamiltonian Calculation\n\n");
     hamiltonian_wrapper();
-}
-
-void response() {
-    printf("Starting Response Calculation\n\n");
-    response_wrapper();
-}
-
-void vertex() {
-    printf("Starting Vertex Calculation\n\n");
-    vertex_wrapper();
-}
-
-void self_energy() {
-    printf("Starting Self Energy Calculation\n\n");
-    self_energy_wrapper();
-}
-
-void renormalization() {
-    printf("Starting Self Energy Calculation\n\n");
-    renormalization_wrapper();
 }
 
 void many_body() {
@@ -181,24 +142,10 @@ int main() {
         * ADDING A CATEGORY OCCURS BELOW
         * FOLLOW THE PATTERN
     */
-        if (!strcmp(category, "DOS"))
-            DOS();
-        else if (!strcmp(category, "fermi_surface"))
-            fermi_surface();
-        else if (!strcmp(category, "hamiltonian"))
+        if (!strcmp(category, "hamiltonian"))
             hamiltonian();
-        else if (!strcmp(category, "electron_num"))
-            electron_number();
-        else if (!strcmp(category, "response"))
-            response();
         else if (!strcmp(category, "superconductor"))
             superconductor();
-        else if (!strcmp(category, "vertex"))
-            vertex();
-        else if (!strcmp(category, "self_energy"))
-            self_energy();
-        else if (!strcmp(category, "renormalization"))
-            renormalization();
         else if (!strcmp(category, "many_body"))
             many_body();
         else if (!strcmp(category, "test"))

@@ -10,44 +10,9 @@ from triqs.gf import *
 from triqs.gf.meshes import MeshDLRImFreq, MeshDLRImTime
 #from triqs.gf import make_gf_dlr, make_gf_dlr_imtime, make_gf_imfreq, make_gf_imtime
 
-beta = 50
-mu = 0.0
-t = 1
-U = 4
-D = 4*t # Bandwidth
-
-BL = BravaisLattice([(1,0,0), (0,1,0)]) # Two unit vectors in R3
-print(BL)
-BZ = BrillouinZone(BL)
-print(BZ)
-
-# n_k denotes the number of k-points for each dimension
-n_k = 128
-k_mesh = MeshBrZone(bz=BZ, n_k=n_k)
-
-iw_mesh = MeshDLRImFreq(beta=beta, statistic='Fermion', w_max=1.2*D, eps=1e-14)
-k_iw_mesh = MeshProduct(k_mesh, iw_mesh)
-
-# Recall that for an empty target_shape G0 has values that are scalars instead of matrices.
-Gw = Gf(mesh=k_iw_mesh, target_shape=[])
-
 def eps(k):
     return -2*t * (cos(k[0]) + cos(k[1]))
 
-iw_arr = np.array(list(iw_mesh.values()))
-k_arr  = np.array(list(k_mesh.values()))
-np_eps = np.vectorize(eps, signature='(d)->()')
-
-eps_arr = np_eps(k_arr)
-Gw.data[:] = 1.0 / (iw_arr[None,::] + mu - eps_arr[::,None])
-
-#Gw0 = Gw.copy()
-Gw0 = Gf(mesh=iw_mesh, target_shape=[])
-Gw0 << SemiCircular(D)
-Ew = Gw.copy()
-tau_mesh = MeshDLRImTime(beta=beta, statistic='Fermion', w_max = 1.2*D, eps=1e-14)
-Gt = Gf(mesh=tau_mesh, target_shape=[1,1])
-Et = Gt.copy()
 
 def IPT_iteration(Gw0, Gw, Gt, Ew, Et, U):
     Gt << Fourier(Gw0)
@@ -66,17 +31,54 @@ def loop(Gw, Gt, Ew, Et, U):
         err = np.linalg.norm((G1 - G2).data)
         iters += 1
 
+
+def main():
+
+    beta = 50
+    mu = 0.0
+    t = 1
+    U = 4
+    D = 4*t # Bandwidth
+
+    BL = BravaisLattice([(1,0,0), (0,1,0)]) # Two unit vectors in R3
+    print(BL)
+    BZ = BrillouinZone(BL)
+    print(BZ)
+
+# n_k denotes the number of k-points for each dimension
+    n_k = 128
+    k_mesh = MeshBrZone(bz=BZ, n_k=n_k)
+
+    iw_mesh = MeshDLRImFreq(beta=beta, statistic='Fermion', w_max=1.2*D, eps=1e-14)
+    k_iw_mesh = MeshProduct(k_mesh, iw_mesh)
+
+# Recall that for an empty target_shape G0 has values that are scalars instead of matrices.
+    Gw = Gf(mesh=k_iw_mesh, target_shape=[])
+
+    iw_arr = np.array(list(iw_mesh.values()))
+    k_arr  = np.array(list(k_mesh.values()))
+    np_eps = np.vectorize(eps, signature='(d)->()')
+
+    eps_arr = np_eps(k_arr)
+    Gw.data[:] = 1.0 / (iw_arr[None,::] + mu - eps_arr[::,None])
+
+#Gw0 = Gw.copy()
+    Gw0 = Gf(mesh=iw_mesh, target_shape=[])
+    Gw0 << SemiCircular(D)
+    Ew = Gw.copy()
+    tau_mesh = MeshDLRImTime(beta=beta, statistic='Fermion', w_max = 1.2*D, eps=1e-14)
+    Gt = Gf(mesh=tau_mesh, target_shape=[1,1])
+    Et = Gt.copy()
 #loop(Gw, Gt, Ew, Et, U)
 #-----------------------------------------------------------------------------------------------
-beta = 50
-dlr_iw_mesh = MeshDLRImFreq(beta=beta, statistic='Fermion', w_max=2.4, eps=1e-14)
-Giw_dlr = Gf(mesh= dlr_iw_mesh, target_shape=[1,1])
-Giw_dlr << SemiCircular(2.0)
+    dlr_iw_mesh = MeshDLRImFreq(beta=beta, statistic='Fermion', w_max=2.4, eps=1e-14)
+    Giw_dlr = Gf(mesh= dlr_iw_mesh, target_shape=[1,1])
+    Giw_dlr << SemiCircular(2.0)
 
-w_mesh = MeshReFreq(window=(-4,4), n_w=500)
-Gw = Gf(mesh=w_mesh, target_shape=[1,1])
-Giw_from_dlr = make_gf_imfreq(Giw_dlr, n_iw=100)
-Gw.set_from_pade(Giw_from_dlr)
+    w_mesh = MeshReFreq(window=(-4,4), n_w=500)
+    Gw = Gf(mesh=w_mesh, target_shape=[1,1])
+    Giw_from_dlr = make_gf_imfreq(Giw_dlr, n_iw=100)
+    Gw.set_from_pade(Giw_from_dlr)
 
-oplot(-Gw.imag/pi, name=r"$\rho$")
-plt.show()
+    oplot(-Gw.imag/pi, name=r"$\rho$")
+    plt.show()

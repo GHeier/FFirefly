@@ -29,7 +29,7 @@
 #include "../objects/vec.hpp"
 #include "utilities.hpp"
 #include "frequency_inclusion.hpp"
-#include "../response/susceptibility.hpp"
+#include "../many_body/susceptibility.hpp"
 #include "../hamiltonian/band_structure.hpp"
 
 using std::cout;
