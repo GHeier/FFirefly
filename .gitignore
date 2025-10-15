@@ -38,5 +38,6 @@
 *.app
 
 build/*
+CL*
 __pycache__/
 fcode.egg-info/

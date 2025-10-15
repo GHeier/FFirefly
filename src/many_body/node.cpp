@@ -1,7 +1,6 @@
 #include "../config/load/py_interface.h"
 #include "../config/load/jl_interface.h"
 #include "../config/load/cpp_config.hpp"
-#include "../config/load/jl_interface.h"
 #include "vertex.hpp"
 #include "self_energy.hpp"
 #include "renormalization.hpp"
