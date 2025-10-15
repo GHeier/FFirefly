@@ -40,12 +40,20 @@ public:
     int total_index_size() const { return pow(dim_indices, n_indices); }
     int nk() const {
         if (!with_k) return 1;
-        return as_mesh ? mesh[0] : points.size();
+        if (as_mesh) {
+            int total = 1;
+            for (int m : mesh) total *= m;
+            return total;
+        }
+        return points.size();
     }
     int nw() const {
         if (!with_w) return 1;
+        // If w_points is provided, use its size
+        if (!w_points.empty()) return w_points.size();
+        // Otherwise use mesh dimensions (legacy behavior)
         if (as_mesh) return with_k ? mesh[1] : mesh[0];
-        return w_points.size();
+        return 1;
     }
     int vec_len() const { return is_vector ? dimension : 1; }
     int total_size() const { return total_index_size() * nk() * nw() * vec_len(); }

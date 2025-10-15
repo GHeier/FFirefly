@@ -3,10 +3,7 @@
 #include <iostream>
 
 extern "C" bool module_tests() {
-    std::cout << "\n========================================" << std::endl;
-    std::cout << "Running Module Interface Tests" << std::endl;
-    std::cout << "========================================\n" << std::endl;
-
+    printf("\nRunning Module tests\n");
     bool py_passed = py_module_interface_tests();
     bool jl_passed = jl_module_interface_tests();
 

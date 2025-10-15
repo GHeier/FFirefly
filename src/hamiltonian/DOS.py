@@ -40,4 +40,7 @@ def get_DOS():
 
     if cfg.method == 'gaussian':
         w_pts, dos = get_DOS_gaussian(e_mesh)
+    else:
+        raise NotImplementedError(f"Method {cfg.method} not implemented for DOS calculation.")
     fly.save_data(outdir + prefix + '_DOS.h5', dos, [], [[]], w_pts)
+    print("Saved to ", outdir + prefix + "_DOS.h5")

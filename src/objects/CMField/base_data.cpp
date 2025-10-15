@@ -192,7 +192,7 @@ void save_data(string filename, BaseData::DataVariant& data, bool is_complex, ve
     bool is_vector = false; // Will add vector support when it becomes relevant
     bool with_k = mesh.size() > 0;
     bool with_w = w_points.size() > 0;
-    bool as_mesh = true; // Would be false if points were given
+    bool as_mesh = mesh.size() > 0; // Would be false if points were given or if mesh is empty
     int dim = mesh.size();
     bool is_matrix = n_indices > 1;
     vector<vector<float>> points = {}; // Empty for this wrapper function

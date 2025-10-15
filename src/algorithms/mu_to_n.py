@@ -2,6 +2,7 @@ import firefly
 import firefly.config as cfg
 
 import numpy as np
+import h5py
 
 outdir = cfg.outdir
 prefix = cfg.prefix
@@ -21,7 +22,7 @@ def get_bandwidth():
     band = firefly.Bands()
 
     min_e, max_e = [1000, -1000]
-    for n in range(1, nbnd):
+    for n in range(1, nbnd+1):
         e_pts = band(n, k_points)
         e_mesh = e_pts.reshape(nk1, nk2, nk3)
         min_e = min(np.min(e_mesh), min_e)
@@ -30,18 +31,26 @@ def get_bandwidth():
 
 
 def mu_vs_n():
-    dos = firefly.Field_R(outdir + prefix + "_DOS.dat")
-    min_e, max_e = get_bandwidth()
-    bandwidth = max_e - min_e
-    de = bandwidth / w_pts
-    print("Bandwidth: ", bandwidth)
+    dos_file = outdir + prefix + "_DOS.h5"
+    print(dos_file)
+    dos = firefly.Field_R(dos_file)
+
+    # Read energy points directly from DOS file
+    with h5py.File(dos_file, 'r') as f:
+        w_points = f['w_points'][:]
+
+    min_e = w_points[0]
+    max_e = w_points[-1]
+    de = (max_e - min_e) / (len(w_points) - 1)
+    print(f"Energy range: {min_e:.4f} to {max_e:.4f}")
+    print(f"Energy spacing: {de:.4f}")
+
     num = 0
     e_list = list()
     num_list = list()
-    for i in range(w_pts):
-        e = min_e + de * i
-        num += 2 * de * dos(e) # 2 is for spin degeneracy
-        e_list.append(e)
+    for e in w_points:
+        num += 2 * de * dos(float(e)) # 2 is for spin degeneracy
+        e_list.append(float(e))
         num_list.append(num)
     save(e_list, num_list)
 

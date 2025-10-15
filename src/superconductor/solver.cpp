@@ -127,17 +127,22 @@ float get_renormalization(vector<Vec> &FS) {
     float renorm = 0;
     float norm = 0;
     int size = FS.size();
+    float temp = 0;
     for (int i = 0; i < size; i++) {
         Vec k1 = FS[i];
         float f1 = (k1.area / vp(k1.n, k1));
         for (int j = 0; j < size; j++) {
             Vec k2 = FS[j];
             float f2 = (k2.area / vp(k2.n, k2));
+            float val = real(lam_z(k2 - k1));
             renorm += real(lam_z(k2 - k1) * f1 * f2);
+            temp += val;
+            //cout << "Renorm at " << k2 - k1 << " is " << val << endl;
         }
         norm += f1;
     }
     renorm /= (pow(2 * M_PI, dim));
+    printf("Average Renormalization: %f\n", temp / (size * size));
     return renorm / norm;
 }
 

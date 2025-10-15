@@ -1,5 +1,4 @@
 module ManyBodyLoop
-println("Loading ManyBodyLoop.jl")
 
 using Random
 using PencilFFTs
@@ -57,7 +56,6 @@ mix       = 0.2       # mixing parameter for new
 U_maxiter = 50       # maximal number of iteration steps in U renormalization loop
 
 interaction = cfg.interaction
-println("Loaded ManyBodyLoop.jl")
 
 function fill_energy_mesh_mpi!(band, ek)
     for i in 1:nx, j in 1:ny, k in 1:nz
@@ -432,22 +430,18 @@ function main()
     comm = 1
     println("Constructing Bands")
     band = Bands()
+
     println("Filling Energy Mesh")
     ek = fill_energy_mesh(band)
     minval, maxval = get_energy_min_max(ek)
+    println("Minimum Energy = $(minval)")
+    println("Maximum Energy = $(maxval)")
     D = maxval - minval
     mesh = IR_Mesh(D)
 
     iw, iv = get_iw_iv(mesh)
 
     Gkw = 1.0 ./ (reshape(iw, mesh.fnw, 1, 1, 1) .- (reshape(ek, 1, nx, ny, nz) .- mu) .+ 0.0)
-    Gwsave = Vector{Float64}(undef, mesh.fnw)
-    for i in mesh.fnw
-        Gwsave[i] = sum(imag(Gkw[i, :, :, :])) / nk
-    end
-    open("output_vector0.txt", "w") do io
-        writedlm(io, Gwsave)
-    end
     ind = Int(mesh.fnw / 2)
     G_w0 = sum(Gkw[ind, :, :, :]) / nk
     println("DOS = $(G_w0.im / pi)")
@@ -495,14 +489,6 @@ function main()
         solver.Xkw[i, :, :, :] .= fftshift(solver.Xkw[i, :, :, :])
     end
 
-    Gwsave = Vector{Float64}(undef, mesh.fnw)
-    for i in mesh.fnw
-        Gwsave[i] = sum(imag(solver.Gkw[i, :, :, :])) / nk
-    end
-    open("output_vector1.txt", "w") do io
-        writedlm(io, Gwsave)
-    end
-    ind = Int(mesh.fnw / 2)
     G_w0 = sum(solver.Gkw[ind, :, :, :]) / nk
     println("DOS = $(G_w0.im / pi)")
 
@@ -512,7 +498,6 @@ function main()
     save_data!(outdir * prefix * "_chi." * filetype, solver.Xkw, kmesh, BZ_in, imag.(iv))
     #save_field!(outdir * prefix * "_vertex." * filetype, V, kmesh, BZ_in, imag.(solver.iv))
     #save_field!(outdir * prefix * "_chi." * filetype, solver.Xkw, BZ_in, kmesh, imag.(solver.iv))
-
 end
 
 function mpi_test()

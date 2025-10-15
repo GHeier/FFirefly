@@ -34,6 +34,12 @@ def plot_section(field, qi, qf, section, letter, multicolor, color, label=None):
     nbnd = 1
 
     x = np.linspace(0, 1, N)
+    q = qi[None, :] + x[:, None] * (qf - qi)[None, :]   # shape (N, len(qi))
+    q_cart = (BZ @ q.T).T 
+    y = field(q_cart)
+    x = np.linspace(section - 1, section, N)
+    plt.plot(x, y, color="#9a05fc")
+    return np.min(y)
     y = []
     y_width = []
 

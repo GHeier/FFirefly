@@ -117,3 +117,216 @@ def test_save_data_matrix():
     except Exception as e:
         print(f"save_data_matrix error: {e}")
         return False
+
+# Round-trip tests - save and read back
+def test_save_read_scalar_real():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        filename = os.path.join(tmpdir, "test_roundtrip_scalar_real.h5")
+
+        # Create test data - 10x10 grid with values = x + y
+        nk1, nk2 = 10, 10
+        data = np.zeros((nk1, nk2), dtype=np.float32)
+        for i in range(nk1):
+            for j in range(nk2):
+                data[i, j] = float(i + j)
+
+        mesh = [nk1, nk2]
+        domain = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
+
+        # Save the data
+        ff.save_data_scalar(filename, data, False, mesh, domain)
+
+        # Read it back using Field_R
+        field = ff.Field_R(filename)
+
+        # Verify data at interior points only (avoid boundaries)
+        passed = True
+        tolerance = 1e-3
+        for i in [1, 3, 5, 7]:
+            for j in [1, 3, 5, 7]:
+                k_point = [float(i)/(nk1-1) - 0.5, float(j)/(nk2-1) - 0.5, 0.0]
+                value = field(k_point)
+                expected = data[i, j]
+                if abs(value - expected) > tolerance:
+                    print(f"Mismatch at ({i},{j}): got {value}, expected {expected}")
+                    passed = False
+
+        import shutil
+        shutil.rmtree(tmpdir)
+        return passed
+    except Exception as e:
+        print(f"save_read_scalar_real error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def test_save_read_scalar_complex():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        filename = os.path.join(tmpdir, "test_roundtrip_scalar_complex.h5")
+
+        # Create test data - 8x8 grid with complex values
+        nk1, nk2 = 8, 8
+        data = np.zeros((nk1, nk2), dtype=np.complex64)
+        for i in range(nk1):
+            for j in range(nk2):
+                data[i, j] = complex(float(i), float(j))
+
+        mesh = [nk1, nk2]
+        domain = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
+
+        # Save the data
+        ff.save_data_scalar(filename, data, True, mesh, domain)
+
+        # Read it back using Field_C
+        field = ff.Field_C(filename)
+
+        # Verify data at interior points only
+        passed = True
+        tolerance = 1e-3
+        for i in [1, 3, 5]:
+            for j in [1, 3, 5]:
+                k_point = [float(i)/(nk1-1) - 0.5, float(j)/(nk2-1) - 0.5, 0.0]
+                value = field(k_point)
+                expected = data[i, j]
+                if abs(value.real - expected.real) > tolerance or abs(value.imag - expected.imag) > tolerance:
+                    print(f"Mismatch at ({i},{j}): got {value}, expected {expected}")
+                    passed = False
+
+        import shutil
+        shutil.rmtree(tmpdir)
+        return passed
+    except Exception as e:
+        print(f"save_read_scalar_complex error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def test_save_read_with_frequency():
+    try:
+        tmpdir = tempfile.mkdtemp()
+        filename = os.path.join(tmpdir, "test_roundtrip_freq.h5")
+
+        # Create test data - 5x5 k-grid with 8 frequencies
+        nk1, nk2 = 5, 5
+        nw = 8
+        data = np.zeros((nk1, nk2, nw), dtype=np.float32)
+        for i in range(nk1):
+            for j in range(nk2):
+                for w in range(nw):
+                    data[i, j, w] = float(i + j + w)
+
+        mesh = [nk1, nk2]  # Only k-space dimensions
+        domain = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
+        w_points = np.array([float(w) for w in range(nw)], dtype=np.float32)
+
+        # Save the data
+        ff.save_data_scalar(filename, data, False, mesh, domain, w_points)
+
+        # Read it back using Field_R
+        field = ff.Field_R(filename)
+
+        # Verify data at interior points with different frequencies
+        passed = True
+        tolerance = 1e-3
+        for i in [1, 2, 3]:
+            for j in [1, 2, 3]:
+                for w in [1, 3, 5]:
+                    k_point = [float(i)/(nk1-1) - 0.5, float(j)/(nk2-1) - 0.5, 0.0]
+                    value = field(k_point, float(w))
+                    expected = data[i, j, w]
+                    if abs(value - expected) > tolerance:
+                        print(f"Mismatch at ({i},{j},w={w}): got {value}, expected {expected}")
+                        passed = False
+
+        import shutil
+        shutil.rmtree(tmpdir)
+        return passed
+    except Exception as e:
+        print(f"save_read_with_frequency error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def test_save_data_dispatcher_real():
+    """Test save_data() automatically dispatches for real data"""
+    try:
+        tmpdir = tempfile.mkdtemp()
+        filename = os.path.join(tmpdir, "test_dispatcher_real.h5")
+
+        # Create simple real data
+        nk1, nk2 = 6, 6
+        data = np.zeros((nk1, nk2), dtype=np.float32)
+        for i in range(nk1):
+            for j in range(nk2):
+                data[i, j] = float(i + j)
+
+        mesh = [nk1, nk2]
+        domain = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
+
+        # Use save_data (dispatcher) instead of save_data_scalar
+        ff.save_data(filename, data, mesh=mesh, domain=domain)
+
+        # Read back and verify (interior points only)
+        field = ff.Field_R(filename)
+        passed = True
+        tolerance = 1e-3
+        for i in [1, 2, 3, 4]:
+            for j in [1, 2, 3, 4]:
+                k_point = [float(i)/(nk1-1) - 0.5, float(j)/(nk2-1) - 0.5, 0.0]
+                value = field(k_point)
+                expected = data[i, j]
+                if abs(value - expected) > tolerance:
+                    print(f"Dispatcher real mismatch at ({i},{j}): got {value}, expected {expected}")
+                    passed = False
+
+        import shutil
+        shutil.rmtree(tmpdir)
+        return passed
+    except Exception as e:
+        print(f"save_data_dispatcher_real error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def test_save_data_dispatcher_complex():
+    """Test save_data() automatically dispatches for complex data"""
+    try:
+        tmpdir = tempfile.mkdtemp()
+        filename = os.path.join(tmpdir, "test_dispatcher_complex.h5")
+
+        # Create complex data
+        nk1, nk2 = 6, 6
+        data = np.zeros((nk1, nk2), dtype=np.complex64)
+        for i in range(nk1):
+            for j in range(nk2):
+                data[i, j] = complex(float(i), float(j))
+
+        mesh = [nk1, nk2]
+        domain = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
+
+        # Use save_data (dispatcher) - should auto-detect complex
+        ff.save_data(filename, data, mesh=mesh, domain=domain)
+
+        # Read back and verify (interior points only)
+        field = ff.Field_C(filename)
+        passed = True
+        tolerance = 1e-3
+        for i in [1, 2, 3, 4]:
+            for j in [1, 2, 3, 4]:
+                k_point = [float(i)/(nk1-1) - 0.5, float(j)/(nk2-1) - 0.5, 0.0]
+                value = field(k_point)
+                expected = data[i, j]
+                if abs(value.real - expected.real) > tolerance or abs(value.imag - expected.imag) > tolerance:
+                    print(f"Dispatcher complex mismatch at ({i},{j}): got {value}, expected {expected}")
+                    passed = False
+
+        import shutil
+        shutil.rmtree(tmpdir)
+        return passed
+    except Exception as e:
+        print(f"save_data_dispatcher_complex error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False

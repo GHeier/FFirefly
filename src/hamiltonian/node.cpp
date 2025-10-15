@@ -22,7 +22,6 @@ extern "C" void hamiltonian_wrapper() {
         call_python_func(folder.c_str(), filename.c_str(), function.c_str());
     }
     else {
-        cout << "calculation " << calculation << " not recognized for hamiltonian category" << endl;
-        cout << "Available calculations: generate" << endl;
+        printv("Hamiltonian category: calculation `%s` not recognized\n", calculation.c_str());
     }
 }

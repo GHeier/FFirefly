@@ -72,7 +72,7 @@ void renormalization() {
 }
 
 void many_body() {
-    printf("Starting Bethe-Salpeter Calculation\n\n");
+    printf("Starting Many-Body Calculation\n\n");
     many_body_wrapper();
 }
 

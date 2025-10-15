@@ -720,7 +720,15 @@ function data_save!(path::String, points, data, dimension, with_w, is_complex, i
     ccall((:data_save_export0, libfly), Cvoid, (Cstring, Ptr{Float64}, Ptr{Float64}, Cint, Cint, Cint, Cint, Cint), path, jpoints, jdata, numpts, dimension, with_w, is_complex, is_vector)
 end
 
-function interleave_complex(A::AbstractArray{<:ComplexF32})
+function interleave_complex(A::AbstractArray)
+    # Julia uses column-major, C++ uses row-major, so transpose before flattening
+    if ndims(A) == 2
+        A = permutedims(A, (2, 1))
+    elseif ndims(A) == 3
+        # For 3D: reverse all dimensions to convert column-major to row-major
+        A = permutedims(A, (3, 2, 1))
+    end
+
     out = Vector{Float32}(undef, 2 * length(A))
     @inbounds for i in eachindex(A)
         out[2i - 1] = real(A[i])
@@ -753,7 +761,15 @@ function load_config!(path::String)
 end
 
 function flatten_real(data::AbstractArray{<:Real})
-    return Float32.(vec(data))
+    # Julia uses column-major, C++ uses row-major, so transpose before flattening
+    if ndims(data) == 2
+        return Float32.(vec(permutedims(data, (2, 1))))
+    elseif ndims(data) == 3
+        # For 3D: reverse all dimensions to convert column-major to row-major
+        return Float32.(vec(permutedims(data, (3, 2, 1))))
+    else
+        return Float32.(vec(data))
+    end
 end
 
 # Save data functions

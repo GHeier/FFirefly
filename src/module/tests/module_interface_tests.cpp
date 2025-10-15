@@ -96,6 +96,26 @@ static bool test_py_save_data_matrix() {
     return call_python_func_bool("module/tests", "test_module_interface", "test_save_data_matrix");
 }
 
+static bool test_py_save_read_scalar_real() {
+    return call_python_func_bool("module/tests", "test_module_interface", "test_save_read_scalar_real");
+}
+
+static bool test_py_save_read_scalar_complex() {
+    return call_python_func_bool("module/tests", "test_module_interface", "test_save_read_scalar_complex");
+}
+
+static bool test_py_save_read_with_frequency() {
+    return call_python_func_bool("module/tests", "test_module_interface", "test_save_read_with_frequency");
+}
+
+static bool test_py_save_data_dispatcher_real() {
+    return call_python_func_bool("module/tests", "test_module_interface", "test_save_data_dispatcher_real");
+}
+
+static bool test_py_save_data_dispatcher_complex() {
+    return call_python_func_bool("module/tests", "test_module_interface", "test_save_data_dispatcher_complex");
+}
+
 // Julia tests
 static bool test_jl_vec_constructor_empty() {
     return call_julia_func_bool("module/tests/", "test_module_interface", "TestModuleInterface", "test_vec_constructor_empty");
@@ -185,8 +205,28 @@ static bool test_jl_save_data_matrix() {
     return call_julia_func_bool("module/tests/", "test_module_interface", "TestModuleInterface", "test_save_data_matrix");
 }
 
+static bool test_jl_save_read_scalar_real() {
+    return call_julia_func_bool("module/tests/", "test_module_interface", "TestModuleInterface", "test_save_read_scalar_real");
+}
+
+static bool test_jl_save_read_scalar_complex() {
+    return call_julia_func_bool("module/tests/", "test_module_interface", "TestModuleInterface", "test_save_read_scalar_complex");
+}
+
+static bool test_jl_save_read_with_frequency() {
+    return call_julia_func_bool("module/tests/", "test_module_interface", "TestModuleInterface", "test_save_read_with_frequency");
+}
+
+static bool test_jl_save_data_dispatcher_real() {
+    return call_julia_func_bool("module/tests/", "test_module_interface", "TestModuleInterface", "test_save_data_dispatcher_real");
+}
+
+static bool test_jl_save_data_dispatcher_complex() {
+    return call_julia_func_bool("module/tests/", "test_module_interface", "TestModuleInterface", "test_save_data_dispatcher_complex");
+}
+
 bool py_module_interface_tests() {
-    int num_tests = 8;
+    int num_tests = 13;
     bool all_tests[] = {
         test_py_vec_constructor_empty(),
         test_py_vec_constructor_args(),
@@ -196,13 +236,18 @@ bool py_module_interface_tests() {
         test_py_save_data_scalar_complex(),
         test_py_save_data_vector(),
         test_py_save_data_matrix(),
+        test_py_save_read_scalar_real(),
+        test_py_save_read_scalar_complex(),
+        test_py_save_read_with_frequency(),
+        test_py_save_data_dispatcher_real(),
+        test_py_save_data_dispatcher_complex(),
     };
 
     return print_test_results(all_tests, num_tests, "Python Module Interface tests");
 }
 
 bool jl_module_interface_tests() {
-    int num_tests = 8;
+    int num_tests = 13;
     bool all_tests[] = {
         test_jl_vec_constructor_empty(),
         test_jl_vec_constructor_args(),
@@ -212,6 +257,11 @@ bool jl_module_interface_tests() {
         test_jl_save_data_scalar_complex(),
         test_jl_save_data_vector(),
         test_jl_save_data_matrix(),
+        test_jl_save_read_scalar_real(),
+        test_jl_save_read_scalar_complex(),
+        test_jl_save_read_with_frequency(),
+        test_jl_save_data_dispatcher_real(),
+        test_jl_save_data_dispatcher_complex(),
     };
 
     return print_test_results(all_tests, num_tests, "Julia Module Interface tests");

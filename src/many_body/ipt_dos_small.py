@@ -30,27 +30,6 @@ def iw_dlr_to_w(G_iw_dlr, beta, w_min=-5.0, w_max=5.0, n_w=500):
     Gw.set_from_pade(Giw_temp)
     return Gw
 
-def p(e):
-    """Bethe lattice semicircular density of states for half-bandwidth 2"""
-    if abs(e) < 2.0:
-        return np.sqrt(4.0 - e**2) / (2.0 * pi)
-    else:
-        return 0.0
-
-def integrate_de(Sigma, mu=0.0):
-    """Integrate over energy using Bethe lattice semicircular DOS"""
-    n_pts = 1000
-    e_vals = np.linspace(-2.0, 2.0, n_pts)
-    de = e_vals[1] - e_vals[0]
-    pe_vals = np.vectorize(p)(e_vals)
-    integral = 0.0
-    iw = Gf(mesh=dlr_iw_mesh, target_shape=[1,1])
-    iw << iOmega_n
-    for e in e_vals:
-        integral += p(e) / (iw - e - Sigma)
-    integral *= de
-    return integral
-
 class IPTSolver:
     def __init__(self, beta, w_max=1.2*4, eps=1e-14):
         self.beta = beta
@@ -66,21 +45,15 @@ class IPTSolver:
         self.G0_tau = Gf(mesh=tau_mesh, target_shape=[1,1])
         self.Sigma_tau = self.G0_tau.copy()
 
-    def solve(self, U, hilbert_transform=None):
+    def solve(self, U):
         self.G0_tau = iw_to_tau_dlr(self.G0_iw)
         self.Sigma_tau << (U**2) * self.G0_tau * self.G0_tau * self.G0_tau
         self.Sigma_iw = tau_to_iw_dlr(self.Sigma_tau)
 
-        # Use Hilbert transform if provided, otherwise use Dyson equation
-        if hilbert_transform is not None:
-            # Compute lattice Green's function using full DOS integral
-            # G(iw) = ∫ rho(e) de / (iw - e - Sigma(iw))
-            G_iw = hilbert_transform(Sigma=self.Sigma_iw, mu=0.0)
-        else:
-            # Dyson equation
-            G_iw = inverse(inverse(self.G0_iw) - self.Sigma_iw)
-
-        self.G_iw = G_iw * mix + self.G_iw * (1.0 - mix)
+        # Dyson
+        self.G0_iw << H(Sigma = S.Sigma_iw, mu=0.0)
+        #G_iw = inverse(inverse(self.G0_iw) - self.Sigma_iw)
+        self.G_iw = self.G0_iw * mix + self.G_iw * (1.0 - mix)
 
 from triqs.plot.mpl_interface import *
 # change scale of all figures to make them bigger
@@ -90,7 +63,7 @@ import matplotlib.pyplot as plt
 t = 1.0
 U = 4.0
 beta = 50
-n_loops = 100
+n_loops = 200
 mix = 0.05
 
 # Define Bethe lattice semicircular DOS: rho(e) = sqrt(4*t^2 - e^2) / (2*pi*t^2)
@@ -120,10 +93,9 @@ S.G_iw << SemiCircular(2*t)
 #fig = plt.figure(figsize=(12,8))
 #
 #for i in range(n_loops):
-#    # Updated: Use full DOS integral instead of simplified Bethe lattice formula
-#    S.G0_iw << inverse(inverse(S.G_iw) + S.Sigma_iw)
+#    S.G0_iw << inverse( iOmega_n - t**2 * S.G_iw )
 #    #S.G0_iw = S.G_iw.copy()
-#    S.solve(U=U, hilbert_transform=H)
+#    S.solve(U = U)
 #
 #    Gw = iw_dlr_to_w(S.G_iw, beta, w_min=-8.0, w_max=8.0, n_w=1000)
 #
@@ -144,10 +116,10 @@ for U in [0, 2, 3, 4, 5, 6, 7]:
     # DMFT
     for i in range(n_loops):
         G_old = S.G_iw.copy()
-        # Self-consistency: G0^{-1} = G^{-1} + Sigma
-        # This replaces the simplified Bethe lattice formula: G0^{-1} = iw - t^2 * G
-        S.G0_iw << inverse(inverse(S.G_iw) + S.Sigma_iw)
-        S.solve(U, hilbert_transform=H)
+        #S.G0_iw << H(Sigma = S.Sigma_iw, mu=0.0)
+        #S.G0_iw << inverse( iOmega_n - t**2 * S.G_iw )
+        S.G0_iw = S.G_iw.copy()
+        S.solve(U)
         err = np.linalg.norm((G_old - S.G_iw).data)
         if err < 1e-4:
             print("Converged for U = %.2f after %i iterations" % (U, i+1))

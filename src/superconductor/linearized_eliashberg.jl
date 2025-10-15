@@ -138,7 +138,9 @@ function save!(filename, phi, iw)
         mesh = mesh[1:end-1]
         BZ = BZ[1:end-1, 1:end-1]
     end
-    save_field!(filename, phi, BZ, mesh, imag.(iw))
+    phi .= ComplexF32.(phi)
+    save_data!(filename, phi, mesh, BZ, imag.(iw))
+    #save_field!(filename, phi, BZ, mesh, imag.(iw))
 end
 
 
@@ -248,7 +250,8 @@ function eigenvalue_computation()
 
     if !bcs_debug
         println("Creating Mesh")
-        mesh = IR_Mesh(real.(e))
+        D = maximum(abs.(e)) - minimum(abs.(e))
+        mesh = IR_Mesh(1.2 * D)
         iw, iv = get_iw_iv(mesh)
         fnw, bnw = length(iw), length(iv)
     else 

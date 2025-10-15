@@ -3,13 +3,6 @@
 #include "self_energy.hpp"
 #include "../objects/CMField/fields.hpp"
 
-extern "C" void self_energy_wrapper() {
-    if (method == "sparse_ir")
-        call_self_energy();
-    else
-        printf("Method '%s' not available\n", method.c_str());
-}
-
 void call_self_energy() {
     string folder = "hamiltonian/";
     string filename = "self_energy";

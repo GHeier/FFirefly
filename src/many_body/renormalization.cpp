@@ -3,17 +3,6 @@
 #include "renormalization.hpp"
 #include "../objects/CMField/fields.hpp"
 
-extern "C" void renormalization_wrapper() {
-    if (method == "analytic") {
-        if (interaction == "FLEX")
-            FLEX_renormalization();
-        else
-            printf("Analytic renormalization for '%s' interaction not available\n", interaction.c_str());
-    }
-    else 
-        self_energy_renormalization();
-}
-
 Vec get_kvec(int i, int j, int k) {
     Vec v(
         1.0 * i / k_mesh[0] - 0.5, 
@@ -148,10 +137,12 @@ void FLEX_renormalization() {
     printf("Max m*(q) = %f\n", 1 + maxval);
     printf("Saving Renormalization\n");
     string file = outdir + prefix + "_renormalization." + filetype;
-    if (filetype == "hdf5" || filetype == "h5") {
-        chi.cmf.data.data = vals;
-        chi.save(file);
-    }
+    BaseData::DataVariant dv = vals;
+    save_data(file, dv, false, q_mesh, brillouin_zone);
+    //if (filetype == "hdf5" || filetype == "h5") {
+    //    chi.cmf.data.data = vals;
+    //    chi.save(file);
+    //}
     cout << "Saved to " << outdir + prefix + "_renormalization." + filetype << endl;
 
 }

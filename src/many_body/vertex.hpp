@@ -1,12 +1,4 @@
-#ifdef __cplusplus
-extern "C" {
-#endif
+#pragma once
 
-void vertex_wrapper();
-
-#ifdef __cplusplus
-}
 void call_flex();
-
-#endif
 
