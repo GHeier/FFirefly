@@ -38,7 +38,7 @@ def plot_section(field, qi, qf, section, letter, multicolor, color, label=None):
     q_cart = (BZ @ q.T).T 
     y = field(q_cart)
     x = np.linspace(section - 1, section, N)
-    plt.plot(x, y, color=color)
+    plt.plot(x, y, color="#9a05fc")
     return np.min(y)
     y = []
     y_width = []
@@ -81,21 +81,21 @@ def plot_section(field, qi, qf, section, letter, multicolor, color, label=None):
     return np.min(y)
 
 
-def plot_path(files, path, hline=False, multicolor=False):
+def plot_path(path, hline=False, multicolor=False):
     fig, ax = plt.subplots()
     ax.set_xticks([])
 
     for i in range(len(files)):
         file = files[i]
         label = os.path.splitext(os.path.basename(file))[0]  # gives 'T=0.01'
-        field = fly.Field_C(file)
+        field = fly.Bands()
         letter = path[0].lower()
         qi = BZ_point_to_q(letter)
         j = 1
         while j < len(path):
             letter = path[j].lower()
             qf = BZ_point_to_q(letter)
-            plot_section(field, qi, qf, j, letter, multicolor, colors[i % len(colors)], label=label)
+            plot_section(field, qi, qf, j, letter, multicolor, colors[i], label=label)
             label = None
             qi = qf
             j += 1

@@ -5,9 +5,9 @@ from warnings import warn
 import sparse_ir
 import matplotlib.pyplot as plt### System parameters
 
-import ffirefly
-import ffirefly.config as cfg
-from ffirefly import *
+import firefly
+import firefly.config as cfg
+from firefly import *
 
 
 class Mesh:
@@ -260,11 +260,20 @@ def sparse_ir_response():
     beta = 1/T    # inverse temperature
     n    = 0.85   # electron filling, here per spin per lattice site (n=1: half filling)
     U    = 1      # Hubbard interaction
+    t    = 1
 
-    e_mesh = ffirefly.mesh.energy_mesh(cfg.k_mesh)
+
+    #e_mesh = firefly.mesh.energy_mesh(cfg.k_mesh)
 ### Numerical parameters
     nk1, nk2, nk3 = cfg.k_mesh
+    dim = 2
+    if dim == 2:
+        nk3 = 1
     nk        = nk1*nk2*nk3
+    # generate k-mesh and dispersion
+    k1, k2 = np.meshgrid(np.arange(nk1)/nk1, np.arange(nk2)/nk2)
+    e_mesh = -2*t*( np.cos(2*np.pi*k1) + np.cos(2*np.pi*k2) ).reshape(nk)
+
     wmax = 2 * (np.amax(e_mesh) - np.amin(e_mesh))
     IR_tol    = 1e-10     # desired accuary for l-cutoff of IR basis functions
     sfc_tol   = 1e-4      # desired accuracy for self-consistent iteration
@@ -275,6 +284,8 @@ def sparse_ir_response():
     IR_basis_set = sparse_ir.FiniteTempBasisSet(beta, wmax, eps=IR_tol)
     mesh = Mesh(IR_basis_set, e_mesh)
     solver = FLEXSolver(mesh, U, n, sigma_init=0, sfc_tol=sfc_tol, maxiter=maxiter, U_maxiter=U_maxiter, mix=mix)
+    print(max(np.real(solver.ckio)))
 
-    solver.save_ckio('chi_dynamic_mesh.dat')
+    #solver.save_ckio('chi_dynamic_mesh.dat')
+sparse_ir_response()
 

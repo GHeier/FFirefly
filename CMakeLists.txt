@@ -33,10 +33,9 @@ include_directories(${Python3_INCLUDE_DIRS})
 link_directories(${Python3_LIBRARY_DIRS})
 
 # Set Julia include and lib paths
-#set(JULIA_INCLUDE_DIR "/home/g/.julia/juliaup/julia-1.11.3+0.x64.linux.gnu/include/julia")
-#set(JULIA_LIB_DIR "/home/g/.julia/juliaup/julia-1.11.3+0.x64.linux.gnu/lib")
+# Updated to use Julia 1.12
 set(JULIA_INCLUDE_DIR "/usr/include/julia")
-set(JULIA_LIB_DIR "/usr/lib/libjulia.so")
+set(JULIA_LIB_DIR "/usr/lib")
 
 include_directories(${JULIA_INCLUDE_DIR})
 link_directories(${JULIA_LIB_DIR})

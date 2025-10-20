@@ -68,7 +68,7 @@ void response_wrapper() {
 }
 
 void ir_wrapper() {
-    string folder = "response/";
+    string folder = "many_body/";
     string filename = "sparse_ir_response";
     string module = "response_ir";
     string function = "get_ckio_ir";

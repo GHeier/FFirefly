@@ -1,4 +1,3 @@
-import h5py
 import os
 import numpy as np
 import pandas as pd
@@ -58,6 +57,7 @@ def load_data(files):
 
             datasets.append((x, y, x_label, y_label, title))
         else:
+            import h5py  # Lazy import: only load when needed for HDF5 files
             with h5py.File(file, 'r') as f:
                 x = f['/w_points'][()]
                 y = f['/values/real'][()]
