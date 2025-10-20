@@ -27,6 +27,7 @@ celltype::String = cfg.celltype
 nbnd::Int = cfg.nbnd
 nstates::Int = cfg.nstates
 fermi_energy::Float64 = cfg.fermi_energy
+num_electrons::Float64 = cfg.num_electrons
 Temperature::Float64 = cfg.Temperature
 onsite_U::Float64 = cfg.onsite_U
 cutoff_energy::Float64 = cfg.cutoff_energy

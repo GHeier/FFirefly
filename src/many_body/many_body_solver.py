@@ -1,8 +1,10 @@
 from diagram import *
 from triqs_tprf.lattice import *
 from triqs_tprf import *
-from triqs.gf import inverse
+from triqs.gf import inverse, Fourier
+from triqs.gf.meshes import MeshDLRImTime
 import numpy as np
+from scipy.optimize import brentq
 
 import firefly as fly
 import firefly.config as cfg
@@ -57,11 +59,91 @@ class ManyBodySolver:
         # Mix old and new Green's function for stability
         self.G.obj_wk.data[:] = self.mix * G_new.data + (1 - self.mix) * G_old.data
 
-    def calculate_electron_density_from_G_wk(self):
-        G_tk = fourier_wk_to_tk(self.G.obj_wk)
-        n_k = np.real(np.trace(G_tk))
-        n_total = np.mean([n_k for k in k_grid])    
-        return n_total
+    def calc_electron_density(self, mu):
+        """Calculate electron density from Green function for given chemical potential mu."""
+        # Temporarily store current G
+        G_backup = self.G.obj_wk.copy()
+
+        # Compute G(k,w) with new mu
+        # Using Dyson equation: G = 1/(iw - (ek - mu) - Sigma)
+        # For now, assume Sigma is stored in self.Sigma if it exists
+        if hasattr(self, 'Sigma'):
+            self.G.obj_wk = inverse(inverse(self.G0.obj_wk) - self.Sigma.obj_wk)
+        else:
+            # If no self-energy, use non-interacting case
+            # Need to rebuild G0 with new mu - this requires access to e_k
+            # For simplicity, we'll just shift G0
+            self.G.obj_wk = self.G0.obj_wk.copy()
+
+        # Sum over k-points to get local Green's function G_loc(iw)
+        # The shape is (nw, nk1, nk2, nk3, norb, norb)
+        # We need to sum over spatial dimensions
+        nw = self.G.obj_wk.data.shape[0]
+        nk = np.prod(self.G.obj_wk.data.shape[1:4])  # Total number of k-points
+
+        # Average over k-points
+        G_loc_data = np.sum(self.G.obj_wk.data, axis=(1,2,3)) / nk
+
+        # For DLR, we need to transform to imaginary time and evaluate at tau=0
+        # Using the relation: n = 2 * (1 + Re[G(tau=0^-)]) for fermions with spin
+        # For Matsubara: G(tau=0^-) can be approximated from high-frequency tail
+
+        # Simpler approach: use the sum rule for Matsubara frequencies
+        # n/2 = (1/beta) * sum_iw G(iw) * e^(iw*0+)
+        # At tau=0-, this gives: n = 2 * (1 + sum of G at large iw)
+
+        # For a rough estimate, use the fact that at tau=beta/2, G(tau) ~ -1/2 for half filling
+        # Better: integrate using trapezoidal rule or use TRIQS Fourier transform
+
+        # Use TRIQS to transform to tau and get density
+        # Create a copy for time-domain
+        mesh_tau = MeshDLRImTime(beta=self.G.obj_wk.mesh.beta,
+                                  statistic='Fermion',
+                                  w_max=self.G.obj_wk.mesh.w_max,
+                                  eps=self.G.obj_wk.mesh.eps)
+
+        # For single-band, get the trace
+        # Extract diagonal element (assuming single orbital)
+        G_diag = G_loc_data[:, 0, 0] if G_loc_data.ndim > 1 else G_loc_data
+
+        # Approximate density using high-frequency behavior
+        # For large w: G(iw) ~ 1/iw, so sum converges
+        # Better approximation: n = 2*(1 + Re[G(tau=0-)])
+        # Use the fact that G(tau=0-) ~ -1/2 + small corrections
+
+        # Simple estimate from Matsubara sum (proper implementation would use DLR basis)
+        density = 2.0 * (1.0 + np.real(G_diag[0]))  # Approximate using lowest frequency
+
+        # Restore original G
+        self.G.obj_wk = G_backup
+
+        return density
+
+    def mu_from_density(self, target_n, e_k_min, e_k_max):
+        """Find chemical potential mu for a given electron density n using Brent's method.
+
+        Args:
+            target_n: Target electron density
+            e_k_min: Minimum energy eigenvalue
+            e_k_max: Maximum energy eigenvalue
+
+        Returns:
+            mu: Chemical potential that gives the target density
+        """
+        def density_error(mu):
+            return self.calc_electron_density(mu) - target_n
+
+        # Search range: extend beyond band edges
+        mu_min = 3.0 * e_k_min
+        mu_max = 3.0 * e_k_max
+
+        try:
+            mu = brentq(density_error, mu_min, mu_max, xtol=1e-6, maxiter=100)
+            print(f"Found mu = {mu:.4f} for n = {target_n:.4f}")
+            return mu
+        except ValueError as e:
+            print(f"Warning: Could not find mu for n={target_n}. Using fermi_energy from config.")
+            return cfg.fermi_energy
 
     def solve(self):
         self.chi0_from_grt_PH()

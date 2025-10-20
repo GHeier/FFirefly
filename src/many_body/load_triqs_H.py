@@ -1,5 +1,6 @@
 from triqs.gf import *
 from triqs_tprf.tight_binding import TBLattice
+import numpy as np
 
 import firefly.config as cfg
 
@@ -8,10 +9,12 @@ def get_energy_mesh():
     Create tight-binding lattice and energy mesh based on firefly.config parameters.
 
     Returns:
-        tuple: (H_r, kmesh, e_k) where
+        tuple: (H_r, kmesh, e_k, e_k_min, e_k_max) where
             - H_r: TBLattice object (2D or 3D based on cfg.dimension)
             - kmesh: k-space mesh
             - e_k: energy dispersion on k-mesh
+            - e_k_min: minimum energy eigenvalue
+            - e_k_max: maximum energy eigenvalue
     """
     # Parameters
     t = cfg.t0
@@ -66,5 +69,10 @@ def get_energy_mesh():
     kmesh = H_r.get_kmesh(n_k=Nk)
     e_k = H_r.fourier(kmesh)
 
-    return e_k
+    # Get energy min/max for mu calculation
+    e_k_array = e_k.data.flatten().real
+    e_k_min = float(np.min(e_k_array))
+    e_k_max = float(np.max(e_k_array))
+
+    return H_r, kmesh, e_k, e_k_min, e_k_max
 

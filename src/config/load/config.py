@@ -21,6 +21,7 @@ celltype = ''
 nbnd = 0
 nstates = 1
 fermi_energy = 0.0
+num_electrons = 1.0
 Temperature = 0.0
 onsite_U = 0.0
 cutoff_energy = 0.05
@@ -160,6 +161,9 @@ def load_config():
             if "fermi_energy" in key:
                 global fermi_energy
                 fermi_energy = float(value)
+            if "num_electrons" in key:
+                global num_electrons
+                num_electrons = float(value)
             if "Temperature" in key:
                 global Temperature
                 Temperature = float(value)
