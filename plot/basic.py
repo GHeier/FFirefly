@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import firefly as fly
 
 def plot_basic(files, **kwargs):
     datasets = load_data(files)
@@ -58,6 +59,8 @@ def load_data(files):
             datasets.append((x, y, x_label, y_label, title))
         else:
             import h5py  # Lazy import: only load when needed for HDF5 files
+            #field = fly.Field_R(file)
+            #print(field.w_points)
             with h5py.File(file, 'r') as f:
                 x = f['/w_points'][()]
                 y = f['/values/real'][()]
@@ -87,7 +90,7 @@ def line(datasets, **kwargs):
     ax.set_xlabel(datasets[0][2])
     ax.set_ylabel(datasets[0][3])
     ax.set_title(f"{datasets[0][4]}")
-    ax.grid(True)
+    ax.grid(True, alpha=0.2)
     ax.legend()
 
     return fig, ax
@@ -102,7 +105,7 @@ def scatter(datasets, **kwargs):
     ax.set_xlabel(datasets[0][2])
     ax.set_ylabel(datasets[0][3])
     ax.set_title(f"{datasets[0][4]}")
-    ax.grid(True)
+    ax.grid(True, alpha=0.2)
     ax.legend()
 
     return fig, ax
@@ -117,7 +120,7 @@ def hist(datasets, **kwargs):
     ax.set_xlabel(datasets[0][2])
     ax.set_ylabel(datasets[0][3])
     ax.set_title(f"{datasets[0][4]}")
-    ax.grid(True)
+    ax.grid(True, alpha=0.2)
     ax.legend()
 
     return fig, ax
@@ -132,7 +135,7 @@ def bar(datasets, **kwargs):
     ax.set_xlabel(datasets[0][2])
     ax.set_ylabel(datasets[0][3])
     ax.set_title(f"{datasets[0][4]}")
-    ax.grid(True)
+    ax.grid(True, alpha=0.2)
     ax.legend()
 
     return fig, ax

@@ -214,6 +214,9 @@ ResultVariant DataEvaluator::operator()(Vec point, float w) {
     p.w = w;
 
     complex<Vec> ans;
+    // When with_w is true, mesh[0] is the frequency dimension and mesh[1..] are spatial
+    int mesh_offset = with_w ? 1 : 0;
+
     if (!with_w) {
         if (dimension == 1)
             ans = interpolate_1D(p.x, 0, 1, data);
@@ -224,11 +227,11 @@ ResultVariant DataEvaluator::operator()(Vec point, float w) {
                                   data);
     } else {
         if (dimension == 1)
-            ans = CMF_search_2d(p.x, w, mesh[0], w_points, data);
+            ans = CMF_search_2d(p.x, w, mesh[mesh_offset], w_points, data);
         else if (dimension == 2)
-            ans = CMF_search_3d(p.x, p.y, w, mesh[0], mesh[1], w_points, data);
+            ans = CMF_search_3d(p.x, p.y, w, mesh[mesh_offset], mesh[mesh_offset+1], w_points, data);
         else if (dimension == 3)
-            ans = CMF_search_4d(p.x, p.y, p.z, w, mesh[0], mesh[1], mesh[2], w_points,
+            ans = CMF_search_4d(p.x, p.y, p.z, w, mesh[mesh_offset], mesh[mesh_offset+1], mesh[mesh_offset+2], w_points,
                                  data);
     }
     return convert(ans);
@@ -256,6 +259,9 @@ ResultVariant DataEvaluator::get_array(Vec point, float w) {
     // Transform point to normalized coordinates
     Vec p = vec_matrix_multiplication2(inv_domain, point, dimension);
     fold_to_first_BZ2(p);
+
+    // When with_w is true, mesh[0] is the frequency dimension and mesh[1..] are spatial
+    int mesh_offset = with_w ? 1 : 0;
 
     if (n_indices == 1) {
         // Return 1D array (vector)
@@ -288,19 +294,19 @@ ResultVariant DataEvaluator::get_array(Vec point, float w) {
             }
 
             if (dimension == 1) {
-                result = interpolate_1D_vec(p.x, 0, 1, mesh[0], indexed_data_1d[0]);
+                result = interpolate_1D_vec(p.x, 0, 1, mesh[mesh_offset], indexed_data_1d[0]);
             } else if (dimension == 2) {
                 vector<vector<cfloat>> flat_data;
                 for (const auto& spatial_pt : indexed_data_1d) {
                     flat_data.push_back(spatial_pt[w_idx]);
                 }
-                result = interpolate_2D_vec(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], flat_data);
+                result = interpolate_2D_vec(p.x, p.y, 0, 1, 0, 1, mesh[mesh_offset], mesh[mesh_offset+1], flat_data);
             } else if (dimension == 3) {
                 vector<vector<cfloat>> flat_data;
                 for (const auto& spatial_pt : indexed_data_1d) {
                     flat_data.push_back(spatial_pt[w_idx]);
                 }
-                result = interpolate_3D_vec(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], flat_data);
+                result = interpolate_3D_vec(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[mesh_offset], mesh[mesh_offset+1], mesh[mesh_offset+2], flat_data);
             }
         }
 
@@ -363,24 +369,24 @@ ResultVariant DataEvaluator::get_array(Vec point, float w) {
                     spatial_data_w0.push_back(spatial_pt[w_idx]);
                     spatial_data_w1.push_back(spatial_pt[w_idx + 1]);
                 }
-                result_w0 = interpolate_1D_mat(p.x, 0, 1, mesh[0], spatial_data_w0);
-                result_w1 = interpolate_1D_mat(p.x, 0, 1, mesh[0], spatial_data_w1);
+                result_w0 = interpolate_1D_mat(p.x, 0, 1, mesh[mesh_offset], spatial_data_w0);
+                result_w1 = interpolate_1D_mat(p.x, 0, 1, mesh[mesh_offset], spatial_data_w1);
             } else if (dimension == 2) {
                 vector<vector<vector<cfloat>>> flat_data_w0, flat_data_w1;
                 for (const auto& spatial_pt : indexed_data_2d) {
                     flat_data_w0.push_back(spatial_pt[w_idx]);
                     flat_data_w1.push_back(spatial_pt[w_idx + 1]);
                 }
-                result_w0 = interpolate_2D_mat(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], flat_data_w0);
-                result_w1 = interpolate_2D_mat(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], flat_data_w1);
+                result_w0 = interpolate_2D_mat(p.x, p.y, 0, 1, 0, 1, mesh[mesh_offset], mesh[mesh_offset+1], flat_data_w0);
+                result_w1 = interpolate_2D_mat(p.x, p.y, 0, 1, 0, 1, mesh[mesh_offset], mesh[mesh_offset+1], flat_data_w1);
             } else if (dimension == 3) {
                 vector<vector<vector<cfloat>>> flat_data_w0, flat_data_w1;
                 for (const auto& spatial_pt : indexed_data_2d) {
                     flat_data_w0.push_back(spatial_pt[w_idx]);
                     flat_data_w1.push_back(spatial_pt[w_idx + 1]);
                 }
-                result_w0 = interpolate_3D_mat(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], flat_data_w0);
-                result_w1 = interpolate_3D_mat(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], flat_data_w1);
+                result_w0 = interpolate_3D_mat(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[mesh_offset], mesh[mesh_offset+1], mesh[mesh_offset+2], flat_data_w0);
+                result_w1 = interpolate_3D_mat(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[mesh_offset], mesh[mesh_offset+1], mesh[mesh_offset+2], flat_data_w1);
             }
 
             // Interpolate between the two frequency points

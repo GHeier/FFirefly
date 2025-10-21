@@ -66,5 +66,5 @@ def get_energy_mesh():
     kmesh = H_r.get_kmesh(n_k=Nk)
     e_k = H_r.fourier(kmesh)
 
-    return e_k
+    return H_r, kmesh, e_k
 

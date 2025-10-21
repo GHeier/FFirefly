@@ -42,7 +42,11 @@ public:
         if (!with_k) return 1;
         if (as_mesh) {
             int total = 1;
-            for (int m : mesh) total *= m;
+            // Skip first element if with_w (mesh[0] is nw in that case)
+            int start_idx = with_w ? 1 : 0;
+            for (int i = start_idx; i < mesh.size(); i++) {
+                total *= mesh[i];
+            }
             return total;
         }
         return points.size();

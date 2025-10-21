@@ -331,16 +331,53 @@ end
 
 mutable struct Field_R
     ptr::Ptr{Cvoid}
+    dimension::Int
+    mesh::Vector{Int}
+    domain::Matrix{Float32}
+    w_points::Vector{Float32}
 end
 
 function Field_R()
     ptr = ccall((:Field_R_export0, libfly), Ptr{Cvoid}, ())
-    return Field_R(ptr)
+    obj = Field_R(ptr, 0, Int[], zeros(Float32, 0, 0), Float32[])
+    _load_field_metadata!(obj)
+    return obj
 end
 
 function Field_R(filename::String)
     ptr = ccall((:Field_R_export2, libfly), Ptr{Cvoid}, (Cstring,), filename)
-    return Field_R(ptr)
+    obj = Field_R(ptr, 0, Int[], zeros(Float32, 0, 0), Float32[])
+    _load_field_metadata!(obj)
+    return obj
+end
+
+function _load_field_metadata!(obj::Field_R)
+    # Get dimension
+    obj.dimension = ccall((:Field_R_get_dimension, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+
+    # Get mesh
+    mesh_size = ccall((:Field_R_get_mesh_size, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    if mesh_size > 0
+        obj.mesh = zeros(Int32, mesh_size)
+        ccall((:Field_R_get_mesh, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Cint}), obj.ptr, obj.mesh)
+        obj.mesh = Int.(obj.mesh)
+    end
+
+    # Get domain
+    domain_rows = ccall((:Field_R_get_domain_rows, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    domain_cols = ccall((:Field_R_get_domain_cols, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    if domain_rows > 0 && domain_cols > 0
+        domain_flat = zeros(Float32, domain_rows * domain_cols)
+        ccall((:Field_R_get_domain, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}), obj.ptr, domain_flat)
+        obj.domain = reshape(domain_flat, domain_cols, domain_rows)'
+    end
+
+    # Get w_points
+    w_points_size = ccall((:Field_R_get_w_points_size, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    if w_points_size > 0
+        obj.w_points = zeros(Float32, w_points_size)
+        ccall((:Field_R_get_w_points, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}), obj.ptr, obj.w_points)
+    end
 end
 
 function (self::Field_R)(arg0)::Float32
@@ -394,16 +431,53 @@ end
 
 mutable struct Field_C
     ptr::Ptr{Cvoid}
+    dimension::Int
+    mesh::Vector{Int}
+    domain::Matrix{Float32}
+    w_points::Vector{Float32}
 end
 
 function Field_C()
     ptr = ccall((:Field_C_export0, libfly), Ptr{Cvoid}, ())
-    return Field_C(ptr)
+    obj = Field_C(ptr, 0, Int[], zeros(Float32, 0, 0), Float32[])
+    _load_field_metadata!(obj)
+    return obj
 end
 
 function Field_C(filename::String)
     ptr = ccall((:Field_C_export2, libfly), Ptr{Cvoid}, (Cstring,), filename)
-    return Field_C(ptr)
+    obj = Field_C(ptr, 0, Int[], zeros(Float32, 0, 0), Float32[])
+    _load_field_metadata!(obj)
+    return obj
+end
+
+function _load_field_metadata!(obj::Field_C)
+    # Get dimension
+    obj.dimension = ccall((:Field_C_get_dimension, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+
+    # Get mesh
+    mesh_size = ccall((:Field_C_get_mesh_size, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    if mesh_size > 0
+        obj.mesh = zeros(Int32, mesh_size)
+        ccall((:Field_C_get_mesh, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Cint}), obj.ptr, obj.mesh)
+        obj.mesh = Int.(obj.mesh)
+    end
+
+    # Get domain
+    domain_rows = ccall((:Field_C_get_domain_rows, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    domain_cols = ccall((:Field_C_get_domain_cols, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    if domain_rows > 0 && domain_cols > 0
+        domain_flat = zeros(Float32, domain_rows * domain_cols)
+        ccall((:Field_C_get_domain, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}), obj.ptr, domain_flat)
+        obj.domain = reshape(domain_flat, domain_cols, domain_rows)'
+    end
+
+    # Get w_points
+    w_points_size = ccall((:Field_C_get_w_points_size, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    if w_points_size > 0
+        obj.w_points = zeros(Float32, w_points_size)
+        ccall((:Field_C_get_w_points, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}), obj.ptr, obj.w_points)
+    end
 end
 
 function (self::Field_C)(arg0)::ComplexF32
@@ -474,16 +548,53 @@ end
 
 mutable struct Field_RM
     ptr::Ptr{Cvoid}
+    dimension::Int
+    mesh::Vector{Int}
+    domain::Matrix{Float32}
+    w_points::Vector{Float32}
 end
 
 function Field_RM()
     ptr = ccall((:Field_RM_export0, libfly), Ptr{Cvoid}, ())
-    return Field_RM(ptr)
+    obj = Field_RM(ptr, 0, Int[], zeros(Float32, 0, 0), Float32[])
+    _load_field_metadata!(obj)
+    return obj
 end
 
 function Field_RM(filename::String)
     ptr = ccall((:Field_RM_export2, libfly), Ptr{Cvoid}, (Cstring,), filename)
-    return Field_RM(ptr)
+    obj = Field_RM(ptr, 0, Int[], zeros(Float32, 0, 0), Float32[])
+    _load_field_metadata!(obj)
+    return obj
+end
+
+function _load_field_metadata!(obj::Field_RM)
+    # Get dimension
+    obj.dimension = ccall((:Field_RM_get_dimension, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+
+    # Get mesh
+    mesh_size = ccall((:Field_RM_get_mesh_size, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    if mesh_size > 0
+        obj.mesh = zeros(Int32, mesh_size)
+        ccall((:Field_RM_get_mesh, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Cint}), obj.ptr, obj.mesh)
+        obj.mesh = Int.(obj.mesh)
+    end
+
+    # Get domain
+    domain_rows = ccall((:Field_RM_get_domain_rows, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    domain_cols = ccall((:Field_RM_get_domain_cols, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    if domain_rows > 0 && domain_cols > 0
+        domain_flat = zeros(Float32, domain_rows * domain_cols)
+        ccall((:Field_RM_get_domain, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}), obj.ptr, domain_flat)
+        obj.domain = reshape(domain_flat, domain_cols, domain_rows)'
+    end
+
+    # Get w_points
+    w_points_size = ccall((:Field_RM_get_w_points_size, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    if w_points_size > 0
+        obj.w_points = zeros(Float32, w_points_size)
+        ccall((:Field_RM_get_w_points, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}), obj.ptr, obj.w_points)
+    end
 end
 
 function (self::Field_RM)(arg0::Vector{Float64}, arg1=0.0)::Matrix{Float32}
@@ -553,16 +664,53 @@ end
 
 mutable struct Field_CM
     ptr::Ptr{Cvoid}
+    dimension::Int
+    mesh::Vector{Int}
+    domain::Matrix{Float32}
+    w_points::Vector{Float32}
 end
 
 function Field_CM()
     ptr = ccall((:Field_CM_export0, libfly), Ptr{Cvoid}, ())
-    return Field_CM(ptr)
+    obj = Field_CM(ptr, 0, Int[], zeros(Float32, 0, 0), Float32[])
+    _load_field_metadata!(obj)
+    return obj
 end
 
 function Field_CM(filename::String)
     ptr = ccall((:Field_CM_export2, libfly), Ptr{Cvoid}, (Cstring,), filename)
-    return Field_CM(ptr)
+    obj = Field_CM(ptr, 0, Int[], zeros(Float32, 0, 0), Float32[])
+    _load_field_metadata!(obj)
+    return obj
+end
+
+function _load_field_metadata!(obj::Field_CM)
+    # Get dimension
+    obj.dimension = ccall((:Field_CM_get_dimension, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+
+    # Get mesh
+    mesh_size = ccall((:Field_CM_get_mesh_size, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    if mesh_size > 0
+        obj.mesh = zeros(Int32, mesh_size)
+        ccall((:Field_CM_get_mesh, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Cint}), obj.ptr, obj.mesh)
+        obj.mesh = Int.(obj.mesh)
+    end
+
+    # Get domain
+    domain_rows = ccall((:Field_CM_get_domain_rows, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    domain_cols = ccall((:Field_CM_get_domain_cols, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    if domain_rows > 0 && domain_cols > 0
+        domain_flat = zeros(Float32, domain_rows * domain_cols)
+        ccall((:Field_CM_get_domain, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}), obj.ptr, domain_flat)
+        obj.domain = reshape(domain_flat, domain_cols, domain_rows)'
+    end
+
+    # Get w_points
+    w_points_size = ccall((:Field_CM_get_w_points_size, libfly), Cint, (Ptr{Cvoid},), obj.ptr)
+    if w_points_size > 0
+        obj.w_points = zeros(Float32, w_points_size)
+        ccall((:Field_CM_get_w_points, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}), obj.ptr, obj.w_points)
+    end
 end
 
 function (self::Field_CM)(arg0::Vector{Float64}, arg1=0.0)::Matrix{ComplexF32}

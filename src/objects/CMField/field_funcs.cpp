@@ -168,6 +168,12 @@ complex<Vec> CMF_search_4d(float x_val, float y_val, float z_val, float w_val,
     // of y z_min, z_max: minimum and maximum values of z w_min, w_max: minimum
     // and maximum values of w f: vector of function values at the grid points
     // returns: interpolated value of f(x_val, y_val, z_val, w_val)
+
+    // Special case: if nz=1, reduce to 3D interpolation
+    if (nz == 1) {
+        return CMF_search_3d(x_val, y_val, w_val, nx, ny, w_points, f);
+    }
+
     float x_min = 0, x_max = 1;
     float y_min = 0, y_max = 1;
     float z_min = 0, z_max = 1;

@@ -66,68 +66,9 @@ class ManyBodySolver:
         self.G.obj_wk.data[:] = self.mix * G_new.data + (1 - self.mix) * G_old.data
 
     def calc_electron_density(self, mu):
-        """
-        Calculate electron density from Green's function for a given chemical potential.
-
-        Args:
-            mu: Chemical potential
-
-        Returns:
-            n: Total electron density (including spin degeneracy factor of 2)
-        """
-        from triqs.gf import Gf, MeshDLRImTime
-
-        # Get G(k,w) with updated mu
-        G_wk = self.G0.obj_wk.copy()
-
-        # Manually construct G: G(k,iw) = 1/(iw + mu - e_k - Sigma)
-        # The mesh frequencies are already in G_wk.mesh
-        for idx_w in range(len(G_wk.mesh.components[0])):
-            for idx_k in range(len(G_wk.mesh.components[1])):
-                iw = G_wk.mesh.components[0][idx_w]
-                k_idx = idx_k
-
-                if self.Sigma is not None:
-                    # Interacting case
-                    sigma_val = self.Sigma.obj_wk[idx_w, idx_k]
-                    ek_val = self.e_k[idx_k]
-                    G_wk.data[idx_w, idx_k] = 1.0 / (iw + mu - ek_val - sigma_val)
-                else:
-                    # Non-interacting case
-                    ek_val = self.e_k[idx_k]
-                    G_wk.data[idx_w, idx_k] = 1.0 / (iw + mu - ek_val)
-
-        # Sum over k to get local Green's function G(iw)
-        nk = len(G_wk.mesh.components[1])
-        G_w_data = np.sum(G_wk.data, axis=1) / nk
-
-        # Create a 1D Green's function on the frequency mesh only
-        mesh_w = G_wk.mesh.components[0]
-        G_w = Gf(mesh=mesh_w, target_shape=[])
-        G_w.data[:] = G_w_data
-
-        # Transform to imaginary time
-        G_tau = make_gf_dlr_imtime(G_w)
-
-        # Density from G(tau=0-): n = 1 + G(tau=0-) for each spin
-        # With DLR, evaluate at tau=0-
-        n_per_spin = 1.0 + np.real(G_tau.data[-1, 0, 0])
-
-        # Factor of 2 for spin degeneracy
-        n_total = 2.0 * n_per_spin
-
-        return n_total
+        pass
 
     def find_mu_for_density(self, n_target):
-        """
-        Find chemical potential that gives the target electron density using Brent's method.
-
-        Args:
-            n_target: Target electron density
-
-        Returns:
-            mu: Chemical potential that achieves n_target
-        """
         # Get energy range from dispersion
         e_min = np.min(self.e_k.data.real)
         e_max = np.max(self.e_k.data.real)
@@ -158,7 +99,7 @@ class ManyBodySolver:
             print(f"Check that the target density is achievable in the range [{mu_min:.4f}, {mu_max:.4f}]")
             raise
 
-    def solve(self):
+    def solve_FLEX(self):
         self.chi0_from_grt_PH()
         self.FLEX_from_chi()
         if self.diverged:
@@ -184,7 +125,7 @@ class ManyBodySolver:
             print(f"  U renorm iter {U_it}: U = {self.U:.4f}, UX = {self.UX:.4f}")
 
             # Perform one FLEX iteration with new U
-            self.solve()
+            self.solve_FLEX()
             if self.diverged:
                 # If still diverging, continue reducing
                 print(f"  Still diverging, reducing U further...")
@@ -212,7 +153,7 @@ class ManyBodySolver:
             print("-----------------------------------------------")
             exit()
 
-    def loop(self, n_loops=50, check_divergence=True):
+    def loop_FLEX(self, n_loops=50, check_divergence=True):
         # Initial check for divergence
         if check_divergence and self.UX >= 1.0:
             print(f"Initial U*max(Chi) = {self.UX:.4f} >= 1")
@@ -223,7 +164,7 @@ class ManyBodySolver:
             print(f"Starting iteration {i+1}/{n_loops}...")
             G_old = self.G.obj_wk.copy()
 
-            self.solve()
+            self.solve_FLEX()
             if self.diverged:
                 print(f"Divergence detected at iteration {i+1}")
                 if check_divergence:

@@ -202,6 +202,38 @@ class Field_R:
         if not self.ptr:
             raise RuntimeError("Failed to initialize Field_R")
 
+        # Load metadata from C++
+        self.dimension = lib.Field_R_get_dimension(self.ptr)
+
+        # Load mesh
+        mesh_size = lib.Field_R_get_mesh_size(self.ptr)
+        if mesh_size > 0:
+            mesh_buf = (c_int * mesh_size)()
+            lib.Field_R_get_mesh(self.ptr, mesh_buf)
+            self.mesh = [mesh_buf[i] for i in range(mesh_size)]
+        else:
+            self.mesh = []
+
+        # Load domain
+        domain_rows = lib.Field_R_get_domain_rows(self.ptr)
+        domain_cols = lib.Field_R_get_domain_cols(self.ptr)
+        if domain_rows > 0 and domain_cols > 0:
+            domain_buf = (c_float * (domain_rows * domain_cols))()
+            lib.Field_R_get_domain(self.ptr, domain_buf)
+            self.domain = [[domain_buf[i * domain_cols + j] for j in range(domain_cols)]
+                          for i in range(domain_rows)]
+        else:
+            self.domain = []
+
+        # Load w_points
+        w_points_size = lib.Field_R_get_w_points_size(self.ptr)
+        if w_points_size > 0:
+            w_points_buf = (c_float * w_points_size)()
+            lib.Field_R_get_w_points(self.ptr, w_points_buf)
+            self.w_points = np.array([w_points_buf[i] for i in range(w_points_size)], dtype=np.float32)
+        else:
+            self.w_points = np.array([], dtype=np.float32)
+
 
     def __call__(self, *args):
         # Overload for (w: float)
@@ -285,6 +317,24 @@ lib.Field_R_operator_export2.restype = c_float
 lib.Field_R_operator_export_list.argtypes = [c_void_p, POINTER(c_float), c_int, c_int, c_float, POINTER(c_float)]
 lib.Field_R_operator_export_list.restype = None
 
+# Field_R metadata functions
+lib.Field_R_get_mesh_size.argtypes = [c_void_p]
+lib.Field_R_get_mesh_size.restype = c_int
+lib.Field_R_get_mesh.argtypes = [c_void_p, POINTER(c_int)]
+lib.Field_R_get_mesh.restype = None
+lib.Field_R_get_domain_rows.argtypes = [c_void_p]
+lib.Field_R_get_domain_rows.restype = c_int
+lib.Field_R_get_domain_cols.argtypes = [c_void_p]
+lib.Field_R_get_domain_cols.restype = c_int
+lib.Field_R_get_domain.argtypes = [c_void_p, POINTER(c_float)]
+lib.Field_R_get_domain.restype = None
+lib.Field_R_get_w_points_size.argtypes = [c_void_p]
+lib.Field_R_get_w_points_size.restype = c_int
+lib.Field_R_get_w_points.argtypes = [c_void_p, POINTER(c_float)]
+lib.Field_R_get_w_points.restype = None
+lib.Field_R_get_dimension.argtypes = [c_void_p]
+lib.Field_R_get_dimension.restype = c_int
+
 #End Objects
 
 lib.Field_C_export0.argtypes = []
@@ -310,6 +360,24 @@ lib.Field_C_operator_export2.restype = None
 lib.Field_C_operator_export_list.argtypes = [c_void_p, POINTER(c_float), c_int, c_int, c_float, POINTER(c_float), POINTER(c_float)]
 lib.Field_C_operator_export_list.restype = None
 
+# Field_C metadata functions
+lib.Field_C_get_mesh_size.argtypes = [c_void_p]
+lib.Field_C_get_mesh_size.restype = c_int
+lib.Field_C_get_mesh.argtypes = [c_void_p, POINTER(c_int)]
+lib.Field_C_get_mesh.restype = None
+lib.Field_C_get_domain_rows.argtypes = [c_void_p]
+lib.Field_C_get_domain_rows.restype = c_int
+lib.Field_C_get_domain_cols.argtypes = [c_void_p]
+lib.Field_C_get_domain_cols.restype = c_int
+lib.Field_C_get_domain.argtypes = [c_void_p, POINTER(c_float)]
+lib.Field_C_get_domain.restype = None
+lib.Field_C_get_w_points_size.argtypes = [c_void_p]
+lib.Field_C_get_w_points_size.restype = c_int
+lib.Field_C_get_w_points.argtypes = [c_void_p, POINTER(c_float)]
+lib.Field_C_get_w_points.restype = None
+lib.Field_C_get_dimension.argtypes = [c_void_p]
+lib.Field_C_get_dimension.restype = c_int
+
 class Field_C:
     def __init__(self, filename=None):
         if filename is None:
@@ -318,6 +386,38 @@ class Field_C:
             self.ptr = lib.Field_C_export2(c_char_p(filename.encode('utf-8')))
         if not self.ptr:
             raise RuntimeError('Failed to initialize Field_C')
+
+        # Load metadata from C++
+        self.dimension = lib.Field_C_get_dimension(self.ptr)
+
+        # Load mesh
+        mesh_size = lib.Field_C_get_mesh_size(self.ptr)
+        if mesh_size > 0:
+            mesh_buf = (c_int * mesh_size)()
+            lib.Field_C_get_mesh(self.ptr, mesh_buf)
+            self.mesh = [mesh_buf[i] for i in range(mesh_size)]
+        else:
+            self.mesh = []
+
+        # Load domain
+        domain_rows = lib.Field_C_get_domain_rows(self.ptr)
+        domain_cols = lib.Field_C_get_domain_cols(self.ptr)
+        if domain_rows > 0 and domain_cols > 0:
+            domain_buf = (c_float * (domain_rows * domain_cols))()
+            lib.Field_C_get_domain(self.ptr, domain_buf)
+            self.domain = [[domain_buf[i * domain_cols + j] for j in range(domain_cols)]
+                          for i in range(domain_rows)]
+        else:
+            self.domain = []
+
+        # Load w_points
+        w_points_size = lib.Field_C_get_w_points_size(self.ptr)
+        if w_points_size > 0:
+            w_points_buf = (c_float * w_points_size)()
+            lib.Field_C_get_w_points(self.ptr, w_points_buf)
+            self.w_points = np.array([w_points_buf[i] for i in range(w_points_size)], dtype=np.float32)
+        else:
+            self.w_points = np.array([], dtype=np.float32)
 
     def __call__(self, *args):
         # Overload for args=1, required=1 (w: float)
@@ -452,6 +552,24 @@ lib.Field_RM_operator_export0.restype = None
 lib.Field_RM_operator_export_list.argtypes = [c_void_p, POINTER(c_float), c_int, c_int, c_float, POINTER(c_float), POINTER(c_int)]
 lib.Field_RM_operator_export_list.restype = None
 
+# Field_RM metadata functions
+lib.Field_RM_get_mesh_size.argtypes = [c_void_p]
+lib.Field_RM_get_mesh_size.restype = c_int
+lib.Field_RM_get_mesh.argtypes = [c_void_p, POINTER(c_int)]
+lib.Field_RM_get_mesh.restype = None
+lib.Field_RM_get_domain_rows.argtypes = [c_void_p]
+lib.Field_RM_get_domain_rows.restype = c_int
+lib.Field_RM_get_domain_cols.argtypes = [c_void_p]
+lib.Field_RM_get_domain_cols.restype = c_int
+lib.Field_RM_get_domain.argtypes = [c_void_p, POINTER(c_float)]
+lib.Field_RM_get_domain.restype = None
+lib.Field_RM_get_w_points_size.argtypes = [c_void_p]
+lib.Field_RM_get_w_points_size.restype = c_int
+lib.Field_RM_get_w_points.argtypes = [c_void_p, POINTER(c_float)]
+lib.Field_RM_get_w_points.restype = None
+lib.Field_RM_get_dimension.argtypes = [c_void_p]
+lib.Field_RM_get_dimension.restype = c_int
+
 class Field_RM:
     def __init__(self, filename=None):
         if filename is None:
@@ -460,6 +578,38 @@ class Field_RM:
             self.ptr = lib.Field_RM_export2(c_char_p(filename.encode('utf-8')))
         if not self.ptr:
             raise RuntimeError('Failed to initialize Field_RM')
+
+        # Load metadata from C++
+        self.dimension = lib.Field_RM_get_dimension(self.ptr)
+
+        # Load mesh
+        mesh_size = lib.Field_RM_get_mesh_size(self.ptr)
+        if mesh_size > 0:
+            mesh_buf = (c_int * mesh_size)()
+            lib.Field_RM_get_mesh(self.ptr, mesh_buf)
+            self.mesh = [mesh_buf[i] for i in range(mesh_size)]
+        else:
+            self.mesh = []
+
+        # Load domain
+        domain_rows = lib.Field_RM_get_domain_rows(self.ptr)
+        domain_cols = lib.Field_RM_get_domain_cols(self.ptr)
+        if domain_rows > 0 and domain_cols > 0:
+            domain_buf = (c_float * (domain_rows * domain_cols))()
+            lib.Field_RM_get_domain(self.ptr, domain_buf)
+            self.domain = [[domain_buf[i * domain_cols + j] for j in range(domain_cols)]
+                          for i in range(domain_rows)]
+        else:
+            self.domain = []
+
+        # Load w_points
+        w_points_size = lib.Field_RM_get_w_points_size(self.ptr)
+        if w_points_size > 0:
+            w_points_buf = (c_float * w_points_size)()
+            lib.Field_RM_get_w_points(self.ptr, w_points_buf)
+            self.w_points = np.array([w_points_buf[i] for i in range(w_points_size)], dtype=np.float32)
+        else:
+            self.w_points = np.array([], dtype=np.float32)
 
     def __call__(self, k, w=0.0):
         """
@@ -555,6 +705,24 @@ lib.Field_CM_operator_export0.restype = None
 lib.Field_CM_operator_export_list.argtypes = [c_void_p, POINTER(c_float), c_int, c_int, c_float, POINTER(c_float), POINTER(c_float), POINTER(c_int)]
 lib.Field_CM_operator_export_list.restype = None
 
+# Field_CM metadata functions
+lib.Field_CM_get_mesh_size.argtypes = [c_void_p]
+lib.Field_CM_get_mesh_size.restype = c_int
+lib.Field_CM_get_mesh.argtypes = [c_void_p, POINTER(c_int)]
+lib.Field_CM_get_mesh.restype = None
+lib.Field_CM_get_domain_rows.argtypes = [c_void_p]
+lib.Field_CM_get_domain_rows.restype = c_int
+lib.Field_CM_get_domain_cols.argtypes = [c_void_p]
+lib.Field_CM_get_domain_cols.restype = c_int
+lib.Field_CM_get_domain.argtypes = [c_void_p, POINTER(c_float)]
+lib.Field_CM_get_domain.restype = None
+lib.Field_CM_get_w_points_size.argtypes = [c_void_p]
+lib.Field_CM_get_w_points_size.restype = c_int
+lib.Field_CM_get_w_points.argtypes = [c_void_p, POINTER(c_float)]
+lib.Field_CM_get_w_points.restype = None
+lib.Field_CM_get_dimension.argtypes = [c_void_p]
+lib.Field_CM_get_dimension.restype = c_int
+
 class Field_CM:
     def __init__(self, filename=None):
         if filename is None:
@@ -563,6 +731,38 @@ class Field_CM:
             self.ptr = lib.Field_CM_export2(c_char_p(filename.encode('utf-8')))
         if not self.ptr:
             raise RuntimeError('Failed to initialize Field_CM')
+
+        # Load metadata from C++
+        self.dimension = lib.Field_CM_get_dimension(self.ptr)
+
+        # Load mesh
+        mesh_size = lib.Field_CM_get_mesh_size(self.ptr)
+        if mesh_size > 0:
+            mesh_buf = (c_int * mesh_size)()
+            lib.Field_CM_get_mesh(self.ptr, mesh_buf)
+            self.mesh = [mesh_buf[i] for i in range(mesh_size)]
+        else:
+            self.mesh = []
+
+        # Load domain
+        domain_rows = lib.Field_CM_get_domain_rows(self.ptr)
+        domain_cols = lib.Field_CM_get_domain_cols(self.ptr)
+        if domain_rows > 0 and domain_cols > 0:
+            domain_buf = (c_float * (domain_rows * domain_cols))()
+            lib.Field_CM_get_domain(self.ptr, domain_buf)
+            self.domain = [[domain_buf[i * domain_cols + j] for j in range(domain_cols)]
+                          for i in range(domain_rows)]
+        else:
+            self.domain = []
+
+        # Load w_points
+        w_points_size = lib.Field_CM_get_w_points_size(self.ptr)
+        if w_points_size > 0:
+            w_points_buf = (c_float * w_points_size)()
+            lib.Field_CM_get_w_points(self.ptr, w_points_buf)
+            self.w_points = np.array([w_points_buf[i] for i in range(w_points_size)], dtype=np.float32)
+        else:
+            self.w_points = np.array([], dtype=np.float32)
 
     def __call__(self, k, w=0.0):
         """

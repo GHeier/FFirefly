@@ -497,6 +497,178 @@ void Field_CM_operator_export_list(Field_CM *obj, const float *points, int num_p
     }
 }
 
+// Field metadata exports - Field_R
+int Field_R_get_mesh_size(Field_R *obj) {
+    return obj->cmf.data.mesh.size();
+}
+
+void Field_R_get_mesh(Field_R *obj, int *mesh_out) {
+    for (size_t i = 0; i < obj->cmf.data.mesh.size(); i++) {
+        mesh_out[i] = obj->cmf.data.mesh[i];
+    }
+}
+
+int Field_R_get_domain_rows(Field_R *obj) {
+    return obj->cmf.data.domain.size();
+}
+
+int Field_R_get_domain_cols(Field_R *obj) {
+    if (obj->cmf.data.domain.empty()) return 0;
+    return obj->cmf.data.domain[0].size();
+}
+
+void Field_R_get_domain(Field_R *obj, float *domain_out) {
+    int idx = 0;
+    for (size_t i = 0; i < obj->cmf.data.domain.size(); i++) {
+        for (size_t j = 0; j < obj->cmf.data.domain[i].size(); j++) {
+            domain_out[idx++] = obj->cmf.data.domain[i][j];
+        }
+    }
+}
+
+int Field_R_get_w_points_size(Field_R *obj) {
+    return obj->cmf.data.w_points.size();
+}
+
+void Field_R_get_w_points(Field_R *obj, float *w_points_out) {
+    for (size_t i = 0; i < obj->cmf.data.w_points.size(); i++) {
+        w_points_out[i] = obj->cmf.data.w_points[i];
+    }
+}
+
+int Field_R_get_dimension(Field_R *obj) {
+    return obj->cmf.data.dimension;
+}
+
+// Field metadata exports - Field_C
+int Field_C_get_mesh_size(Field_C *obj) {
+    return obj->cmf.data.mesh.size();
+}
+
+void Field_C_get_mesh(Field_C *obj, int *mesh_out) {
+    for (size_t i = 0; i < obj->cmf.data.mesh.size(); i++) {
+        mesh_out[i] = obj->cmf.data.mesh[i];
+    }
+}
+
+int Field_C_get_domain_rows(Field_C *obj) {
+    return obj->cmf.data.domain.size();
+}
+
+int Field_C_get_domain_cols(Field_C *obj) {
+    if (obj->cmf.data.domain.empty()) return 0;
+    return obj->cmf.data.domain[0].size();
+}
+
+void Field_C_get_domain(Field_C *obj, float *domain_out) {
+    int idx = 0;
+    for (size_t i = 0; i < obj->cmf.data.domain.size(); i++) {
+        for (size_t j = 0; j < obj->cmf.data.domain[i].size(); j++) {
+            domain_out[idx++] = obj->cmf.data.domain[i][j];
+        }
+    }
+}
+
+int Field_C_get_w_points_size(Field_C *obj) {
+    return obj->cmf.data.w_points.size();
+}
+
+void Field_C_get_w_points(Field_C *obj, float *w_points_out) {
+    for (size_t i = 0; i < obj->cmf.data.w_points.size(); i++) {
+        w_points_out[i] = obj->cmf.data.w_points[i];
+    }
+}
+
+int Field_C_get_dimension(Field_C *obj) {
+    return obj->cmf.data.dimension;
+}
+
+// Field metadata exports - Field_RM
+int Field_RM_get_mesh_size(Field_RM *obj) {
+    return obj->cmf.data.mesh.size();
+}
+
+void Field_RM_get_mesh(Field_RM *obj, int *mesh_out) {
+    for (size_t i = 0; i < obj->cmf.data.mesh.size(); i++) {
+        mesh_out[i] = obj->cmf.data.mesh[i];
+    }
+}
+
+int Field_RM_get_domain_rows(Field_RM *obj) {
+    return obj->cmf.data.domain.size();
+}
+
+int Field_RM_get_domain_cols(Field_RM *obj) {
+    if (obj->cmf.data.domain.empty()) return 0;
+    return obj->cmf.data.domain[0].size();
+}
+
+void Field_RM_get_domain(Field_RM *obj, float *domain_out) {
+    int idx = 0;
+    for (size_t i = 0; i < obj->cmf.data.domain.size(); i++) {
+        for (size_t j = 0; j < obj->cmf.data.domain[i].size(); j++) {
+            domain_out[idx++] = obj->cmf.data.domain[i][j];
+        }
+    }
+}
+
+int Field_RM_get_w_points_size(Field_RM *obj) {
+    return obj->cmf.data.w_points.size();
+}
+
+void Field_RM_get_w_points(Field_RM *obj, float *w_points_out) {
+    for (size_t i = 0; i < obj->cmf.data.w_points.size(); i++) {
+        w_points_out[i] = obj->cmf.data.w_points[i];
+    }
+}
+
+int Field_RM_get_dimension(Field_RM *obj) {
+    return obj->cmf.data.dimension;
+}
+
+// Field metadata exports - Field_CM
+int Field_CM_get_mesh_size(Field_CM *obj) {
+    return obj->cmf.data.mesh.size();
+}
+
+void Field_CM_get_mesh(Field_CM *obj, int *mesh_out) {
+    for (size_t i = 0; i < obj->cmf.data.mesh.size(); i++) {
+        mesh_out[i] = obj->cmf.data.mesh[i];
+    }
+}
+
+int Field_CM_get_domain_rows(Field_CM *obj) {
+    return obj->cmf.data.domain.size();
+}
+
+int Field_CM_get_domain_cols(Field_CM *obj) {
+    if (obj->cmf.data.domain.empty()) return 0;
+    return obj->cmf.data.domain[0].size();
+}
+
+void Field_CM_get_domain(Field_CM *obj, float *domain_out) {
+    int idx = 0;
+    for (size_t i = 0; i < obj->cmf.data.domain.size(); i++) {
+        for (size_t j = 0; j < obj->cmf.data.domain[i].size(); j++) {
+            domain_out[idx++] = obj->cmf.data.domain[i][j];
+        }
+    }
+}
+
+int Field_CM_get_w_points_size(Field_CM *obj) {
+    return obj->cmf.data.w_points.size();
+}
+
+void Field_CM_get_w_points(Field_CM *obj, float *w_points_out) {
+    for (size_t i = 0; i < obj->cmf.data.w_points.size(); i++) {
+        w_points_out[i] = obj->cmf.data.w_points[i];
+    }
+}
+
+int Field_CM_get_dimension(Field_CM *obj) {
+    return obj->cmf.data.dimension;
+}
+
 // Destroy CMField instance
 void destroy_Field_C(Field_C *a) { delete a; }
 

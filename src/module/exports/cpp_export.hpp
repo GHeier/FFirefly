@@ -24,6 +24,16 @@ float Field_R_operator_export3(Field_R *obj, int n, const float *point, int len,
 void Field_R_operator_export_list(Field_R *obj, const float *points, int num_points, int len,
                                    float w, float *output);
 
+// Field metadata exports
+int Field_R_get_mesh_size(Field_R *obj);
+void Field_R_get_mesh(Field_R *obj, int *mesh_out);
+int Field_R_get_domain_rows(Field_R *obj);
+int Field_R_get_domain_cols(Field_R *obj);
+void Field_R_get_domain(Field_R *obj, float *domain_out);
+int Field_R_get_w_points_size(Field_R *obj);
+void Field_R_get_w_points(Field_R *obj, float *w_points_out);
+int Field_R_get_dimension(Field_R *obj);
+
 Field_C *Field_C_export();
 Field_C *Field_C_export2(const char *filename);
 
@@ -38,12 +48,32 @@ void Field_C_operator_export3(Field_C *obj, int n, const float *point, int len,
 void Field_C_operator_export_list(Field_C *obj, const float *points, int num_points, int len,
                                   float w, float *real_output, float *imag_output);
 
+// Field_C metadata exports
+int Field_C_get_mesh_size(Field_C *obj);
+void Field_C_get_mesh(Field_C *obj, int *mesh_out);
+int Field_C_get_domain_rows(Field_C *obj);
+int Field_C_get_domain_cols(Field_C *obj);
+void Field_C_get_domain(Field_C *obj, float *domain_out);
+int Field_C_get_w_points_size(Field_C *obj);
+void Field_C_get_w_points(Field_C *obj, float *w_points_out);
+int Field_C_get_dimension(Field_C *obj);
+
 Field_RM *Field_RM_export0();
 Field_RM *Field_RM_export2(const char *filename);
 void Field_RM_operator_export0(Field_RM *obj, const float *point, int len,
                                float w, float **result, int *matrix_size);
 void Field_RM_operator_export_list(Field_RM *obj, const float *points, int num_points, int len,
                                    float w, float *output, int *matrix_size);
+
+// Field_RM metadata exports
+int Field_RM_get_mesh_size(Field_RM *obj);
+void Field_RM_get_mesh(Field_RM *obj, int *mesh_out);
+int Field_RM_get_domain_rows(Field_RM *obj);
+int Field_RM_get_domain_cols(Field_RM *obj);
+void Field_RM_get_domain(Field_RM *obj, float *domain_out);
+int Field_RM_get_w_points_size(Field_RM *obj);
+void Field_RM_get_w_points(Field_RM *obj, float *w_points_out);
+int Field_RM_get_dimension(Field_RM *obj);
 
 Field_CM *Field_CM_export0();
 Field_CM *Field_CM_export2(const char *filename);
@@ -52,6 +82,15 @@ void Field_CM_operator_export0(Field_CM *obj, const float *point, int len,
 void Field_CM_operator_export_list(Field_CM *obj, const float *points, int num_points, int len,
                                    float w, float *real_output, float *imag_output, int *matrix_size);
 
+// Field_CM metadata exports
+int Field_CM_get_mesh_size(Field_CM *obj);
+void Field_CM_get_mesh(Field_CM *obj, int *mesh_out);
+int Field_CM_get_domain_rows(Field_CM *obj);
+int Field_CM_get_domain_cols(Field_CM *obj);
+void Field_CM_get_domain(Field_CM *obj, float *domain_out);
+int Field_CM_get_w_points_size(Field_CM *obj);
+void Field_CM_get_w_points(Field_CM *obj, float *w_points_out);
+int Field_CM_get_dimension(Field_CM *obj);
 
 // Create a new field instance and return a pointer
 Field_C *create_field_CS();

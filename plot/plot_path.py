@@ -35,49 +35,14 @@ def plot_section(field, qi, qf, section, letter, multicolor, color, label=None):
 
     x = np.linspace(0, 1, N)
     q = qi[None, :] + x[:, None] * (qf - qi)[None, :]   # shape (N, len(qi))
-    q_cart = (BZ @ q.T).T 
+    q_cart = (BZ @ q.T).T
     y = field(q_cart)
+    # Take real part if complex
+    if np.iscomplexobj(y):
+        y = np.real(y)
     x = np.linspace(section - 1, section, N)
     plt.plot(x, y, color=color)
-    return np.min(y)
-    y = []
-    y_width = []
-
-    with_n = False
-    for n in range(1, nbnd + 1):
-        temp = []
-        widths = []
-        for t in x:
-            q = qi + t * (qf - qi)
-            q_cart = (BZ @ q).tolist()
-            if with_n:
-                val = field(n, q_cart)
-            else:
-                val = field(q_cart)
-            width = val.imag
-            val = val.real
-            temp.append(val)
-            widths.append(width)
-        y.append(temp)
-        y_width.append(widths)
-        if with_n:
-            break
-
-    x = np.linspace(section - 1, section, N)
-    for n in range(nbnd):
-        py = np.array(y[n])
-        pw = np.array(y_width[n])
-        print(np.max(pw))
-        if multicolor:
-            plt.plot(x, py, color=color, label=label)
-            plt.fill_between(x, py - pw, py + pw,
-                            color=color, alpha=0.3)
-        else:
-            plt.plot(x, y[n], color="#9a05fc")
-            plt.fill_between(x, py - pw, py + pw,
-                            color="#9a05fc", alpha=0.3)
-    plt.axvline(x=section, color="gray", linestyle="-", linewidth=1)
-    # plt.plot(x, y, color='#3887f3')
+    print(f"Min energy at section {section} ({letter.upper()}): {np.min(y):.4f}")
     return np.min(y)
 
 
