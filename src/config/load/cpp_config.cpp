@@ -31,6 +31,7 @@ string celltype;
 int nbnd;
 int nstates;
 float fermi_energy;
+float num_electrons;
 float Temperature;
 float onsite_U;
 float cutoff_energy;
@@ -106,6 +107,7 @@ extern "C" void load_cpp_config() {
     nbnd = c_nbnd;
     nstates = c_nstates;
     fermi_energy = c_fermi_energy;
+    num_electrons = c_num_electrons;
     Temperature = c_Temperature;
     onsite_U = c_onsite_U;
     cutoff_energy = c_cutoff_energy;

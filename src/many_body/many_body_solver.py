@@ -2,7 +2,6 @@ from diagram import *
 from triqs_tprf.lattice import *
 from triqs_tprf import *
 from triqs.gf import inverse, Fourier
-from triqs.gf.meshes import MeshDLRImTime
 import numpy as np
 from scipy.optimize import brentq
 
@@ -10,7 +9,7 @@ import firefly as fly
 import firefly.config as cfg
 
 class ManyBodySolver:
-    def __init__(self, G0, U=0.0, mix=0.2, U_maxiter=50):
+    def __init__(self, G0, U=0.0, mix=0.2, U_maxiter=50, e_k=None):
         self.G0 = Diagram(G0, 'Fermion')
         self.G = copy(self.G0)
         self.U = U
@@ -18,6 +17,13 @@ class ManyBodySolver:
         self.mix = mix  # Mixing parameter for self-energy
         self.U_maxiter = U_maxiter  # Max iterations for U renormalization
         self.diverged = False  # Track divergence state
+        self.e_k = e_k  # Energy dispersion (needed for mu calculation)
+        self.n_target = None  # Target electron density
+        self.mu = None  # Chemical potential
+
+        # Store Sigma for mu calculation
+        if not hasattr(self, 'Sigma'):
+            self.Sigma = None
 
     def chi0_from_grt_PH(self):
         self.G.wk_to_tr()
@@ -60,90 +66,97 @@ class ManyBodySolver:
         self.G.obj_wk.data[:] = self.mix * G_new.data + (1 - self.mix) * G_old.data
 
     def calc_electron_density(self, mu):
-        """Calculate electron density from Green function for given chemical potential mu."""
-        # Temporarily store current G
-        G_backup = self.G.obj_wk.copy()
-
-        # Compute G(k,w) with new mu
-        # Using Dyson equation: G = 1/(iw - (ek - mu) - Sigma)
-        # For now, assume Sigma is stored in self.Sigma if it exists
-        if hasattr(self, 'Sigma'):
-            self.G.obj_wk = inverse(inverse(self.G0.obj_wk) - self.Sigma.obj_wk)
-        else:
-            # If no self-energy, use non-interacting case
-            # Need to rebuild G0 with new mu - this requires access to e_k
-            # For simplicity, we'll just shift G0
-            self.G.obj_wk = self.G0.obj_wk.copy()
-
-        # Sum over k-points to get local Green's function G_loc(iw)
-        # The shape is (nw, nk1, nk2, nk3, norb, norb)
-        # We need to sum over spatial dimensions
-        nw = self.G.obj_wk.data.shape[0]
-        nk = np.prod(self.G.obj_wk.data.shape[1:4])  # Total number of k-points
-
-        # Average over k-points
-        G_loc_data = np.sum(self.G.obj_wk.data, axis=(1,2,3)) / nk
-
-        # For DLR, we need to transform to imaginary time and evaluate at tau=0
-        # Using the relation: n = 2 * (1 + Re[G(tau=0^-)]) for fermions with spin
-        # For Matsubara: G(tau=0^-) can be approximated from high-frequency tail
-
-        # Simpler approach: use the sum rule for Matsubara frequencies
-        # n/2 = (1/beta) * sum_iw G(iw) * e^(iw*0+)
-        # At tau=0-, this gives: n = 2 * (1 + sum of G at large iw)
-
-        # For a rough estimate, use the fact that at tau=beta/2, G(tau) ~ -1/2 for half filling
-        # Better: integrate using trapezoidal rule or use TRIQS Fourier transform
-
-        # Use TRIQS to transform to tau and get density
-        # Create a copy for time-domain
-        mesh_tau = MeshDLRImTime(beta=self.G.obj_wk.mesh.beta,
-                                  statistic='Fermion',
-                                  w_max=self.G.obj_wk.mesh.w_max,
-                                  eps=self.G.obj_wk.mesh.eps)
-
-        # For single-band, get the trace
-        # Extract diagonal element (assuming single orbital)
-        G_diag = G_loc_data[:, 0, 0] if G_loc_data.ndim > 1 else G_loc_data
-
-        # Approximate density using high-frequency behavior
-        # For large w: G(iw) ~ 1/iw, so sum converges
-        # Better approximation: n = 2*(1 + Re[G(tau=0-)])
-        # Use the fact that G(tau=0-) ~ -1/2 + small corrections
-
-        # Simple estimate from Matsubara sum (proper implementation would use DLR basis)
-        density = 2.0 * (1.0 + np.real(G_diag[0]))  # Approximate using lowest frequency
-
-        # Restore original G
-        self.G.obj_wk = G_backup
-
-        return density
-
-    def mu_from_density(self, target_n, e_k_min, e_k_max):
-        """Find chemical potential mu for a given electron density n using Brent's method.
+        """
+        Calculate electron density from Green's function for a given chemical potential.
 
         Args:
-            target_n: Target electron density
-            e_k_min: Minimum energy eigenvalue
-            e_k_max: Maximum energy eigenvalue
+            mu: Chemical potential
 
         Returns:
-            mu: Chemical potential that gives the target density
+            n: Total electron density (including spin degeneracy factor of 2)
         """
-        def density_error(mu):
-            return self.calc_electron_density(mu) - target_n
+        from triqs.gf import Gf, MeshDLRImTime
 
-        # Search range: extend beyond band edges
-        mu_min = 3.0 * e_k_min
-        mu_max = 3.0 * e_k_max
+        # Get G(k,w) with updated mu
+        G_wk = self.G0.obj_wk.copy()
+
+        # Manually construct G: G(k,iw) = 1/(iw + mu - e_k - Sigma)
+        # The mesh frequencies are already in G_wk.mesh
+        for idx_w in range(len(G_wk.mesh.components[0])):
+            for idx_k in range(len(G_wk.mesh.components[1])):
+                iw = G_wk.mesh.components[0][idx_w]
+                k_idx = idx_k
+
+                if self.Sigma is not None:
+                    # Interacting case
+                    sigma_val = self.Sigma.obj_wk[idx_w, idx_k]
+                    ek_val = self.e_k[idx_k]
+                    G_wk.data[idx_w, idx_k] = 1.0 / (iw + mu - ek_val - sigma_val)
+                else:
+                    # Non-interacting case
+                    ek_val = self.e_k[idx_k]
+                    G_wk.data[idx_w, idx_k] = 1.0 / (iw + mu - ek_val)
+
+        # Sum over k to get local Green's function G(iw)
+        nk = len(G_wk.mesh.components[1])
+        G_w_data = np.sum(G_wk.data, axis=1) / nk
+
+        # Create a 1D Green's function on the frequency mesh only
+        mesh_w = G_wk.mesh.components[0]
+        G_w = Gf(mesh=mesh_w, target_shape=[])
+        G_w.data[:] = G_w_data
+
+        # Transform to imaginary time
+        G_tau = make_gf_dlr_imtime(G_w)
+
+        # Density from G(tau=0-): n = 1 + G(tau=0-) for each spin
+        # With DLR, evaluate at tau=0-
+        n_per_spin = 1.0 + np.real(G_tau.data[-1, 0, 0])
+
+        # Factor of 2 for spin degeneracy
+        n_total = 2.0 * n_per_spin
+
+        return n_total
+
+    def find_mu_for_density(self, n_target):
+        """
+        Find chemical potential that gives the target electron density using Brent's method.
+
+        Args:
+            n_target: Target electron density
+
+        Returns:
+            mu: Chemical potential that achieves n_target
+        """
+        # Get energy range from dispersion
+        e_min = np.min(self.e_k.data.real)
+        e_max = np.max(self.e_k.data.real)
+
+        # Define function to find root of
+        def density_error(mu):
+            n = self.calc_electron_density(mu)
+            error = n - n_target
+            if cfg.verbosity == "high":
+                print(f"  mu = {mu:.4f}, n = {n:.4f}, target = {n_target:.4f}, error = {error:.4f}")
+            return error
+
+        # Search for mu in expanded energy range
+        mu_min = 3 * e_min
+        mu_max = 3 * e_max
+
+        print(f"Finding mu for n = {n_target:.4f}...")
+        print(f"Energy range: [{e_min:.4f}, {e_max:.4f}]")
+        print(f"Search range: [{mu_min:.4f}, {mu_max:.4f}]")
 
         try:
-            mu = brentq(density_error, mu_min, mu_max, xtol=1e-6, maxiter=100)
-            print(f"Found mu = {mu:.4f} for n = {target_n:.4f}")
+            mu = brentq(density_error, mu_min, mu_max, xtol=1e-6)
+            print(f"Found mu = {mu:.4f} for n = {n_target:.4f}")
+            self.mu = mu
             return mu
         except ValueError as e:
-            print(f"Warning: Could not find mu for n={target_n}. Using fermi_energy from config.")
-            return cfg.fermi_energy
+            print(f"ERROR: Could not find mu for n = {n_target}")
+            print(f"Check that the target density is achievable in the range [{mu_min:.4f}, {mu_max:.4f}]")
+            raise
 
     def solve(self):
         self.chi0_from_grt_PH()

@@ -43,6 +43,7 @@ char* get_celltype() {return c_celltype;}
 int c_nbnd = 0;
 int c_nstates = 1;
 float c_fermi_energy = 0.0;
+float c_num_electrons = 0.0;
 float c_Temperature = 0.0;
 float c_onsite_U = 0.0;
 float c_cutoff_energy = 0.05;
@@ -329,6 +330,9 @@ void read_c_config(const char *path) {
             }
             else if (strstr(key, "fermi_energy") != NULL) {
                 c_fermi_energy = atof(value);
+            }
+            else if (strstr(key, "num_electrons") != NULL) {
+                c_num_electrons = atof(value);
             }
             else if (strstr(key, "Temperature") != NULL) {
                 c_Temperature = atof(value);

@@ -27,6 +27,7 @@ extern char* c_celltype; char* get_celltype();
 extern int c_nbnd;
 extern int c_nstates;
 extern float c_fermi_energy;
+extern float c_num_electrons;
 extern float c_Temperature;
 extern float c_onsite_U;
 extern float c_cutoff_energy;

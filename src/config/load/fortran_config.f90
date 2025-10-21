@@ -54,6 +54,8 @@ module ffirefly
     integer :: nstates
     real(c_float), bind(C, name="c_fermi_energy") :: c_fermi_energy
     real :: fermi_energy
+    real(c_float), bind(C, name="c_num_electrons") :: c_num_electrons
+    real :: num_electrons
     real(c_float), bind(C, name="c_Temperature") :: c_Temperature
     real :: Temperature
     real(c_float), bind(C, name="c_onsite_U") :: c_onsite_U
@@ -190,6 +192,7 @@ module ffirefly
 
 
 
+
 ![MESH]
 
 
@@ -315,6 +318,7 @@ contains
         nbnd = c_nbnd
         nstates = c_nstates
         fermi_energy = c_fermi_energy
+        num_electrons = c_num_electrons
         Temperature = c_Temperature
         onsite_U = c_onsite_U
         cutoff_energy = c_cutoff_energy

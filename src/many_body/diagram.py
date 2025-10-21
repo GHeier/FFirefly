@@ -1,7 +1,7 @@
 from triqs.gf.meshes import MeshDLRImFreq, MeshDLRImTime
 from triqs.gf import MeshProduct, MeshBrillouinZone
-
 from triqs_tprf.lattice import fourier_tr_to_wr, fourier_wk_to_wr, fourier_wr_to_tr, fourier_wr_to_wk, chi_wr_from_chi_tr, chi_wk_from_chi_wr, chi_tr_from_chi_wr, chi_wr_from_chi_wk
+import numpy as np
 
 import firefly as fly
 import firefly.config as cfg
@@ -18,6 +18,11 @@ class Diagram:
         self.nw = self.shape[0]
         self.nk = self.shape[1]
         self.ind_dim = len(self.shape) - 2
+
+        # Extract w-points from mesh (Matsubara frequencies)
+        mesh_w = obj.mesh.components[0]
+        # For Matsubara frequencies, use imaginary part
+        self.w_points = np.array([float(iw.imag) for iw in mesh_w], dtype=np.float32)
 
         if varspace == 'wk':
             self.obj_wk = obj
@@ -43,6 +48,12 @@ class Diagram:
         else:
             self.obj_wr = chi_wr_from_chi_tr(self.obj_tr, nw=self.nw)
             self.obj_wk = chi_wk_from_chi_wr(self.obj_wr)
+    def save_w(self, filename):
+        print(self.obj_wk.data.shape)
+        obj_w = np.sum(self.obj_wk.data, axis=1) / self.nk  # Sum over k-points
+        print(obj_w.shape)
+        obj_w = np.reshape(obj_w, (self.nw, ))
+        fly.save_data(filename, obj_w, mesh=None, domain=None, w_points=self.w_points)
 
 
 def copy(diagram):
