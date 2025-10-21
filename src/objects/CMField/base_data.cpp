@@ -9,6 +9,12 @@ using namespace H5;
 
 BaseData load_data_from_hdf5(const std::string& filename) {
     BaseData field;
+    //Check if file exists
+    if (FILE *file = fopen(filename.c_str(), "r")) {
+        fclose(file);
+    } else {
+        throw std::runtime_error("File not found: " + filename);
+    }
     H5File file(filename, H5F_ACC_RDONLY);
 
     // -- Metadata --

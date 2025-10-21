@@ -236,6 +236,15 @@ class Field_R:
 
 
     def __call__(self, *args):
+        # Overload for (w_points: list[float]) - multiple w-points
+        if len(args) == 1 and isinstance(args[0], (list, tuple, np.ndarray)) and all(isinstance(x, (int, float, np.number)) for x in args[0]):
+            w_points = np.array(args[0], dtype=np.float32)
+            num_w = len(w_points)
+            w_array = (c_float * num_w)(*w_points)
+            output = (c_float * num_w)()
+            lib.Field_R_operator_export_w_list(self.ptr, w_array, c_int(num_w), output)
+            return np.array([output[i] for i in range(num_w)], dtype=np.float32)
+
         # Overload for (w: float)
         if len(args) == 1 and isinstance(args[0], (int, float)):
             w = c_float(args[0])
@@ -317,6 +326,9 @@ lib.Field_R_operator_export2.restype = c_float
 lib.Field_R_operator_export_list.argtypes = [c_void_p, POINTER(c_float), c_int, c_int, c_float, POINTER(c_float)]
 lib.Field_R_operator_export_list.restype = None
 
+lib.Field_R_operator_export_w_list.argtypes = [c_void_p, POINTER(c_float), c_int, POINTER(c_float)]
+lib.Field_R_operator_export_w_list.restype = None
+
 # Field_R metadata functions
 lib.Field_R_get_mesh_size.argtypes = [c_void_p]
 lib.Field_R_get_mesh_size.restype = c_int
@@ -359,6 +371,9 @@ lib.Field_C_operator_export2.restype = None
 
 lib.Field_C_operator_export_list.argtypes = [c_void_p, POINTER(c_float), c_int, c_int, c_float, POINTER(c_float), POINTER(c_float)]
 lib.Field_C_operator_export_list.restype = None
+
+lib.Field_C_operator_export_w_list.argtypes = [c_void_p, POINTER(c_float), c_int, POINTER(c_float), POINTER(c_float)]
+lib.Field_C_operator_export_w_list.restype = None
 
 # Field_C metadata functions
 lib.Field_C_get_mesh_size.argtypes = [c_void_p]
@@ -420,8 +435,19 @@ class Field_C:
             self.w_points = np.array([], dtype=np.float32)
 
     def __call__(self, *args):
+        # Overload for (w_points: list[float]) - multiple w-points
+        if len(args) == 1 and isinstance(args[0], (list, tuple, np.ndarray)) and all(isinstance(x, (int, float, np.number)) for x in args[0]):
+            w_points = np.array(args[0], dtype=np.float32)
+            num_w = len(w_points)
+            w_array = (c_float * num_w)(*w_points)
+            real_output = (c_float * num_w)()
+            imag_output = (c_float * num_w)()
+            lib.Field_C_operator_export_w_list(self.ptr, w_array, c_int(num_w), real_output, imag_output)
+            return np.array([complex(real_output[i], imag_output[i]) for i in range(num_w)], dtype=np.complex64)
+
         # Overload for args=1, required=1 (w: float)
-        if len(args) == 1 and isinstance(args[0], (int, float)):
+        if len(args) == 1 and isinstance(args[0], (int, float, np.float32, np.float64)):
+            print("sec 1")
             real = ctypes.c_float()
             imag = ctypes.c_float()
             arg0 = ctypes.c_float(args[0])
@@ -436,28 +462,50 @@ class Field_C:
         #    lib.Field_C_operator_export1(self.ptr, arg0, arg1, ctypes.byref(real), ctypes.byref(imag))
         #    return complex(real.value, imag.value)
         # Overload for args=1-2 (k: list[float], w=0.0)
+        if isinstance(args[0], (np.ndarray, list)):
+            print("sec 1.5")
+            # Single point
+            real = ctypes.c_float()
+            imag = ctypes.c_float()
+            arg0 = (ctypes.c_float * len(args[0]))(*[float(x) for x in args[0]])
+            print(type(arg0))
+            arg0_len = ctypes.c_int(len(args[0]))
+            arg2 = ctypes.c_float(args[1]) if len(args) > 1 else ctypes.c_float(0.0)
+            lib.Field_C_operator_export_list(self.ptr, arg0, arg0_len, arg2, ctypes.byref(real), ctypes.byref(imag))
+            return complex(real.value, imag.value)
+
         if len(args) >= 1 and len(args) <= 2 and isinstance(args[0], (list, tuple, np.ndarray)):
+            print("sec 2")
             # Check if it's a list of points (list of lists)
+            print(type(args[0]))
+            print(type(args[0][0]))
             if len(args[0]) > 0 and isinstance(args[0][0], (list, tuple, np.ndarray)):
+                print("sec 2.1")
                 # List of points
                 points = args[0]
                 num_points = len(points)
                 if num_points == 0:
                     return np.array([], dtype=np.complex64)
 
+                print("1")
                 point_len = len(points[0])
                 points_flat = (c_float * (num_points * point_len))()
+                print("2")
                 for i, p in enumerate(points):
                     for j, val in enumerate(p):
                         points_flat[i * point_len + j] = float(val)
+                print("3")
 
                 w = c_float(args[1]) if len(args) > 1 else c_float(0.0)
                 real_output = (c_float * num_points)()
                 imag_output = (c_float * num_points)()
+                print("4")
 
                 lib.Field_C_operator_export_list(self.ptr, points_flat, c_int(num_points), c_int(point_len), w, real_output, imag_output)
+                print("5")
                 return np.array([complex(real_output[i], imag_output[i]) for i in range(num_points)], dtype=np.complex64)
             else:
+                print("sec 2.2")
                 # Single point
                 real = ctypes.c_float()
                 imag = ctypes.c_float()

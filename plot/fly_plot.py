@@ -4,6 +4,7 @@ from plot import basic
 from plot import colorplot
 from plot import gap_function
 from plot import plot_bands
+from plot import plot_frequency
 
 import argparse
 import sys
@@ -19,8 +20,11 @@ plt.rcParams["axes.prop_cycle"] = cycler(color=["#9a05fc", # Purple
                                                 "#f80af1", # Pink
                                                 "#0a68f8", # Blue
                                                 "#1c841f", # Green
-                                                "#865522", # Brown
                                                 "#fc9303", # Orange
+                                                "#865522", # Brown
+                                                "#00c7a9",  # Teal (adds cool contrast)
+                                                "#F5E61B",  # Yellow (bright mid tone)
+                                                "#7f7f7f",  # Gray (neutral)
                                                 "black"])
 plt.rcParams["lines.linewidth"] = 1.0
 
@@ -65,6 +69,9 @@ def parse_arguments():
     parser.add_argument(
         "-Gs", "--Gap_Surface", action="store_true", help="Plot gap over surface"
     )
+    parser.add_argument(
+        "-f", "--freq", action="store_true", help="Plot frequency data (e.g., Green's functions, self-energy)"
+    )
 
     parser.add_argument("files", nargs="*", help="Input file(s)")
 
@@ -100,6 +107,7 @@ def parse_arguments():
             "line": args.line,
             "Gap": args.Gap,
             "Gap_Surface": args.Gap_Surface,
+            "freq": args.freq,
         },
         "files": valid_files,
         "kwargs": kwargs,
@@ -136,6 +144,8 @@ def sketch(files, plot_type='line', **kwargs):
     elif plot_type == "band":
         print("kwargs: ", kwargs)
         fig, ax = plot_bands.load_and_plot(files, **kwargs)
+    elif plot_type == "freq":
+        fig, ax = plot_frequency.plot_frequency_data(files, **kwargs)
     else:
         raise ValueError(f"Unsupported plot type: {plot_type}")
 
@@ -156,9 +166,17 @@ if __name__ == "__main__":
             plot_type = 'band'
         elif result["flags"]["scatter"]:
             plot_type = 'scatter'
+        elif result["flags"]["freq"]:
+            plot_type = 'freq'
         elif result["flags"]["Gap"]:
             pass
         fig, ax = sketch(result["files"], plot_type, **result["kwargs"])
+
+        # Handle output file if specified
+        if result["flags"]["output"]:
+            plt.savefig(result["flags"]["output"], dpi=300, bbox_inches='tight')
+            print(f"Saved to {result['flags']['output']}")
+
         plt.show()
 
     except Exception as e:

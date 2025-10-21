@@ -13,6 +13,7 @@ class Diagram:
             print(f"Diagram initialized in {varspace} space.")
             raise ValueError("Object must be MeshDLRImFreq or MeshDLRImTime")
 
+        self.varspace = varspace
         self.statistic = statistic
         self.shape = obj.data.shape
         self.nw = self.shape[0]
@@ -82,11 +83,13 @@ class Diagram:
         else:
             obj = np.reshape(self.obj_w.data, (self.nw, ))
             fly.save_data(filename, obj, mesh=None, domain=None, w_points=self.w_points)
+        print(f"Diagram saved to {filename}")
 
     def save_as_w(self, filename):
         obj_w = np.sum(self.obj_wk.data, axis=1) / self.nk  # Sum over k-points
         obj_w = np.reshape(obj_w, (self.nw, ))
         fly.save_data(filename, obj_w, mesh=None, domain=None, w_points=self.w_points)
+        print(f"Diagram(w) saved to {filename}")
 
 
 def copy(diagram):

@@ -5,6 +5,7 @@ from diagram import *
 from load_triqs_H import *
 from many_body_solver import ManyBodySolver
 from ipt_solver import IPTSolver
+from frequency_plots import plot_dmft_results, plot_frequency_data
 import numpy as np
 import firefly.config as cfg
 
@@ -45,7 +46,7 @@ def DMFT():
 
     # Set up DMFT parameters
     beta = 1.0 / cfg.Temperature
-    w_max = 10.0  # DLR frequency cutoff
+    w_max = 1.2 * eps_range
     eps = 1e-14   # DLR precision
 
     # Initialize ManyBodySolver in DMFT mode
@@ -58,7 +59,11 @@ def DMFT():
     print(f"Final Sigma max: {np.max(np.abs(S.Sigma_loc.obj_w.data)):.4f}")
     print(f"Final G max: {np.max(np.abs(S.G_loc.obj_w.data)):.4f}")
 
+    # Save data
     save_DMFT(S)
+
+    # Plot results
+    #plot_dmft_results(S, save_dir=cfg.outdir)
 
 def FLEX():
     # Get energy mesh (returns tuple: H_r, kmesh, e_k)
@@ -80,13 +85,16 @@ def FLEX():
         S.loop_FLEX(n_loops=50, check_divergence=True)
     else:
         S.solve_FLEX()
+    if S.diverged:
+        print("FLEX calculation diverged due to magnetic instability. Results are unreliable.")
+        exit()
     print(f"Final Max Chi: {np.max(np.abs(S.X.obj_wk.data)):.4f}")
     if hasattr(S, 'V'):
         print(f"Final Max Vertex: {np.max(np.abs(S.V.obj_wk.data)):.4f}")
     print(f"Final U*max(Chi): {S.UX:.4f}")
     print(f"Final U: {S.U:.4f}")
 
-    save(S)
+    save_FLEX(S)
 
 def save_FLEX(S):
     outdir = cfg.outdir
@@ -102,6 +110,6 @@ def save_DMFT(S):
     outdir = cfg.outdir
     prefix = cfg.prefix
     pref = outdir + prefix
-    S.G.save(pref + '_G_w.h5')
-    S.Sigma.save(pref + '_sigma_w.h5')
+    S.G_loc.save(pref + '_G_w.h5')
+    S.Sigma_loc.save(pref + '_sigma_w.h5')
 

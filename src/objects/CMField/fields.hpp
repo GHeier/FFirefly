@@ -32,6 +32,9 @@ public:
 
   // List-based operator for multiple points
   vector<complex<float>> operator()(const vector<Vec>& points, float w = 0);
+
+  // List-based operator for multiple w-points
+  vector<complex<float>> operator()(const vector<float>& w_points);
 };
 
 class Field_R {
@@ -57,6 +60,9 @@ public:
 
   // List-based operator for multiple points
   vector<float> operator()(const vector<Vec>& points, float w = 0);
+
+  // List-based operator for multiple w-points
+  vector<float> operator()(const vector<float>& w_points);
 };
 
 // Matrix fields

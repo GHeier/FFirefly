@@ -23,6 +23,7 @@ float Field_R_operator_export3(Field_R *obj, int n, const float *point, int len,
                                float w);
 void Field_R_operator_export_list(Field_R *obj, const float *points, int num_points, int len,
                                    float w, float *output);
+void Field_R_operator_export_w_list(Field_R *obj, const float *w_points, int num_w, float *output);
 
 // Field metadata exports
 int Field_R_get_mesh_size(Field_R *obj);
@@ -47,6 +48,7 @@ void Field_C_operator_export3(Field_C *obj, int n, const float *point, int len,
                               float w, float *real_result, float *imag_result);
 void Field_C_operator_export_list(Field_C *obj, const float *points, int num_points, int len,
                                   float w, float *real_output, float *imag_output);
+void Field_C_operator_export_w_list(Field_C *obj, const float *w_points, int num_w, float *real_output, float *imag_output);
 
 // Field_C metadata exports
 int Field_C_get_mesh_size(Field_C *obj);

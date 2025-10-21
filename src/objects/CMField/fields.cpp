@@ -54,6 +54,14 @@ vector<complex<float>> Field_C::operator()(const vector<Vec>& points, float w) {
     return results;
 }
 
+vector<complex<float>> Field_C::operator()(const vector<float>& w_points) {
+    vector<complex<float>> results(w_points.size());
+    for (size_t i = 0; i < w_points.size(); i++) {
+        results[i] = (*this)(w_points[i]);
+    }
+    return results;
+}
+
 
 // Field_R implementation
 Field_R::Field_R()
@@ -102,6 +110,14 @@ vector<float> Field_R::operator()(const vector<Vec>& points, float w) {
     vector<float> results(points.size());
     for (size_t i = 0; i < points.size(); i++) {
         results[i] = (*this)(points[i], w);
+    }
+    return results;
+}
+
+vector<float> Field_R::operator()(const vector<float>& w_points) {
+    vector<float> results(w_points.size());
+    for (size_t i = 0; i < w_points.size(); i++) {
+        results[i] = (*this)(w_points[i]);
     }
     return results;
 }

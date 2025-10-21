@@ -385,6 +385,23 @@ function (self::Field_R)(arg0)::Float32
     return ccall((:Field_R_operator_export0, libfly), Float32, (Ptr{Cvoid}, Float32), self.ptr, newarg0)
 end
 
+# Multiple w-points evaluation - explicit function name to avoid dispatch ambiguity
+function eval_w_list(self::Field_R, w_points::AbstractVector{<:Real})::Vector{Float32}
+    num_w = length(w_points)
+    if num_w == 0
+        return Float32[]
+    end
+
+    w_array = Float32.(w_points)
+    output = zeros(Float32, num_w)
+
+    ccall((:Field_R_operator_export_w_list, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Float32}, Cint, Ptr{Float32}),
+          self.ptr, w_array, num_w, output)
+
+    return output
+end
+
 # COMMENTED OUT - no corresponding export
 #function (self::Field_R)(arg0::Int, arg1)::Float32
 #    newarg1 = Float32(arg1)
@@ -487,6 +504,26 @@ function (self::Field_C)(arg0)::ComplexF32
     ccall((:Field_C_operator_export0, libfly), Nothing, (Ptr{Cvoid}, Float32, Ptr{Float32}, Ptr{Float32}), self.ptr, newarg0, real, imag)
     return complex(real[], imag[])
 end
+
+# Multiple w-points evaluation - explicit function name to avoid dispatch ambiguity
+function eval_w_list(self::Field_C, w_points::AbstractVector{<:Real})::Vector{ComplexF32}
+    num_w = length(w_points)
+    if num_w == 0
+        return ComplexF32[]
+    end
+
+    w_array = Float32.(w_points)
+    real_output = zeros(Float32, num_w)
+    imag_output = zeros(Float32, num_w)
+
+    ccall((:Field_C_operator_export_w_list, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Float32}, Cint, Ptr{Float32}, Ptr{Float32}),
+          self.ptr, w_array, num_w, real_output, imag_output)
+
+    return complex.(real_output, imag_output)
+end
+
+export eval_w_list
 
 # COMMENTED OUT - no corresponding export
 #function (self::Field_C)(arg0::Int, arg1)::ComplexF32

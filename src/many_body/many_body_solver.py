@@ -24,7 +24,7 @@ class ManyBodySolver:
         self.diverged = False  # Track divergence state
         self.e_k = e_k  # Energy dispersion (needed for mu calculation)
         self.n_target = None  # Target electron density
-        self.mu = None  # Chemical potential
+        self.mu = cfg.fermi_energy  # Chemical potential
 
         # FLEX mode
         if G0 is not None:
@@ -46,7 +46,7 @@ class ManyBodySolver:
             G_iw = Gf(mesh=dlr_iw_mesh, target_shape=[1,1])
             Sigma_iw = G_iw.copy()
             Sigma_iw.zero()
-            G_iw << H(Sigma=Sigma_iw, mu=0.0)
+            G_iw << H(Sigma=Sigma_iw, mu=self.mu)
 
             # Create Diagram objects (they handle w <-> t transforms internally)
             self.G_loc = Diagram(G_iw, 'Fermion')        # Local Green's function
@@ -230,7 +230,7 @@ class ManyBodySolver:
         self.Sigma_loc.obj_w.data[:] = self.mix * self.Sigma_loc.obj_w.data + (1.0 - self.mix) * Sigma_old.data
 
         # Dyson equation: G_loc = H(Sigma)
-        self.G_loc.obj_w << self.H(Sigma=self.Sigma_loc.obj_w, mu=0.0)
+        self.G_loc.obj_w << self.H(Sigma=self.Sigma_loc.obj_w, mu=self.mu)
 
         # Self-consistency: G_Weiss^-1 = G_loc^-1 + Sigma
         self.G_loc.obj_w << inverse(inverse(self.G_loc.obj_w) + self.Sigma_loc.obj_w)

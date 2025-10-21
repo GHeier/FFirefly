@@ -331,6 +331,7 @@ void Field_C_operator_export2(Field_C *obj, const float *point, int len,
 
 void Field_C_operator_export_list(Field_C *obj, const float *points, int num_points, int len,
                                   float w, float *real_output, float *imag_output) {
+    printf("Entering Field_C_operator_export_list\n");
     vector<Vec> vec_points;
     vec_points.reserve(num_points);
     for (int i = 0; i < num_points; ++i) {
@@ -339,6 +340,15 @@ void Field_C_operator_export_list(Field_C *obj, const float *points, int num_poi
     }
     vector<complex<float>> results = obj->operator()(vec_points, w);
     for (int i = 0; i < num_points; ++i) {
+        real_output[i] = real(results[i]);
+        imag_output[i] = imag(results[i]);
+    }
+}
+
+void Field_C_operator_export_w_list(Field_C *obj, const float *w_points, int num_w, float *real_output, float *imag_output) {
+    vector<float> w_vec(w_points, w_points + num_w);
+    vector<complex<float>> results = obj->operator()(w_vec);
+    for (int i = 0; i < num_w; ++i) {
         real_output[i] = real(results[i]);
         imag_output[i] = imag(results[i]);
     }
@@ -371,6 +381,14 @@ void Field_R_operator_export_list(Field_R *obj, const float *points, int num_poi
     }
     vector<float> results = obj->operator()(vec_points, w);
     for (int i = 0; i < num_points; ++i) {
+        output[i] = results[i];
+    }
+}
+
+void Field_R_operator_export_w_list(Field_R *obj, const float *w_points, int num_w, float *output) {
+    vector<float> w_vec(w_points, w_points + num_w);
+    vector<float> results = obj->operator()(w_vec);
+    for (int i = 0; i < num_w; ++i) {
         output[i] = results[i];
     }
 }

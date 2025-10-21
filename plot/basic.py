@@ -58,25 +58,10 @@ def load_data(files):
 
             datasets.append((x, y, x_label, y_label, title))
         else:
-            import h5py  # Lazy import: only load when needed for HDF5 files
-            #field = fly.Field_R(file)
-            #print(field.w_points)
-            with h5py.File(file, 'r') as f:
-                x = f['/w_points'][()]
-                y = f['/values/real'][()]
-
-                # Remove singleton dimensions: (1, 500, 1) → (500,)
-                y = np.squeeze(y)
-
-                # Validate dimension match
-                if x.shape != y.shape:
-                    raise ValueError(f"x.shape {x.shape} does not match y.shape {y.shape} after squeezing.")
-
-                x_label = "w"
-                y_label = "values"
-                title = os.path.splitext(os.path.basename(file))[0]
-
-                datasets.append((x, y, x_label, y_label, title))
+            field = fly.Field_C(file)
+            x = field.w_points
+            y = field(x)
+            datasets.append((x, y, "w", "values", os.path.splitext(os.path.basename(file))[0]))
 
     return datasets
 
