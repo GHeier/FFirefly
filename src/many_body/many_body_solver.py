@@ -1,7 +1,8 @@
 from diagram import *
 from triqs_tprf.lattice import *
 from triqs_tprf import *
-from triqs.gf import inverse, Fourier
+from triqs.gf import inverse, Fourier, Gf, make_gf_dlr, make_gf_dlr_imtime, make_gf_dlr_imfreq
+from triqs.gf.meshes import MeshDLRImFreq, MeshDLRImTime
 import numpy as np
 from scipy.optimize import brentq
 
@@ -9,9 +10,13 @@ import firefly as fly
 import firefly.config as cfg
 
 class ManyBodySolver:
-    def __init__(self, G0, U=0.0, mix=0.2, U_maxiter=50, e_k=None):
-        self.G0 = Diagram(G0, 'Fermion')
-        self.G = copy(self.G0)
+    def __init__(self, G0=None, U=0.0, mix=0.2, U_maxiter=50, e_k=None, H=None, beta=None, w_max=None, eps=None):
+        """
+        Initialize ManyBodySolver for either FLEX or DMFT calculations.
+
+        For FLEX: provide G0 (Green's function on k-mesh)
+        For DMFT: provide H (HilbertTransform), beta, w_max, eps
+        """
         self.U = U
         self.UX = 0.0  # Track U * max(chi)
         self.mix = mix  # Mixing parameter for self-energy
@@ -21,9 +26,34 @@ class ManyBodySolver:
         self.n_target = None  # Target electron density
         self.mu = None  # Chemical potential
 
-        # Store Sigma for mu calculation
-        if not hasattr(self, 'Sigma'):
+        # FLEX mode
+        if G0 is not None:
+            self.G0 = Diagram(G0, 'Fermion')
+            self.G = copy(self.G0)
             self.Sigma = None
+            self.mode = 'FLEX'
+
+        # DMFT mode
+        elif H is not None:
+            self.H = H
+            self.beta = beta
+            self.mode = 'DMFT'
+
+            # Create DLR meshes
+            dlr_iw_mesh = MeshDLRImFreq(beta=beta, statistic='Fermion', w_max=w_max, eps=eps)
+
+            # Initialize Green's functions in frequency space
+            G_iw = Gf(mesh=dlr_iw_mesh, target_shape=[1,1])
+            Sigma_iw = G_iw.copy()
+            Sigma_iw.zero()
+            G_iw << H(Sigma=Sigma_iw, mu=0.0)
+
+            # Create Diagram objects (they handle w <-> t transforms internally)
+            self.G_loc = Diagram(G_iw, 'Fermion')        # Local Green's function
+            self.Sigma_loc = Diagram(Sigma_iw, 'Fermion') # Local self-energy
+
+        else:
+            raise ValueError("Must provide either G0 (for FLEX) or H (for DMFT)")
 
     def chi0_from_grt_PH(self):
         self.G.wk_to_tr()
@@ -183,4 +213,56 @@ class ManyBodySolver:
                 print("Convergence achieved.")
                 break
 
+    # DMFT methods
+    def solve_DMFT(self):
+        """Single DMFT iteration using IPT."""
+        # Transform Weiss field to imaginary time
+        self.G_loc.w_to_t()
 
+        # IPT: Sigma(tau) = U^2 * G_Weiss(tau)^3
+        self.Sigma_loc.obj_t.data[:] = (self.U**2) * self.G_loc.obj_t.data**3
+
+        # Transform Sigma back to frequency
+        self.Sigma_loc.t_to_w()
+
+        # Mix self-energy for stability
+        Sigma_old = self.Sigma_loc.obj_w.copy()
+        self.Sigma_loc.obj_w.data[:] = self.mix * self.Sigma_loc.obj_w.data + (1.0 - self.mix) * Sigma_old.data
+
+        # Dyson equation: G_loc = H(Sigma)
+        self.G_loc.obj_w << self.H(Sigma=self.Sigma_loc.obj_w, mu=0.0)
+
+        # Self-consistency: G_Weiss^-1 = G_loc^-1 + Sigma
+        self.G_loc.obj_w << inverse(inverse(self.G_loc.obj_w) + self.Sigma_loc.obj_w)
+
+    def loop_DMFT(self, n_loops=100, tol=1e-6):
+        """Self-consistent DMFT loop."""
+        print("Beginning DMFT Self-Consistent Loop")
+        for i in range(n_loops):
+            G_old = self.G_loc.obj_w.copy()
+
+            self.solve_DMFT()
+
+            err = np.max(np.abs(self.G_loc.obj_w.data - G_old.data))
+            print(f"DMFT loop {i+1}, err = {err:.3e}")
+
+            if err < tol:
+                print("Convergence achieved.")
+                break
+
+    def solve_FLEX_DMFT(self):
+        """Single iteration of FLEX+DMFT."""
+        self.solve_DMFT()
+
+        # FLEX steps
+        self.solve_FLEX()
+
+        if self.diverged:
+            print("Divergence detected in FLEX+DMFT step.")
+            return
+
+        self.G_loc.obj_w.data[:] = np.sum(self.G.obj_wk.data, axis=1) / self.G.nk
+
+        # Update local quantities
+        self.G_loc = copy(self.G)
+        self.Sigma_loc = copy(self.Sigma)

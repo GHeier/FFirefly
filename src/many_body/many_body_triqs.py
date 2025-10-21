@@ -43,11 +43,22 @@ def DMFT():
     dos_obj = DOSFromFunction(function=dos_func, x_min=eps_min-margin, x_max=eps_max+margin, n_pts=int(cfg.w_pts))
     H = HilbertTransform(dos_obj)
 
-    # Run IPT solver
+    # Set up DMFT parameters
     beta = 1.0 / cfg.Temperature
-    S = IPTSolver(beta, H, n_loops=100, mix=0.10, tol=1e-6, w_max=1.2*4, eps=1e-14)
-    S.loop(U=cfg.onsite_U)
-    print(f"Final Sigma max: {np.max(np.abs(S.Sigma_iw.data)):.4f}")
+    w_max = 10.0  # DLR frequency cutoff
+    eps = 1e-14   # DLR precision
+
+    # Initialize ManyBodySolver in DMFT mode
+    S = ManyBodySolver(H=H, beta=beta, U=cfg.onsite_U, mix=0.10, w_max=w_max, eps=eps)
+
+    # Run DMFT loop
+    S.loop_DMFT(n_loops=100, tol=1e-6)
+
+    # Print results
+    print(f"Final Sigma max: {np.max(np.abs(S.Sigma_loc.obj_w.data)):.4f}")
+    print(f"Final G max: {np.max(np.abs(S.G_loc.obj_w.data)):.4f}")
+
+    save_DMFT(S)
 
 def FLEX():
     # Get energy mesh (returns tuple: H_r, kmesh, e_k)
@@ -77,7 +88,7 @@ def FLEX():
 
     save(S)
 
-def save(S):
+def save_FLEX(S):
     outdir = cfg.outdir
     prefix = cfg.prefix
     pref = outdir + prefix
@@ -85,4 +96,12 @@ def save(S):
     S.X.save(pref + '_chi.h5')
     S.V.save(pref + '_vertex.h5')
     S.Sigma.save_as_w(pref + '_sigma_w.h5')
+
+
+def save_DMFT(S):
+    outdir = cfg.outdir
+    prefix = cfg.prefix
+    pref = outdir + prefix
+    S.G.save(pref + '_G_w.h5')
+    S.Sigma.save(pref + '_sigma_w.h5')
 

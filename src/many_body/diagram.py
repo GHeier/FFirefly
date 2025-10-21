@@ -1,5 +1,5 @@
 from triqs.gf.meshes import MeshDLRImFreq, MeshDLRImTime
-from triqs.gf import MeshProduct, MeshBrillouinZone
+from triqs.gf import MeshProduct, MeshBrillouinZone, make_gf_dlr, make_gf_dlr_imtime, make_gf_dlr_imfreq
 from triqs_tprf.lattice import fourier_tr_to_wr, fourier_wk_to_wr, fourier_wr_to_tr, fourier_wr_to_wk, chi_wr_from_chi_tr, chi_wk_from_chi_wr, chi_tr_from_chi_wr, chi_wr_from_chi_wk
 import numpy as np
 
@@ -29,17 +29,25 @@ class Diagram:
         elif varspace == 'w':
             self.obj_w = obj
             self.w_to_t()
-        elif varspce == 't':
+        elif varspace == 't':
             self.obj_t = obj
             self.t_to_w()
         else:
             raise ValueError("varspace must be 'wk' or 'tr' or 'w' or 't'")
 
         # Extract w-points from mesh (Matsubara frequencies)
-        # Must be done AFTER transformation to wk space
-        mesh_w = obj.mesh.components[0]
+        if varspace == 'wk' or varspace == 'tr':
+            # For wk/tr space, mesh is MeshProduct
+            mesh_w = self.obj_wk.mesh.components[0]
+        else:
+            # For w/t space, mesh is directly the frequency/time mesh
+            mesh_w = obj.mesh
+
         # For Matsubara frequencies, use imaginary part
-        self.w_points = np.array([float(iw.imag) for iw in mesh_w], dtype=np.float32)
+        if isinstance(mesh_w, MeshDLRImFreq):
+            self.w_points = np.array([float(iw.imag) for iw in mesh_w], dtype=np.float32)
+        else:
+            self.w_points = None
 
     def wk_to_tr(self):
         if self.statistic == 'Fermion':
@@ -61,15 +69,19 @@ class Diagram:
         self.dlr = make_gf_dlr(self.obj_w)
         self.obj_t = make_gf_dlr_imtime(self.dlr)
 
-    def tau_to_iw_dlr(self):
+    def t_to_w(self):
         self.dlr = make_gf_dlr(self.obj_t)
         self.obj_w = make_gf_dlr_imfreq(self.dlr)
 
     def save(self, filename):
-        mesh, BZ = extract_mesh_and_bz(self.obj_wk)
-        # Reshape data to match mesh dimensions (nw, nkx, nky, nkz)
-        obj = np.reshape(self.obj_wk.data, mesh)
-        fly.save_data(filename, obj.T, mesh=np.array(mesh, dtype=np.int32), domain=BZ, w_points=self.w_points)
+        if self.varspace in ['wk', 'tr']:
+            mesh, BZ = extract_mesh_and_bz(self.obj_wk)
+            # Reshape data to match mesh dimensions (nw, nkx, nky, nkz)
+            obj = np.reshape(self.obj_wk.data, mesh)
+            fly.save_data(filename, obj.T, mesh=np.array(mesh, dtype=np.int32), domain=BZ, w_points=self.w_points)
+        else:
+            obj = np.reshape(self.obj_w.data, (self.nw, ))
+            fly.save_data(filename, obj, mesh=None, domain=None, w_points=self.w_points)
 
     def save_as_w(self, filename):
         obj_w = np.sum(self.obj_wk.data, axis=1) / self.nk  # Sum over k-points
