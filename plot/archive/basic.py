@@ -2,23 +2,25 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+from typing import Optional
 import firefly as fly
 
-def plot_basic(files, **kwargs):
+def plot_basic(files, ax: Optional[Axes] = None, **kwargs) -> Axes:
     datasets = load_data(files)
-    return line(datasets, **kwargs)
+    return line(datasets, ax=ax, **kwargs)
 
-def plot_scatter(files, **kwargs):
+def plot_scatter(files, ax: Optional[Axes] = None, **kwargs) -> Axes:
     datasets = load_data(files)
-    return scatter(datasets, **kwargs)
+    return scatter(datasets, ax=ax, **kwargs)
 
-def plot_hist(files, **kwargs):
+def plot_hist(files, ax: Optional[Axes] = None, **kwargs) -> Axes:
     datasets = load_data(files)
-    return hist(datasets, **kwargs)
+    return hist(datasets, ax=ax, **kwargs)
 
-def plot_bar(files, **kwargs):
+def plot_bar(files, ax: Optional[Axes] = None, **kwargs) -> Axes:
     datasets = load_data(files)
-    return bar(datasets, **kwargs)
+    return bar(datasets, ax=ax, **kwargs)
 
 def clean_filename(file):
     for ext in [".dat", ".csv", ".txt"]:
@@ -58,7 +60,7 @@ def load_data(files):
 
             datasets.append((x, y, x_label, y_label, title))
         else:
-            field = fly.Field_C(file)
+            field = fly.Field_R(file)
             x = field.w_points
             y = field(x)
             datasets.append((x, y, "w", "values", os.path.splitext(os.path.basename(file))[0]))
@@ -66,8 +68,9 @@ def load_data(files):
     return datasets
 
 
-def line(datasets, **kwargs):
-    fig, ax = plt.subplots()
+def line(datasets, ax: Optional[Axes] = None, **kwargs) -> Axes:
+    if ax is None:
+        fig, ax = plt.subplots()
 
     for x, y, x_label, y_label, label in datasets:
         ax.plot(x, y, label=label, **kwargs)
@@ -78,11 +81,12 @@ def line(datasets, **kwargs):
     ax.grid(True, alpha=0.2)
     ax.legend()
 
-    return fig, ax
+    return ax
 
 
-def scatter(datasets, **kwargs):
-    fig, ax = plt.subplots()
+def scatter(datasets, ax: Optional[Axes] = None, **kwargs) -> Axes:
+    if ax is None:
+        fig, ax = plt.subplots()
 
     for x, y, x_label, y_label, label in datasets:
         ax.scatter(x, y, label=label, **kwargs)
@@ -93,11 +97,12 @@ def scatter(datasets, **kwargs):
     ax.grid(True, alpha=0.2)
     ax.legend()
 
-    return fig, ax
+    return ax
 
 
-def hist(datasets, **kwargs):
-    fig, ax = plt.subplots()
+def hist(datasets, ax: Optional[Axes] = None, **kwargs) -> Axes:
+    if ax is None:
+        fig, ax = plt.subplots()
 
     for x, y, x_label, y_label, label in datasets:
         ax.hist(x, y, label=label, **kwargs)
@@ -108,11 +113,12 @@ def hist(datasets, **kwargs):
     ax.grid(True, alpha=0.2)
     ax.legend()
 
-    return fig, ax
+    return ax
 
 
-def bar(datasets, **kwargs):
-    fig, ax = plt.subplots()
+def bar(datasets, ax: Optional[Axes] = None, **kwargs) -> Axes:
+    if ax is None:
+        fig, ax = plt.subplots()
 
     for x, y, x_label, y_label, label in datasets:
         ax.bar(x, y, label=label, **kwargs)
@@ -123,4 +129,4 @@ def bar(datasets, **kwargs):
     ax.grid(True, alpha=0.2)
     ax.legend()
 
-    return fig, ax
+    return ax

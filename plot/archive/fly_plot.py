@@ -23,7 +23,7 @@ plt.rcParams["axes.prop_cycle"] = cycler(color=["#9a05fc", # Purple
                                                 "#fc9303", # Orange
                                                 "#865522", # Brown
                                                 "#00c7a9",  # Teal (adds cool contrast)
-                                                "#F5E61B",  # Yellow (bright mid tone)
+                                                "#C9C22A",  # Yellow (bright mid tone)
                                                 "#7f7f7f",  # Gray (neutral)
                                                 "black"])
 plt.rcParams["lines.linewidth"] = 1.0
@@ -123,34 +123,34 @@ def get_flags_from_files(result):
         if "fermi_surface" in lower_name or "fs" in lower_name or "FS" in lower_name:
             flags["fermi_surface"] = True
 
-def sketch(files, plot_type='line', **kwargs):
+def sketch(files, plot_type='line', ax=None, **kwargs):
     if isinstance(files, str):
         files = [files]
     # Select plot type
     if plot_type == 'line':
-        fig, ax = basic.plot_basic(files, **kwargs)
+        ax = basic.plot_basic(files, ax=ax, **kwargs)
     elif plot_type == 'scatter':
-        fig, ax = basic.plot_scatter(files, **kwargs)
+        ax = basic.plot_scatter(files, ax=ax, **kwargs)
     elif plot_type == 'bar':
-        fig, ax = basic.plot_bar(files, **kwargs)
+        ax = basic.plot_bar(files, ax=ax, **kwargs)
     elif plot_type == 'hist':
-        fig, ax = basic.plot_hist(files, **kwargs)
+        ax = basic.plot_hist(files, ax=ax, **kwargs)
     elif plot_type == 'colorgrid':
-        fig, ax = colorplot.plot_colorgrid(files, **kwargs)
+        ax = colorplot.plot_colorgrid(files, ax=ax, **kwargs)
     elif plot_type == 'colorline':
-        fig, ax = colorplot.plot_colorline(files, **kwargs)
+        ax = colorplot.plot_colorline(files, ax=ax, **kwargs)
     elif plot_type == "path":
-        fig, ax = plot_path.plot_path(files, **kwargs)
+        ax = plot_path.plot_path(files, ax=ax, **kwargs)
     elif plot_type == "band":
         print("kwargs: ", kwargs)
-        fig, ax = plot_bands.load_and_plot(files, **kwargs)
+        ax = plot_bands.load_and_plot(files, ax=ax, **kwargs)
     elif plot_type == "freq":
-        fig, ax = plot_frequency.plot_frequency_data(files, **kwargs)
+        ax = plot_frequency.plot_frequency_data(files, ax=ax, **kwargs)
     else:
         raise ValueError(f"Unsupported plot type: {plot_type}")
 
-    # Return the figure and axis for further modifications
-    return fig, ax
+    # Return the axis for further modifications
+    return ax
 
 
 if __name__ == "__main__":
@@ -170,7 +170,7 @@ if __name__ == "__main__":
             plot_type = 'freq'
         elif result["flags"]["Gap"]:
             pass
-        fig, ax = sketch(result["files"], plot_type, **result["kwargs"])
+        ax = sketch(result["files"], plot_type, **result["kwargs"])
 
         # Handle output file if specified
         if result["flags"]["output"]:

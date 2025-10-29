@@ -1,21 +1,23 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+from typing import Optional
 import matplotlib.tri as tri
 from scipy.spatial import ConvexHull
 from matplotlib.collections import LineCollection
 import firefly as fly
 import firefly.config as cfg
 
-def plot_colorgrid(files, **kwargs):
+def plot_colorgrid(files, ax: Optional[Axes] = None, **kwargs) -> Axes:
     field = fly.Field_C(files[0])
-    return colorplot_field(field, **kwargs)
+    return colorplot_field(field, ax=ax, **kwargs)
 
-def plot_colorline(files, **kwargs):
-    return colorplot_surface(files[0], **kwargs)
+def plot_colorline(files, ax: Optional[Axes] = None, **kwargs) -> Axes:
+    return colorplot_surface(files[0], ax=ax, **kwargs)
 
-def colorplot_field(field, xlim=(-np.pi, np.pi), ylim=(-np.pi, np.pi), resolution=500,
-                    cmap='bwr', title="f(x, y)"):
+def colorplot_field(field, ax: Optional[Axes] = None, xlim=(-np.pi, np.pi), ylim=(-np.pi, np.pi),
+                    resolution=500, cmap='bwr', title="f(x, y)") -> Axes:
     x = np.linspace(*xlim, resolution)
     y = np.linspace(*ylim, resolution)
     X, Y = np.meshgrid(x, y)
@@ -31,18 +33,25 @@ def colorplot_field(field, xlim=(-np.pi, np.pi), ylim=(-np.pi, np.pi), resolutio
 
     if (maxZ * minZ > 0):
         cmap = "viridis"
-    fig, ax = plt.subplots(figsize=(8, 6))
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 6))
+    else:
+        fig = ax.get_figure()
+
     c = ax.pcolormesh(X, Y, Z, shading='auto', cmap=cmap)
     fig.colorbar(c, ax=ax, label="Re(f(x, y))")
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     ax.set_title(title)
-    fig.tight_layout()
 
-    return fig, ax
+    if ax is None or ax.get_figure().get_axes() == [ax]:
+        fig.tight_layout()
+
+    return ax
 
 
-def colorplot_surface(file, cmap='bwr'):
+def colorplot_surface(file, ax: Optional[Axes] = None, cmap='bwr') -> Axes:
     df = pd.read_csv(file, sep=None, engine='python')
     x = df.iloc[:, 0].values
     y = df.iloc[:, 1].values
@@ -63,7 +72,11 @@ def colorplot_surface(file, cmap='bwr'):
     ])
     segment_vals = 0.5 * (ordered_f_vals[:-1] + ordered_f_vals[1:])
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 6))
+    else:
+        fig = ax.get_figure()
+
     lc = LineCollection(segments, cmap=cmap, array=segment_vals, linewidths=5)
     ax.add_collection(lc)
     fig.colorbar(lc, ax=ax)
@@ -73,6 +86,8 @@ def colorplot_surface(file, cmap='bwr'):
     ax.set_ylim(ordered_points[:, 1].min() * 1.03, ordered_points[:, 1].max() * 1.03)
 
     ax.set_aspect('equal')
-    fig.tight_layout()
 
-    return fig, ax
+    if ax is None or ax.get_figure().get_axes() == [ax]:
+        fig.tight_layout()
+
+    return ax

@@ -147,11 +147,12 @@ end
 function linearized_eliashberg_loop(iw, V_rt, e, deflates, mesh = 0)
     phinw = length(iw)
     phi = rand(ComplexF32, phinw, nx, ny, nz)
+    #phi = ones(ComplexF32, phinw, nx, ny, nz)
     for iy in 1:ny, ix in 1:nx, iw in 1:phinw
         kx, ky = get_kvec(ix, iy, 1)
         #kx::Float64 = (2*π*(ix-1))/nx
         #ky::Float64 = (2*π*(iy-1))/ny
-        #phi[iw,ix,iy,1] = cos(kx) - cos(ky)
+        phi[iw,ix,iy,1] = cos(kx) - cos(ky)
     end
     eig, prev_eig, eig_err = 0, 0, 1
     max_iters = 50
@@ -191,6 +192,8 @@ end
 
 function linearized_eliashberg(phi, iw, V_rt, e, mesh)
     F = -phi .* ( 1 ./ (iw .- e)) .* (1 ./ (-iw .- e))
+    #G2 = ( 1 ./ (iw .- e)) .* (1 ./ (-iw .- e))
+    #println("Max G(iw,k) = ", maximum(real.(G2)))
     result = convolution(F, V_rt, mesh)
 
     eig = sum(real.(conj.(result) .* phi))
@@ -263,7 +266,7 @@ function eigenvalue_computation()
 
     println("Getting Self Energy")
     Sigma = Self_Energy()
-    e = create_energy_mesh(band, iw, Sigma, false)
+    e = create_energy_mesh(band, iw, Sigma, true)
 
     if !bcs_debug
         println("Getting Vertex")

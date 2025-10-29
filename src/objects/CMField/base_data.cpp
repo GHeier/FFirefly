@@ -176,6 +176,54 @@ BaseData load_data_from_hdf5(const std::string& filename) {
     return field;
 }
 
+// Load with specified ordering (k-w or w-k)
+BaseData load_data_from_hdf5(const std::string& filename, const std::string& ordering) {
+    BaseData field = load_data_from_hdf5(filename);
+
+    // Check if we need to reorder (stored as k-w by default)
+    if (ordering == "w-k" && field.with_k && field.with_w) {
+        int nk = field.nk();
+        int nw = field.nw();
+
+        // Reorder based on the data variant type
+        if (field.n_indices == 2) {
+            // Matrix data
+            auto& matrices = field.get<std::vector<std::vector<std::vector<cfloat>>>>();
+            std::vector<std::vector<std::vector<cfloat>>> reordered(nk * nw);
+
+            for (int k = 0; k < nk; ++k) {
+                for (int w = 0; w < nw; ++w) {
+                    // k-w: index = k * nw + w
+                    // w-k: index = w * nk + k
+                    reordered[w * nk + k] = matrices[k * nw + w];
+                }
+            }
+            field.data = reordered;
+        } else {
+            // Scalar/vector data
+            auto& flat = field.get<std::vector<cfloat>>();
+            int vec_len = field.vec_len();
+            int total_indices = field.total_index_size();
+            int elements_per_point = vec_len * total_indices;
+
+            std::vector<cfloat> reordered(flat.size());
+            for (int k = 0; k < nk; ++k) {
+                for (int w = 0; w < nw; ++w) {
+                    for (int e = 0; e < elements_per_point; ++e) {
+                        // k-w: index = (k * nw + w) * elements_per_point + e
+                        // w-k: index = (w * nk + k) * elements_per_point + e
+                        reordered[(w * nk + k) * elements_per_point + e] =
+                            flat[(k * nw + w) * elements_per_point + e];
+                    }
+                }
+            }
+            field.data = reordered;
+        }
+    }
+
+    return field;
+}
+
 void save_data_to_hdf5(BaseData& field, const std::string& filename) {
     save_data_to_hdf5(filename,
                        field.is_complex,
@@ -192,6 +240,61 @@ void save_data_to_hdf5(BaseData& field, const std::string& filename) {
                        field.w_points,
                        field.points,
                        field.data);
+}
+
+// Save with specified ordering (k-w or w-k)
+void save_data_to_hdf5(BaseData& field, const std::string& filename, const std::string& ordering) {
+    // If ordering is k-w or default, just save normally
+    if (ordering == "k-w" || ordering.empty()) {
+        save_data_to_hdf5(field, filename);
+        return;
+    }
+
+    // If ordering is w-k, we need to reorder the data before saving
+    if (ordering == "w-k" && field.with_k && field.with_w) {
+        BaseData reordered = field;  // Copy
+        int nk = field.nk();
+        int nw = field.nw();
+
+        // Reorder based on the data variant type
+        if (field.n_indices == 2) {
+            // Matrix data
+            auto& matrices = field.get<std::vector<std::vector<std::vector<cfloat>>>>();
+            std::vector<std::vector<std::vector<cfloat>>> reordered_data(nk * nw);
+
+            for (int k = 0; k < nk; ++k) {
+                for (int w = 0; w < nw; ++w) {
+                    // k-w: index = k * nw + w
+                    // w-k: index = w * nk + k
+                    reordered_data[w * nk + k] = matrices[k * nw + w];
+                }
+            }
+            reordered.data = reordered_data;
+        } else {
+            // Scalar/vector data
+            auto& flat = field.get<std::vector<cfloat>>();
+            int vec_len = field.vec_len();
+            int total_indices = field.total_index_size();
+            int elements_per_point = vec_len * total_indices;
+
+            std::vector<cfloat> reordered_data(flat.size());
+            for (int k = 0; k < nk; ++k) {
+                for (int w = 0; w < nw; ++w) {
+                    for (int e = 0; e < elements_per_point; ++e) {
+                        // k-w: index = (k * nw + w) * elements_per_point + e
+                        // w-k: index = (w * nk + k) * elements_per_point + e
+                        reordered_data[(w * nk + k) * elements_per_point + e] =
+                            flat[(k * nw + w) * elements_per_point + e];
+                    }
+                }
+            }
+            reordered.data = reordered_data;
+        }
+
+        save_data_to_hdf5(reordered, filename);
+    } else {
+        save_data_to_hdf5(field, filename);
+    }
 }
 
 void save_data(string filename, BaseData::DataVariant& data, bool is_complex, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, int n_indices, int dim_indices) {

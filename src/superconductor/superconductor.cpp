@@ -17,6 +17,7 @@
 
 #include "../algorithms/linear_algebra.hpp"
 #include "../config/load/cpp_config.hpp"
+#include "../config/load/py_interface.h"
 #include "../config/load/jl_interface.h"
 #include "../hamiltonian/band_structure.hpp"
 #include "../objects/eigenvec.hpp"
@@ -148,10 +149,10 @@ void eliashberg() {
     string folder = "superconductor/";
     string filename = "eliashberg";
     string module = "Eliashberg";
-    string function = "eliashberg_node";
-    // call_python_func(folder.c_str(), filename.c_str(), function.c_str());
-    call_julia_func(folder.c_str(), filename.c_str(), module.c_str(),
-                    function.c_str());
+    string function = "main";
+    call_python_func(folder.c_str(), filename.c_str(), function.c_str());
+    //call_julia_func(folder.c_str(), filename.c_str(), module.c_str(),
+                    //function.c_str());
 }
 
 void linearized_eliashberg() {

@@ -42,8 +42,9 @@ public:
         if (!with_k) return 1;
         if (as_mesh) {
             int total = 1;
-            // Skip first element if with_w (mesh[0] is nw in that case)
-            int start_idx = with_w ? 1 : 0;
+            // Skip first element if with_w AND w_points is empty (legacy: mesh[0] is nw in that case)
+            // But if w_points is provided separately, don't skip - mesh contains only spatial dims
+            int start_idx = (with_w && w_points.empty()) ? 1 : 0;
             for (int i = start_idx; i < mesh.size(); i++) {
                 total *= mesh[i];
             }
@@ -77,9 +78,11 @@ public:
 
 // Load
 BaseData load_data_from_hdf5(const std::string& filename);
+BaseData load_data_from_hdf5(const std::string& filename, const std::string& ordering);  // ordering: "k-w" or "w-k"
 
 // Save overloads
 void save_data_to_hdf5(BaseData& data, const std::string& filename);
+void save_data_to_hdf5(BaseData& data, const std::string& filename, const std::string& ordering);  // ordering: "k-w" or "w-k"
 void save_data(string filename, BaseData::DataVariant& data, bool is_complex = false, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, int n_indices = 0, int dim_indices = 0);
 
 void save_data_to_hdf5(const std::string& filename, bool is_complex, bool is_vector, bool is_matrix, bool with_k, bool with_w, bool as_mesh, int n_indices, int dim_indices, vector<int> &mesh, vector<vector<float>> &domain, int dimension, vector<float> &w_points, vector<vector<float>> &points, const BaseData::DataVariant& data);

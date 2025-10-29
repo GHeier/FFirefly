@@ -35,6 +35,9 @@ public:
 
   // List-based operator for multiple w-points
   vector<complex<float>> operator()(const vector<float>& w_points);
+
+  // Get underlying data
+  BaseData* get_data();
 };
 
 class Field_R {
@@ -63,6 +66,9 @@ public:
 
   // List-based operator for multiple w-points
   vector<float> operator()(const vector<float>& w_points);
+
+  // Get underlying data
+  BaseData* get_data();
 };
 
 // Matrix fields
@@ -96,6 +102,9 @@ public:
 
   // Diagonalize matrix at point and return eigenvalues and eigenvectors
   vector<Eigenvector> fulldiag(Vec point, float w = 0);
+
+  // Get underlying data
+  BaseData* get_data();
 };
 
 class Field_RM {
@@ -128,4 +137,7 @@ public:
 
   // Diagonalize matrix at point and return eigenvalues and eigenvectors
   vector<Eigenvector> fulldiag(Vec point, float w = 0);
+
+  // Get underlying data
+  BaseData* get_data();
 };

@@ -1,7 +1,6 @@
 from triqs.gf import *
 from triqs_tprf.tight_binding import TBLattice
 
-import firefly.config as cfg
 
 def get_energy_mesh():
     """
@@ -13,6 +12,9 @@ def get_energy_mesh():
             - kmesh: k-space mesh
             - e_k: energy dispersion on k-mesh
     """
+    # Import config inside function to avoid circular import
+    import firefly.config as cfg
+
     # Parameters
     t = cfg.t0
     t1 = cfg.t1

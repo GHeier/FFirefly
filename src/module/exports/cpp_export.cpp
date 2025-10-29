@@ -275,7 +275,6 @@ void Hamiltonian_operator_export0(Hamiltonian *obj, const float *point, int len,
 extern "C" int Field_R_nbnd_export0(Field_R* a) {
     // nbnd is always 1 now (no multi-band support)
     int temp = 1;
-    printf("cnbnd = %d\n", temp);
     return temp;
 }
 
@@ -331,7 +330,6 @@ void Field_C_operator_export2(Field_C *obj, const float *point, int len,
 
 void Field_C_operator_export_list(Field_C *obj, const float *points, int num_points, int len,
                                   float w, float *real_output, float *imag_output) {
-    printf("Entering Field_C_operator_export_list\n");
     vector<Vec> vec_points;
     vec_points.reserve(num_points);
     for (int i = 0; i < num_points; ++i) {
@@ -828,6 +826,123 @@ void save_data_matrix_export0(const char *filename, const float *data_interleave
     // Create DataVariant and call save_data
     BaseData::DataVariant data = data_vec;
     save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, 2, mat_dim);
+}
+
+// BaseData exports
+extern "C" BaseData* BaseData_load(const char *filename) {
+    return new BaseData(load_data_from_hdf5(filename));
+}
+
+extern "C" BaseData* BaseData_load_with_ordering(const char *filename, const char *ordering) {
+    return new BaseData(load_data_from_hdf5(filename, ordering));
+}
+
+extern "C" void BaseData_save(BaseData *data, const char *filename) {
+    save_data_to_hdf5(*data, filename);
+}
+
+extern "C" void BaseData_save_with_ordering(BaseData *data, const char *filename, const char *ordering) {
+    save_data_to_hdf5(*data, filename, ordering);
+}
+
+extern "C" void destroy_BaseData(BaseData *data) {
+    delete data;
+}
+
+// BaseData metadata getters
+extern "C" int BaseData_get_is_complex(BaseData *data) { return data->is_complex; }
+extern "C" int BaseData_get_is_vector(BaseData *data) { return data->is_vector; }
+extern "C" int BaseData_get_is_matrix(BaseData *data) { return data->is_matrix; }
+extern "C" int BaseData_get_with_k(BaseData *data) { return data->with_k; }
+extern "C" int BaseData_get_with_w(BaseData *data) { return data->with_w; }
+extern "C" int BaseData_get_as_mesh(BaseData *data) { return data->as_mesh; }
+extern "C" int BaseData_get_n_indices(BaseData *data) { return data->n_indices; }
+extern "C" int BaseData_get_dim_indices(BaseData *data) { return data->dim_indices; }
+extern "C" int BaseData_get_dimension(BaseData *data) { return data->dimension; }
+extern "C" int BaseData_get_nk(BaseData *data) { return data->nk(); }
+extern "C" int BaseData_get_nw(BaseData *data) { return data->nw(); }
+
+// BaseData array getters
+extern "C" int BaseData_get_mesh_size(BaseData *data) {
+    return data->mesh.size();
+}
+
+extern "C" void BaseData_get_mesh(BaseData *data, int *mesh_out) {
+    for (size_t i = 0; i < data->mesh.size(); i++) {
+        mesh_out[i] = data->mesh[i];
+    }
+}
+
+extern "C" int BaseData_get_domain_rows(BaseData *data) {
+    return data->domain.size();
+}
+
+extern "C" int BaseData_get_domain_cols(BaseData *data) {
+    if (data->domain.empty()) return 0;
+    return data->domain[0].size();
+}
+
+extern "C" void BaseData_get_domain(BaseData *data, float *domain_out) {
+    int idx = 0;
+    for (size_t i = 0; i < data->domain.size(); i++) {
+        for (size_t j = 0; j < data->domain[i].size(); j++) {
+            domain_out[idx++] = data->domain[i][j];
+        }
+    }
+}
+
+extern "C" int BaseData_get_w_points_size(BaseData *data) {
+    return data->w_points.size();
+}
+
+extern "C" void BaseData_get_w_points(BaseData *data, float *w_points_out) {
+    for (size_t i = 0; i < data->w_points.size(); i++) {
+        w_points_out[i] = data->w_points[i];
+    }
+}
+
+// BaseData data extraction
+extern "C" void BaseData_get_data_scalar(BaseData *data, float *real_out, float *imag_out) {
+    auto& flat = data->get<std::vector<cfloat>>();
+    for (size_t i = 0; i < flat.size(); i++) {
+        real_out[i] = flat[i].real();
+        if (data->is_complex) {
+            imag_out[i] = flat[i].imag();
+        }
+    }
+}
+
+extern "C" void BaseData_get_data_matrix(BaseData *data, float *real_out, float *imag_out) {
+    auto& matrices = data->get<std::vector<std::vector<std::vector<cfloat>>>>();
+    int idx = 0;
+    for (const auto& mat : matrices) {
+        for (const auto& row : mat) {
+            for (const auto& val : row) {
+                real_out[idx] = val.real();
+                if (data->is_complex) {
+                    imag_out[idx] = val.imag();
+                }
+                idx++;
+            }
+        }
+    }
+}
+
+// Field get_data exports
+extern "C" BaseData* Field_R_get_data(Field_R *obj) {
+    return obj->get_data();
+}
+
+extern "C" BaseData* Field_C_get_data(Field_C *obj) {
+    return obj->get_data();
+}
+
+extern "C" BaseData* Field_RM_get_data(Field_RM *obj) {
+    return obj->get_data();
+}
+
+extern "C" BaseData* Field_CM_get_data(Field_CM *obj) {
+    return obj->get_data();
 }
 
 }

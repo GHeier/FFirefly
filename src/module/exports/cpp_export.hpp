@@ -138,3 +138,44 @@ void save_data_matrix_export0(const char *filename, const float *data_interleave
                                const int *mesh, int mesh_size,
                                const float *domain_flat, int domain_rows, int domain_cols,
                                const float *w_points, int w_size);
+
+// BaseData exports
+#include "../../objects/CMField/base_data.hpp"
+
+BaseData* BaseData_load(const char *filename);
+BaseData* BaseData_load_with_ordering(const char *filename, const char *ordering);
+void BaseData_save(BaseData *data, const char *filename);
+void BaseData_save_with_ordering(BaseData *data, const char *filename, const char *ordering);
+void destroy_BaseData(BaseData *data);
+
+// BaseData metadata getters
+int BaseData_get_is_complex(BaseData *data);
+int BaseData_get_is_vector(BaseData *data);
+int BaseData_get_is_matrix(BaseData *data);
+int BaseData_get_with_k(BaseData *data);
+int BaseData_get_with_w(BaseData *data);
+int BaseData_get_as_mesh(BaseData *data);
+int BaseData_get_n_indices(BaseData *data);
+int BaseData_get_dim_indices(BaseData *data);
+int BaseData_get_dimension(BaseData *data);
+int BaseData_get_nk(BaseData *data);
+int BaseData_get_nw(BaseData *data);
+
+// BaseData array getters
+int BaseData_get_mesh_size(BaseData *data);
+void BaseData_get_mesh(BaseData *data, int *mesh_out);
+int BaseData_get_domain_rows(BaseData *data);
+int BaseData_get_domain_cols(BaseData *data);
+void BaseData_get_domain(BaseData *data, float *domain_out);
+int BaseData_get_w_points_size(BaseData *data);
+void BaseData_get_w_points(BaseData *data, float *w_points_out);
+
+// BaseData data extraction (returns flattened arrays)
+void BaseData_get_data_scalar(BaseData *data, float *real_out, float *imag_out);
+void BaseData_get_data_matrix(BaseData *data, float *real_out, float *imag_out);
+
+// Field get_data exports
+BaseData* Field_R_get_data(Field_R *obj);
+BaseData* Field_C_get_data(Field_C *obj);
+BaseData* Field_RM_get_data(Field_RM *obj);
+BaseData* Field_CM_get_data(Field_CM *obj);

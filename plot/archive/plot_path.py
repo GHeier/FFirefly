@@ -7,6 +7,8 @@ import matplotlib
 
 # matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+from typing import Optional
 
 colors=["#9a05fc", "#f00524", "#f0b802", "#3887f3", "#ed6c09", "#20c714", "black", "gray"]
 
@@ -42,12 +44,12 @@ def plot_section(field, qi, qf, section, letter, multicolor, color, label=None):
         y = np.real(y)
     x = np.linspace(section - 1, section, N)
     plt.plot(x, y, color=color)
-    print(f"Min energy at section {section} ({letter.upper()}): {np.min(y):.4f}")
     return np.min(y)
 
 
-def plot_path(files, path, hline=False, multicolor=False):
-    fig, ax = plt.subplots()
+def plot_path(files, ax: Optional[Axes] = None, path=None, hline=False, multicolor=False) -> Axes:
+    if ax is None:
+        fig, ax = plt.subplots()
     ax.set_xticks([])
 
     for i in range(len(files)):
@@ -77,4 +79,4 @@ def plot_path(files, path, hline=False, multicolor=False):
     # fig.patch.set_facecolor('black')
     # ax.set_facecolor('black')              # Axes background
     ax.legend()
-    return fig, ax
+    return ax

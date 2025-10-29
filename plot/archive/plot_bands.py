@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+from typing import Optional
 import sys
 from pathlib import Path
 import re
@@ -17,8 +19,12 @@ def find_files_level1(substring, root="."):
     return root_matches + subdir_matches
 
 
-def load_and_plot(file_names, **kwargs):
+def load_and_plot(file_names, ax: Optional[Axes] = None, **kwargs) -> Axes:
     mu = kwargs.get("mu", None)
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(4, 8))  # 4 inches wide, 8 inches tall
+
     for file_name in file_names:
         with open(file_name, 'r') as f:
             lines = f.readlines()
@@ -47,9 +53,6 @@ def load_and_plot(file_names, **kwargs):
         emax = fermi_energy + 4.1
 
         x, y = [], []
-        
-        # Set figure size here (taller than wide)
-        fig, ax = plt.subplots(figsize=(4, 8))  # 4 inches wide, 8 inches tall
         
         min_x = 0
         max_x = 0
@@ -90,8 +93,7 @@ def load_and_plot(file_names, **kwargs):
         ax.set_title("YBa2Cu3O7" + " Band Structure")
         ax.grid(True)
 
-    # Display the plot
-    plt.show()
+    return ax
 
 # Usage
 #file_name = sys.argv[1]

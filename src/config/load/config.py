@@ -293,3 +293,6 @@ def printv(format_string: str, *args):
             print(format_string.format(*args))
         except (IndexError, KeyError) as e:
             print(f"Formatting error: {e}")
+
+# Load the config file on module import
+load_config()

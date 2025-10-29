@@ -236,15 +236,6 @@ class Field_R:
 
 
     def __call__(self, *args):
-        # Overload for (w_points: list[float]) - multiple w-points
-        if len(args) == 1 and isinstance(args[0], (list, tuple, np.ndarray)) and all(isinstance(x, (int, float, np.number)) for x in args[0]):
-            w_points = np.array(args[0], dtype=np.float32)
-            num_w = len(w_points)
-            w_array = (c_float * num_w)(*w_points)
-            output = (c_float * num_w)()
-            lib.Field_R_operator_export_w_list(self.ptr, w_array, c_int(num_w), output)
-            return np.array([output[i] for i in range(num_w)], dtype=np.float32)
-
         # Overload for (w: float)
         if len(args) == 1 and isinstance(args[0], (int, float)):
             w = c_float(args[0])
@@ -256,7 +247,7 @@ class Field_R:
         #    w = c_float(args[1])
         #    return lib.Field_R_operator_export1(self.ptr, n, w)
 
-        # Overload for (k: list[float], w=0.0)
+        # Overload for (k: list[float], w=0.0) or (w_points: list[float])
         if len(args) >= 1 and isinstance(args[0], (list, tuple, np.ndarray)):
             # Check if it's a list of points (list of lists)
             if len(args[0]) > 0 and isinstance(args[0][0], (list, tuple, np.ndarray)):
@@ -278,11 +269,23 @@ class Field_R:
                 lib.Field_R_operator_export_list(self.ptr, points_flat, c_int(num_points), c_int(point_len), w, output)
                 return np.array([output[i] for i in range(num_points)], dtype=np.float32)
             else:
-                # Single point
-                k = (c_float * len(args[0]))(*[float(v) for v in args[0]])
-                len_k = c_int(len(args[0]))
-                w = c_float(args[1]) if len(args) == 2 else c_float(0.0)
-                return lib.Field_R_operator_export2(self.ptr, k, len_k, w)
+                # Single list of numbers - could be k-point or w-points list
+                # If no spatial mesh, treat as w-points list
+                # Otherwise, treat as k-point
+                if len(self.mesh) == 0 and len(args) == 1:
+                    # List of w-points for 0D field
+                    w_points = np.array(args[0], dtype=np.float32)
+                    num_w = len(w_points)
+                    w_array = (c_float * num_w)(*w_points)
+                    output = (c_float * num_w)()
+                    lib.Field_R_operator_export_w_list(self.ptr, w_array, c_int(num_w), output)
+                    return np.array([output[i] for i in range(num_w)], dtype=np.float32)
+                else:
+                    # Single k-point
+                    k = (c_float * len(args[0]))(*[float(v) for v in args[0]])
+                    len_k = c_int(len(args[0]))
+                    w = c_float(args[1]) if len(args) == 2 else c_float(0.0)
+                    return lib.Field_R_operator_export2(self.ptr, k, len_k, w)
 
         ## Overload for (n: int, k: list[float], w=0.0) - COMMENTED OUT, no export
         #if len(args) >= 2 and isinstance(args[0], int) and isinstance(args[1], (list, tuple)):
@@ -293,6 +296,23 @@ class Field_R:
         #    return lib.Field_R_operator_export3(self.ptr, n, k, len_k, w)
 
         raise TypeError("Invalid arguments to Field_R.__call__")
+
+    def get_data(self):
+        """Get data array reshaped in (w,k) format."""
+        ptr = lib.Field_R_get_data(self.ptr)
+        bd = object.__new__(BaseData)
+        bd.ptr = ptr
+        bd._load_metadata()
+        data_array = bd.get_data()
+
+        # Reshape from (nk*nw) to (nw, nk)
+        if bd.n_indices == 2:
+            # Matrix: (nk*nw, dim, dim) -> (nw, nk, dim, dim)
+            data_reshaped = data_array.reshape(bd.nk, bd.nw, bd.dim_indices, bd.dim_indices)
+            return np.moveaxis(data_reshaped, [0, 1], [1, 0])  # swap k and w axes
+        else:
+            # Scalar: (nk*nw,) -> (nw, nk)
+            return data_array.reshape(bd.nk, bd.nw).T
 
     def __del__(self):
         try:
@@ -435,25 +455,15 @@ class Field_C:
             self.w_points = np.array([], dtype=np.float32)
 
     def __call__(self, *args):
-        # Overload for (w_points: list[float]) - multiple w-points
-        if len(args) == 1 and isinstance(args[0], (list, tuple, np.ndarray)) and all(isinstance(x, (int, float, np.number)) for x in args[0]):
-            w_points = np.array(args[0], dtype=np.float32)
-            num_w = len(w_points)
-            w_array = (c_float * num_w)(*w_points)
-            real_output = (c_float * num_w)()
-            imag_output = (c_float * num_w)()
-            lib.Field_C_operator_export_w_list(self.ptr, w_array, c_int(num_w), real_output, imag_output)
-            return np.array([complex(real_output[i], imag_output[i]) for i in range(num_w)], dtype=np.complex64)
-
-        # Overload for args=1, required=1 (w: float)
+        # Overload for (w: float)
         if len(args) == 1 and isinstance(args[0], (int, float, np.float32, np.float64)):
-            print("sec 1")
             real = ctypes.c_float()
             imag = ctypes.c_float()
             arg0 = ctypes.c_float(args[0])
             lib.Field_C_operator_export0(self.ptr, arg0, ctypes.byref(real), ctypes.byref(imag))
             return complex(real.value, imag.value)
-        ## Overload for args=2, required=2 (n: int, w: float) - COMMENTED OUT, no export
+
+        ## Overload for (n: int, w: float) - COMMENTED OUT, no export
         #if len(args) == 2 and isinstance(args[0], int) and isinstance(args[1], (int, float)):
         #    real = ctypes.c_float()
         #    imag = ctypes.c_float()
@@ -461,59 +471,51 @@ class Field_C:
         #    arg1 = ctypes.c_float(args[1])
         #    lib.Field_C_operator_export1(self.ptr, arg0, arg1, ctypes.byref(real), ctypes.byref(imag))
         #    return complex(real.value, imag.value)
-        # Overload for args=1-2 (k: list[float], w=0.0)
-        if isinstance(args[0], (np.ndarray, list)):
-            print("sec 1.5")
-            # Single point
-            real = ctypes.c_float()
-            imag = ctypes.c_float()
-            arg0 = (ctypes.c_float * len(args[0]))(*[float(x) for x in args[0]])
-            print(type(arg0))
-            arg0_len = ctypes.c_int(len(args[0]))
-            arg2 = ctypes.c_float(args[1]) if len(args) > 1 else ctypes.c_float(0.0)
-            lib.Field_C_operator_export_list(self.ptr, arg0, arg0_len, arg2, ctypes.byref(real), ctypes.byref(imag))
-            return complex(real.value, imag.value)
 
-        if len(args) >= 1 and len(args) <= 2 and isinstance(args[0], (list, tuple, np.ndarray)):
-            print("sec 2")
+        # Overload for (k: list[float], w=0.0) or (w_points: list[float])
+        if len(args) >= 1 and isinstance(args[0], (list, tuple, np.ndarray)):
             # Check if it's a list of points (list of lists)
-            print(type(args[0]))
-            print(type(args[0][0]))
             if len(args[0]) > 0 and isinstance(args[0][0], (list, tuple, np.ndarray)):
-                print("sec 2.1")
                 # List of points
                 points = args[0]
                 num_points = len(points)
                 if num_points == 0:
                     return np.array([], dtype=np.complex64)
 
-                print("1")
                 point_len = len(points[0])
                 points_flat = (c_float * (num_points * point_len))()
-                print("2")
                 for i, p in enumerate(points):
                     for j, val in enumerate(p):
                         points_flat[i * point_len + j] = float(val)
-                print("3")
 
                 w = c_float(args[1]) if len(args) > 1 else c_float(0.0)
                 real_output = (c_float * num_points)()
                 imag_output = (c_float * num_points)()
-                print("4")
 
                 lib.Field_C_operator_export_list(self.ptr, points_flat, c_int(num_points), c_int(point_len), w, real_output, imag_output)
-                print("5")
                 return np.array([complex(real_output[i], imag_output[i]) for i in range(num_points)], dtype=np.complex64)
             else:
-                print("sec 2.2")
-                # Single point
-                real = ctypes.c_float()
-                imag = ctypes.c_float()
-                arg0 = (ctypes.c_float * len(args[0]))(*[float(x) for x in args[0]])
-                arg0_len = ctypes.c_int(len(args[0]))
-                arg2 = ctypes.c_float(args[1]) if len(args) > 1 else ctypes.c_float(0.0)
-                lib.Field_C_operator_export2(self.ptr, arg0, arg0_len, arg2, ctypes.byref(real), ctypes.byref(imag))
-                return complex(real.value, imag.value)
+                # Single list of numbers - could be k-point or w-points list
+                # If no spatial mesh, treat as w-points list
+                # Otherwise, treat as k-point
+                if len(self.mesh) == 0 and len(args) == 1:
+                    # List of w-points for 0D field
+                    w_points = np.array(args[0], dtype=np.float32)
+                    num_w = len(w_points)
+                    w_array = (c_float * num_w)(*w_points)
+                    real_output = (c_float * num_w)()
+                    imag_output = (c_float * num_w)()
+                    lib.Field_C_operator_export_w_list(self.ptr, w_array, c_int(num_w), real_output, imag_output)
+                    return np.array([complex(real_output[i], imag_output[i]) for i in range(num_w)], dtype=np.complex64)
+                else:
+                    # Single k-point
+                    real = ctypes.c_float()
+                    imag = ctypes.c_float()
+                    arg0 = (ctypes.c_float * len(args[0]))(*[float(x) for x in args[0]])
+                    arg0_len = ctypes.c_int(len(args[0]))
+                    arg2 = ctypes.c_float(args[1]) if len(args) > 1 else ctypes.c_float(0.0)
+                    lib.Field_C_operator_export2(self.ptr, arg0, arg0_len, arg2, ctypes.byref(real), ctypes.byref(imag))
+                    return complex(real.value, imag.value)
         ## Overload for args=2-3 (n: int, k: list[float], w=0.0) - COMMENTED OUT, no export
         #if len(args) >= 2 and len(args) <= 3 and isinstance(args[0], int):
         #    real = ctypes.c_float()
@@ -526,7 +528,28 @@ class Field_C:
         #    return complex(real.value, imag.value)
         raise TypeError('Invalid arguments to __call__')
 
+    def get_data(self):
+        """Get data array reshaped in (w,k) format."""
+        ptr = lib.Field_C_get_data(self.ptr)
+        bd = object.__new__(BaseData)
+        bd.ptr = ptr
+        bd._load_metadata()
+        data_array = bd.get_data()
+
+        # Reshape from (nk*nw) to (nw, nk)
+        if bd.n_indices == 2:
+            print("reshaping matrix data")
+            # Matrix: (nk*nw, dim, dim) -> (nw, nk, dim, dim)
+            data_reshaped = data_array.reshape(bd.nk, bd.nw, bd.dim_indices, bd.dim_indices)
+            return np.moveaxis(data_reshaped, [0, 1], [1, 0])  # swap k and w axes
+        else:
+            print("reshaping scalar data")
+            # Scalar: (nk*nw,) -> (nw, nk)
+            return data_array.reshape(bd.nw, bd.nk).T
+            #return data_array.reshape(bd.nk, bd.nw).T
+
     def __del__(self):
+        return
         try:
             destroy = lib.destroy_Field_C
             destroy.argtypes = [ctypes.c_void_p]
@@ -736,6 +759,23 @@ class Field_RM:
 
             return matrix
 
+    def get_data(self):
+        """Get data array reshaped in (w,k) format."""
+        ptr = lib.Field_RM_get_data(self.ptr)
+        bd = object.__new__(BaseData)
+        bd.ptr = ptr
+        bd._load_metadata()
+        data_array = bd.get_data()
+
+        # Reshape from (nk*nw) to (nw, nk)
+        if bd.n_indices == 2:
+            # Matrix: (nk*nw, dim, dim) -> (nw, nk, dim, dim)
+            data_reshaped = data_array.reshape(bd.nk, bd.nw, bd.dim_indices, bd.dim_indices)
+            return np.moveaxis(data_reshaped, [0, 1], [1, 0])  # swap k and w axes
+        else:
+            # Scalar: (nk*nw,) -> (nw, nk)
+            return data_array.reshape(bd.nk, bd.nw).T
+
     def __del__(self):
         try:
             destroy = lib.destroy_Field_RM
@@ -892,6 +932,23 @@ class Field_CM:
         imag_matrix = np.array([imag_result[i] for i in range(n*n)]).reshape(n, n)
 
         return real_matrix + 1j * imag_matrix
+
+    def get_data(self):
+        """Get data array reshaped in (w,k) format."""
+        ptr = lib.Field_CM_get_data(self.ptr)
+        bd = object.__new__(BaseData)
+        bd.ptr = ptr
+        bd._load_metadata()
+        data_array = bd.get_data()
+
+        # Reshape from (nk*nw) to (nw, nk)
+        if bd.n_indices == 2:
+            # Matrix: (nk*nw, dim, dim) -> (nw, nk, dim, dim)
+            data_reshaped = data_array.reshape(bd.nk, bd.nw, bd.dim_indices, bd.dim_indices)
+            return np.moveaxis(data_reshaped, [0, 1], [1, 0])  # swap k and w axes
+        else:
+            # Scalar: (nk*nw,) -> (nw, nk)
+            return data_array.reshape(bd.nk, bd.nw).T
 
     def __del__(self):
         try:
@@ -1335,6 +1392,215 @@ def save_data_matrix(filename: str, data: np.ndarray,
         c_int(domain_rows), c_int(domain_cols),
         w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size)
     )
+
+# BaseData exports
+lib.BaseData_load.argtypes = [c_char_p]
+lib.BaseData_load.restype = c_void_p
+
+lib.BaseData_load_with_ordering.argtypes = [c_char_p, c_char_p]
+lib.BaseData_load_with_ordering.restype = c_void_p
+
+lib.BaseData_save.argtypes = [c_void_p, c_char_p]
+lib.BaseData_save.restype = None
+
+lib.BaseData_save_with_ordering.argtypes = [c_void_p, c_char_p, c_char_p]
+lib.BaseData_save_with_ordering.restype = None
+
+lib.destroy_BaseData.argtypes = [c_void_p]
+lib.destroy_BaseData.restype = None
+
+# BaseData metadata getters
+lib.BaseData_get_is_complex.argtypes = [c_void_p]
+lib.BaseData_get_is_complex.restype = c_int
+lib.BaseData_get_is_vector.argtypes = [c_void_p]
+lib.BaseData_get_is_vector.restype = c_int
+lib.BaseData_get_is_matrix.argtypes = [c_void_p]
+lib.BaseData_get_is_matrix.restype = c_int
+lib.BaseData_get_with_k.argtypes = [c_void_p]
+lib.BaseData_get_with_k.restype = c_int
+lib.BaseData_get_with_w.argtypes = [c_void_p]
+lib.BaseData_get_with_w.restype = c_int
+lib.BaseData_get_as_mesh.argtypes = [c_void_p]
+lib.BaseData_get_as_mesh.restype = c_int
+lib.BaseData_get_n_indices.argtypes = [c_void_p]
+lib.BaseData_get_n_indices.restype = c_int
+lib.BaseData_get_dim_indices.argtypes = [c_void_p]
+lib.BaseData_get_dim_indices.restype = c_int
+lib.BaseData_get_dimension.argtypes = [c_void_p]
+lib.BaseData_get_dimension.restype = c_int
+lib.BaseData_get_nk.argtypes = [c_void_p]
+lib.BaseData_get_nk.restype = c_int
+lib.BaseData_get_nw.argtypes = [c_void_p]
+lib.BaseData_get_nw.restype = c_int
+
+# BaseData array getters
+lib.BaseData_get_mesh_size.argtypes = [c_void_p]
+lib.BaseData_get_mesh_size.restype = c_int
+lib.BaseData_get_mesh.argtypes = [c_void_p, POINTER(c_int)]
+lib.BaseData_get_mesh.restype = None
+lib.BaseData_get_domain_rows.argtypes = [c_void_p]
+lib.BaseData_get_domain_rows.restype = c_int
+lib.BaseData_get_domain_cols.argtypes = [c_void_p]
+lib.BaseData_get_domain_cols.restype = c_int
+lib.BaseData_get_domain.argtypes = [c_void_p, POINTER(c_float)]
+lib.BaseData_get_domain.restype = None
+lib.BaseData_get_w_points_size.argtypes = [c_void_p]
+lib.BaseData_get_w_points_size.restype = c_int
+lib.BaseData_get_w_points.argtypes = [c_void_p, POINTER(c_float)]
+lib.BaseData_get_w_points.restype = None
+
+# BaseData data extraction
+lib.BaseData_get_data_scalar.argtypes = [c_void_p, POINTER(c_float), POINTER(c_float)]
+lib.BaseData_get_data_scalar.restype = None
+lib.BaseData_get_data_matrix.argtypes = [c_void_p, POINTER(c_float), POINTER(c_float)]
+lib.BaseData_get_data_matrix.restype = None
+
+# Field get_data exports
+lib.Field_R_get_data.argtypes = [c_void_p]
+lib.Field_R_get_data.restype = c_void_p
+lib.Field_C_get_data.argtypes = [c_void_p]
+lib.Field_C_get_data.restype = c_void_p
+lib.Field_RM_get_data.argtypes = [c_void_p]
+lib.Field_RM_get_data.restype = c_void_p
+lib.Field_CM_get_data.argtypes = [c_void_p]
+lib.Field_CM_get_data.restype = c_void_p
+
+class BaseData:
+    """Python wrapper for BaseData C++ class with HDF5 save/load support."""
+
+    def __init__(self, filename=None, ordering="k-w"):
+        """
+        Initialize BaseData from file or create empty instance.
+
+        Args:
+            filename: Path to HDF5 file to load (optional)
+            ordering: Data ordering "k-w" or "w-k" (default: "k-w")
+        """
+        if filename is None:
+            self.ptr = None
+            raise ValueError("BaseData requires a filename to load")
+        else:
+            if ordering == "k-w":
+                self.ptr = lib.BaseData_load(c_char_p(filename.encode('utf-8')))
+            else:
+                self.ptr = lib.BaseData_load_with_ordering(
+                    c_char_p(filename.encode('utf-8')),
+                    c_char_p(ordering.encode('utf-8'))
+                )
+
+        if not self.ptr:
+            raise RuntimeError('Failed to load BaseData')
+
+        # Load metadata
+        self._load_metadata()
+
+    def _load_metadata(self):
+        """Load metadata from C++ object."""
+        self.is_complex = bool(lib.BaseData_get_is_complex(self.ptr))
+        self.is_vector = bool(lib.BaseData_get_is_vector(self.ptr))
+        self.is_matrix = bool(lib.BaseData_get_is_matrix(self.ptr))
+        self.with_k = bool(lib.BaseData_get_with_k(self.ptr))
+        self.with_w = bool(lib.BaseData_get_with_w(self.ptr))
+        self.as_mesh = bool(lib.BaseData_get_as_mesh(self.ptr))
+        self.n_indices = lib.BaseData_get_n_indices(self.ptr)
+        self.dim_indices = lib.BaseData_get_dim_indices(self.ptr)
+        self.dimension = lib.BaseData_get_dimension(self.ptr)
+        self.nk = lib.BaseData_get_nk(self.ptr)
+        self.nw = lib.BaseData_get_nw(self.ptr)
+
+        # Load mesh
+        mesh_size = lib.BaseData_get_mesh_size(self.ptr)
+        if mesh_size > 0:
+            mesh_buf = (c_int * mesh_size)()
+            lib.BaseData_get_mesh(self.ptr, mesh_buf)
+            self.mesh = np.array([mesh_buf[i] for i in range(mesh_size)], dtype=np.int32)
+        else:
+            self.mesh = np.array([], dtype=np.int32)
+
+        # Load domain
+        domain_rows = lib.BaseData_get_domain_rows(self.ptr)
+        domain_cols = lib.BaseData_get_domain_cols(self.ptr)
+        if domain_rows > 0 and domain_cols > 0:
+            domain_buf = (c_float * (domain_rows * domain_cols))()
+            lib.BaseData_get_domain(self.ptr, domain_buf)
+            self.domain = np.array([domain_buf[i] for i in range(domain_rows * domain_cols)],
+                                   dtype=np.float32).reshape(domain_rows, domain_cols)
+        else:
+            self.domain = np.array([], dtype=np.float32).reshape(0, 0)
+
+        # Load w_points
+        w_size = lib.BaseData_get_w_points_size(self.ptr)
+        if w_size > 0:
+            w_buf = (c_float * w_size)()
+            lib.BaseData_get_w_points(self.ptr, w_buf)
+            self.w_points = np.array([w_buf[i] for i in range(w_size)], dtype=np.float32)
+        else:
+            self.w_points = np.array([], dtype=np.float32)
+
+    def save(self, filename, ordering="k-w"):
+        """
+        Save BaseData to HDF5 file.
+
+        Args:
+            filename: Output file path
+            ordering: Data ordering "k-w" or "w-k" (default: "k-w")
+        """
+        if ordering == "k-w":
+            lib.BaseData_save(self.ptr, c_char_p(filename.encode('utf-8')))
+        else:
+            lib.BaseData_save_with_ordering(
+                self.ptr,
+                c_char_p(filename.encode('utf-8')),
+                c_char_p(ordering.encode('utf-8'))
+            )
+
+    def get_data(self):
+        """
+        Extract data as numpy array.
+
+        Returns:
+            numpy array with data (complex if is_complex=True)
+        """
+        if self.n_indices == 2:
+            # Matrix data
+            total_size = self.nk * self.nw * self.dim_indices * self.dim_indices
+            real_buf = (c_float * total_size)()
+            imag_buf = (c_float * total_size)() if self.is_complex else None
+
+            lib.BaseData_get_data_matrix(self.ptr, real_buf, imag_buf if imag_buf else real_buf)
+
+            real_data = np.array([real_buf[i] for i in range(total_size)], dtype=np.float32)
+            if self.is_complex:
+                imag_data = np.array([imag_buf[i] for i in range(total_size)], dtype=np.float32)
+                data = real_data + 1j * imag_data
+            else:
+                data = real_data
+
+            # Reshape to (nk*nw, dim_indices, dim_indices)
+            return data.reshape(self.nk * self.nw, self.dim_indices, self.dim_indices)
+        else:
+            # Scalar data
+            total_size = self.nk * self.nw
+            real_buf = (c_float * total_size)()
+            imag_buf = (c_float * total_size)() if self.is_complex else None
+
+            lib.BaseData_get_data_scalar(self.ptr, real_buf, imag_buf if imag_buf else real_buf)
+
+            real_data = np.array([real_buf[i] for i in range(total_size)], dtype=np.float32)
+            if self.is_complex:
+                imag_data = np.array([imag_buf[i] for i in range(total_size)], dtype=np.float32)
+                data = real_data + 1j * imag_data
+            else:
+                data = real_data
+
+            return data
+
+    def __del__(self):
+        try:
+            if hasattr(self, 'ptr') and self.ptr:
+                lib.destroy_BaseData(self.ptr)
+        except AttributeError:
+            pass
 
 
 # field = Field_R("sample_bands.dat")

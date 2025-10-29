@@ -24,6 +24,17 @@ complex<Vec> CMF_search_1d(float w_val, vector<float> &w_points,
     // w_min, w_max: minimum and maximum values of w
     // f: vector of function values at the grid points
     // returns: interpolated value of f(w_val)
+
+    // Handle edge cases
+    if (w_points.empty() || f.empty()) {
+        throw out_of_range("CMF_search_1d: w_points or data is empty");
+    }
+
+    // If only one frequency point, return that value
+    if (w_points.size() == 1) {
+        return f[0];
+    }
+
     float w_min = w_points[0], w_max = w_points[w_points.size() - 1];
     w_val = sanitize_within_bounds(w_val, w_min, w_max);
     if (w_val < w_min || w_val > w_max)
@@ -51,6 +62,12 @@ complex<Vec> CMF_search_2d(float x_val, float w_val, int nx,
     // minimum and maximum values of x y_min, y_max: minimum and maximum values
     // of y f: vector of function values at the grid points returns:
     // interpolated value of f(x_val)
+
+    // Special case: if nx=1, reduce to 1D interpolation
+    if (nx == 1) {
+        return CMF_search_1d(w_val, w_points, f);
+    }
+
     float x_min = 0, x_max = 1;
     float w_min = w_points[0], w_max = w_points[w_points.size() - 1];
     int nw = w_points.size();
@@ -100,6 +117,17 @@ complex<Vec> CMF_search_3d(float x_val, float y_val, float w_val, int nx,
     // y_max: minimum and maximum values of y w_min, w_max: minimum and maximum
     // values of w f: vector of function values at the grid points returns:
     // interpolated value of f(x_val, y_val, w_val)
+
+    // Special case: if ny=1, reduce to 2D interpolation
+    if (ny == 1) {
+        return CMF_search_2d(x_val, w_val, nx, w_points, f);
+    }
+
+    // Special case: if nx=1, reduce to 2D interpolation (different layout)
+    if (nx == 1) {
+        return CMF_search_2d(y_val, w_val, ny, w_points, f);
+    }
+
     float x_min = 0, x_max = 1;
     float y_min = 0, y_max = 1;
     float w_min = w_points[0], w_max = w_points[w_points.size() - 1];
@@ -142,8 +170,6 @@ complex<Vec> CMF_search_3d(float x_val, float y_val, float w_val, int nx,
     if (w_rel < 0 || w_rel > 1)
         throw out_of_range("w_rel out of bounds");
 
-    //printf("i, j, k: %d, %d, %d\n", i, j, k);
-    //printf("nx, ny, nw: %d, %d, %d\n", nx, ny, nw);
     complex<Vec> result =
         (1 - x_rel) * (1 - y_rel) * (1 - w_rel) * f[i * ny * nw + j * nw + k] +
         x_rel * (1 - y_rel) * (1 - w_rel) * f[(i + 1) * ny * nw + j * nw + k] +
@@ -174,6 +200,16 @@ complex<Vec> CMF_search_4d(float x_val, float y_val, float z_val, float w_val,
         return CMF_search_3d(x_val, y_val, w_val, nx, ny, w_points, f);
     }
 
+    // Special case: if ny=1, reduce to 3D interpolation
+    if (ny == 1) {
+        return CMF_search_3d(x_val, z_val, w_val, nx, nz, w_points, f);
+    }
+
+    // Special case: if nx=1, reduce to 3D interpolation
+    if (nx == 1) {
+        return CMF_search_3d(y_val, z_val, w_val, ny, nz, w_points, f);
+    }
+
     float x_min = 0, x_max = 1;
     float y_min = 0, y_max = 1;
     float z_min = 0, z_max = 1;
@@ -201,11 +237,11 @@ complex<Vec> CMF_search_4d(float x_val, float y_val, float z_val, float w_val,
     int j = (y_val - y_min) / dy;
     int k = (z_val - z_min) / dz;
     int l = binary_search(w_val, w_points);
-    if (i < 0 || i > nx)
+    if (i < 0 || i >= nx)
         throw out_of_range("i out of bounds");
-    if (j < 0 || j > ny)
+    if (j < 0 || j >= ny)
         throw out_of_range("j out of bounds");
-    if (k < 0 || k > nz)
+    if (k < 0 || k >= nz)
         throw out_of_range("k out of bounds");
     if (i == nx - 1)
         i--;

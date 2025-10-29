@@ -4,6 +4,6 @@ import sys
 
 file = sys.argv[1]
 
-fig, ax = firefly.sketch([file])
+ax = firefly.sketch([file])
 plt.show()
 

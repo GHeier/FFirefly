@@ -62,6 +62,10 @@ vector<complex<float>> Field_C::operator()(const vector<float>& w_points) {
     return results;
 }
 
+BaseData* Field_C::get_data() {
+    return &cmf.data;
+}
+
 
 // Field_R implementation
 Field_R::Field_R()
@@ -120,6 +124,10 @@ vector<float> Field_R::operator()(const vector<float>& w_points) {
         results[i] = (*this)(w_points[i]);
     }
     return results;
+}
+
+BaseData* Field_R::get_data() {
+    return &cmf.data;
 }
 
 // Field_CM implementation (Complex Matrix)
@@ -239,6 +247,10 @@ vector<vector<vector<cfloat>>> Field_CM::operator()(const vector<Vec>& points, f
     return results;
 }
 
+BaseData* Field_CM::get_data() {
+    return &cmf.data;
+}
+
 // Field_RM implementation (Real Matrix)
 Field_RM::Field_RM()
     : cmf(vector<vector<vector<cfloat>>>(), false, false, true, {}, {}, {}, 2, 1) {}
@@ -353,4 +365,8 @@ vector<vector<vector<float>>> Field_RM::operator()(const vector<Vec>& points, fl
         results[i] = (*this)(points[i], w);
     }
     return results;
+}
+
+BaseData* Field_RM::get_data() {
+    return &cmf.data;
 }

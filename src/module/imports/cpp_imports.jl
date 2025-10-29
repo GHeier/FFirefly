@@ -270,7 +270,7 @@ function Self_Energy()
     return Self_Energy(ptr)
 end
 
-function (self::Self_Energy)(arg0::Vector{Float64}, arg1::Float64)::ComplexF32
+function (self::Self_Energy)(arg0::Vector{Float64}, arg1)::ComplexF32
     real_result = Ref{Cfloat}(0.0f0)
     imag_result = Ref{Cfloat}(0.0f0)
     newarg0 = Float32.(arg0)
@@ -446,6 +446,24 @@ function Base.finalize(obj::Field_R)
     destroy!(obj)
 end
 
+function get_data(obj::Field_R)
+    """Get data array reshaped in (w,k) format."""
+    ptr = ccall((:Field_R_get_data, libfly), Ptr{Cvoid}, (Ptr{Cvoid},), obj.ptr)
+    bd = _basedata_from_ptr(ptr)
+    data_array = get_data(bd)
+
+    # Reshape from (nk*nw) to (nw, nk)
+    if bd.n_indices == 2
+        # Matrix: (dim, dim, nk*nw) -> (dim, dim, nk, nw) -> (dim, dim, nw, nk)
+        data_reshaped = reshape(data_array, bd.dim_indices, bd.dim_indices, bd.nk, bd.nw)
+        return permutedims(data_reshaped, (1, 2, 4, 3))  # swap k and w axes
+    else
+        # Scalar: (nk*nw,) -> (nk, nw) -> (nw, nk)
+        data_reshaped = reshape(data_array, bd.nk, bd.nw)
+        return permutedims(data_reshaped, (2, 1))  # transpose to (nw, nk)
+    end
+end
+
 mutable struct Field_C
     ptr::Ptr{Cvoid}
     dimension::Int
@@ -583,6 +601,24 @@ function Base.finalize(obj::Field_C)
     destroy!(obj)
 end
 
+function get_data(obj::Field_C)
+    """Get data array reshaped in (w,k) format."""
+    ptr = ccall((:Field_C_get_data, libfly), Ptr{Cvoid}, (Ptr{Cvoid},), obj.ptr)
+    bd = _basedata_from_ptr(ptr)
+    data_array = get_data(bd)
+
+    # Reshape from (nk*nw) to (nw, nk)
+    if bd.n_indices == 2
+        # Matrix: (dim, dim, nk*nw) -> (dim, dim, nk, nw) -> (dim, dim, nw, nk)
+        data_reshaped = reshape(data_array, bd.dim_indices, bd.dim_indices, bd.nk, bd.nw)
+        return permutedims(data_reshaped, (1, 2, 4, 3))  # swap k and w axes
+    else
+        # Scalar: (nk*nw,) -> (nk, nw) -> (nw, nk)
+        data_reshaped = reshape(data_array, bd.nk, bd.nw)
+        return permutedims(data_reshaped, (2, 1))  # transpose to (nw, nk)
+    end
+end
+
 mutable struct Field_RM
     ptr::Ptr{Cvoid}
     dimension::Int
@@ -697,6 +733,24 @@ end
 
 function Base.finalize(obj::Field_RM)
     destroy!(obj)
+end
+
+function get_data(obj::Field_RM)
+    """Get data array reshaped in (w,k) format."""
+    ptr = ccall((:Field_RM_get_data, libfly), Ptr{Cvoid}, (Ptr{Cvoid},), obj.ptr)
+    bd = _basedata_from_ptr(ptr)
+    data_array = get_data(bd)
+
+    # Reshape from (nk*nw) to (nw, nk)
+    if bd.n_indices == 2
+        # Matrix: (dim, dim, nk*nw) -> (dim, dim, nk, nw) -> (dim, dim, nw, nk)
+        data_reshaped = reshape(data_array, bd.dim_indices, bd.dim_indices, bd.nk, bd.nw)
+        return permutedims(data_reshaped, (1, 2, 4, 3))  # swap k and w axes
+    else
+        # Scalar: (nk*nw,) -> (nk, nw) -> (nw, nk)
+        data_reshaped = reshape(data_array, bd.nk, bd.nw)
+        return permutedims(data_reshaped, (2, 1))  # transpose to (nw, nk)
+    end
 end
 
 mutable struct Field_CM
@@ -818,6 +872,24 @@ end
 
 function Base.finalize(obj::Field_CM)
     destroy!(obj)
+end
+
+function get_data(obj::Field_CM)
+    """Get data array reshaped in (w,k) format."""
+    ptr = ccall((:Field_CM_get_data, libfly), Ptr{Cvoid}, (Ptr{Cvoid},), obj.ptr)
+    bd = _basedata_from_ptr(ptr)
+    data_array = get_data(bd)
+
+    # Reshape from (nk*nw) to (nw, nk)
+    if bd.n_indices == 2
+        # Matrix: (dim, dim, nk*nw) -> (dim, dim, nk, nw) -> (dim, dim, nw, nk)
+        data_reshaped = reshape(data_array, bd.dim_indices, bd.dim_indices, bd.nk, bd.nw)
+        return permutedims(data_reshaped, (1, 2, 4, 3))  # swap k and w axes
+    else
+        # Scalar: (nk*nw,) -> (nk, nw) -> (nw, nk)
+        data_reshaped = reshape(data_array, bd.nk, bd.nw)
+        return permutedims(data_reshaped, (2, 1))  # transpose to (nw, nk)
+    end
 end
 
 # Hamiltonian
@@ -1044,6 +1116,196 @@ function save_data_matrix(filename::String, data::AbstractArray,
            Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint),
           filename, data_interleaved, num_matrices_i32, mat_dim_i32, is_complex,
           mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size)
+end
+
+# BaseData exports
+mutable struct BaseData
+    ptr::Ptr{Cvoid}
+    is_complex::Bool
+    is_vector::Bool
+    is_matrix::Bool
+    with_k::Bool
+    with_w::Bool
+    as_mesh::Bool
+    n_indices::Int32
+    dim_indices::Int32
+    dimension::Int32
+    nk::Int32
+    nw::Int32
+    mesh::Vector{Int32}
+    domain::Matrix{Float32}
+    w_points::Vector{Float32}
+
+    function BaseData(filename::String, ordering::String="k-w")
+        # Load from file
+        if ordering == "k-w"
+            ptr = ccall((:BaseData_load, libfly), Ptr{Cvoid}, (Cstring,), filename)
+        else
+            ptr = ccall((:BaseData_load_with_ordering, libfly), Ptr{Cvoid},
+                       (Cstring, Cstring), filename, ordering)
+        end
+
+        if ptr == C_NULL
+            error("Failed to load BaseData from file: $filename")
+        end
+
+        # Create instance
+        obj = new(ptr)
+
+        # Load metadata
+        obj.is_complex = Bool(ccall((:BaseData_get_is_complex, libfly), Cint, (Ptr{Cvoid},), ptr))
+        obj.is_vector = Bool(ccall((:BaseData_get_is_vector, libfly), Cint, (Ptr{Cvoid},), ptr))
+        obj.is_matrix = Bool(ccall((:BaseData_get_is_matrix, libfly), Cint, (Ptr{Cvoid},), ptr))
+        obj.with_k = Bool(ccall((:BaseData_get_with_k, libfly), Cint, (Ptr{Cvoid},), ptr))
+        obj.with_w = Bool(ccall((:BaseData_get_with_w, libfly), Cint, (Ptr{Cvoid},), ptr))
+        obj.as_mesh = Bool(ccall((:BaseData_get_as_mesh, libfly), Cint, (Ptr{Cvoid},), ptr))
+        obj.n_indices = ccall((:BaseData_get_n_indices, libfly), Cint, (Ptr{Cvoid},), ptr)
+        obj.dim_indices = ccall((:BaseData_get_dim_indices, libfly), Cint, (Ptr{Cvoid},), ptr)
+        obj.dimension = ccall((:BaseData_get_dimension, libfly), Cint, (Ptr{Cvoid},), ptr)
+        obj.nk = ccall((:BaseData_get_nk, libfly), Cint, (Ptr{Cvoid},), ptr)
+        obj.nw = ccall((:BaseData_get_nw, libfly), Cint, (Ptr{Cvoid},), ptr)
+
+        # Load mesh
+        mesh_size = ccall((:BaseData_get_mesh_size, libfly), Cint, (Ptr{Cvoid},), ptr)
+        if mesh_size > 0
+            mesh_buf = Vector{Int32}(undef, mesh_size)
+            ccall((:BaseData_get_mesh, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Cint}), ptr, mesh_buf)
+            obj.mesh = mesh_buf
+        else
+            obj.mesh = Int32[]
+        end
+
+        # Load domain
+        domain_rows = ccall((:BaseData_get_domain_rows, libfly), Cint, (Ptr{Cvoid},), ptr)
+        domain_cols = ccall((:BaseData_get_domain_cols, libfly), Cint, (Ptr{Cvoid},), ptr)
+        if domain_rows > 0 && domain_cols > 0
+            domain_buf = Vector{Float32}(undef, domain_rows * domain_cols)
+            ccall((:BaseData_get_domain, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}), ptr, domain_buf)
+            obj.domain = reshape(domain_buf, domain_cols, domain_rows)'  # Transpose for Julia column-major
+        else
+            obj.domain = Matrix{Float32}(undef, 0, 0)
+        end
+
+        # Load w_points
+        w_size = ccall((:BaseData_get_w_points_size, libfly), Cint, (Ptr{Cvoid},), ptr)
+        if w_size > 0
+            w_buf = Vector{Float32}(undef, w_size)
+            ccall((:BaseData_get_w_points, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}), ptr, w_buf)
+            obj.w_points = w_buf
+        else
+            obj.w_points = Float32[]
+        end
+
+        # Register finalizer to cleanup C++ object
+        finalizer(obj) do x
+            if x.ptr != C_NULL
+                ccall((:destroy_BaseData, libfly), Cvoid, (Ptr{Cvoid},), x.ptr)
+                x.ptr = C_NULL
+            end
+        end
+
+        return obj
+    end
+end
+
+# Helper function to create BaseData from existing pointer (does not manage lifetime)
+function _basedata_from_ptr(ptr::Ptr{Cvoid})
+    # Directly create object without calling the constructor
+    obj = BaseData(ptr, false, false, false, false, false, false, 0, 0, 0, 0, 0,
+                   Int32[], Matrix{Float32}(undef, 0, 0), Float32[])
+
+    # Load metadata
+    obj.is_complex = Bool(ccall((:BaseData_get_is_complex, libfly), Cint, (Ptr{Cvoid},), ptr))
+    obj.is_vector = Bool(ccall((:BaseData_get_is_vector, libfly), Cint, (Ptr{Cvoid},), ptr))
+    obj.is_matrix = Bool(ccall((:BaseData_get_is_matrix, libfly), Cint, (Ptr{Cvoid},), ptr))
+    obj.with_k = Bool(ccall((:BaseData_get_with_k, libfly), Cint, (Ptr{Cvoid},), ptr))
+    obj.with_w = Bool(ccall((:BaseData_get_with_w, libfly), Cint, (Ptr{Cvoid},), ptr))
+    obj.as_mesh = Bool(ccall((:BaseData_get_as_mesh, libfly), Cint, (Ptr{Cvoid},), ptr))
+    obj.n_indices = ccall((:BaseData_get_n_indices, libfly), Cint, (Ptr{Cvoid},), ptr)
+    obj.dim_indices = ccall((:BaseData_get_dim_indices, libfly), Cint, (Ptr{Cvoid},), ptr)
+    obj.dimension = ccall((:BaseData_get_dimension, libfly), Cint, (Ptr{Cvoid},), ptr)
+    obj.nk = ccall((:BaseData_get_nk, libfly), Cint, (Ptr{Cvoid},), ptr)
+    obj.nw = ccall((:BaseData_get_nw, libfly), Cint, (Ptr{Cvoid},), ptr)
+
+    # Load mesh
+    mesh_size = ccall((:BaseData_get_mesh_size, libfly), Cint, (Ptr{Cvoid},), ptr)
+    if mesh_size > 0
+        mesh_buf = Vector{Int32}(undef, mesh_size)
+        ccall((:BaseData_get_mesh, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Cint}), ptr, mesh_buf)
+        obj.mesh = mesh_buf
+    else
+        obj.mesh = Int32[]
+    end
+
+    # Load domain
+    domain_rows = ccall((:BaseData_get_domain_rows, libfly), Cint, (Ptr{Cvoid},), ptr)
+    domain_cols = ccall((:BaseData_get_domain_cols, libfly), Cint, (Ptr{Cvoid},), ptr)
+    if domain_rows > 0 && domain_cols > 0
+        domain_buf = Vector{Float32}(undef, domain_rows * domain_cols)
+        ccall((:BaseData_get_domain, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}), ptr, domain_buf)
+        obj.domain = reshape(domain_buf, domain_cols, domain_rows)'
+    else
+        obj.domain = Matrix{Float32}(undef, 0, 0)
+    end
+
+    # Load w_points
+    w_size = ccall((:BaseData_get_w_points_size, libfly), Cint, (Ptr{Cvoid},), ptr)
+    if w_size > 0
+        w_buf = Vector{Float32}(undef, w_size)
+        ccall((:BaseData_get_w_points, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Float32}), ptr, w_buf)
+        obj.w_points = w_buf
+    else
+        obj.w_points = Float32[]
+    end
+
+    # DO NOT register finalizer - pointer is owned by Field object
+    return obj
+end
+
+function save!(obj::BaseData, filename::String, ordering::String="k-w")
+    """Save BaseData to HDF5 file with specified ordering."""
+    if ordering == "k-w"
+        ccall((:BaseData_save, libfly), Cvoid, (Ptr{Cvoid}, Cstring), obj.ptr, filename)
+    else
+        ccall((:BaseData_save_with_ordering, libfly), Cvoid,
+              (Ptr{Cvoid}, Cstring, Cstring), obj.ptr, filename, ordering)
+    end
+end
+
+function get_data(obj::BaseData)
+    """Extract data as Julia array."""
+    if obj.n_indices == 2
+        # Matrix data
+        total_size = obj.nk * obj.nw * obj.dim_indices * obj.dim_indices
+        real_buf = Vector{Float32}(undef, total_size)
+        imag_buf = obj.is_complex ? Vector{Float32}(undef, total_size) : real_buf
+
+        ccall((:BaseData_get_data_matrix, libfly), Cvoid,
+              (Ptr{Cvoid}, Ptr{Float32}, Ptr{Float32}), obj.ptr, real_buf, imag_buf)
+
+        if obj.is_complex
+            data = complex.(real_buf, imag_buf)
+        else
+            data = real_buf
+        end
+
+        # Reshape to (dim_indices, dim_indices, nk*nw) - Julia column-major
+        return reshape(data, obj.dim_indices, obj.dim_indices, obj.nk * obj.nw)
+    else
+        # Scalar data
+        total_size = obj.nk * obj.nw
+        real_buf = Vector{Float32}(undef, total_size)
+        imag_buf = obj.is_complex ? Vector{Float32}(undef, total_size) : real_buf
+
+        ccall((:BaseData_get_data_scalar, libfly), Cvoid,
+              (Ptr{Cvoid}, Ptr{Float32}, Ptr{Float32}), obj.ptr, real_buf, imag_buf)
+
+        if obj.is_complex
+            return complex.(real_buf, imag_buf)
+        else
+            return real_buf
+        end
+    end
 end
 
 end # module Imports

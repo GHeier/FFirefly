@@ -3,8 +3,22 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 
-void start_python() { Py_Initialize(); }
+void start_python() {
+    // Ensure embedded Python uses the conda environment's site-packages
+    // by setting PYTHONPATH before initialization
+    const char* conda_prefix = getenv("CONDA_PREFIX");
+    if (conda_prefix != NULL) {
+        char pythonpath_env[PATH_MAX * 2];
+        // Add conda environment's site-packages to PYTHONPATH
+        snprintf(pythonpath_env, sizeof(pythonpath_env),
+                "%s/lib/python3.11/site-packages:%s",
+                conda_prefix, getenv("PYTHONPATH") ? getenv("PYTHONPATH") : "");
+        setenv("PYTHONPATH", pythonpath_env, 1);
+    }
+    Py_Initialize();
+}
 
 void end_python() { Py_Finalize(); }
 void call_python_func(const char *folder, const char *filename,

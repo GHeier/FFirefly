@@ -1,6 +1,19 @@
-from .plot.fly_plot import sketch
+from . import plot as plot
 from .src.config.load import config as config
 from .src.module.imports.cpp_imports import *
+
+# Lazy load diagram, interface_triqs, and load_triqs_H to avoid importing heavy dependencies at startup
+def __getattr__(name):
+    if name == "diagram":
+        from .src.objects import diagram
+        return diagram
+    elif name == "interface_triqs":
+        from .src.many_body import interface_triqs
+        return interface_triqs
+    elif name == "load_triqs_H":
+        from .src.many_body import load_triqs_H
+        return load_triqs_H
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 import os
 import re

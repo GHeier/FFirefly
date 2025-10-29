@@ -1,5 +1,7 @@
-from triqs.gf.meshes import MeshDLRImFreq, MeshDLRImTime
+from triqs.gf import Gf, make_gf_imfreq
+from triqs.gf.meshes import MeshDLRImFreq, MeshDLRImTime, MeshImFreq, MeshReFreq
 from triqs.gf import MeshProduct, MeshBrillouinZone, make_gf_dlr, make_gf_dlr_imtime, make_gf_dlr_imfreq
+from triqs.lattice import BrillouinZone, BravaisLattice
 from triqs_tprf.lattice import fourier_tr_to_wr, fourier_wk_to_wr, fourier_wr_to_tr, fourier_wr_to_wk, chi_wr_from_chi_tr, chi_wk_from_chi_wr, chi_tr_from_chi_wr, chi_wr_from_chi_wk
 import numpy as np
 
@@ -79,7 +81,12 @@ class Diagram:
             mesh, BZ = extract_mesh_and_bz(self.obj_wk)
             # Reshape data to match mesh dimensions (nw, nkx, nky, nkz)
             obj = np.reshape(self.obj_wk.data, mesh)
-            fly.save_data(filename, obj.T, mesh=np.array(mesh, dtype=np.int32), domain=BZ, w_points=self.w_points)
+            obj = np.fft.fftshift(obj, axes=tuple(range(1, len(mesh))))  # Shift k-points to center
+            # When w_points is provided separately, only pass spatial mesh dimensions (not nw)
+            spatial_mesh = np.array(mesh[1:], dtype=np.int32)  # Skip first element (nw)
+            # Move frequency axis to last position for k-w ordering: (nkx, nky, nkz, nw)
+            obj_kw = np.moveaxis(obj, 0, -1)
+            fly.save_data(filename, obj_kw, mesh=spatial_mesh, domain=BZ, w_points=self.w_points)
         else:
             obj = np.reshape(self.obj_w.data, (self.nw, ))
             fly.save_data(filename, obj, mesh=None, domain=None, w_points=self.w_points)
@@ -91,18 +98,103 @@ class Diagram:
         fly.save_data(filename, obj_w, mesh=None, domain=None, w_points=self.w_points)
         print(f"Diagram(w) saved to {filename}")
 
+    def save_spectral(self, filename):
+        beta = self.obj_w.mesh.beta
+        wmin, wmax, nw = -5.0, 5.0, 500
+        obj_w = iw_dlr_to_w(self.obj_w, beta, w_min=wmin, w_max=wmax, n_w=nw).data
+        obj_w = np.reshape(obj_w, (nw, ))
+        wpts = np.linspace(wmin, wmax, nw)
+        fly.save_data(filename, -obj_w.imag/np.pi, mesh=None, domain=None, w_points=wpts)
+        print(f"Diagram(pade) saved to {filename}")
 
-def copy(diagram):
-    new_diag = Diagram(diagram.obj_wk, diagram.statistic)
-    return new_diag
+    def init_tail(self):
+        spread = 0.01
+        tail_vals = spread / (self.w_points ** 2 + spread)
+        self.obj_wk.data[:] = tail_vals[:, None, None, None]
+        norm = np.sum(self.obj_wk.data * np.conj(self.obj_wk.data)).real
+        self.obj_wk.data[:] = self.obj_wk.data / norm
+        self.wk_to_tr()
 
-def dot(diagram1, diagram2):
-    # Setup for one-band only for now
-    new_obj = copy(diagram1)
-    #print(diagram1.obj_tr.data.shape)
-    #print(diagram2.obj_tr.data[:, :, 0, 0].shape)
-    new_obj.obj_tr.data[:] = diagram1.obj_tr.data * diagram2.obj_tr.data[:, :, 0, 0]
-    return new_obj
+    def copy(self):
+        if self.varspace == 'wk':
+            data = self.obj_wk.copy()
+        elif self.varspace == 'tr':
+            data = self.obj_tr.copy()
+        elif self.varspace == 't':
+            data = self.obj_t.copy()
+        elif self.varspace == 'w':
+            data = self.obj_w.copy()
+        return Diagram(data, self.statistic)
+
+    def zero(self):
+        if self.varspace == 'wk':
+            self.obj_wk.zero()
+            self.wk_to_tr()
+        elif self.varspace == 'tr':
+            self.obj_tr.zero()
+            self.tr_to_wk()
+        elif self.varspace == 'w':
+            self.obj_w.zero()
+            self.w_to_t()
+        elif self.varspace == 't':
+            self.obj_t.zero()
+            self.t_to_w()
+
+    def fill_from_field(self, field):
+        if self.varspace == 'wk' or self.varspace == 'tr':
+            BZ = self.obj_wk.mesh.components[1].bz.units
+            mesh = self.obj_wk.mesh.components[1].dims
+            kpt = np.linspace(0, 1, mesh[0], endpoint=False)
+            if len(mesh) == 2:
+                kx, ky = np.meshgrid(kpt, kpt, indexing='ij')
+                kx = kx.flatten()
+                ky = ky.flatten()
+                kz = np.zeros_like(kx)
+            elif len(mesh) == 3:
+                kx, ky, kz = np.meshgrid(kpt, kpt, kpt, indexing='ij')
+                kx = kx.flatten()
+                ky = ky.flatten()
+                kz = kz.flatten()
+            else:
+                raise ValueError("Mesh must be 2D or 3D")
+            kpts = np.vstack((kx, ky, kz)).T @ BZ
+            for iw in range(self.nw):
+                self.obj_wk.data[iw, :, 0, 0] = field(kpts, self.w_points[iw])
+            self.wk_to_tr()
+        elif self.varspace == "w":
+            for iw in range(self.nw):
+                self.obj_w.data[iw] = field(self.w_points[iw])
+            self.w_to_t()
+        else:
+            raise ValueError("fill_diagram_from_field only implemented for 'wk' and 'w' spaces")
+
+
+def dot_tr(diagram1, diagram2):
+    shape1 = diagram1.obj_tr.data.shape
+    shape2 = diagram2.obj_tr.data.shape
+    s = len(shape1) - len(shape2)
+    if s <= 0:
+        new_obj = diagram1.copy()
+    else:
+        new_obj = diagram2.copy()
+    new_obj.zero()
+
+    if s == 0:
+        new_obj = diagram1.copy()
+        new_obj.obj_tr.data[:] = diagram1.obj_tr.data * diagram2.obj_tr.data
+        return new_obj
+    elif abs(s) == 2:
+        n_orbs = shape1[2] if s > 0 else shape2[2]
+        for i in range(n_orbs):
+            for j in range(n_orbs):
+                if s > 0:
+                    new_obj.obj_tr.data[:] += diagram1.obj_tr.data[:, :, i, j] * diagram2.obj_tr.data[:]
+                else:
+                    new_obj.obj_tr.data[:] += diagram1.obj_tr.data[:] * diagram2.obj_tr.data[:, :, i, j]
+        return new_obj
+    else:
+        raise ValueError("Convolution Sum only implemented for diagrams differing by 0 or 2 indices")
+
 
 def describe_mesh(G):
     mesh = G.mesh
@@ -186,4 +278,42 @@ def iw_dlr_to_w(G_iw_dlr, beta, w_min=-5.0, w_max=5.0, n_w=500):
     # Perform Pade continuation
     Gw.set_from_pade(Giw_temp)
     return Gw
+
+
+def get_brillouin_zone():
+    """
+    Construct TRIQS BrillouinZone from config parameters.
+
+    Returns:
+        BrillouinZone: TRIQS BrillouinZone object based on cfg.brillouin_zone and cfg.dimension
+
+    Example:
+        >>> BZ = get_brillouin_zone()
+        >>> k_mesh = MeshBrZone(BZ, n_k=60)
+    """
+    # Get reciprocal lattice vectors from config
+    BZ_vectors = np.array(cfg.brillouin_zone)
+
+    # Extract only the relevant dimensions based on cfg.dimension
+    if cfg.dimension == 2:
+        # For 2D systems, use only the first 2x2 block
+        BZ_vectors = BZ_vectors[:2, :2]
+
+    # Compute real-space lattice vectors from reciprocal vectors
+    # Using the relation: a_i · b_j = 2π δ_ij
+    a = 2 * np.pi * np.linalg.inv(BZ_vectors.T).T
+
+    # Create BravaisLattice with appropriate dimensionality
+    if cfg.dimension == 2:
+        # 2D system
+        bl = BravaisLattice(units=[[a[0,0], a[0,1]],
+                                   [a[1,0], a[1,1]]])
+    else:
+        # 3D system
+        bl = BravaisLattice(units=[[a[0,0], a[0,1], a[0,2]],
+                                   [a[1,0], a[1,1], a[1,2]],
+                                   [a[2,0], a[2,1], a[2,2]]])
+
+    return BrillouinZone(bl)
+
 

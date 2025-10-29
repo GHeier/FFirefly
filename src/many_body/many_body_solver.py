@@ -1,4 +1,3 @@
-from diagram import *
 from triqs_tprf.lattice import *
 from triqs_tprf import *
 from triqs.gf import inverse, Fourier, Gf, make_gf_dlr, make_gf_dlr_imtime, make_gf_dlr_imfreq
@@ -7,10 +6,11 @@ import numpy as np
 from scipy.optimize import brentq
 
 import firefly as fly
+from firefly.diagram import Diagram, dot_tr
 import firefly.config as cfg
 
 class ManyBodySolver:
-    def __init__(self, G0=None, U=0.0, mix=0.2, U_maxiter=50, e_k=None, H=None, beta=None, w_max=None, eps=None):
+    def __init__(self, G0=None, U=0.0, mix=0.2, U_maxiter=50, H=None, n=None, mu=None):
         """
         Initialize ManyBodySolver for either FLEX or DMFT calculations.
 
@@ -22,38 +22,58 @@ class ManyBodySolver:
         self.mix = mix  # Mixing parameter for self-energy
         self.U_maxiter = U_maxiter  # Max iterations for U renormalization
         self.diverged = False  # Track divergence state
-        self.e_k = e_k  # Energy dispersion (needed for mu calculation)
-        self.n_target = None  # Target electron density
-        self.mu = cfg.fermi_energy  # Chemical potential
+        self.n = n  # Target electron density (if needed)
+        self.mu = mu
 
         # FLEX mode
-        if G0 is not None:
-            self.G0 = Diagram(G0, 'Fermion')
-            self.G = copy(self.G0)
-            self.Sigma = None
-            self.mode = 'FLEX'
+        if G0 is None:
+            raise ValueError("Must provide G0 triqs object")
 
-        # DMFT mode
-        elif H is not None:
-            self.H = H
-            self.beta = beta
-            self.mode = 'DMFT'
-
-            # Create DLR meshes
-            dlr_iw_mesh = MeshDLRImFreq(beta=beta, statistic='Fermion', w_max=w_max, eps=eps)
-
-            # Initialize Green's functions in frequency space
-            G_iw = Gf(mesh=dlr_iw_mesh, target_shape=[1,1])
-            Sigma_iw = G_iw.copy()
-            Sigma_iw.zero()
-            G_iw << H(Sigma=Sigma_iw, mu=self.mu)
-
-            # Create Diagram objects (they handle w <-> t transforms internally)
-            self.G_loc = Diagram(G_iw, 'Fermion')        # Local Green's function
-            self.Sigma_loc = Diagram(Sigma_iw, 'Fermion') # Local self-energy
-
+        self.G0 = Diagram(G0, 'Fermion')
+        self.G = self.G0.copy()
+        self.Sigma = self.G0.copy()
+        self.Sigma.zero()
+        if self.G0.varspace == 'wk':
+            stuff = G0.mesh.components[0]
+        elif self.G0.varspace == 'w':
+            stuff = G0.mesh
         else:
-            raise ValueError("Must provide either G0 (for FLEX) or H (for DMFT)")
+            raise ValueError("G0 must be in 'wk' or 'w' space")
+        self.beta = stuff.beta
+        self.eps = stuff.eps
+        self.w_max = stuff.w_max
+
+        dlr_iw_mesh = MeshDLRImFreq(beta=self.beta, statistic='Fermion', w_max=self.w_max, eps=self.eps)
+
+        G_iw = Gf(mesh=dlr_iw_mesh, target_shape=[1,1])
+        Sigma_iw = G_iw.copy()
+        Sigma_iw.zero()
+        self.G_loc = Diagram(G_iw, 'Fermion')        # Local Green's function
+        self.Sigma_loc = Diagram(Sigma_iw, 'Fermion') # Local self-energy
+        self.H = H  # HilbertTransform for DMFT
+
+
+    def get_local_G(self):
+        """Calculate local Green's function by summing over k-points."""
+        G_loc_wk = self.G.obj_wk.copy()
+        G_loc_wk.data[:] = np.sum(self.G.obj_wk.data, axis=1) / self.G.nk
+        self.G_loc = Diagram(G_loc_wk, 'Fermion')
+
+    def calculate_mu_Gw(self):
+        n_target = self.n
+        diff = 1.0
+        G = self.G_loc.obj_w.copy()
+        old_mu = mu
+        new_mu = mu
+        while abs(diff) > 1e-6:
+            G << inverse(inverse(G) + new_mu - old_mu)
+            old_mu = new_mu
+            n = G.density().real[0][0]
+            diff = n - n_target
+            #print(f"mu: {old_mu:.6f}, n: {n:.6f}, diff: {diff:.6f}")
+            new_mu += -diff * 0.5
+            
+        return old_mu
 
     def chi0_from_grt_PH(self):
         self.G.wk_to_tr()
@@ -78,7 +98,7 @@ class ManyBodySolver:
         U2X = U**2 * X_data
         chi_spin = X_data / (1 - UX)
         chi_charge = X_data / (1 + UX)
-        V_wk = 1.5 * U2X * chi_spin + 0.5 * U2X * chi_charge - U2X + U
+        V_wk = 1.5 * U**2 * chi_spin + 0.5 * U**2 * chi_charge - U2X + U
         V = self.X.obj_wk.copy()
         V.data[:] = V_wk
         self.V = Diagram(V, 'Boson')
@@ -86,7 +106,8 @@ class ManyBodySolver:
 
     def Sigma_from_vertex(self):
         self.V.wk_to_tr()
-        self.Sigma = dot(self.G, self.V)
+        self.Sigma = dot_tr(self.V, self.G)
+        #self.Sigma.obj_tr.data[:] = self.G.obj_tr.data * self.V.obj_tr.data[:, :, 0, 0]
         self.Sigma.tr_to_wk()
 
     def dyson_G_from_Sigma(self):
@@ -214,7 +235,7 @@ class ManyBodySolver:
                 break
 
     # DMFT methods
-    def solve_DMFT(self):
+    def get_IPT_sigma(self):
         """Single DMFT iteration using IPT."""
         # Transform Weiss field to imaginary time
         self.G_loc.w_to_t()
@@ -222,13 +243,15 @@ class ManyBodySolver:
         # IPT: Sigma(tau) = U^2 * G_Weiss(tau)^3
         self.Sigma_loc.obj_t.data[:] = (self.U**2) * self.G_loc.obj_t.data**3
 
+        Sigma_old = self.Sigma_loc.obj_w.copy()
         # Transform Sigma back to frequency
         self.Sigma_loc.t_to_w()
-
         # Mix self-energy for stability
-        Sigma_old = self.Sigma_loc.obj_w.copy()
         self.Sigma_loc.obj_w.data[:] = self.mix * self.Sigma_loc.obj_w.data + (1.0 - self.mix) * Sigma_old.data
 
+
+    def solve_DMFT(self):
+        self.get_IPT_sigma()
         # Dyson equation: G_loc = H(Sigma)
         self.G_loc.obj_w << self.H(Sigma=self.Sigma_loc.obj_w, mu=self.mu)
 
@@ -252,17 +275,51 @@ class ManyBodySolver:
 
     def solve_FLEX_DMFT(self):
         """Single iteration of FLEX+DMFT."""
-        self.solve_DMFT()
+        # DMFT part
+        self.dyson_G_from_Sigma()
+        self.get_local_G()
+        self.get_IPT_sigma()
 
-        # FLEX steps
-        self.solve_FLEX()
+        # Make full Sigma(k,iw) from local Sigma(iw)
+        self.Sigma.obj_wk.data[:] += self.Sigma_loc.obj_w.data[:, np.newaxis, np.newaxis]
 
+        # FLEX part
+        self.dyson_G_from_Sigma()
+        self.chi0_from_grt_PH()
+        self.FLEX_from_chi()
         if self.diverged:
-            print("Divergence detected in FLEX+DMFT step.")
             return
+        self.Sigma_from_vertex()
+        sigma_loc = np.sum(self.Sigma.obj_wk.data, axis=1) / self.Sigma.nk
+        self.Sigma.obj_wk.data[:] -= sigma_loc[:, np.newaxis, np.newaxis]
+        self.Sigma.obj_wk.data[:] += self.Sigma_loc.obj_w.data[:, np.newaxis, np.newaxis]
 
-        self.G_loc.obj_w.data[:] = np.sum(self.G.obj_wk.data, axis=1) / self.G.nk
+    def loop_FLEX_DMFT(self, n_loops=50, check_divergence=True):
+        # Initial check for divergence
+        if check_divergence and self.UX >= 1.0:
+            print(f"Initial U*max(Chi) = {self.UX:.4f} >= 1")
+            self.U_renormalization()
 
-        # Update local quantities
-        self.G_loc = copy(self.G)
-        self.Sigma_loc = copy(self.Sigma)
+        print("Beginning FLEX+DMFT Self-Consistent Loop")
+        for i in range(n_loops):
+            print(f"Starting iteration {i+1}/{n_loops}...")
+            G_old = self.G.obj_wk.copy()
+
+            self.solve_FLEX_DMFT()
+            if self.diverged:
+                print(f"Divergence detected at iteration {i+1}")
+                if check_divergence:
+                    print("Attempting U renormalization...")
+                    self.U_renormalization()
+                    continue
+                else:
+                    print("Code exiting due to divergence.")
+                    break
+
+            print(f"Iteration {i+1} completed. U*max(Chi) = {self.UX:.4f}")
+            err = np.max(np.abs(self.G.obj_wk.data - G_old.data))
+            print(f"Max change in G: {err:.3e}")
+
+            if err < 1e-6:
+                print("Convergence achieved.")
+                break

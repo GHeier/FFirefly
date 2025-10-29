@@ -28,7 +28,15 @@ set(CMAKE_Fortran_FLAGS "-O3 -fopenmp -fPIC -L/usr/local/lib -I/usr/local/includ
 set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -ltetrabz -lopenblas -ljulia -lhdf5_cpp -lhdf5)
 
 # Find Python3 headers and libraries
+# Use conda environment's Python if CONDA_PREFIX is set
+if(DEFINED ENV{CONDA_PREFIX})
+    set(Python3_ROOT_DIR $ENV{CONDA_PREFIX})
+    message(STATUS "Using Python from conda environment: $ENV{CONDA_PREFIX}")
+endif()
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+message(STATUS "Python3 executable: ${Python3_EXECUTABLE}")
+message(STATUS "Python3 include dirs: ${Python3_INCLUDE_DIRS}")
+message(STATUS "Python3 libraries: ${Python3_LIBRARIES}")
 include_directories(${Python3_INCLUDE_DIRS})
 link_directories(${Python3_LIBRARY_DIRS})
 
