@@ -1,6 +1,7 @@
 import firefly as fly
 import firefly.config as cfg
 from firefly.diagram import *
+from firefly.diagram import flip_wk
 
 from triqs.gf import *
 from triqs_tprf.lattice import lattice_dyson_g0_wk
@@ -21,13 +22,78 @@ BZ = get_brillouin_zone()
 mu = cfg.fermi_energy
 beta = 1.0 / cfg.Temperature
 
+def analyze_gap_symmetry(Delta):
+    """Analyze the symmetry of the gap function."""
+    mesh, BZ = extract_mesh_and_bz(Delta.obj_wk)
+    original_shape = Delta.obj_wk.data.shape
+    nk = int(np.sqrt(original_shape[1]))
+
+    # Reshape to (nw, nkx, nky, nkz, orb, orb) and take lowest Matsubara frequency
+    data = np.reshape(Delta.obj_wk.data, mesh + original_shape[2:])
+    gap_k = data[0, :, :, 0, 0, 0]  # lowest frequency, 2D slice
+
+    print(f"\nGap function analysis:")
+    print(f"  Shape: {gap_k.shape}")
+    print(f"  Sign changes along kx: {np.sum(np.diff(np.sign(gap_k[:, nk//2].real)) != 0)}")
+    print(f"  Sign changes along ky: {np.sum(np.diff(np.sign(gap_k[nk//2, :].real)) != 0)}")
+    print(f"  Corner values: Δ(0,0)={gap_k[0,0]:.4f}, Δ(π,0)={gap_k[nk//2,0]:.4f}, Δ(π,π)={gap_k[nk//2,nk//2]:.4f}")
+    print(f"  d-wave test: Δ(π,0)/Δ(0,π) = {gap_k[nk//2,0]/gap_k[0,nk//2]:.4f} (expect ~1 for d-wave)")
+    print(f"  s-wave test: Δ(0,0)/Δ(π,π) = {gap_k[0,0]/gap_k[nk//2,nk//2]:.4f} (expect >0 for s-wave)")
+
+
+def print_vertex_structure(V, label):
+    """Print diagnostic info about vertex structure."""
+    mesh, BZ = extract_mesh_and_bz(V.obj_wk)
+    original_shape = V.obj_wk.data.shape
+    nw, nk_total = original_shape[0], original_shape[1]
+    nk = int(np.sqrt(nk_total))
+
+    # Reshape and average over frequency for visualization
+    data = np.reshape(V.obj_wk.data, mesh + original_shape[2:])
+    vertex_k = np.mean(np.abs(data[:, :, :, 0, 0, 0, 0, 0]), axis=0)  # average over freq
+
+    max_idx = np.unravel_index(np.argmax(vertex_k), vertex_k.shape)
+    print(f"\n{label}:")
+    print(f"  Max at k=({max_idx[0]}, {max_idx[1]}) (expect (π,π) at ({nk//2}, {nk//2}))")
+    print(f"  Max value: {np.max(vertex_k):.4f}")
+    print(f"  Corner values (π,π): V[0,0]={vertex_k[0,0]:.4f}, V[{nk//2},{nk//2}]={vertex_k[nk//2,nk//2]:.4f}")
+
+
+def symmetrize_vertex(V):
+    """
+    Symmetrize the vertex by computing V_sym(q) = (V(q) + V(-q)) / 2.
+
+    Args:
+        V: Diagram object containing the vertex in wk space
+    """
+    # Extract mesh dimensions
+    mesh, BZ = extract_mesh_and_bz(V.obj_wk)
+    original_shape = V.obj_wk.data.shape
+
+    # Reshape to mesh dimensions (nw, nkx, nky, nkz, orb1, orb2, orb3, orb4)
+    data = np.reshape(V.obj_wk.data, mesh + original_shape[2:])
+
+    # fftshift k-axes to center k-points
+    k_axes = tuple(range(1, len(mesh)))  # axes 1, 2, 3 for kx, ky, kz
+    data = np.fft.fftshift(data, axes=k_axes)
+
+    # Flip k-axes to get V(-q) and average
+    data = (data + np.flip(data, axis=k_axes)) / 2.0
+
+    # ifftshift back to original k-ordering
+    data = np.fft.ifftshift(data, axes=k_axes)
+
+    # Reshape back to TRIQS data shape
+    V.obj_wk.data[:] = np.reshape(data, original_shape)
+
+    print("Vertex symmetrized: V_sym(q) = (V(q) + V(-q)) / 2")
+
 def main():
     H_r, kmesh, e_k = fly.load_triqs_H.get_energy_mesh()
     emax = e_k.data.max().real
     emin = e_k.data.min().real
     print(f"emax: {emax}, emin: {emin}")
-    wmax = 1.2 * (emax - emin)
-    DLRImMesh = MeshDLRImFreq(beta=beta, statistic='Fermion', w_max=wmax, eps=1e-14)
+    DLRImMesh = fly.load_triqs_H.create_dlr_meshes(e_k, beta, statistic='Fermion')
     print(BZ)
     k_mesh = MeshBrZone(BZ, n_k=Nk)   # uniform Nk x Nk x Nk (third dim is 1 if 2D)
 
@@ -41,21 +107,31 @@ def main():
     G = fly.diagram.Diagram(G, 'Fermion')
 
     vertex = fly.Field_C(outdir + prefix + '_vertex.h5')
-    DLRImMesh = MeshDLRImFreq(beta=beta, statistic='Boson', w_max=wmax, eps=1e-14)
-    wk_mesh = MeshProduct(DLRImMesh, k_mesh) 
+    DLRImMesh = fly.load_triqs_H.create_dlr_meshes(e_k, beta, statistic='Boson')
+    wk_mesh = MeshProduct(DLRImMesh, k_mesh)
     V = Gf(mesh=wk_mesh, target_shape=[1,1,1,1])
     V = fly.diagram.Diagram(V, 'Boson')
     #fly.interface_triqs.fill_triqs_from_field(V.obj_wk, vertex)
-    V.obj_wk.data[:, :, 0, 0, 0, 0] = vertex.get_data()
-    V.save(outdir + prefix + '_vertex.h5')
-    return
-    V.obj_wk.data[:, :, 0, 0, 0, 0] = (V.obj_wk.data[:, :, 0, 0, 0, 0] + np.flip(V.obj_wk.data[:, :, 0, 0, 0, 0], axis=1)) / 2.0
+    V.load(vertex)
+
+    # Check vertex structure before symmetrization
+    print_vertex_structure(V, "Before symmetrization")
+
+    symmetrize_vertex(V)
+
+    # Check after symmetrization
+    print_vertex_structure(V, "After symmetrization")
+
     V.wk_to_tr()
 
     Delta0 = G.copy()
 
     eig, Delta = solve_eliashberg_power_iteration(G, V, Delta0)
-    print(f"Leading eigenvalue: {eig:.6f}")
+    print(f"Max Eig: {eig:.6f}")
+
+    # Analyze gap symmetry
+    analyze_gap_symmetry(Delta)
+
     Delta.save(outdir + prefix + '_gap.h5')
 
 
@@ -64,10 +140,10 @@ def solve_eliashberg_power_iteration(G, V, Delta0):
     tol = 1e-4
     max_eigs_searched = 5
     Delta = Delta0.copy()
-    G_flip = G.copy()
-    # reverse G(r,tau) to G(-r, -tau)
-    G_flip.obj_wk.data[:] = np.flip(np.flip(G_flip.obj_wk.data, axis=0), axis=1)
-    #G_flip.tr_to_wk()
+
+    # Properly flip G(k, iω) → G(-k, -iω) for Cooper pair formation
+    G_flip = flip_wk(G)
+
     eig = 0.0
     prev_eig = 0.0
     old_Deltas = []

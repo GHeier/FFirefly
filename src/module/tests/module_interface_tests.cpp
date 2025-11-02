@@ -116,6 +116,22 @@ static bool test_py_save_data_dispatcher_complex() {
     return call_python_func_bool("module/tests", "test_module_interface", "test_save_data_dispatcher_complex");
 }
 
+static bool test_py_unified_field_scalar_real() {
+    return call_python_func_bool("module/tests", "test_module_interface", "test_unified_field_scalar_real");
+}
+
+static bool test_py_unified_field_scalar_complex() {
+    return call_python_func_bool("module/tests", "test_module_interface", "test_unified_field_scalar_complex");
+}
+
+static bool test_py_unified_field_matrix_real() {
+    return call_python_func_bool("module/tests", "test_module_interface", "test_unified_field_matrix_real");
+}
+
+static bool test_py_unified_field_matrix_complex() {
+    return call_python_func_bool("module/tests", "test_module_interface", "test_unified_field_matrix_complex");
+}
+
 // Julia tests
 static bool test_jl_vec_constructor_empty() {
     return call_julia_func_bool("module/tests/", "test_module_interface", "TestModuleInterface", "test_vec_constructor_empty");
@@ -226,7 +242,7 @@ static bool test_jl_save_data_dispatcher_complex() {
 }
 
 bool py_module_interface_tests() {
-    int num_tests = 13;
+    int num_tests = 17;
     bool all_tests[] = {
         test_py_vec_constructor_empty(),
         test_py_vec_constructor_args(),
@@ -241,6 +257,10 @@ bool py_module_interface_tests() {
         test_py_save_read_with_frequency(),
         test_py_save_data_dispatcher_real(),
         test_py_save_data_dispatcher_complex(),
+        test_py_unified_field_scalar_real(),
+        test_py_unified_field_scalar_complex(),
+        test_py_unified_field_matrix_real(),
+        test_py_unified_field_matrix_complex(),
     };
 
     return print_test_results(all_tests, num_tests, "Python Module Interface tests");

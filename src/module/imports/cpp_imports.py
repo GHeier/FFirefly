@@ -1,5 +1,5 @@
 import ctypes
-from ctypes import c_bool, c_void_p, c_char_p, c_float, c_int, POINTER
+from ctypes import c_bool, c_void_p, c_char_p, c_float, c_int, POINTER, byref
 import numpy as np
 from pathlib import Path
 import os
@@ -302,6 +302,7 @@ class Field_R:
         ptr = lib.Field_R_get_data(self.ptr)
         bd = object.__new__(BaseData)
         bd.ptr = ptr
+        bd.owns_ptr = False  # This is a borrowed pointer, don't destroy it
         bd._load_metadata()
         data_array = bd.get_data()
 
@@ -533,6 +534,7 @@ class Field_C:
         ptr = lib.Field_C_get_data(self.ptr)
         bd = object.__new__(BaseData)
         bd.ptr = ptr
+        bd.owns_ptr = False  # This is a borrowed pointer, don't destroy it
         bd._load_metadata()
         data_array = bd.get_data()
 
@@ -545,17 +547,18 @@ class Field_C:
         else:
             print("reshaping scalar data")
             # Scalar: (nk*nw,) -> (nw, nk)
-            return data_array.reshape(bd.nw, bd.nk).T
-            #return data_array.reshape(bd.nk, bd.nw).T
+            return data_array.reshape(bd.nw, bd.nk)
+            #return data_array.reshape(bd.nk, bd.nw)
 
     def __del__(self):
-        return
         try:
-            destroy = lib.destroy_Field_C
-            destroy.argtypes = [ctypes.c_void_p]
-            destroy(self.ptr)
-        except AttributeError:
-            print("failed to clear memory")
+            if hasattr(self, 'ptr') and self.ptr:
+                destroy = lib.destroy_Field_C
+                destroy.argtypes = [ctypes.c_void_p]
+                destroy(self.ptr)
+                self.ptr = None
+        except (AttributeError, OSError):
+            pass
 
 # Hamiltonian class
 lib.Hamiltonian_export0.restype = c_void_p
@@ -764,6 +767,7 @@ class Field_RM:
         ptr = lib.Field_RM_get_data(self.ptr)
         bd = object.__new__(BaseData)
         bd.ptr = ptr
+        bd.owns_ptr = False  # This is a borrowed pointer, don't destroy it
         bd._load_metadata()
         data_array = bd.get_data()
 
@@ -938,6 +942,7 @@ class Field_CM:
         ptr = lib.Field_CM_get_data(self.ptr)
         bd = object.__new__(BaseData)
         bd.ptr = ptr
+        bd.owns_ptr = False  # This is a borrowed pointer, don't destroy it
         bd._load_metadata()
         data_array = bd.get_data()
 
@@ -1105,8 +1110,11 @@ def data_save(filename, points, values, dimension, with_w, with_n, is_complex, i
 # Define interleave_complex (similar to Julia's interleave)
 def interleave_complex(values: np.ndarray) -> np.ndarray:
     values = values.astype(np.complex64)
-    real = np.real(values).ravel()
-    imag = np.imag(values).ravel()
+    # For 3D arrays (k-space + frequency), use order='F' for w-k ordering
+    # For 2D arrays, use default C order (row-major)
+    order = 'F' if values.ndim == 3 else 'C'
+    real = np.real(values).ravel(order=order)
+    imag = np.imag(values).ravel(order=order)
     return np.column_stack((real, imag)).astype(np.float32).ravel()
 
 def save_field(filename: str, values, domain, mesh, w_points=None):
@@ -1258,7 +1266,10 @@ def save_data_scalar(filename: str, data: np.ndarray,
         w_points = np.array([], dtype=np.float32)
 
     # Flatten and interleave data
-    data_flat = data.ravel()
+    # For 3D arrays (k-space + frequency), use order='F' for w-k ordering
+    # For 2D arrays, use default C order (row-major)
+    order = 'F' if data.ndim == 3 else 'C'
+    data_flat = data.ravel(order=order)
     if is_complex or np.iscomplexobj(data):
         data_interleaved = interleave_complex(data_flat)
         is_complex = True
@@ -1312,7 +1323,10 @@ def save_data_vector(filename: str, data: np.ndarray,
         w_points = np.array([], dtype=np.float32)
 
     # Flatten and interleave data
-    data_flat = data.ravel()
+    # For 3D arrays (k-space + frequency), use order='F' for w-k ordering
+    # For 2D arrays, use default C order (row-major)
+    order = 'F' if data.ndim == 3 else 'C'
+    data_flat = data.ravel(order=order)
     if is_complex or np.iscomplexobj(data):
         data_interleaved = interleave_complex(data_flat)
         is_complex = True
@@ -1365,7 +1379,10 @@ def save_data_matrix(filename: str, data: np.ndarray,
         w_points = np.array([], dtype=np.float32)
 
     # Flatten and interleave data
-    data_flat = data.ravel()
+    # For 3D arrays (k-space + frequency), use order='F' for w-k ordering
+    # For 2D arrays, use default C order (row-major)
+    order = 'F' if data.ndim == 3 else 'C'
+    data_flat = data.ravel(order=order)
     if is_complex or np.iscomplexobj(data):
         data_interleaved = interleave_complex(data_flat)
         is_complex = True
@@ -1476,6 +1493,7 @@ class BaseData:
             filename: Path to HDF5 file to load (optional)
             ordering: Data ordering "k-w" or "w-k" (default: "k-w")
         """
+        self.owns_ptr = True  # By default, we own the pointer
         if filename is None:
             self.ptr = None
             raise ValueError("BaseData requires a filename to load")
@@ -1597,7 +1615,7 @@ class BaseData:
 
     def __del__(self):
         try:
-            if hasattr(self, 'ptr') and self.ptr:
+            if hasattr(self, 'ptr') and self.ptr and getattr(self, 'owns_ptr', True):
                 lib.destroy_BaseData(self.ptr)
         except AttributeError:
             pass
@@ -1608,3 +1626,218 @@ class BaseData:
 #
 # load_config("/home/g/Research/ffirefly/build/bin/input.cfg")
 # print(epsilon(1, [0.1, 0.2, 0.3]))
+
+class Field:
+    """
+    Field class that automatically dispatches to correct type based on field metadata.
+
+    The field type is determined from the HDF5 file:
+    - is_complex: True for complex fields, False for real
+    - is_vector: True for vector fields (not currently used for matrix dispatch)
+    - is_matrix: True for matrix fields, False for scalar
+
+    Based on these flags, the appropriate return type is used when calling the field.
+    """
+    def __init__(self, filename=None):
+        """
+        Create Field from file or empty.
+        
+        Args:
+            filename: Path to HDF5 field file (optional)
+        """
+        if filename is None:
+            create = lib.Field_create
+            create.restype = c_void_p
+            self.ptr = create()
+        else:
+            create_from_file = lib.Field_from_file
+            create_from_file.argtypes = [c_char_p]
+            create_from_file.restype = c_void_p
+            self.ptr = create_from_file(c_char_p(filename.encode('utf-8')))
+        
+        # Get type flags
+        get_is_complex = lib.Field_is_complex
+        get_is_complex.argtypes = [c_void_p]
+        get_is_complex.restype = c_bool
+        self.is_complex = get_is_complex(self.ptr)
+        
+        get_is_vector = lib.Field_is_vector
+        get_is_vector.argtypes = [c_void_p]
+        get_is_vector.restype = c_bool
+        self.is_vector = get_is_vector(self.ptr)
+        
+        get_is_matrix = lib.Field_is_matrix
+        get_is_matrix.argtypes = [c_void_p]
+        get_is_matrix.restype = c_bool
+        self.is_matrix = get_is_matrix(self.ptr)
+
+        # Get plot metadata
+        get_default_plot_type = lib.Field_get_default_plot_type
+        get_default_plot_type.argtypes = [c_void_p]
+        get_default_plot_type.restype = c_char_p
+        self.default_plot_type = get_default_plot_type(self.ptr).decode('utf-8') if get_default_plot_type(self.ptr) else ""
+
+        get_title = lib.Field_get_title
+        get_title.argtypes = [c_void_p]
+        get_title.restype = c_char_p
+        self.title = get_title(self.ptr).decode('utf-8') if get_title(self.ptr) else ""
+
+        get_x_label = lib.Field_get_x_label
+        get_x_label.argtypes = [c_void_p]
+        get_x_label.restype = c_char_p
+        self.x_label = get_x_label(self.ptr).decode('utf-8') if get_x_label(self.ptr) else ""
+
+        get_y_label = lib.Field_get_y_label
+        get_y_label.argtypes = [c_void_p]
+        get_y_label.restype = c_char_p
+        self.y_label = get_y_label(self.ptr).decode('utf-8') if get_y_label(self.ptr) else ""
+    
+    def __del__(self):
+        try:
+            if hasattr(self, 'ptr') and self.ptr:
+                destroy = lib.Field_destroy
+                destroy.argtypes = [c_void_p]
+                destroy(self.ptr)
+                self.ptr = None
+        except (AttributeError, OSError):
+            pass
+    
+    def save(self, filename):
+        """Save field to HDF5 file."""
+        save_func = lib.Field_save
+        save_func.argtypes = [c_void_p, c_char_p]
+        save_func(self.ptr, c_char_p(filename.encode('utf-8')))
+    
+    def __call__(self, *args, **kwargs):
+        """
+        Evaluate field at point(s).
+        
+        Dispatches to appropriate method based on field type:
+        - Scalar real: returns float or np.ndarray of floats
+        - Scalar complex: returns complex or np.ndarray of complex
+        - Matrix real: returns 2D np.ndarray of floats
+        - Matrix complex: returns 2D np.ndarray of complex
+        
+        Args:
+            k: k-point as array-like (x, y, z) or array of k-points
+            w: frequency (optional, default 0.0)
+        
+        Or:
+            w: frequency (for frequency-only evaluation)
+        """
+        if self.is_matrix and self.is_complex:
+            return self._call_matrix_complex(*args, **kwargs)
+        elif self.is_matrix and not self.is_complex:
+            return self._call_matrix_real(*args, **kwargs)
+        elif not self.is_matrix and self.is_complex:
+            return self._call_scalar_complex(*args, **kwargs)
+        else:
+            return self._call_scalar_real(*args, **kwargs)
+    
+    def _call_scalar_real(self, k=None, w=0.0):
+        """Call real scalar field."""
+        if k is None:
+            # Frequency-only evaluation
+            call_func = lib.Field_call_scalar_real_w
+            call_func.argtypes = [c_void_p, c_float]
+            call_func.restype = c_float
+            return call_func(self.ptr, c_float(w))
+        
+        k = np.atleast_2d(k).astype(np.float32)
+        if k.shape[0] == 1:
+            # Single point
+            call_func = lib.Field_call_scalar_real_kw
+            call_func.argtypes = [c_void_p, POINTER(c_float), c_int, c_float]
+            call_func.restype = c_float
+            k_ptr = k[0].ctypes.data_as(POINTER(c_float))
+            return call_func(self.ptr, k_ptr, len(k[0]), c_float(w))
+        else:
+            # Multiple points
+            call_func = lib.Field_call_scalar_real_list
+            call_func.argtypes = [c_void_p, POINTER(c_float), c_int, c_int, c_float, POINTER(c_float)]
+            k_flat = k.flatten()
+            k_ptr = k_flat.ctypes.data_as(POINTER(c_float))
+            result = np.zeros(k.shape[0], dtype=np.float32)
+            result_ptr = result.ctypes.data_as(POINTER(c_float))
+            call_func(self.ptr, k_ptr, k.shape[0], k.shape[1], c_float(w), result_ptr)
+            return result
+    
+    def _call_scalar_complex(self, k=None, w=0.0):
+        """Call complex scalar field."""
+        if k is None:
+            # Frequency-only evaluation
+            call_func = lib.Field_call_scalar_complex_w
+            call_func.argtypes = [c_void_p, c_float, POINTER(c_float), POINTER(c_float)]
+            real_out = c_float()
+            imag_out = c_float()
+            call_func(self.ptr, c_float(w), byref(real_out), byref(imag_out))
+            return complex(real_out.value, imag_out.value)
+        
+        k = np.atleast_2d(k).astype(np.float32)
+        if k.shape[0] == 1:
+            # Single point
+            call_func = lib.Field_call_scalar_complex_kw
+            call_func.argtypes = [c_void_p, POINTER(c_float), c_int, c_float, POINTER(c_float), POINTER(c_float)]
+            k_ptr = k[0].ctypes.data_as(POINTER(c_float))
+            real_out = c_float()
+            imag_out = c_float()
+            call_func(self.ptr, k_ptr, len(k[0]), c_float(w), byref(real_out), byref(imag_out))
+            return complex(real_out.value, imag_out.value)
+        else:
+            # Multiple points
+            call_func = lib.Field_call_scalar_complex_list
+            call_func.argtypes = [c_void_p, POINTER(c_float), c_int, c_int, c_float, POINTER(c_float), POINTER(c_float)]
+            k_flat = k.flatten()
+            k_ptr = k_flat.ctypes.data_as(POINTER(c_float))
+            real_out = np.zeros(k.shape[0], dtype=np.float32)
+            imag_out = np.zeros(k.shape[0], dtype=np.float32)
+            real_ptr = real_out.ctypes.data_as(POINTER(c_float))
+            imag_ptr = imag_out.ctypes.data_as(POINTER(c_float))
+            call_func(self.ptr, k_ptr, k.shape[0], k.shape[1], c_float(w), real_ptr, imag_ptr)
+            return real_out + 1j * imag_out
+    
+    def _call_matrix_real(self, k, w=0.0):
+        """Call real matrix field."""
+        k = np.atleast_1d(k).astype(np.float32)
+        call_func = lib.Field_call_matrix_real
+        call_func.argtypes = [c_void_p, POINTER(c_float), c_int, c_float, POINTER(c_float), POINTER(c_int)]
+        
+        k_ptr = k.ctypes.data_as(POINTER(c_float))
+        size_out = c_int()
+        # Allocate maximum possible size
+        max_size = 100
+        result = np.zeros(max_size * max_size, dtype=np.float32)
+        result_ptr = result.ctypes.data_as(POINTER(c_float))
+        
+        call_func(self.ptr, k_ptr, len(k), c_float(w), result_ptr, byref(size_out))
+        
+        n = size_out.value
+        return result[:n*n].reshape(n, n)
+    
+    def _call_matrix_complex(self, k, w=0.0):
+        """Call complex matrix field."""
+        k = np.atleast_1d(k).astype(np.float32)
+        call_func = lib.Field_call_matrix_complex
+        call_func.argtypes = [c_void_p, POINTER(c_float), c_int, c_float, POINTER(c_float), POINTER(c_float), POINTER(c_int)]
+        
+        k_ptr = k.ctypes.data_as(POINTER(c_float))
+        size_out = c_int()
+        # Allocate maximum possible size
+        max_size = 100
+        real_out = np.zeros(max_size * max_size, dtype=np.float32)
+        imag_out = np.zeros(max_size * max_size, dtype=np.float32)
+        real_ptr = real_out.ctypes.data_as(POINTER(c_float))
+        imag_ptr = imag_out.ctypes.data_as(POINTER(c_float))
+        
+        call_func(self.ptr, k_ptr, len(k), c_float(w), real_ptr, imag_ptr, byref(size_out))
+        
+        n = size_out.value
+        return (real_out[:n*n] + 1j * imag_out[:n*n]).reshape(n, n)
+    
+    def get_data(self):
+        """Get underlying BaseData object."""
+        get_data_func = lib.Field_get_data
+        get_data_func.argtypes = [c_void_p]
+        get_data_func.restype = c_void_p
+        ptr = get_data_func(self.ptr)
+        return BaseData(ptr, owns_ptr=False)

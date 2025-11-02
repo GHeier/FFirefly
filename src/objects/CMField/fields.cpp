@@ -13,7 +13,7 @@ Field_C::Field_C(const BaseData::DataVariant& data,
                  const vector<float>& w_points)
     : cmf(data, true, false, false, mesh, domain, w_points) {}
 
-Field_C::Field_C(Field f) : cmf(f) {}
+Field_C::Field_C(FieldImpl f) : cmf(f) {}
 
 Field_C::Field_C(const string& filename) : cmf(filename) {}
 
@@ -77,7 +77,7 @@ Field_R::Field_R(const BaseData::DataVariant& data,
                  const vector<float>& w_points)
     : cmf(data, false, false, false, mesh, domain, w_points) {}
 
-Field_R::Field_R(Field f) : cmf(f) {}
+Field_R::Field_R(FieldImpl f) : cmf(f) {}
 
 Field_R::Field_R(const string& filename) : cmf(filename) {}
 
@@ -141,7 +141,7 @@ Field_CM::Field_CM(const BaseData::DataVariant& data,
                    const vector<float>& w_points)
     : cmf(data, true, false, true, mesh, domain, w_points, 2, dim_indices) {}
 
-Field_CM::Field_CM(Field f) : cmf(f) {}
+Field_CM::Field_CM(FieldImpl f) : cmf(f) {}
 
 Field_CM::Field_CM(const string& filename) : cmf(filename) {}
 
@@ -262,7 +262,7 @@ Field_RM::Field_RM(const BaseData::DataVariant& data,
                    const vector<float>& w_points)
     : cmf(data, false, false, true, mesh, domain, w_points, 2, dim_indices) {}
 
-Field_RM::Field_RM(Field f) : cmf(f) {}
+Field_RM::Field_RM(FieldImpl f) : cmf(f) {}
 
 Field_RM::Field_RM(const string& filename) : cmf(filename) {}
 
@@ -369,4 +369,262 @@ vector<vector<vector<float>>> Field_RM::operator()(const vector<Vec>& points, fl
 
 BaseData* Field_RM::get_data() {
     return &cmf.data;
+}
+
+// UnifiedField implementation
+Field::Field() {
+    is_complex = false;
+    is_vector = false;
+    is_matrix = false;
+    field_c = nullptr;
+    field_r = nullptr;
+    field_cm = nullptr;
+    field_rm = nullptr;
+    default_plot_type = "";
+    title = "";
+    x_label = "";
+    y_label = "";
+}
+
+void Field::generate_plot_labels(const string& filename) {
+    // Reset labels
+    title = "";
+    x_label = "";
+    y_label = "";
+    default_plot_type = "line";
+
+    if (filename.empty()) return;
+
+    // Extract directory and basename
+    size_t last_slash = filename.find_last_of("/\\");
+    string full_dir = (last_slash != string::npos) ? filename.substr(0, last_slash) : "";
+    string base_name = (last_slash != string::npos) ? filename.substr(last_slash + 1) : filename;
+
+    // Extract only the immediate directory name (not full path)
+    string dir_part = "";
+    if (!full_dir.empty()) {
+        size_t second_last_slash = full_dir.find_last_of("/\\");
+        dir_part = (second_last_slash != string::npos) ? full_dir.substr(second_last_slash + 1) : full_dir;
+    }
+
+    // Remove .h5 extension
+    size_t dot_pos = base_name.find_last_of('.');
+    if (dot_pos != string::npos) {
+        base_name = base_name.substr(0, dot_pos);
+    }
+
+    // Parse pattern: prefix_field_vars
+    size_t last_underscore = base_name.find_last_of('_');
+    if (last_underscore == string::npos) return;
+
+    string vars = base_name.substr(last_underscore + 1);
+    string prefix_and_field = base_name.substr(0, last_underscore);
+
+    // Extract field name (after last underscore before vars)
+    size_t second_last_underscore = prefix_and_field.find_last_of('_');
+    string field_name;
+    string prefix;
+
+    if (second_last_underscore != string::npos) {
+        field_name = prefix_and_field.substr(second_last_underscore + 1);
+        prefix = prefix_and_field.substr(0, second_last_underscore);
+    } else {
+        field_name = prefix_and_field;
+        prefix = "";
+    }
+
+    // Map field names to LaTeX
+    string field_latex = "";
+    if (field_name == "sigma" || field_name == "Sigma") {
+        field_latex = "\\Sigma";
+    } else if (field_name == "chi" || field_name == "Chi") {
+        field_latex = "\\chi";
+    } else if (field_name == "vertex") {
+        field_latex = "V";
+    } else if (field_name == "G") {
+        field_latex = "G";
+    } else if (field_name == "Delta" || field_name == "delta") {
+        field_latex = "\\Delta";
+    } else if (field_name == "hamiltonian" || field_name == "H") {
+        field_latex = "H";
+    } else {
+        field_latex = field_name;
+    }
+
+    // Parse variables and create argument list
+    string arg_list = "";
+    bool has_w = false, has_k = false, has_q = false;
+
+    for (char c : vars) {
+        if (c == 'w') {
+            has_w = true;
+            if (!arg_list.empty()) arg_list += ",";
+            arg_list += "\\omega";
+        } else if (c == 'k') {
+            has_k = true;
+            if (!arg_list.empty()) arg_list += ",";
+            arg_list += "k";
+        } else if (c == 'q') {
+            has_q = true;
+            if (!arg_list.empty()) arg_list += ",";
+            arg_list += "q";
+        } else if (c == 't') {
+            if (!arg_list.empty()) arg_list += ",";
+            arg_list += "\\tau";
+        } else if (c == 'r') {
+            if (!arg_list.empty()) arg_list += ",";
+            arg_list += "r";
+        }
+    }
+
+    // Create y_label
+    if (!field_latex.empty() && !arg_list.empty()) {
+        y_label = "$" + field_latex + "(" + arg_list + ")$";
+    } else if (!field_latex.empty()) {
+        y_label = "$" + field_latex + "$";
+    }
+
+    // Create x_label (prioritize: w > k > q)
+    if (has_w) {
+        x_label = "$\\omega$";
+    } else if (has_k) {
+        x_label = "$k$";
+    } else if (has_q) {
+        x_label = "$q$";
+    }
+
+    // Create title
+    if (!y_label.empty()) {
+        if (!dir_part.empty() && !prefix.empty()) {
+            title = y_label + " for " + dir_part + "/" + prefix;
+        } else if (!dir_part.empty()) {
+            title = y_label + " for " + dir_part;
+        } else if (!prefix.empty()) {
+            title = y_label + " for " + prefix;
+        } else {
+            title = y_label;
+        }
+    }
+
+    // Set default plot type based on variables
+    if (has_w && has_k) {
+        default_plot_type = "heatmap";
+    } else if (has_k || has_w) {
+        default_plot_type = "line";
+    } else {
+        default_plot_type = "scatter";
+    }
+}
+
+Field::Field(const string& filename) {
+    // Load metadata from file to determine type
+    BaseData base = load_data_from_hdf5(filename);
+    is_complex = base.is_complex;
+    is_vector = base.is_vector;
+    is_matrix = base.is_matrix;
+
+    field_c = nullptr;
+    field_r = nullptr;
+    field_cm = nullptr;
+    field_rm = nullptr;
+
+    // Create appropriate field type
+    if (is_matrix && is_complex) {
+        field_cm = new Field_CM(filename);
+    } else if (is_matrix && !is_complex) {
+        field_rm = new Field_RM(filename);
+    } else if (!is_matrix && is_complex) {
+        field_c = new Field_C(filename);
+    } else {
+        field_r = new Field_R(filename);
+    }
+
+    // Generate plot labels from filename
+    generate_plot_labels(filename);
+}
+
+Field::~Field() {
+    if (field_c) delete field_c;
+    if (field_r) delete field_r;
+    if (field_cm) delete field_cm;
+    if (field_rm) delete field_rm;
+}
+
+void Field::save(const string& filename) {
+    if (field_c) field_c->save(filename);
+    else if (field_r) field_r->save(filename);
+    else if (field_cm) field_cm->save(filename);
+    else if (field_rm) field_rm->save(filename);
+}
+
+// Scalar complex operators
+complex<float> Field::operator_scalar_complex(Vec point, float w) {
+    if (!field_c) throw runtime_error("Field is not complex scalar");
+    return (*field_c)(point, w);
+}
+
+complex<float> Field::operator_scalar_complex(float w) {
+    if (!field_c) throw runtime_error("Field is not complex scalar");
+    return (*field_c)(w);
+}
+
+vector<complex<float>> Field::operator_scalar_complex(const vector<Vec>& points, float w) {
+    if (!field_c) throw runtime_error("Field is not complex scalar");
+    return (*field_c)(points, w);
+}
+
+vector<complex<float>> Field::operator_scalar_complex(const vector<float>& w_points) {
+    if (!field_c) throw runtime_error("Field is not complex scalar");
+    return (*field_c)(w_points);
+}
+
+// Scalar real operators
+float Field::operator_scalar_real(Vec point, float w) {
+    if (!field_r) throw runtime_error("Field is not real scalar");
+    return (*field_r)(point, w);
+}
+
+float Field::operator_scalar_real(float w) {
+    if (!field_r) throw runtime_error("Field is not real scalar");
+    return (*field_r)(w);
+}
+
+vector<float> Field::operator_scalar_real(const vector<Vec>& points, float w) {
+    if (!field_r) throw runtime_error("Field is not real scalar");
+    return (*field_r)(points, w);
+}
+
+vector<float> Field::operator_scalar_real(const vector<float>& w_points) {
+    if (!field_r) throw runtime_error("Field is not real scalar");
+    return (*field_r)(w_points);
+}
+
+// Matrix complex operators
+vector<vector<complex<float>>> Field::operator_matrix_complex(Vec point, float w) {
+    if (!field_cm) throw runtime_error("Field is not complex matrix");
+    return (*field_cm)(point, w);
+}
+
+vector<vector<vector<complex<float>>>> Field::operator_matrix_complex(const vector<Vec>& points, float w) {
+    if (!field_cm) throw runtime_error("Field is not complex matrix");
+    return (*field_cm)(points, w);
+}
+
+// Matrix real operators
+vector<vector<float>> Field::operator_matrix_real(Vec point, float w) {
+    if (!field_rm) throw runtime_error("Field is not real matrix");
+    return (*field_rm)(point, w);
+}
+
+vector<vector<vector<float>>> Field::operator_matrix_real(const vector<Vec>& points, float w) {
+    if (!field_rm) throw runtime_error("Field is not real matrix");
+    return (*field_rm)(points, w);
+}
+
+BaseData* Field::get_data() {
+    if (field_c) return field_c->get_data();
+    if (field_r) return field_r->get_data();
+    if (field_cm) return field_cm->get_data();
+    if (field_rm) return field_rm->get_data();
+    return nullptr;
 }

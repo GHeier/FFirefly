@@ -99,10 +99,11 @@ complex<Vec> CMF_search_2d(float x_val, float w_val, int nx,
     if (w_rel < 0 || w_rel > 1)
         throw out_of_range("w_rel out of bounds");
 
-    complex<Vec> result = (1 - x_rel) * (1 - w_rel) * f[i * nw + j] +
-                          x_rel * (1 - w_rel) * f[(i + 1) * nw + j] +
-                          (1 - x_rel) * w_rel * f[i * nw + j + 1] +
-                          x_rel * w_rel * f[(i + 1) * nw + j + 1];
+    // w-k ordering: w varies slowest, then k
+    complex<Vec> result = (1 - x_rel) * (1 - w_rel) * f[j * nx + i] +
+                          x_rel * (1 - w_rel) * f[j * nx + (i + 1)] +
+                          (1 - x_rel) * w_rel * f[(j + 1) * nx + i] +
+                          x_rel * w_rel * f[(j + 1) * nx + (i + 1)];
 
     return result;
 }
@@ -170,15 +171,16 @@ complex<Vec> CMF_search_3d(float x_val, float y_val, float w_val, int nx,
     if (w_rel < 0 || w_rel > 1)
         throw out_of_range("w_rel out of bounds");
 
+    // w-k ordering: w varies slowest, then kx, then ky
     complex<Vec> result =
-        (1 - x_rel) * (1 - y_rel) * (1 - w_rel) * f[i * ny * nw + j * nw + k] +
-        x_rel * (1 - y_rel) * (1 - w_rel) * f[(i + 1) * ny * nw + j * nw + k] +
-        (1 - x_rel) * y_rel * (1 - w_rel) * f[i * ny * nw + (j + 1) * nw + k] +
-        x_rel * y_rel * (1 - w_rel) * f[(i + 1) * ny * nw + (j + 1) * nw + k] +
-        (1 - x_rel) * (1 - y_rel) * w_rel * f[i * ny * nw + j * nw + k + 1] +
-        x_rel * (1 - y_rel) * w_rel * f[(i + 1) * ny * nw + j * nw + k + 1] +
-        (1 - x_rel) * y_rel * w_rel * f[i * ny * nw + (j + 1) * nw + k + 1] +
-        x_rel * y_rel * w_rel * f[(i + 1) * ny * nw + (j + 1) * nw + k + 1];
+        (1 - x_rel) * (1 - y_rel) * (1 - w_rel) * f[k * nx * ny + i * ny + j] +
+        x_rel * (1 - y_rel) * (1 - w_rel) * f[k * nx * ny + (i + 1) * ny + j] +
+        (1 - x_rel) * y_rel * (1 - w_rel) * f[k * nx * ny + i * ny + (j + 1)] +
+        x_rel * y_rel * (1 - w_rel) * f[k * nx * ny + (i + 1) * ny + (j + 1)] +
+        (1 - x_rel) * (1 - y_rel) * w_rel * f[(k + 1) * nx * ny + i * ny + j] +
+        x_rel * (1 - y_rel) * w_rel * f[(k + 1) * nx * ny + (i + 1) * ny + j] +
+        (1 - x_rel) * y_rel * w_rel * f[(k + 1) * nx * ny + i * ny + (j + 1)] +
+        x_rel * y_rel * w_rel * f[(k + 1) * nx * ny + (i + 1) * ny + (j + 1)];
 
     return result;
 }
@@ -265,40 +267,40 @@ complex<Vec> CMF_search_4d(float x_val, float y_val, float z_val, float w_val,
     if (w_rel < 0 || w_rel > 1)
         throw out_of_range("w_rel out of bounds");
 
+    // w-k ordering: w varies slowest, then kx, then ky, then kz
     complex<Vec> result =
         (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * (1 - w_rel) *
-            f[i * ny * nz * nw + j * nz * nw + k * nw + l] +
+            f[l * nx * ny * nz + i * ny * nz + j * nz + k] +
         x_rel * (1 - y_rel) * (1 - z_rel) * (1 - w_rel) *
-            f[(i + 1) * ny * nz * nw + j * nz * nw + k * nw + l] +
+            f[l * nx * ny * nz + (i + 1) * ny * nz + j * nz + k] +
         (1 - x_rel) * y_rel * (1 - z_rel) * (1 - w_rel) *
-            f[i * ny * nz * nw + (j + 1) * nz * nw + k * nw + l] +
+            f[l * nx * ny * nz + i * ny * nz + (j + 1) * nz + k] +
         x_rel * y_rel * (1 - z_rel) * (1 - w_rel) *
-            f[(i + 1) * ny * nz * nw + (j + 1) * nz * nw + k * nw + l] +
+            f[l * nx * ny * nz + (i + 1) * ny * nz + (j + 1) * nz + k] +
         (1 - x_rel) * (1 - y_rel) * z_rel * (1 - w_rel) *
-            f[i * ny * nz * nw + j * nz * nw + (k + 1) * nw + l] +
+            f[l * nx * ny * nz + i * ny * nz + j * nz + (k + 1)] +
         x_rel * (1 - y_rel) * z_rel * (1 - w_rel) *
-            f[(i + 1) * ny * nz * nw + j * nz * nw + (k + 1) * nw + l] +
+            f[l * nx * ny * nz + (i + 1) * ny * nz + j * nz + (k + 1)] +
         (1 - x_rel) * y_rel * z_rel * (1 - w_rel) *
-            f[i * ny * nz * nw + (j + 1) * nz * nw + (k + 1) * nw + l] +
+            f[l * nx * ny * nz + i * ny * nz + (j + 1) * nz + (k + 1)] +
         x_rel * y_rel * z_rel * (1 - w_rel) *
-            f[(i + 1) * ny * nz * nw + (j + 1) * nz * nw + (k + 1) * nw + l] +
+            f[l * nx * ny * nz + (i + 1) * ny * nz + (j + 1) * nz + (k + 1)] +
         (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * w_rel *
-            f[i * ny * nz * nw + j * nz * nw + k * nw + l + 1] +
+            f[(l + 1) * nx * ny * nz + i * ny * nz + j * nz + k] +
         x_rel * (1 - y_rel) * (1 - z_rel) * w_rel *
-            f[(i + 1) * ny * nz * nw + j * nz * nw + k * nw + l + 1] +
+            f[(l + 1) * nx * ny * nz + (i + 1) * ny * nz + j * nz + k] +
         (1 - x_rel) * y_rel * (1 - z_rel) * w_rel *
-            f[i * ny * nz * nw + (j + 1) * nz * nw + k * nw + l + 1] +
+            f[(l + 1) * nx * ny * nz + i * ny * nz + (j + 1) * nz + k] +
         x_rel * y_rel * (1 - z_rel) * w_rel *
-            f[(i + 1) * ny * nz * nw + (j + 1) * nz * nw + k * nw + l + 1] +
+            f[(l + 1) * nx * ny * nz + (i + 1) * ny * nz + (j + 1) * nz + k] +
         (1 - x_rel) * (1 - y_rel) * z_rel * w_rel *
-            f[i * ny * nz * nw + j * nz * nw + (k + 1) * nw + l + 1] +
+            f[(l + 1) * nx * ny * nz + i * ny * nz + j * nz + (k + 1)] +
         x_rel * (1 - y_rel) * z_rel * w_rel *
-            f[(i + 1) * ny * nz * nw + j * nz * nw + (k + 1) * nw + l + 1] +
+            f[(l + 1) * nx * ny * nz + (i + 1) * ny * nz + j * nz + (k + 1)] +
         (1 - x_rel) * y_rel * z_rel * w_rel *
-            f[i * ny * nz * nw + (j + 1) * nz * nw + (k + 1) * nw + l + 1] +
+            f[(l + 1) * nx * ny * nz + i * ny * nz + (j + 1) * nz + (k + 1)] +
         x_rel * y_rel * z_rel * w_rel *
-            f[(i + 1) * ny * nz * nw + (j + 1) * nz * nw + (k + 1) * nw + l +
-              1];
+            f[(l + 1) * nx * ny * nz + (i + 1) * ny * nz + (j + 1) * nz + (k + 1)];
 
     return result;
 }

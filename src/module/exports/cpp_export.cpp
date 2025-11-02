@@ -945,4 +945,140 @@ extern "C" BaseData* Field_CM_get_data(Field_CM *obj) {
     return obj->get_data();
 }
 
+// Field exports
+extern "C" Field* Field_create() {
+    return new Field();
+}
+
+extern "C" Field* Field_from_file(const char* filename) {
+    return new Field(string(filename));
+}
+
+extern "C" void Field_destroy(Field* obj) {
+    delete obj;
+}
+
+extern "C" void Field_save(Field* obj, const char* filename) {
+    obj->save(string(filename));
+}
+
+extern "C" bool Field_is_complex(Field* obj) {
+    return obj->is_complex;
+}
+
+extern "C" bool Field_is_vector(Field* obj) {
+    return obj->is_vector;
+}
+
+extern "C" bool Field_is_matrix(Field* obj) {
+    return obj->is_matrix;
+}
+
+extern "C" const char* Field_get_default_plot_type(Field* obj) {
+    return obj->default_plot_type.c_str();
+}
+
+extern "C" const char* Field_get_title(Field* obj) {
+    return obj->title.c_str();
+}
+
+extern "C" const char* Field_get_x_label(Field* obj) {
+    return obj->x_label.c_str();
+}
+
+extern "C" const char* Field_get_y_label(Field* obj) {
+    return obj->y_label.c_str();
+}
+
+// Scalar complex operators
+extern "C" void Field_call_scalar_complex_kw(Field* obj, const float* point, int len, float w, float* real_out, float* imag_out) {
+    Vec vec;
+    vec.dimension = len;
+    for (int i = 0; i < len; i++) vec(i) = point[i];
+    auto result = obj->operator_scalar_complex(vec, w);
+    *real_out = result.real();
+    *imag_out = result.imag();
+}
+
+extern "C" void Field_call_scalar_complex_w(Field* obj, float w, float* real_out, float* imag_out) {
+    auto result = obj->operator_scalar_complex(w);
+    *real_out = result.real();
+    *imag_out = result.imag();
+}
+
+extern "C" void Field_call_scalar_complex_list(Field* obj, const float* points, int num_points, int len, float w, float* real_out, float* imag_out) {
+    vector<Vec> vecs(num_points);
+    for (int i = 0; i < num_points; i++) {
+        vecs[i].dimension = len;
+        for (int j = 0; j < len; j++) {
+            vecs[i](j) = points[i * len + j];
+        }
+    }
+    auto results = obj->operator_scalar_complex(vecs, w);
+    for (size_t i = 0; i < results.size(); i++) {
+        real_out[i] = results[i].real();
+        imag_out[i] = results[i].imag();
+    }
+}
+
+// Scalar real operators
+extern "C" float Field_call_scalar_real_kw(Field* obj, const float* point, int len, float w) {
+    Vec vec;
+    vec.dimension = len;
+    for (int i = 0; i < len; i++) vec(i) = point[i];
+    return obj->operator_scalar_real(vec, w);
+}
+
+extern "C" float Field_call_scalar_real_w(Field* obj, float w) {
+    return obj->operator_scalar_real(w);
+}
+
+extern "C" void Field_call_scalar_real_list(Field* obj, const float* points, int num_points, int len, float w, float* out) {
+    vector<Vec> vecs(num_points);
+    for (int i = 0; i < num_points; i++) {
+        vecs[i].dimension = len;
+        for (int j = 0; j < len; j++) {
+            vecs[i](j) = points[i * len + j];
+        }
+    }
+    auto results = obj->operator_scalar_real(vecs, w);
+    for (size_t i = 0; i < results.size(); i++) {
+        out[i] = results[i];
+    }
+}
+
+// Matrix complex operators
+extern "C" void Field_call_matrix_complex(Field* obj, const float* point, int len, float w, float* real_out, float* imag_out, int* size_out) {
+    Vec vec;
+    vec.dimension = len;
+    for (int i = 0; i < len; i++) vec(i) = point[i];
+    auto result = obj->operator_matrix_complex(vec, w);
+    *size_out = result.size();
+    for (size_t i = 0; i < result.size(); i++) {
+        for (size_t j = 0; j < result[i].size(); j++) {
+            int idx = i * result[i].size() + j;
+            real_out[idx] = result[i][j].real();
+            imag_out[idx] = result[i][j].imag();
+        }
+    }
+}
+
+// Matrix real operators
+extern "C" void Field_call_matrix_real(Field* obj, const float* point, int len, float w, float* out, int* size_out) {
+    Vec vec;
+    vec.dimension = len;
+    for (int i = 0; i < len; i++) vec(i) = point[i];
+    auto result = obj->operator_matrix_real(vec, w);
+    *size_out = result.size();
+    for (size_t i = 0; i < result.size(); i++) {
+        for (size_t j = 0; j < result[i].size(); j++) {
+            out[i * result[i].size() + j] = result[i][j];
+        }
+    }
+}
+
+extern "C" BaseData* Field_get_data(Field *obj) {
+    return obj->get_data();
+}
+
 }

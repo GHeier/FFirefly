@@ -11,14 +11,14 @@ using namespace std;
 // Scalar fields
 class Field_C {
 public:
-  Field cmf;
+  FieldImpl cmf;
 
   Field_C();
   Field_C(const BaseData::DataVariant& data,
           const vector<int>& mesh = {},
           const vector<vector<float>>& domain = {},
           const vector<float>& w_points = {});
-  Field_C(Field f);
+  Field_C(FieldImpl f);
   Field_C(const string& filename);
 
   // Copy assignment operator
@@ -42,14 +42,14 @@ public:
 
 class Field_R {
 public:
-  Field cmf;
+  FieldImpl cmf;
 
   Field_R();
   Field_R(const BaseData::DataVariant& data,
           const vector<int>& mesh = {},
           const vector<vector<float>>& domain = {},
           const vector<float>& w_points = {});
-  Field_R(Field f);
+  Field_R(FieldImpl f);
   Field_R(const string& filename);
 
   // Copy assignment operator
@@ -74,7 +74,7 @@ public:
 // Matrix fields
 class Field_CM {
 public:
-  Field cmf;
+  FieldImpl cmf;
 
   Field_CM();
   Field_CM(const BaseData::DataVariant& data,
@@ -82,7 +82,7 @@ public:
            const vector<int>& mesh = {},
            const vector<vector<float>>& domain = {},
            const vector<float>& w_points = {});
-  Field_CM(Field f);
+  Field_CM(FieldImpl f);
   Field_CM(const string& filename);
 
   // Copy assignment operator
@@ -109,7 +109,7 @@ public:
 
 class Field_RM {
 public:
-  Field cmf;
+  FieldImpl cmf;
 
   Field_RM();
   Field_RM(const BaseData::DataVariant& data,
@@ -117,7 +117,7 @@ public:
            const vector<int>& mesh = {},
            const vector<vector<float>>& domain = {},
            const vector<float>& w_points = {});
-  Field_RM(Field f);
+  Field_RM(FieldImpl f);
   Field_RM(const string& filename);
 
   // Copy assignment operator
@@ -137,6 +137,58 @@ public:
 
   // Diagonalize matrix at point and return eigenvalues and eigenvectors
   vector<Eigenvector> fulldiag(Vec point, float w = 0);
+
+  // Get underlying data
+  BaseData* get_data();
+};
+
+// Unified Field with runtime type dispatch
+class Field {
+public:
+  bool is_complex;
+  bool is_vector;
+  bool is_matrix;
+
+  Field_C* field_c;
+  Field_R* field_r;
+  Field_CM* field_cm;
+  Field_RM* field_rm;
+
+  // Plot metadata
+  string default_plot_type;
+  string title;
+  string x_label;
+  string y_label;
+
+  Field();
+  Field(const string& filename);
+  ~Field();
+
+  // Generate plot labels from filename
+  void generate_plot_labels(const string& filename);
+
+  // Save to file
+  void save(const string& filename);
+
+  // Scalar complex operator
+  complex<float> operator_scalar_complex(Vec point, float w = 0);
+  complex<float> operator_scalar_complex(float w);
+  vector<complex<float>> operator_scalar_complex(const vector<Vec>& points, float w = 0);
+  vector<complex<float>> operator_scalar_complex(const vector<float>& w_points);
+
+  // Scalar real operator
+  float operator_scalar_real(Vec point, float w = 0);
+  float operator_scalar_real(float w);
+  vector<float> operator_scalar_real(const vector<Vec>& points, float w = 0);
+  vector<float> operator_scalar_real(const vector<float>& w_points);
+
+  // Matrix complex operator
+  vector<vector<complex<float>>> operator_matrix_complex(Vec point, float w = 0);
+  vector<vector<vector<complex<float>>>> operator_matrix_complex(const vector<Vec>& points, float w = 0);
+
+  // Matrix real operator
+  vector<vector<float>> operator_matrix_real(Vec point, float w = 0);
+  vector<vector<vector<float>>> operator_matrix_real(const vector<Vec>& points, float w = 0);
 
   // Get underlying data
   BaseData* get_data();

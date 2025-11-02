@@ -62,9 +62,9 @@ DataEvaluator::DataEvaluator(BaseData& f) {
 }
 
 void DataEvaluator::load_indexed_data(BaseData& f) {
-    // Data layout expected in BaseData:
-    // For n_indices=1: vector<vector<cfloat>> where outer is spatial/w, inner is index dim
-    // For n_indices=2: vector<vector<vector<cfloat>>> where [spatial/w][i][j]
+    // Data layout expected in BaseData (w-k ordering):
+    // For n_indices=1: vector<vector<cfloat>> where outer is w/spatial, inner is index dim
+    // For n_indices=2: vector<vector<vector<cfloat>>> where [w/spatial][i][j]
 
     if (n_indices == 1) {
         // Extract 1D indexed data
@@ -76,14 +76,14 @@ void DataEvaluator::load_indexed_data(BaseData& f) {
             }
             int n_w = f.with_w ? f.w_points.size() : 1;
 
-            // Reshape: indexed_data_1d[spatial][w][index]
-            indexed_data_1d.resize(n_spatial);
-            for (int s = 0; s < n_spatial; s++) {
-                indexed_data_1d[s].resize(n_w);
-                for (int w = 0; w < n_w; w++) {
-                    int flat_idx = s * n_w + w;
+            // Reshape: indexed_data_1d[w][spatial][index] (w-k ordering)
+            indexed_data_1d.resize(n_w);
+            for (int w = 0; w < n_w; w++) {
+                indexed_data_1d[w].resize(n_spatial);
+                for (int s = 0; s < n_spatial; s++) {
+                    int flat_idx = w * n_spatial + s;
                     if (flat_idx < vec_data->size()) {
-                        indexed_data_1d[s][w] = (*vec_data)[flat_idx];
+                        indexed_data_1d[w][s] = (*vec_data)[flat_idx];
                     }
                 }
             }
@@ -98,14 +98,14 @@ void DataEvaluator::load_indexed_data(BaseData& f) {
             }
             int n_w = f.with_w ? f.w_points.size() : 1;
 
-            // Reshape: indexed_data_2d[spatial][w][i][j]
-            indexed_data_2d.resize(n_spatial);
-            for (int s = 0; s < n_spatial; s++) {
-                indexed_data_2d[s].resize(n_w);
-                for (int w = 0; w < n_w; w++) {
-                    int flat_idx = s * n_w + w;
+            // Reshape: indexed_data_2d[w][spatial][i][j] (w-k ordering)
+            indexed_data_2d.resize(n_w);
+            for (int w = 0; w < n_w; w++) {
+                indexed_data_2d[w].resize(n_spatial);
+                for (int s = 0; s < n_spatial; s++) {
+                    int flat_idx = w * n_spatial + s;
                     if (flat_idx < mat_data->size()) {
-                        indexed_data_2d[s][w] = (*mat_data)[flat_idx];
+                        indexed_data_2d[w][s] = (*mat_data)[flat_idx];
                     }
                 }
             }
@@ -272,45 +272,29 @@ ResultVariant DataEvaluator::get_array(Vec point, float w) {
         vector<cfloat> result;
 
         if (!with_w) {
-            // Spatial interpolation only
+            // Spatial interpolation only - use w=0 data
             if (dimension == 1) {
                 result = interpolate_1D_vec(p.x, 0, 1, mesh[0], indexed_data_1d[0]);
             } else if (dimension == 2) {
-                // Flatten indexed_data_1d for 2D interpolation
-                vector<vector<cfloat>> flat_data;
-                for (const auto& spatial_pt : indexed_data_1d) {
-                    flat_data.push_back(spatial_pt[0]);
-                }
-                result = interpolate_2D_vec(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], flat_data);
+                // indexed_data_1d[0] contains all spatial points for w=0
+                result = interpolate_2D_vec(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_1d[0]);
             } else if (dimension == 3) {
-                vector<vector<cfloat>> flat_data;
-                for (const auto& spatial_pt : indexed_data_1d) {
-                    flat_data.push_back(spatial_pt[0]);
-                }
-                result = interpolate_3D_vec(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], flat_data);
+                result = interpolate_3D_vec(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_1d[0]);
             }
         } else {
-            // With frequency dimension - need to interpolate over w first, then spatial
-            // For now, just return from nearest w point
+            // With frequency dimension - find nearest w point and use its spatial data
             int w_idx = 0;
             for (size_t i = 0; i < w_points.size(); i++) {
                 if (w >= w_points[i]) w_idx = i;
             }
 
             if (dimension == 1) {
-                result = interpolate_1D_vec(p.x, 0, 1, mesh[0], indexed_data_1d[0]);
+                result = interpolate_1D_vec(p.x, 0, 1, mesh[0], indexed_data_1d[w_idx]);
             } else if (dimension == 2) {
-                vector<vector<cfloat>> flat_data;
-                for (const auto& spatial_pt : indexed_data_1d) {
-                    flat_data.push_back(spatial_pt[w_idx]);
-                }
-                result = interpolate_2D_vec(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], flat_data);
+                // indexed_data_1d[w_idx] contains all spatial points for this frequency
+                result = interpolate_2D_vec(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_1d[w_idx]);
             } else if (dimension == 3) {
-                vector<vector<cfloat>> flat_data;
-                for (const auto& spatial_pt : indexed_data_1d) {
-                    flat_data.push_back(spatial_pt[w_idx]);
-                }
-                result = interpolate_3D_vec(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], flat_data);
+                result = interpolate_3D_vec(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_1d[w_idx]);
             }
         }
 
@@ -329,25 +313,13 @@ ResultVariant DataEvaluator::get_array(Vec point, float w) {
         vector<vector<cfloat>> result;
 
         if (!with_w) {
-            // Spatial interpolation only - extract w=0 data for all spatial points
+            // Spatial interpolation only - use w=0 data (indexed_data_2d[0] contains all spatial points)
             if (dimension == 1) {
-                vector<vector<vector<cfloat>>> spatial_data;
-                for (const auto& spatial_pt : indexed_data_2d) {
-                    spatial_data.push_back(spatial_pt[0]);
-                }
-                result = interpolate_1D_mat(p.x, 0, 1, mesh[0], spatial_data);
+                result = interpolate_1D_mat(p.x, 0, 1, mesh[0], indexed_data_2d[0]);
             } else if (dimension == 2) {
-                vector<vector<vector<cfloat>>> flat_data;
-                for (const auto& spatial_pt : indexed_data_2d) {
-                    flat_data.push_back(spatial_pt[0]);
-                }
-                result = interpolate_2D_mat(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], flat_data);
+                result = interpolate_2D_mat(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_2d[0]);
             } else if (dimension == 3) {
-                vector<vector<vector<cfloat>>> flat_data;
-                for (const auto& spatial_pt : indexed_data_2d) {
-                    flat_data.push_back(spatial_pt[0]);
-                }
-                result = interpolate_3D_mat(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], flat_data);
+                result = interpolate_3D_mat(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_2d[0]);
             }
         } else {
             // With frequency dimension - interpolate in frequency
@@ -365,32 +337,18 @@ ResultVariant DataEvaluator::get_array(Vec point, float w) {
             }
 
             // Get results at both w points
+            // indexed_data_2d[w_idx] contains all spatial data for frequency w_idx
             vector<vector<cfloat>> result_w0, result_w1;
 
             if (dimension == 1) {
-                vector<vector<vector<cfloat>>> spatial_data_w0, spatial_data_w1;
-                for (const auto& spatial_pt : indexed_data_2d) {
-                    spatial_data_w0.push_back(spatial_pt[w_idx]);
-                    spatial_data_w1.push_back(spatial_pt[w_idx + 1]);
-                }
-                result_w0 = interpolate_1D_mat(p.x, 0, 1, mesh[0], spatial_data_w0);
-                result_w1 = interpolate_1D_mat(p.x, 0, 1, mesh[0], spatial_data_w1);
+                result_w0 = interpolate_1D_mat(p.x, 0, 1, mesh[0], indexed_data_2d[w_idx]);
+                result_w1 = interpolate_1D_mat(p.x, 0, 1, mesh[0], indexed_data_2d[w_idx + 1]);
             } else if (dimension == 2) {
-                vector<vector<vector<cfloat>>> flat_data_w0, flat_data_w1;
-                for (const auto& spatial_pt : indexed_data_2d) {
-                    flat_data_w0.push_back(spatial_pt[w_idx]);
-                    flat_data_w1.push_back(spatial_pt[w_idx + 1]);
-                }
-                result_w0 = interpolate_2D_mat(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], flat_data_w0);
-                result_w1 = interpolate_2D_mat(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], flat_data_w1);
+                result_w0 = interpolate_2D_mat(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_2d[w_idx]);
+                result_w1 = interpolate_2D_mat(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_2d[w_idx + 1]);
             } else if (dimension == 3) {
-                vector<vector<vector<cfloat>>> flat_data_w0, flat_data_w1;
-                for (const auto& spatial_pt : indexed_data_2d) {
-                    flat_data_w0.push_back(spatial_pt[w_idx]);
-                    flat_data_w1.push_back(spatial_pt[w_idx + 1]);
-                }
-                result_w0 = interpolate_3D_mat(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], flat_data_w0);
-                result_w1 = interpolate_3D_mat(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], flat_data_w1);
+                result_w0 = interpolate_3D_mat(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_2d[w_idx]);
+                result_w1 = interpolate_3D_mat(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_2d[w_idx + 1]);
             }
 
             // Interpolate between the two frequency points

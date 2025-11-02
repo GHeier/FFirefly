@@ -646,11 +646,12 @@ bool print_test_results(bool all_tests[], int num_tests,
                         const char *test_name) {
     int tests_passed = 0;
     int failed_tests[num_tests];
+    int fail_count = 0;
     for (int i = 0; i < num_tests; i++) {
         if (all_tests[i])
             tests_passed++;
         else
-            failed_tests[i] = (i + 1);
+            failed_tests[fail_count++] = (i + 1);
     }
     if (tests_passed == num_tests) {
         printcolor(GREEN, "All %d %s passed!\n", num_tests, test_name);
@@ -658,7 +659,7 @@ bool print_test_results(bool all_tests[], int num_tests,
     } else {
         printcolor(RED, " - %d/%d %s passed\n", tests_passed, num_tests,
                    test_name);
-        for (int i = 0; i < num_tests - tests_passed; i++) {
+        for (int i = 0; i < fail_count; i++) {
             printcolor(RED, "   - Test %d failed\n", failed_tests[i]);
         }
         return false;

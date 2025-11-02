@@ -33,11 +33,12 @@ vector<cfloat> create_data(int dim, int pnts, vector<float> w_points = {}) {
     int w_pts = w_points.empty() ? 1 : w_points.size();
     int idx = 0;
 
+    // w-k ordering: frequency varies slowest, then spatial indices
     if (dim == 3) {
-        for (int i = 0; i < pnts; i++) {
-            for (int j = 0; j < pnts; j++) {
-                for (int k = 0; k < pnts; k++) {
-                    for (int w = 0; w < w_pts; w++) {
+        for (int w = 0; w < w_pts; w++) {
+            for (int i = 0; i < pnts; i++) {
+                for (int j = 0; j < pnts; j++) {
+                    for (int k = 0; k < pnts; k++) {
                         float w_val = w_points.empty() ? 0.0 : w_points[w];
                         Vec point = get_vec(i, j, k, pnts);
                         cfloat base = func_linear(point, dim);
@@ -49,9 +50,9 @@ vector<cfloat> create_data(int dim, int pnts, vector<float> w_points = {}) {
         }
     }
     if (dim == 2) {
-        for (int i = 0; i < pnts; i++) {
-            for (int j = 0; j < pnts; j++) {
-                for (int w = 0; w < w_pts; w++) {
+        for (int w = 0; w < w_pts; w++) {
+            for (int i = 0; i < pnts; i++) {
+                for (int j = 0; j < pnts; j++) {
                     float w_val = w_points.empty() ? 0.0 : w_points[w];
                     Vec point = get_vec(i, j, 0, pnts);
                     cfloat base = func_linear(point, dim);
@@ -62,8 +63,8 @@ vector<cfloat> create_data(int dim, int pnts, vector<float> w_points = {}) {
         }
     }
     if (dim == 1) {
-        for (int i = 0; i < pnts; i++) {
-            for (int w = 0; w < w_pts; w++) {
+        for (int w = 0; w < w_pts; w++) {
+            for (int i = 0; i < pnts; i++) {
                 float w_val = w_points.empty() ? 0.0 : w_points[w];
                 Vec point = get_vec(i, 0, 0, pnts);
                 cfloat base = func_linear(point, dim);
@@ -528,10 +529,10 @@ bool point_storage_with_frequency() {
 
     data.domain = {{1.0, 0.0}, {0.0, 1.0}};
 
-    // Fill with complex values - nk * nw = 3 * 3 = 9 values
+    // Fill with complex values - nk * nw = 3 * 3 = 9 values (w-k ordering)
     vector<cfloat> values;
-    for (int ik = 0; ik < 3; ++ik) {
-        for (int iw = 0; iw < 3; ++iw) {
+    for (int iw = 0; iw < 3; ++iw) {
+        for (int ik = 0; ik < 3; ++ik) {
             float val = (ik + 1) * (iw + 1);
             values.push_back(cfloat(val, val / 10));
         }

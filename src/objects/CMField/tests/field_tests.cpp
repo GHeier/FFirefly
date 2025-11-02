@@ -33,11 +33,12 @@ static vector<cfloat> create_data(int dim, int pnts, vector<float> w_points = {}
     vector<cfloat> values;
     int w_pts = w_points.empty() ? 1 : w_points.size();
 
+    // w-k ordering: frequency varies slowest, then spatial indices
     if (dim == 3) {
-        for (int i = 0; i < pnts; i++) {
-            for (int j = 0; j < pnts; j++) {
-                for (int k = 0; k < pnts; k++) {
-                    for (int w = 0; w < w_pts; w++) {
+        for (int w = 0; w < w_pts; w++) {
+            for (int i = 0; i < pnts; i++) {
+                for (int j = 0; j < pnts; j++) {
+                    for (int k = 0; k < pnts; k++) {
                         float w_val = w_points.empty() ? 0.0 : w_points[w];
                         Vec point = get_vec(i, j, k, pnts);
                         cfloat base = func_linear(point, dim);
@@ -49,9 +50,9 @@ static vector<cfloat> create_data(int dim, int pnts, vector<float> w_points = {}
         }
     }
     if (dim == 2) {
-        for (int i = 0; i < pnts; i++) {
-            for (int j = 0; j < pnts; j++) {
-                for (int w = 0; w < w_pts; w++) {
+        for (int w = 0; w < w_pts; w++) {
+            for (int i = 0; i < pnts; i++) {
+                for (int j = 0; j < pnts; j++) {
                     float w_val = w_points.empty() ? 0.0 : w_points[w];
                     Vec point = get_vec(i, j, 0, pnts);
                     cfloat base = func_linear(point, dim);
@@ -62,8 +63,8 @@ static vector<cfloat> create_data(int dim, int pnts, vector<float> w_points = {}
         }
     }
     if (dim == 1) {
-        for (int i = 0; i < pnts; i++) {
-            for (int w = 0; w < w_pts; w++) {
+        for (int w = 0; w < w_pts; w++) {
+            for (int i = 0; i < pnts; i++) {
                 float w_val = w_points.empty() ? 0.0 : w_points[w];
                 Vec point = get_vec(i, 0, 0, pnts);
                 cfloat base = func_linear(point, dim);
@@ -282,14 +283,15 @@ static vector<vector<cfloat>> create_matrix(Vec p, int dim, int mat_size, float 
     return matrix;
 }
 
-// Create matrix data for all spatial points
+// Create matrix data for all spatial points (w-k ordering)
 static vector<vector<vector<cfloat>>> create_matrix_data(int dim, int pnts, int mat_size, vector<float> w_points = {}) {
     vector<vector<vector<cfloat>>> data;
     int w_pts = w_points.empty() ? 1 : w_points.size();
 
+    // w-k ordering: frequency varies slowest, then spatial indices
     if (dim == 1) {
-        for (int i = 0; i < pnts; i++) {
-            for (int w = 0; w < w_pts; w++) {
+        for (int w = 0; w < w_pts; w++) {
+            for (int i = 0; i < pnts; i++) {
                 float w_val = w_points.empty() ? 0.0 : w_points[w];
                 Vec point = get_vec(i, 0, 0, pnts);
                 data.push_back(create_matrix(point, dim, mat_size, w_val));
@@ -297,9 +299,9 @@ static vector<vector<vector<cfloat>>> create_matrix_data(int dim, int pnts, int 
         }
     }
     if (dim == 2) {
-        for (int i = 0; i < pnts; i++) {
-            for (int j = 0; j < pnts; j++) {
-                for (int w = 0; w < w_pts; w++) {
+        for (int w = 0; w < w_pts; w++) {
+            for (int i = 0; i < pnts; i++) {
+                for (int j = 0; j < pnts; j++) {
                     float w_val = w_points.empty() ? 0.0 : w_points[w];
                     Vec point = get_vec(i, j, 0, pnts);
                     data.push_back(create_matrix(point, dim, mat_size, w_val));
@@ -308,10 +310,10 @@ static vector<vector<vector<cfloat>>> create_matrix_data(int dim, int pnts, int 
         }
     }
     if (dim == 3) {
-        for (int i = 0; i < pnts; i++) {
-            for (int j = 0; j < pnts; j++) {
-                for (int k = 0; k < pnts; k++) {
-                    for (int w = 0; w < w_pts; w++) {
+        for (int w = 0; w < w_pts; w++) {
+            for (int i = 0; i < pnts; i++) {
+                for (int j = 0; j < pnts; j++) {
+                    for (int k = 0; k < pnts; k++) {
                         float w_val = w_points.empty() ? 0.0 : w_points[w];
                         Vec point = get_vec(i, j, k, pnts);
                         data.push_back(create_matrix(point, dim, mat_size, w_val));

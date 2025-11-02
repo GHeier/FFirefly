@@ -18,7 +18,7 @@ bool field_wrapper_basic_test() {
     vector<int> mesh = {3};
     vector<vector<float>> domain = {{1.0}};
 
-    Field field(data, false, false, false, mesh, domain);
+    FieldImpl field(data, false, false, false, mesh, domain);
 
     // Query at x=0 in the centered coordinate system
     // This corresponds to x=0.5 in the original [0,1] system
@@ -37,11 +37,11 @@ bool field_wrapper_with_w_test() {
     int mpts = 3;
     vector<float> w_points = {1.0, 2.0, 3.0};
 
-    // Generate data: for each spatial point, then for each w
+    // Generate data: w-k ordering (frequency varies slowest)
     // Data at points (0,0), (0.5,0), (1,0), (0,0.5), etc. in [0,1]x[0,1]
-    for (int i = 0; i < mpts; i++) {
-        for (int j = 0; j < mpts; j++) {
-            for (int w = 0; w < 3; w++) {
+    for (int w = 0; w < 3; w++) {
+        for (int i = 0; i < mpts; i++) {
+            for (int j = 0; j < mpts; j++) {
                 float x = 1.0 * i / (mpts - 1);
                 float y = 1.0 * j / (mpts - 1);
                 float w_val = w_points[w];
@@ -54,7 +54,7 @@ bool field_wrapper_with_w_test() {
     vector<int> mesh = {mpts, mpts};
     vector<vector<float>> domain = {{1.0, 0.0}, {0.0, 1.0}};
 
-    Field field(data, true, false, false, mesh, domain, w_points);
+    FieldImpl field(data, true, false, false, mesh, domain, w_points);
 
     // Query at p=(0, 0) in centered coordinates
     // This maps to (0.5, 0.5) in the original [0,1]x[0,1] system

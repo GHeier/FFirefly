@@ -1,14 +1,13 @@
 from triqs_tprf.lattice import lattice_dyson_g0_wk
-from triqs.gf.meshes import MeshDLRImFreq
 from triqs.dos import DOSFromFunction, HilbertTransform
-from load_triqs_H import *
+from load_triqs_H import get_energy_mesh, create_dlr_meshes
 from many_body_solver import ManyBodySolver
 from ipt_solver import IPTSolver
 from frequency_plots import plot_dmft_results, plot_frequency_data
 import numpy as np
 import firefly.config as cfg
 
-n = cfg.num_electrons
+n = cfg.num_electrons / 2
 mu = cfg.fermi_energy
 
 def main():
@@ -50,10 +49,7 @@ def DMFT():
 
     # Set up DMFT parameters
     beta = 1.0 / cfg.Temperature
-    w_max = 1.5 * eps_range
-    eps = 1e-14   # DLR precision
-
-    dlr_iw_mesh = MeshDLRImFreq(beta=beta, statistic='Fermion', w_max=w_max, eps=eps)
+    dlr_iw_mesh = create_dlr_meshes(e_k, beta, statistic='Fermion')
     G_iw = Gf(mesh=dlr_iw_mesh, target_shape=[1,1])
     G_iw << H(G_iw, mu=cfg.fermi_energy)
     init_n = G_iw.density().real[0][0]
@@ -83,9 +79,7 @@ def FLEX():
 
     # Set up DLR frequency mesh from config
     beta = 1.0 / cfg.Temperature
-    w_max = 1.2 * (e_k.data.max().real - e_k.data.min().real)  # DLR frequency cutoff
-    eps = 1e-14   # DLR precision
-    DLRImMesh = MeshDLRImFreq(beta=beta, statistic='Fermion', w_max=w_max, eps=eps)
+    DLRImMesh = create_dlr_meshes(e_k, beta, statistic='Fermion')
 
     # Compute non-interacting Green's function
     G0 = lattice_dyson_g0_wk(mu=mu, e_k=e_k, mesh=DLRImMesh)
@@ -93,6 +87,11 @@ def FLEX():
 
     # Initialize many-body solver with mixing parameter and e_k for mu calculation
     S = ManyBodySolver(G0, U=cfg.onsite_U, mix=0.2, U_maxiter=50, n=n, mu=mu)
+    new_mu = S.find_mu_for_density(n)
+
+    G0 = lattice_dyson_g0_wk(mu=new_mu, e_k=e_k, mesh=DLRImMesh)
+    S = ManyBodySolver(G0, U=cfg.onsite_U, mix=0.2, U_maxiter=100, n=n, mu=new_mu)
+
 
     if cfg.self_consistent:
         S.loop_FLEX(n_loops=50, check_divergence=True)
@@ -115,15 +114,16 @@ def FLEX_DMFT():
 
     # Set up DLR frequency mesh from config
     beta = 1.0 / cfg.Temperature
-    w_max = 10.0  # DLR frequency cutoff
-    eps = 1e-14   # DLR precision
-    DLRImMesh = MeshDLRImFreq(beta=beta, statistic='Fermion', w_max=w_max, eps=eps)
+    DLRImMesh = create_dlr_meshes(e_k, beta, statistic='Fermion')
 
     # Compute non-interacting Green's function
-    G0 = lattice_dyson_g0_wk(mu=cfg.fermi_energy, e_k=e_k, mesh=DLRImMesh)
+    G0 = lattice_dyson_g0_wk(mu=mu, e_k=e_k, mesh=DLRImMesh)
 
     # Initialize many-body solver with mixing parameter and e_k for mu calculation
-    S = ManyBodySolver(G0, U=cfg.onsite_U, mix=0.2, U_maxiter=50, e_k=e_k)
+    S = ManyBodySolver(G0, U=cfg.onsite_U, mix=0.10, n=n, mu=mu)
+    new_mu = S.find_mu_for_density(n)
+    G0 = lattice_dyson_g0_wk(mu=new_mu, e_k=e_k, mesh=DLRImMesh)
+    S = ManyBodySolver(G0, U=cfg.onsite_U, mix=0.10, n=n, mu=new_mu)
 
     if cfg.self_consistent:
         S.loop_FLEX_DMFT(n_loops=50, check_divergence=True)

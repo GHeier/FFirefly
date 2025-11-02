@@ -85,12 +85,27 @@ class Diagram:
             # When w_points is provided separately, only pass spatial mesh dimensions (not nw)
             spatial_mesh = np.array(mesh[1:], dtype=np.int32)  # Skip first element (nw)
             # Move frequency axis to last position for k-w ordering: (nkx, nky, nkz, nw)
-            obj_kw = np.moveaxis(obj, 0, -1)
-            fly.save_data(filename, obj_kw, mesh=spatial_mesh, domain=BZ, w_points=self.w_points)
+            #obj_kw = np.moveaxis(obj, 0, -1)
+            fly.save_data(filename, obj, mesh=spatial_mesh, domain=BZ, w_points=self.w_points)
         else:
             obj = np.reshape(self.obj_w.data, (self.nw, ))
             fly.save_data(filename, obj, mesh=None, domain=None, w_points=self.w_points)
         print(f"Diagram saved to {filename}")
+
+    def load(self, field):
+        data = field.get_data()
+        if self.varspace in ['wk', 'tr']:
+            mesh, BZ = extract_mesh_and_bz(self.obj_wk)
+            data = np.reshape(data, mesh)  # First reshape to mesh dimensions
+            data = np.fft.ifftshift(data, axes=tuple(range(1, len(mesh))))  # Then ifftshift k-axes
+            data = np.reshape(data, self.shape)  # Finally reshape to TRIQS data shape
+            self.obj_wk.data[:] = data
+            self.wk_to_tr()
+        else:
+            data = np.reshape(data, (self.nw, ))
+            self.obj_w.data[:] = data
+            self.w_to_t()
+        print(f"Diagram loaded from field")
 
     def save_as_w(self, filename):
         obj_w = np.sum(self.obj_wk.data, axis=1) / self.nk  # Sum over k-points
@@ -194,6 +209,48 @@ def dot_tr(diagram1, diagram2):
         return new_obj
     else:
         raise ValueError("Convolution Sum only implemented for diagrams differing by 0 or 2 indices")
+
+
+def flip_wk(diagram):
+    """
+    Flip Green's function in momentum and frequency: G(k, iω) → G(-k, -iω).
+
+    This operation is crucial for Eliashberg equations where Cooper pairs
+    require G(k)G(-k) with opposite momenta.
+
+    Args:
+        diagram: Diagram object in wk space
+
+    Returns:
+        Diagram object with flipped data: G(-k, -iω)
+    """
+    if diagram.varspace not in ['wk', 'tr']:
+        raise ValueError("flip_wk only works for diagrams in wk or tr space")
+
+    # Create a copy
+    G_flip = diagram.copy()
+
+    # Get mesh dimensions
+    mesh, _ = extract_mesh_and_bz(diagram.obj_wk)
+    original_shape = diagram.obj_wk.data.shape
+
+    # Reshape to mesh dimensions (nω, nkx, nky, nkz, orb1, orb2, ...)
+    data = np.reshape(diagram.obj_wk.data, mesh + original_shape[2:])
+
+    # Flip frequency: iω → -iω
+    data = np.flip(data, axis=0)
+
+    # Flip all k-axes: k → -k
+    k_axes = tuple(range(1, len(mesh)))
+    data = np.flip(data, axis=k_axes)
+
+    # Reshape back to flat format
+    G_flip.obj_wk.data[:] = np.reshape(data, original_shape)
+
+    # Update tr representation
+    G_flip.wk_to_tr()
+
+    return G_flip
 
 
 def describe_mesh(G):

@@ -10,7 +10,8 @@
 using namespace std;
 using cfloat = complex<float>;
 
-class Field {
+// Internal field implementation class
+class FieldImpl {
 public:
     BaseData data;
 
@@ -73,7 +74,7 @@ private:
 
 public:
     // Constructor with default values
-    Field(const BaseData::DataVariant& data_variant,
+    FieldImpl(const BaseData::DataVariant& data_variant,
           bool is_complex = false,
           bool is_vector = false,
           bool is_matrix = false,
@@ -106,7 +107,7 @@ public:
     }
 
     // Constructor from file
-    Field(const string& filename) {
+    FieldImpl(const string& filename) {
         data = load_data_from_hdf5(filename);
         initialize();
     }
@@ -159,7 +160,7 @@ public:
     }
 
     // Copy assignment operator
-    Field& operator=(const Field& other) {
+    FieldImpl& operator=(const FieldImpl& other) {
         if (this != &other) {
             data = other.data;
             shift_vectors = other.shift_vectors;

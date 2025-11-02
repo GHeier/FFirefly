@@ -62,7 +62,6 @@ inline vector<complex<Vec>> transform_data(DataVariant& f, int dim) {
             }
             result.reserve(total);
 
-            int ind1 = 0;
             for (auto const& row : container) {
                 Vec v1; v1.dimension = dim;
                 Vec v2; v2.dimension = dim;
@@ -72,7 +71,7 @@ inline vector<complex<Vec>> transform_data(DataVariant& f, int dim) {
                     v2(ind2) = (val.imag());
                     ind2++;
                 }
-                result[ind1] = (complex<Vec>(v1, v2));
+                result.emplace_back(complex<Vec>(v1, v2));
             }
         }
     }, f);
@@ -97,7 +96,7 @@ struct DataEvaluator {
     vector<complex<Vec>> data;
 
     // For indexed fields (n_indices > 0)
-    // Storage layout: indexed_data[spatial_idx][w_idx][flat_index]
+    // Storage layout (w-k ordering): indexed_data[w_idx][spatial_idx][flat_index]
     // where flat_index = i0 + i1*dim_indices + i2*dim_indices^2 + ...
     vector<vector<vector<cfloat>>> indexed_data_1d;  // For 1D indexed (vectors)
     vector<vector<vector<vector<cfloat>>>> indexed_data_2d;  // For 2D indexed (matrices)

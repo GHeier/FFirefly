@@ -330,3 +330,185 @@ def test_save_data_dispatcher_complex():
         import traceback
         traceback.print_exc()
         return False
+
+def test_unified_field_scalar_real():
+    """Test Field with real scalar data"""
+    try:
+        import tempfile
+        import os
+        import shutil
+        
+        tmpdir = tempfile.mkdtemp()
+        filename = os.path.join(tmpdir, "test_unified_scalar_real.h5")
+        
+        # Create real scalar data using save_data
+        nk = 6
+        data = np.array([float(i) for i in range(nk)], dtype=np.float32)
+        mesh = [nk]
+        domain = np.array([[1.0]], dtype=np.float32)
+        ff.save_data(filename, data, mesh=mesh, domain=domain)
+
+        # Load with Field
+        field = ff.Field(filename)
+
+        # Check type flags
+        if field.is_complex or field.is_matrix:
+            print(f"Field type flags incorrect: is_complex={field.is_complex}, is_matrix={field.is_matrix}")
+            shutil.rmtree(tmpdir)
+            return False
+
+        # Test evaluation
+        value = field([0.5, 0.0, 0.0])
+        if not isinstance(value, (float, np.floating)):
+            print(f"Field scalar real returned wrong type: {type(value)}")
+            shutil.rmtree(tmpdir)
+            return False
+        
+        shutil.rmtree(tmpdir)
+        return True
+    except Exception as e:
+        print(f"test_unified_field_scalar_real error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def test_unified_field_scalar_complex():
+    """Test Field with complex scalar data"""
+    try:
+        import tempfile
+        import os
+        import shutil
+        
+        tmpdir = tempfile.mkdtemp()
+        filename = os.path.join(tmpdir, "test_unified_scalar_complex.h5")
+        
+        # Create complex scalar data
+        nk = 6
+        data = np.array([complex(i, i+1) for i in range(nk)], dtype=np.complex64)
+        mesh = [nk]
+        domain = np.array([[1.0]], dtype=np.float32)
+        ff.save_data(filename, data, mesh=mesh, domain=domain)
+
+        # Load with Field
+        field = ff.Field(filename)
+
+        # Check type flags
+        if not field.is_complex or field.is_matrix:
+            print(f"Field type flags incorrect: is_complex={field.is_complex}, is_matrix={field.is_matrix}")
+            shutil.rmtree(tmpdir)
+            return False
+
+        # Test evaluation
+        value = field([0.5, 0.0, 0.0])
+        if not isinstance(value, (complex, np.complexfloating)):
+            print(f"Field scalar complex returned wrong type: {type(value)}")
+            shutil.rmtree(tmpdir)
+            return False
+        
+        shutil.rmtree(tmpdir)
+        return True
+    except Exception as e:
+        print(f"test_unified_field_scalar_complex error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def test_unified_field_matrix_real():
+    """Test Field with real matrix data"""
+    try:
+        import tempfile
+        import os
+        import shutil
+        
+        tmpdir = tempfile.mkdtemp()
+        filename = os.path.join(tmpdir, "test_unified_matrix_real.h5")
+        
+        # Create real matrix data (2x2 matrices at each point)
+        nk = 4
+        nbnd = 2
+        data = np.zeros((nk, nbnd, nbnd), dtype=np.float32)
+        for i in range(nk):
+            data[i] = np.eye(nbnd, dtype=np.float32) * (i + 1)
+
+        mesh = [nk]
+        domain = np.array([[1.0]], dtype=np.float32)
+        ff.save_data(filename, data, mesh=mesh, domain=domain, dim_indices=nbnd)
+
+        # Load with Field
+        field = ff.Field(filename)
+
+        # Check type flags
+        if field.is_complex or not field.is_matrix:
+            print(f"Field type flags incorrect: is_complex={field.is_complex}, is_matrix={field.is_matrix}")
+            shutil.rmtree(tmpdir)
+            return False
+
+        # Test evaluation
+        value = field([0.5, 0.0, 0.0])
+        if not isinstance(value, np.ndarray) or value.dtype != np.float32:
+            print(f"Field matrix real returned wrong type: {type(value)}, dtype={value.dtype if hasattr(value, 'dtype') else 'N/A'}")
+            shutil.rmtree(tmpdir)
+            return False
+
+        if value.shape != (nbnd, nbnd):
+            print(f"Field matrix real returned wrong shape: {value.shape}")
+            shutil.rmtree(tmpdir)
+            return False
+        
+        shutil.rmtree(tmpdir)
+        return True
+    except Exception as e:
+        print(f"test_unified_field_matrix_real error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def test_unified_field_matrix_complex():
+    """Test Field with complex matrix data"""
+    try:
+        import tempfile
+        import os
+        import shutil
+        
+        tmpdir = tempfile.mkdtemp()
+        filename = os.path.join(tmpdir, "test_unified_matrix_complex.h5")
+        
+        # Create complex matrix data (2x2 matrices at each point)
+        nk = 4
+        nbnd = 2
+        data = np.zeros((nk, nbnd, nbnd), dtype=np.complex64)
+        for i in range(nk):
+            data[i] = np.eye(nbnd, dtype=np.complex64) * complex(i + 1, i + 2)
+
+        mesh = [nk]
+        domain = np.array([[1.0]], dtype=np.float32)
+        ff.save_data(filename, data, mesh=mesh, domain=domain, dim_indices=nbnd)
+
+        # Load with Field
+        field = ff.Field(filename)
+
+        # Check type flags
+        if not field.is_complex or not field.is_matrix:
+            print(f"Field type flags incorrect: is_complex={field.is_complex}, is_matrix={field.is_matrix}")
+            shutil.rmtree(tmpdir)
+            return False
+
+        # Test evaluation
+        value = field([0.5, 0.0, 0.0])
+        if not isinstance(value, np.ndarray) or value.dtype != np.complex64:
+            print(f"Field matrix complex returned wrong type: {type(value)}, dtype={value.dtype if hasattr(value, 'dtype') else 'N/A'}")
+            shutil.rmtree(tmpdir)
+            return False
+
+        if value.shape != (nbnd, nbnd):
+            print(f"Field matrix complex returned wrong shape: {value.shape}")
+            shutil.rmtree(tmpdir)
+            return False
+        
+        shutil.rmtree(tmpdir)
+        return True
+    except Exception as e:
+        print(f"test_unified_field_matrix_complex error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False

@@ -57,6 +57,8 @@ BaseData load_data_from_hdf5(const std::string& filename) {
                 }
             }
         }
+        space_domain.close();
+        ds_domain.close();
     }
 
     // -- Mesh (optional) --
@@ -67,6 +69,8 @@ BaseData load_data_from_hdf5(const std::string& filename) {
         space.getSimpleExtentDims(dims);
         field.mesh.resize(dims[0]);
         ds.read(field.mesh.data(), PredType::NATIVE_INT);
+        space.close();
+        ds.close();
     }
 
     // -- Points (k-point data when as_mesh = false) --
@@ -88,6 +92,8 @@ BaseData load_data_from_hdf5(const std::string& filename) {
                     }
                 }
             }
+            space.close();
+            ds.close();
         } catch (...) {
             // ignore if missing
         }
@@ -102,6 +108,8 @@ BaseData load_data_from_hdf5(const std::string& filename) {
             space.getSimpleExtentDims(&n_w);
             field.w_points.resize(n_w);
             ds.read(field.w_points.data(), PredType::NATIVE_FLOAT);
+            space.close();
+            ds.close();
         } catch (...) {
             // ignore if missing
         }
@@ -122,6 +130,8 @@ BaseData load_data_from_hdf5(const std::string& filename) {
 
     std::vector<float> real_flat(dims[0]);
     real_ds.read(real_flat.data(), H5::PredType::NATIVE_FLOAT);
+    real_space.close();
+    real_ds.close();
 
     // --- Imag part (if complex) ---
     std::vector<float> imag_flat;
@@ -133,6 +143,8 @@ BaseData load_data_from_hdf5(const std::string& filename) {
 
         imag_flat.resize(dims_imag[0]);
         imag_ds.read(imag_flat.data(), H5::PredType::NATIVE_FLOAT);
+        imag_space.close();
+        imag_ds.close();
     }
 
     // -- Populate variant --
@@ -172,6 +184,9 @@ BaseData load_data_from_hdf5(const std::string& filename) {
         }
         field.data = mat;
     }
+
+    // Explicitly close the file to release locks immediately
+    file.close();
 
     return field;
 }

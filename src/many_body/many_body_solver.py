@@ -5,6 +5,8 @@ from triqs.gf.meshes import MeshDLRImFreq, MeshDLRImTime
 import numpy as np
 from scipy.optimize import brentq
 
+from triqs.plot.mpl_interface import *
+import matplotlib.pyplot as plt
 import firefly as fly
 from firefly.diagram import Diagram, dot_tr
 import firefly.config as cfg
@@ -22,7 +24,7 @@ class ManyBodySolver:
         self.mix = mix  # Mixing parameter for self-energy
         self.U_maxiter = U_maxiter  # Max iterations for U renormalization
         self.diverged = False  # Track divergence state
-        self.n = n  # Target electron density (if needed)
+        self.n = n   # Target electron density (per spin)
         self.mu = mu
 
         # FLEX mode
@@ -52,34 +54,40 @@ class ManyBodySolver:
         self.Sigma_loc = Diagram(Sigma_iw, 'Fermion') # Local self-energy
         self.H = H  # HilbertTransform for DMFT
 
+        # Initialize iw and eps(k) arrays for Green's function construction
+        self.init_iw_ek()
+
+    def init_iw_ek(self):
+        """Initialize iw and eps(k) arrays for Green's function construction."""
+        mesh_w = self.G.obj_wk.mesh.components[0]
+        self.iw_arr = np.array([complex(iw) for iw in mesh_w], dtype=np.complex128)
+
+        # Extract band energies eps(k) from G0^-1(k,iw) = iw + mu_old - eps(k)
+        G0_inv = inverse(self.G0.obj_wk)
+        self.eps_k = self.iw_arr[0] + self.mu - G0_inv.data[0, :, 0, 0]  # eps(k) array, shape (nk,)
+
+        # Reshape for broadcasting
+        self.iw_broadcast = self.iw_arr[:, np.newaxis, np.newaxis, np.newaxis]
+        self.eps_broadcast = self.eps_k[np.newaxis, :, np.newaxis, np.newaxis]
+
+
+    def make_G(self, mu):
+        # Compute G(k,iw) = 1 / (iw + mu - eps(k) - Sigma(k,iw))
+        self.G.obj_wk.data[:] = 1.0 / (self.iw_broadcast + mu - self.eps_broadcast - self.Sigma.obj_wk.data)
 
     def get_local_G(self):
         """Calculate local Green's function by summing over k-points."""
-        G_loc_wk = self.G.obj_wk.copy()
-        G_loc_wk.data[:] = np.sum(self.G.obj_wk.data, axis=1) / self.G.nk
-        self.G_loc = Diagram(G_loc_wk, 'Fermion')
-
-    def calculate_mu_Gw(self):
-        n_target = self.n
-        diff = 1.0
-        G = self.G_loc.obj_w.copy()
-        old_mu = mu
-        new_mu = mu
-        while abs(diff) > 1e-6:
-            G << inverse(inverse(G) + new_mu - old_mu)
-            old_mu = new_mu
-            n = G.density().real[0][0]
-            diff = n - n_target
-            #print(f"mu: {old_mu:.6f}, n: {n:.6f}, diff: {diff:.6f}")
-            new_mu += -diff * 0.5
-            
-        return old_mu
+        #G_loc= self.G_loc.obj_w.copy()
+        #G_loc.data[:] = np.sum(self.G.obj_wk.data, axis=1) / self.G.nk
+        #self.G_loc = Diagram(G_loc_wk, 'Fermion')
+        self.G_loc.obj_w.data[:] = np.sum(self.G.obj_wk.data[:, :, :, :], axis=1) / self.G.nk
 
     def chi0_from_grt_PH(self):
         self.G.wk_to_tr()
         chi_tr = chi0_tr_from_grt_PH(self.G.obj_tr)
         self.X = Diagram(chi_tr, "Boson")
         self.X.tr_to_wk()
+        self.UX = self.U * np.max(np.abs(self.X.obj_wk.data))
 
     def FLEX_from_chi(self):
         # FLEX vertex construction from spin and charge fluctuations
@@ -95,10 +103,11 @@ class ManyBodySolver:
             return
 
         UX = U * X_data
-        U2X = U**2 * X_data
+        U2X = U**2 * X_data * X_data
         chi_spin = X_data / (1 - UX)
         chi_charge = X_data / (1 + UX)
-        V_wk = 1.5 * U**2 * chi_spin + 0.5 * U**2 * chi_charge - U2X + U
+        V_wk = 1.5 * U**2 * chi_spin + 0.5 * U**2 * chi_charge - U**2 * X_data #+ U
+        #V_wk = U**2 * chi_spin + U**3 * chi_spin * chi_charge
         V = self.X.obj_wk.copy()
         V.data[:] = V_wk
         self.V = Diagram(V, 'Boson')
@@ -117,32 +126,49 @@ class ManyBodySolver:
         self.G.obj_wk.data[:] = self.mix * G_new.data + (1 - self.mix) * G_old.data
 
     def calc_electron_density(self, mu):
-        pass
+        """
+        Calculate electron density at given chemical potential.
+        Uses direct construction via make_G formula.
+        """
+        self.make_G(mu)
+
+        # Sum over k-points to get local G at new mu
+        G_loc = self.G_loc.obj_w.copy()
+        G_loc.data[:, 0, 0] = np.reshape(np.sum(self.G.obj_wk.data, axis=1) / self.G.nk, (self.G.nw))
+
+        # Calculate density
+        n = G_loc.density().real[0][0]
+        return n
 
     def find_mu_for_density(self, n_target):
-        # Get energy range from dispersion
-        e_min = np.min(self.e_k.data.real)
-        e_max = np.max(self.e_k.data.real)
-
-        # Define function to find root of
+        self.get_local_G()
+        n = self.calc_electron_density(self.mu)
+        if abs(n - n_target) < 1e-4:
+            #print(f"Current mu = {self.mu: .4f} gives n = {n:.4f}, close to target n = {n_target:.4f}")
+            return self.mu
         def density_error(mu):
             n = self.calc_electron_density(mu)
             error = n - n_target
-            if cfg.verbosity == "high":
-                print(f"  mu = {mu:.4f}, n = {n:.4f}, target = {n_target:.4f}, error = {error:.4f}")
+            #if cfg.verbosity == "high":
+            #    print(f"  mu = {mu: .4f}, n = {n:.4f}, target = {n_target:.4f}, error = {error: .4f}")
             return error
 
         # Search for mu in expanded energy range
-        mu_min = 3 * e_min
-        mu_max = 3 * e_max
+        if abs(n - n_target) < 1e-2:
+            mu_min = self.mu - 1.8
+            mu_max = self.mu + 1.8
+        else:
+            e = inverse(self.G.obj_wk).data.real + self.mu
+            mu_min = np.min(e)
+            mu_max = np.max(e)
 
-        print(f"Finding mu for n = {n_target:.4f}...")
-        print(f"Energy range: [{e_min:.4f}, {e_max:.4f}]")
-        print(f"Search range: [{mu_min:.4f}, {mu_max:.4f}]")
+        #print(f"Finding mu for n = {n_target:.4f}...")
+        #print(f"Energy range: [{e_min:.4f}, {e_max:.4f}]")
+        #print(f"Search range: [{mu_min:.4f}, {mu_max:.4f}]")
 
         try:
-            mu = brentq(density_error, mu_min, mu_max, xtol=1e-6)
-            print(f"Found mu = {mu:.4f} for n = {n_target:.4f}")
+            mu = brentq(density_error, mu_min, mu_max, xtol=1e-4)
+            #print(f"  Found mu = {mu:.4f} for n = {n_target:.4f}")
             self.mu = mu
             return mu
         except ValueError as e:
@@ -150,13 +176,26 @@ class ManyBodySolver:
             print(f"Check that the target density is achievable in the range [{mu_min:.4f}, {mu_max:.4f}]")
             raise
 
+    def shift_mu_to_target_density(self, n_target):
+        mu = self.find_mu_for_density(n_target)
+        #print(f"  Shifting mu to {mu:.4f} to achieve target density n = {n_target:.4f}")
+        self.make_G(mu)
+
     def solve_FLEX(self):
-        self.chi0_from_grt_PH()
+        # Use existing chi0 to calculate V and Sigma (matching test.py loop order)
         self.FLEX_from_chi()
         if self.diverged:
             return
         self.Sigma_from_vertex()
-        self.dyson_G_from_Sigma()
+
+        # Match test.py: find mu, calculate G, then mix (don't use dyson_G_from_Sigma)
+        G_old = self.G.obj_wk.copy()
+        self.shift_mu_to_target_density(self.n)  # Updates G at new mu
+        # Apply mixing after G update
+        self.G.obj_wk.data[:] = self.mix * self.G.obj_wk.data + (1 - self.mix) * G_old.data
+
+        # Calculate new chi0 for next iteration
+        self.chi0_from_grt_PH()
 
     def U_renormalization(self):
         """Renormalize U if U*max(chi) >= 1 to avoid divergence."""
@@ -165,46 +204,48 @@ class ManyBodySolver:
 
         U_old = self.U
         U_it = 0
-        U_diff = 1.0
-        prev_U = 0.0
+        prev_U = 0
 
-        while self.UX >= 1.0:
+        # Check condition: U_old * max(chi0) >= 1
+        while U_old * np.max(np.abs(self.X.obj_wk.data)) >= 1.0:
             U_it += 1
-            # Reduce U to bring UX below 1
-            self.U = U_old / (self.UX + 0.01)
 
-            print(f"  U renorm iter {U_it}: U = {self.U:.4f}, UX = {self.UX:.4f}")
+            # Reduce U temporarily to bring UX below 1
+            max_X = np.max(np.abs(self.X.obj_wk.data))
+            self.U = self.U / (max_X * self.U + 0.01)
+            print(f"{U_it}) U = {self.U}, initial_U = {U_old}")
 
-            # Perform one FLEX iteration with new U
-            self.solve_FLEX()
-            if self.diverged:
-                # If still diverging, continue reducing
-                print(f"  Still diverging, reducing U further...")
-                continue
+            # Perform one FLEX loop iteration with reduced U (matching test.py logic)
+            G_old = self.G.obj_wk.copy()
 
-            # Update UX with rescaled U
-            self.UX *= U_old / self.U
+            # Calculate V and Sigma with current chi0 and reduced U
+            self.FLEX_from_chi()
+            if not self.diverged:
+                self.Sigma_from_vertex()
 
-            # Check convergence
-            U_diff = abs(self.U - prev_U)
+            # Update mu, then update G with mixing
+            self.shift_mu_to_target_density(self.n)
+            self.G.obj_wk.data[:] = self.mix * self.G.obj_wk.data + (1 - self.mix) * G_old.data
+
+            # Recalculate chi0 from updated G
+            self.chi0_from_grt_PH()
+
+            # Reset U back to U_old for next iteration
+            diff = abs(prev_U - self.U)
             prev_U = self.U
+            self.U = U_old
 
-            if U_it >= self.U_maxiter or U_diff < 1e-4:
-                print(f"U renormalization finished: iterations={U_it}, U_diff={U_diff:.3e}")
+            if U_it >= self.U_maxiter or diff < 1e-3:
+                print(f"U_diff = {diff:.4e}, tol = 1e-3")
+                print(f"Iteration number {U_it}, max iterations {self.U_maxiter}")
                 break
 
-        # Recompute UX with final U
+        print("Leaving U renormalization...")
+        # Final UX calculation with U_old
         self.UX = self.U * np.max(np.abs(self.X.obj_wk.data))
-        print(f"New U = {self.U:.4f}, UX = {self.UX:.4f}")
-
-        # Check if U was reduced too much
-        if self.U / U_old < 0.9:
-            print("-----------------------------------------------")
-            print("WARNING: U reduced by >10%! Paramagnetic phase is unavoidable!")
-            print("-----------------------------------------------")
-            exit()
 
     def loop_FLEX(self, n_loops=50, check_divergence=True):
+        self.chi0_from_grt_PH()
         # Initial check for divergence
         if check_divergence and self.UX >= 1.0:
             print(f"Initial U*max(Chi) = {self.UX:.4f} >= 1")
@@ -212,23 +253,30 @@ class ManyBodySolver:
 
         print("Beginning Self-Consistent Loop")
         for i in range(n_loops):
-            print(f"Starting iteration {i+1}/{n_loops}...")
             G_old = self.G.obj_wk.copy()
 
             self.solve_FLEX()
+
+            # Print max X for comparison with test.py (from newly calculated chi0)
+            max_X = np.max(np.abs(self.X.obj_wk.data))
+            # Recalculate UX with new chi0 for accurate reporting
+            self.UX = self.U * max_X
+
             if self.diverged:
                 print(f"Divergence detected at iteration {i+1}")
-                if check_divergence:
-                    print("Attempting U renormalization...")
-                    self.U_renormalization()
-                    continue
-                else:
-                    print("Code exiting due to divergence.")
-                    break
+                print("Code exiting due to divergence.")
+                break
+                    #if check_divergence:
+                    #    print("Attempting U renormalization...")
+                    #    self.U_renormalization()
+                    #    continue
+                    #else:
+                    #    print("Code exiting due to divergence.")
+                    #    break
 
-            print(f"Iteration {i+1} completed. U*max(Chi) = {self.UX:.4f}")
             err = np.max(np.abs(self.G.obj_wk.data - G_old.data))
-            print(f"Max change in G: {err:.3e}")
+            #print(f"max X = {max_X:.6f}")
+            print(f"{i}) Max G(iw,k) diff = {err:.4e}, U*max(Chi) = {self.UX:.4f}")
 
             if err < 1e-6:
                 print("Convergence achieved.")
@@ -257,6 +305,7 @@ class ManyBodySolver:
 
         # Self-consistency: G_Weiss^-1 = G_loc^-1 + Sigma
         self.G_loc.obj_w << inverse(inverse(self.G_loc.obj_w) + self.Sigma_loc.obj_w)
+        self.shift_mu_to_target_density(self.n)
 
     def loop_DMFT(self, n_loops=100, tol=1e-6):
         """Self-consistent DMFT loop."""
@@ -281,18 +330,22 @@ class ManyBodySolver:
         self.get_IPT_sigma()
 
         # Make full Sigma(k,iw) from local Sigma(iw)
-        self.Sigma.obj_wk.data[:] += self.Sigma_loc.obj_w.data[:, np.newaxis, np.newaxis]
+        # Sigma_loc.obj_w.data has shape (nw, 1, 1), broadcast to (nw, nk, 1, 1)
+        self.Sigma.obj_wk.data[:] += self.Sigma_loc.obj_w.data[:, np.newaxis, :, :]
 
         # FLEX part
         self.dyson_G_from_Sigma()
+        self.shift_mu_to_target_density(self.n)
         self.chi0_from_grt_PH()
         self.FLEX_from_chi()
         if self.diverged:
             return
         self.Sigma_from_vertex()
+        # Extract local part: sigma_loc has shape (nw, 1, 1)
         sigma_loc = np.sum(self.Sigma.obj_wk.data, axis=1) / self.Sigma.nk
-        self.Sigma.obj_wk.data[:] -= sigma_loc[:, np.newaxis, np.newaxis]
-        self.Sigma.obj_wk.data[:] += self.Sigma_loc.obj_w.data[:, np.newaxis, np.newaxis]
+        # Subtract non-local FLEX part and add back local DMFT part
+        self.Sigma.obj_wk.data[:] -= sigma_loc[:, np.newaxis, :, :]
+        self.Sigma.obj_wk.data[:] += self.Sigma_loc.obj_w.data[:, np.newaxis, :, :]
 
     def loop_FLEX_DMFT(self, n_loops=50, check_divergence=True):
         # Initial check for divergence
@@ -302,7 +355,7 @@ class ManyBodySolver:
 
         print("Beginning FLEX+DMFT Self-Consistent Loop")
         for i in range(n_loops):
-            print(f"Starting iteration {i+1}/{n_loops}...")
+            #print(f"Starting iteration {i+1}/{n_loops}...")
             G_old = self.G.obj_wk.copy()
 
             self.solve_FLEX_DMFT()
@@ -316,7 +369,7 @@ class ManyBodySolver:
                     print("Code exiting due to divergence.")
                     break
 
-            print(f"Iteration {i+1} completed. U*max(Chi) = {self.UX:.4f}")
+            print(f"Iteration {i+1} completed. U*max(Chi) = {self.UX:.4f}", end=' ')
             err = np.max(np.abs(self.G.obj_wk.data - G_old.data))
             print(f"Max change in G: {err:.3e}")
 

@@ -1,5 +1,26 @@
 from triqs.gf import *
+from triqs.gf.meshes import MeshDLRImFreq
 from triqs_tprf.tight_binding import TBLattice
+
+
+def create_dlr_meshes(e_k, beta, statistic='Fermion'):
+    """
+    Create DLR frequency mesh from energy dispersion.
+
+    Args:
+        e_k: Energy dispersion from get_energy_mesh()
+        beta: Inverse temperature
+        statistic: 'Fermion' or 'Boson'
+
+    Returns:
+        MeshDLRImFreq with wmax = 1.2 * (max_ek - min_ek), eps=1e-14
+    """
+    emax = e_k.data.max().real
+    emin = e_k.data.min().real
+    w_max = 1.2 * (emax - emin)
+    eps = 1e-14
+
+    return MeshDLRImFreq(beta=beta, statistic=statistic, w_max=w_max, eps=eps)
 
 
 def get_energy_mesh():
