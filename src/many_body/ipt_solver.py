@@ -32,7 +32,7 @@ def iw_dlr_to_w(G_iw_dlr, beta, w_min=-5.0, w_max=5.0, n_w=500):
     return Gw
 
 class IPTSolver:
-    def __init__(self, beta, H, n_loops=100, mix=0.10, tol=1e-6, w_max=1.2*4, eps=1e-14):
+    def __init__(self, beta, H, n_loops=100, mix=0.10, tol=1e-6, w_max=1.2*6, eps=1e-14):
         self.beta = beta
         self.H = H
         self.max_loops = n_loops

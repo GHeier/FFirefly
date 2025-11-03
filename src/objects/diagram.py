@@ -183,6 +183,30 @@ class Diagram:
         else:
             raise ValueError("fill_diagram_from_field only implemented for 'wk' and 'w' spaces")
 
+def dot_t(diagram1, diagram2):
+    shape1 = diagram1.obj_t.data.shape
+    shape2 = diagram2.obj_t.data.shape
+    s = len(shape1) - len(shape2)
+    if s <= 0:
+        new_obj = diagram1.copy()
+    else:
+        new_obj = diagram2.copy()
+    new_obj.zero()
+    if s == 0:
+        new_obj = diagram1.copy()
+        new_obj.obj_t.data[:] = diagram1.obj_t.data * diagram2.obj_t.data
+        return new_obj
+    elif abs(s) == 2:
+        n_orbs = shape1[2] if s > 0 else shape2[2]
+        for i in range(n_orbs):
+            for j in range(n_orbs):
+                if s > 0:
+                    new_obj.obj_t.data[:] += diagram1.obj_t.data[:, i, j] * diagram2.obj_t.data[:]
+                else:
+                    new_obj.obj_t.data[:] += diagram1.obj_t.data[:] * diagram2.obj_t.data[:, i, j]
+        return new_obj
+    else:
+        raise ValueError("Convolution Sum only implemented for diagrams differing by 0 or 2 indices")
 
 def dot_tr(diagram1, diagram2):
     shape1 = diagram1.obj_tr.data.shape
