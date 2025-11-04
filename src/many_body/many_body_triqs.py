@@ -154,10 +154,6 @@ def save_FLEX_DMFT(S):
     S.FLEX.Sigma.save(pref + '_sigma.h5')
     #S.Sigma.save_as_w(pref + '_sigma_w.h5')
 
-    # Compute and save singlet pairing vertex for superconductivity
-    V_singlet = S.FLEX.compute_V_singlet()
-    V_singlet.save(pref + '_vertex_singlet.h5')
-
 def save_DMFT(S):
     outdir = cfg.outdir
     prefix = cfg.prefix

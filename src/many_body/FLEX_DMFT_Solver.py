@@ -111,10 +111,11 @@ class FLEX_DMFT_Solver:
         sigma_ipt_old = self.Sigma_imp.obj_w.copy()
         self.Sigma_imp = IPT.get_IPT_Sigma(self.U)
         self.Sigma_imp.obj_w.data[:] = self.mix * self.Sigma_imp.obj_w.data + (1.0 - self.mix) * sigma_ipt_old.data
+        #self.Sigma_imp.zero() # Debugging line, remove later
 
         # Combine
         self.Sigma_k = add_local_to_nonlocal(self.Sigma_nonloc, self.Sigma_imp)
-        FLEX.Sigma = self.Sigma_k
+        FLEX.Sigma = self.Sigma_k.copy()
 
         # Make G
         mu = FLEX.find_mu_for_density(self.n)
@@ -127,22 +128,31 @@ class FLEX_DMFT_Solver:
 
         V_nonloc = FLEX.FLEX_from_chi(FLEX.X.obj_wk)
         FLEX.V = V_nonloc
+        # Save UX from non-local chi before calculating V_loc (which will overwrite UX)
+        UX_nonloc = FLEX.UX
         V_loc = FLEX.FLEX_from_chi(self.X_loc.obj_w)
+        # Restore non-local UX for divergence tracking
+        FLEX.UX = UX_nonloc
         if FLEX.diverged or self.U * np.max(np.abs(FLEX.X.obj_wk.data)) >= 1.0:
             self.diverged = True
-            #print("Divergence detected in FLEX part of FLEX+DMFT")
+            print("Divergence detected in FLEX part of FLEX+DMFT with U*max(Chi) = ", FLEX.UX)
+            print(self.U * np.max(np.abs(FLEX.X.obj_wk.data)))
             return
 
         FLEX.Sigma_from_vertex()
         self.get_local_sigma(V_loc, FLEX.G_loc)
+        #self.Sigma_loc.zero() # Debugging line, remove later
         # Update non-local self-energy with mixing
         sigma_nonloc_old = self.Sigma_nonloc.obj_wk.copy()
-        self.sigma_nonloc = subtract_local_from_nonlocal(FLEX.Sigma, self.Sigma_loc)
-        self.sigma_nonloc.obj_wk.data[:] = self.mix * self.sigma_nonloc.obj_wk.data + (1.0 - self.mix) * sigma_nonloc_old.data
+        self.Sigma_nonloc = subtract_local_from_nonlocal(FLEX.Sigma, self.Sigma_loc)
+        self.Sigma_nonloc.obj_wk.data[:] = self.mix * self.Sigma_nonloc.obj_wk.data + (1.0 - self.mix) * sigma_nonloc_old.data
 
         # Combine
-        self.Sigma_k = add_local_to_nonlocal(self.sigma_nonloc, self.Sigma_imp)
+        self.Sigma_k = add_local_to_nonlocal(self.Sigma_nonloc, self.Sigma_imp)
         FLEX.Sigma_k = self.Sigma_k.copy()
+        #print("Max Sigma_k: ", np.max(np.abs(self.Sigma_k.obj_wk.data)))
+        #print("Max G_k: ", np.max(np.abs(FLEX.G.obj_wk.data)))
+        #print("Max Chi_k: ", np.max(np.abs(FLEX.X.obj_wk.data)))
 
     def U_renormalization(self, FLEX, IPT):
         """Renormalize U if U*max(chi) >= 1 to avoid divergence."""
@@ -150,6 +160,9 @@ class FLEX_DMFT_Solver:
         print("Initiating U renormalization loop...")
 
         U_old = self.U
+        print("Initial U = ", U_old)
+        print("Initial max(Chi) = ", np.max(np.abs(FLEX.X.obj_wk.data)))
+        print("Initial U*max(Chi) = ", U_old * np.max(np.abs(FLEX.X.obj_wk.data)))
         U_it = 0
         prev_U = 0
         # Check condition: U_old * max(chi0) >= 1
@@ -161,12 +174,14 @@ class FLEX_DMFT_Solver:
             self.U = self.U / (max_X * self.U + 0.01)
             FLEX.U = self.U
             IPT.U = self.U
-            print(f"{U_it}) U = {self.U}, initial_U = {U_old}, max_X = {max_X}")
+            print(f"{U_it}) U = {self.U}, max_X = {max_X}, U*max_X = {self.U * max_X}")
 
             # Perform one FLEX loop iteration with reduced U (matching test.py logic)
             G_old = FLEX.G.obj_wk.copy()
 
             # Calculate V and Sigma with current chi0 and reduced U
+            if U_it == 1:
+                self.solve_FLEX_DMFT(FLEX, IPT)
             self.solve_FLEX_DMFT(FLEX, IPT)
 
             # Reset U back to U_old for next iteration
@@ -180,15 +195,23 @@ class FLEX_DMFT_Solver:
                 break
 
         print("Leaving U renormalization...")
+        self.U = prev_U
+        print("Final U after renormalization: ", self.U)
         # Final UX calculation with U_old
         FLEX.UX = self.U * np.max(np.abs(FLEX.X.obj_wk.data))
         FLEX.U = self.U
         IPT.U = self.U
+        if FLEX.UX < 1.0:
+            self.diverged = False
+            print("U renormalization successful.")
+            print("Final U*max(Chi) = ", FLEX.UX)
 
         if FLEX.UX >= 1.0:
             raise RuntimeError("U renormalization failed to reduce U*max(Chi) below 1.")
 
     def loop_FLEX_DMFT(self, n_loops=50, check_divergence=True):
+        self.FLEX.U = self.U
+        self.IPT.U = self.U
         self.solve_FLEX_DMFT(self.FLEX, self.IPT)
         print(f"Initial U*max(Chi) = {self.FLEX.UX:.4f}")
         # Initial check for divergence
@@ -202,9 +225,12 @@ class FLEX_DMFT_Solver:
             G_old = self.FLEX.G.obj_wk.copy()
 
             self.solve_FLEX_DMFT(self.FLEX, self.IPT)
-            print("FLEX+DMFT iteration completed.")
+            #print("FLEX+DMFT iteration completed.")
             if self.diverged:
                 print(f"Divergence detected at iteration {i+1}")
+                print(f"U*max(Chi) = {self.FLEX.UX:.4f} >= 1")
+                print(f"Max(Chi) = {np.max(np.abs(self.FLEX.X.obj_wk.data)):.4f}")
+                print(f"U = {self.U:.4f}")
                 if check_divergence:
                     print("Attempting U renormalization...")
                     self.U_renormalization(self.FLEX, self.IPT)
