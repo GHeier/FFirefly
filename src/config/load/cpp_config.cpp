@@ -36,6 +36,8 @@ float Temperature;
 float onsite_U;
 float cutoff_energy;
 float smearing;
+float mixing;
+int max_iters;
 
 //[MESH]
 vector<int> k_mesh(3);
@@ -112,6 +114,8 @@ extern "C" void load_cpp_config() {
     onsite_U = c_onsite_U;
     cutoff_energy = c_cutoff_energy;
     smearing = c_smearing;
+    mixing = c_mixing;
+    max_iters = c_max_iters;
 
 //[MESH]
     for (int i = 0; i < 3; i++) k_mesh[i] = c_k_mesh[i];

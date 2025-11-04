@@ -32,6 +32,8 @@ extern float c_Temperature;
 extern float c_onsite_U;
 extern float c_cutoff_energy;
 extern float c_smearing;
+extern float c_mixing;
+extern int c_max_iters;
 
 //[MESH]
 extern int c_k_mesh[3];

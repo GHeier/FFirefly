@@ -48,6 +48,8 @@ float c_Temperature = 0.0;
 float c_onsite_U = 0.0;
 float c_cutoff_energy = 0.05;
 float c_smearing = 0.02;
+float c_mixing = 0.02;
+int c_max_iters = 100;
 
 //[MESH]
 int c_k_mesh[3] = {10, 10, 10};
@@ -345,6 +347,12 @@ void read_c_config(const char *path) {
             }
             else if (strstr(key, "smearing") != NULL) {
                 c_smearing = atof(value);
+            }
+            else if (strstr(key, "mixing") != NULL) {
+                c_mixing = atof(value);
+            }
+            else if (strstr(key, "max_iters") != NULL) {
+                c_max_iters = atoi(value);
             }
 
 //[MESH]

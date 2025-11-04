@@ -64,6 +64,10 @@ module ffirefly
     real :: cutoff_energy
     real(c_float), bind(C, name="c_smearing") :: c_smearing
     real :: smearing
+    real(c_float), bind(C, name="c_mixing") :: c_mixing
+    real :: mixing
+    integer(c_int), bind(C, name="c_max_iters") :: c_max_iters
+    integer :: max_iters
 
 ![MESH]
     integer(c_int), bind(C, name="c_k_mesh") :: c_k_mesh(3)
@@ -184,6 +188,8 @@ module ffirefly
             use iso_c_binding
             type(c_ptr) :: get_celltype
     end function get_celltype
+
+
 
 
 
@@ -323,6 +329,8 @@ contains
         onsite_U = c_onsite_U
         cutoff_energy = c_cutoff_energy
         smearing = c_smearing
+        mixing = c_mixing
+        max_iters = c_max_iters
 
 ![MESH]
         k_mesh = c_k_mesh

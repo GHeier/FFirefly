@@ -32,6 +32,8 @@ extern float Temperature;
 extern float onsite_U;
 extern float cutoff_energy;
 extern float smearing;
+extern float mixing;
+extern int max_iters;
 
 //[MESH]
 extern vector<int> k_mesh;

@@ -1,3 +1,10 @@
+from firefly.diagram import Diagram, dot_tr, dot_t
+from triqs.gf import inverse, Gf
+from triqs.gf.meshes import MeshDLRImFreq
+from triqs_tprf.lattice import chi0_tr_from_grt_PH
+from scipy.optimize import brentq
+import numpy as np
+
 class FLEXSolver:
     def __init__(self, G0=None, U=0.0, mix=0.2, U_maxiter=50, n=None, mu=None):
         """
@@ -71,19 +78,39 @@ class FLEXSolver:
         # Check for divergence: U * max(chi) should be < 1
         self.UX = U * np.max(np.abs(X_data))
         if self.UX >= 1.0:
-            print(f"ERROR: U*max(chi0) = {self.UX:.4f} >= 1! Paramagnetic phase reached - calculations unstable!")
+            #print(f"ERROR: U*max(chi0) = {self.UX:.4f} >= 1! Paramagnetic phase reached - calculations unstable!")
             self.diverged = True
-            return
 
         UX = U * X_data
         chi_spin = X_data / (1 - UX)
         chi_charge = X_data / (1 + UX)
+
+        # Store chi_spin and chi_charge for later use (e.g., singlet vertex)
+        self.chi_spin_data = chi_spin
+        self.chi_charge_data = chi_charge
+
         V_wk = 1.5 * U**2 * chi_spin + 0.5 * U**2 * chi_charge - U**2 * X_data #+ U
         #V_wk = U**2 * chi_spin + U**3 * chi_spin * chi_charge
         V = X.copy()
         V.data[:] = V_wk
-        self.diverged = False 
+        self.diverged = False
         return Diagram(V, 'Boson')
+
+    #def compute_V_singlet(self):
+    #    """
+    #    Compute singlet pairing vertex for superconductivity.
+    #    V_singlet = 3/2 U^2 chi_spin - 1/2 U^2 chi_charge
+    #    (Note: opposite sign for charge channel compared to FLEX vertex)
+    #    """
+    #    if not hasattr(self, 'chi_spin_data') or not hasattr(self, 'chi_charge_data'):
+    #        raise ValueError("chi_spin and chi_charge not computed yet. Run FLEX_from_chi first.")
+
+    #    U = self.U
+    #    V_singlet_wk = 1.5 * U**2 * self.chi_spin_data - 0.5 * U**2 * self.chi_charge_data
+
+    #    V_singlet = self.X.copy()
+    #    V_singlet.obj_wk.data[:] = V_singlet_wk
+    #    return V_singlet
 
     def Sigma_from_vertex(self):
         self.V.wk_to_tr()
@@ -106,10 +133,10 @@ class FLEXSolver:
         self.make_G(mu)
 
         # Sum over k-points to get local G at new mu
-        G_loc.data[:, 0, 0] = np.reshape(np.sum(self.G.obj_wk.data, axis=1) / self.G.nk, (self.G.nw))
+        self.G_loc.obj_w.data[:, 0, 0] = np.reshape(np.sum(self.G.obj_wk.data, axis=1) / self.G.nk, (self.G.nw))
 
         # Calculate density
-        n = G_loc.density().real[0][0]
+        n = self.G_loc.obj_w.density().real[0][0]
         return n
 
     def find_mu_for_density(self, n_target):

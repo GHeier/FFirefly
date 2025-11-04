@@ -106,6 +106,8 @@ def main():
     G = inverse(inverse(G0) - E)
     G = fly.diagram.Diagram(G, 'Fermion')
 
+    # Load singlet pairing vertex (not the FLEX vertex used for self-energy)
+    #vertex = fly.Field_C(outdir + prefix + '_vertex_singlet.h5')
     vertex = fly.Field_C(outdir + prefix + '_vertex.h5')
     DLRImMesh = fly.load_triqs_H.create_dlr_meshes(e_k, beta, statistic='Boson')
     wk_mesh = MeshProduct(DLRImMesh, k_mesh)
@@ -117,6 +119,7 @@ def main():
     # Check vertex structure before symmetrization
     print_vertex_structure(V, "Before symmetrization")
 
+    # Note: test.py doesn't symmetrize the vertex, so commenting this out
     symmetrize_vertex(V)
 
     # Check after symmetrization
@@ -138,15 +141,19 @@ def main():
 def solve_eliashberg_power_iteration(G, V, Delta0):
     max_iter = 100
     tol = 1e-4
-    max_eigs_searched = 5
     Delta = Delta0.copy()
 
     # Properly flip G(k, iω) → G(-k, -iω) for Cooper pair formation
     G_flip = flip_wk(G)
 
+    # Create d-wave initial guess: cos(2πkx) - cos(2πky) (matching test.py)
+    # Extract mesh dimensions
+    mesh, BZ = extract_mesh_and_bz(Delta.obj_wk)
+
     eig = 0.0
     prev_eig = 0.0
     old_Deltas = []
+    max_eigs_searched = 5
 
     while eig <= 0.0 and len(old_Deltas) < max_eigs_searched:
         Delta.init_tail()
@@ -177,9 +184,9 @@ def solve_eliashberg_power_iteration(G, V, Delta0):
 
 def Eliashberg_step(G, G_flip, V, Delta):
     F = Delta.copy()
-    F.obj_wk.data[:] = -1.0 * G.obj_wk.data * G_flip.obj_wk.data * Delta.obj_wk.data
-    #G2 = G.obj_wk.data * G_flip.obj_wk.data
-    #print(f"Max G(iw,k) = {np.max(G2)}")
+    # Use conj(G) to match test.py's linearized gap equation formula
+    # F = -G(k,iω) * conj(G(k,iω)) * Δ(k,iω) = -|G(k,iω)|² * Δ(k,iω)
+    F.obj_wk.data[:] = -1.0 * G.obj_wk.data * np.conj(G.obj_wk.data) * Delta.obj_wk.data
     F.wk_to_tr()
     Delta_new = dot_tr(V, F)
     Delta_new.tr_to_wk()

@@ -26,6 +26,8 @@ Temperature = 0.0
 onsite_U = 0.0
 cutoff_energy = 0.05
 smearing = 0.02
+mixing = 0.02
+max_iters = 100
 
 #[MESH]
 k_mesh = [10, 10, 10]
@@ -176,6 +178,12 @@ def load_config():
             if "smearing" in key:
                 global smearing
                 smearing = float(value)
+            if "mixing" in key:
+                global mixing
+                mixing = float(value)
+            if "max_iters" in key:
+                global max_iters
+                max_iters = int(value)
 
 #[MESH]
             if "k_mesh" in key:
