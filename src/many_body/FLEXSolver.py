@@ -169,6 +169,7 @@ class FLEXSolver:
 
     def shift_mu_to_target_density(self, n_target):
         mu = self.find_mu_for_density(n_target)
+        print(f"Found mu = {mu:.4f}")
         self.make_G(mu)
 
     def solve_FLEX(self):
@@ -203,7 +204,7 @@ class FLEXSolver:
             # Reduce U temporarily to bring UX below 1
             max_X = np.max(np.abs(self.X.obj_wk.data))
             self.U = self.U / (max_X * self.U + 0.01)
-            print(f"{U_it}) U = {self.U}, initial_U = {U_old}")
+            print(f"{U_it}) U = {self.U:.4f}, U_old*X = {U_old * np.max(np.abs(self.X.obj_wk.data)):.4f}")
 
             # Perform one FLEX loop iteration with reduced U (matching test.py logic)
             G_old = self.G.obj_wk.copy()

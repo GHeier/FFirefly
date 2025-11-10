@@ -104,7 +104,10 @@ def main():
     #fly.interface_triqs.fill_triqs_from_field(E, sigma)
     G0 = lattice_dyson_g0_wk(mu=mu, e_k=e_k, mesh=DLRImMesh)
     G = inverse(inverse(G0) - E)
+    G_data = fly.Field_C(outdir + prefix + '_G.h5')
+    G = Gf(mesh=wk_mesh, target_shape=[1,1])
     G = fly.diagram.Diagram(G, 'Fermion')
+    G.load(G_data)
 
     # Load singlet pairing vertex (not the FLEX vertex used for self-energy)
     #vertex = fly.Field_C(outdir + prefix + '_vertex_singlet.h5')
@@ -209,4 +212,5 @@ def project_out(v, eigvecs):
     else:
         raise ValueError("Deflation resulted in zero vector")
     return v
+
 

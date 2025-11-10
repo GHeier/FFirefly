@@ -44,8 +44,7 @@ class FLEX_DMFT_Solver:
         self.Sigma_imp = self.Sigma_loc.copy()
         self.Sigma_nonloc = self.G0.copy()
         self.Sigma_nonloc.zero()
-        self.Sigma_k = self.G0.copy()
-        self.Sigma_k.zero()
+        self.Sigma_k = self.Sigma_nonloc.copy()
 
         self.X_loc = Diagram(Gf(mesh=DLR_b, target_shape=(self.G0.obj_wk.target_shape)), 'Boson')
 
@@ -92,7 +91,7 @@ class FLEX_DMFT_Solver:
 
     def get_local_chi(self, G_loc):
         G_loc.w_to_t()
-        self.X_loc.obj_t.data[:] = G_loc.obj_t.data * G_loc.obj_t.data
+        self.X_loc.obj_t.data[:] = -G_loc.obj_t.data * G_loc.obj_t.data
         self.X_loc.t_to_w()
 
     def get_local_sigma(self, V, G):
@@ -104,17 +103,20 @@ class FLEX_DMFT_Solver:
     def solve_FLEX_DMFT(self, FLEX, IPT):
         """Single iteration of FLEX+DMFT."""
         # DMFT part
-        FLEX.dyson_G_from_Sigma()
+        mu = FLEX.find_mu_for_density(self.n)
+        FLEX.make_G(self.mu)
+        #FLEX.dyson_G_from_Sigma()
+        #FLEX.G = FLEX.G0.copy()
         FLEX.get_local_G()
-        IPT.G_weiss = FLEX.G_loc.copy()
+        IPT.G_loc = FLEX.G_loc.copy()
+        IPT.set_Weiss()
         # Update impurity self-energy with mixing
         sigma_ipt_old = self.Sigma_imp.obj_w.copy()
         self.Sigma_imp = IPT.get_IPT_Sigma(self.U)
-        self.Sigma_imp.obj_w.data[:] = self.mix * self.Sigma_imp.obj_w.data + (1.0 - self.mix) * sigma_ipt_old.data
-        #self.Sigma_imp.zero() # Debugging line, remove later
 
         # Combine
-        self.Sigma_k = add_local_to_nonlocal(self.Sigma_nonloc, self.Sigma_imp)
+        new_sigma_k = add_local_to_nonlocal(self.Sigma_nonloc, self.Sigma_imp)
+        self.Sigma_k.obj_wk.data[:] = self.mix * new_sigma_k.obj_wk.data + (1.0 - self.mix) * self.Sigma_k.obj_wk.data
         FLEX.Sigma = self.Sigma_k.copy()
 
         # Make G
@@ -122,37 +124,24 @@ class FLEX_DMFT_Solver:
         FLEX.make_G(mu)
         FLEX.get_local_G()
 
-        # Local + Nonlocal parts for FLEX
+        # Nonlocal parts for FLEX
         FLEX.chi0_from_grt_PH()
-        self.get_local_chi(FLEX.G_loc)
-
-        V_nonloc = FLEX.FLEX_from_chi(FLEX.X.obj_wk)
-        FLEX.V = V_nonloc
-        # Save UX from non-local chi before calculating V_loc (which will overwrite UX)
-        UX_nonloc = FLEX.UX
-        V_loc = FLEX.FLEX_from_chi(self.X_loc.obj_w)
-        # Restore non-local UX for divergence tracking
-        FLEX.UX = UX_nonloc
+        FLEX.V = FLEX.FLEX_from_chi(FLEX.X.obj_wk)
         if FLEX.diverged or self.U * np.max(np.abs(FLEX.X.obj_wk.data)) >= 1.0:
             self.diverged = True
             print("Divergence detected in FLEX part of FLEX+DMFT with U*max(Chi) = ", FLEX.UX)
-            print(self.U * np.max(np.abs(FLEX.X.obj_wk.data)))
             return
 
         FLEX.Sigma_from_vertex()
-        self.get_local_sigma(V_loc, FLEX.G_loc)
-        #self.Sigma_loc.zero() # Debugging line, remove later
-        # Update non-local self-energy with mixing
-        sigma_nonloc_old = self.Sigma_nonloc.obj_wk.copy()
+        # Local FLEX
+        self.Sigma_loc.obj_w.data[:] = np.sum(FLEX.Sigma.obj_wk.data[:, :, :, :], axis=1) / FLEX.Sigma.nk
+        # Update non-local self-energy 
         self.Sigma_nonloc = subtract_local_from_nonlocal(FLEX.Sigma, self.Sigma_loc)
-        self.Sigma_nonloc.obj_wk.data[:] = self.mix * self.Sigma_nonloc.obj_wk.data + (1.0 - self.mix) * sigma_nonloc_old.data
 
         # Combine
-        self.Sigma_k = add_local_to_nonlocal(self.Sigma_nonloc, self.Sigma_imp)
+        new_sigma_k = add_local_to_nonlocal(self.Sigma_nonloc, self.Sigma_imp)
+        self.Sigma_k.obj_wk.data[:] = self.mix * new_sigma_k.obj_wk.data + (1.0 - self.mix) * self.Sigma_k.obj_wk.data
         FLEX.Sigma_k = self.Sigma_k.copy()
-        #print("Max Sigma_k: ", np.max(np.abs(self.Sigma_k.obj_wk.data)))
-        #print("Max G_k: ", np.max(np.abs(FLEX.G.obj_wk.data)))
-        #print("Max Chi_k: ", np.max(np.abs(FLEX.X.obj_wk.data)))
 
     def U_renormalization(self, FLEX, IPT):
         """Renormalize U if U*max(chi) >= 1 to avoid divergence."""
@@ -174,7 +163,7 @@ class FLEX_DMFT_Solver:
             self.U = self.U / (max_X * self.U + 0.01)
             FLEX.U = self.U
             IPT.U = self.U
-            print(f"{U_it}) U = {self.U}, max_X = {max_X}, U*max_X = {self.U * max_X}")
+            print(f"{U_it}) U = {self.U:.4f}, max_X = {max_X:.4f}, U*max_X = {U_old * max_X:.4f}")
 
             # Perform one FLEX loop iteration with reduced U (matching test.py logic)
             G_old = FLEX.G.obj_wk.copy()
@@ -247,7 +236,7 @@ class FLEX_DMFT_Solver:
                 print("Convergence achieved.")
                 break
 
-        self.FLEX.solve_FLEX()
+
 
 def add_local_to_nonlocal(A, B):
     temp = A.copy()

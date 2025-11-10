@@ -29,6 +29,9 @@ class IPTSolver:
         self.Sigma_loc.t_to_w()
         return self.Sigma_loc
 
+    def set_Weiss(self):
+        self.G_weiss.obj_w << inverse(inverse(self.G_loc.obj_w) + self.Sigma_loc.obj_w)
+
     def solve(self, U):
         Sigma_iw = self.get_IPT_Sigma(U)
         self.Sigma_loc.obj_w = self.mix * Sigma_iw.obj_w + (1.0 - self.mix) * self.Sigma_loc.obj_w
@@ -37,7 +40,7 @@ class IPTSolver:
         #self.G << inverse(inverse(self.G0) - self.Sigma_iw)
         self.G_loc.obj_w << self.H(Sigma=self.Sigma_loc.obj_w, mu=self.mu)
         #self.G0 << inverse( iOmega_n - t**2 * self.G )
-        self.G_weiss.obj_w << inverse(inverse(self.G_loc.obj_w) + self.Sigma_loc.obj_w)
+        self.set_Weiss()
         #self.G_iw = self.G0_iw * self.mix + self.G_iw * (1.0 - self.mix)
 
     def solve_bethe_lattice(self, U):
