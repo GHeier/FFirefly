@@ -6,7 +6,7 @@ from IPTSolver import *
 from FLEXSolver import *
 import numpy as np
 
-from firefly.diagram import Diagram, dot_tr, dot_t
+from firefly.diagram import *
 import firefly.config as cfg
 
 class FLEX_DMFT_Solver:
@@ -134,7 +134,8 @@ class FLEX_DMFT_Solver:
 
         FLEX.Sigma_from_vertex()
         # Local FLEX
-        self.Sigma_loc.obj_w.data[:] = np.sum(FLEX.Sigma.obj_wk.data[:, :, :, :], axis=1) / FLEX.Sigma.nk
+        #self.Sigma_loc.obj_w.data[:] = np.sum(FLEX.Sigma.obj_wk.data[:, :, :, :], axis=1) / FLEX.Sigma.nk
+        self.Sigma_loc.obj_w.data[:] = make_local(FLEX.Sigma.obj_wk.data)
         # Update non-local self-energy 
         self.Sigma_nonloc = subtract_local_from_nonlocal(FLEX.Sigma, self.Sigma_loc)
 
@@ -155,18 +156,18 @@ class FLEX_DMFT_Solver:
         U_it = 0
         prev_U = 0
         # Check condition: U_old * max(chi0) >= 1
-        while U_old * np.max(np.abs(FLEX.X.obj_wk.data)) >= 1.0:
-        # UPDATE while np.max(np.abs(U_old * self.X.obj_wk.data)) >= 1.0:
+        #while U_old * np.max(np.abs(FLEX.X.obj_wk.data)) >= 1.0:
+        while np.max(np.abs(U_old * FLEX.X.obj_wk.data)) >= 1.0:
             U_it += 1
 
             # Reduce U temporarily to bring UX below 1
             max_X = np.max(np.abs(FLEX.X.obj_wk.data))
-            self.U = self.U / (max_X * self.U + 0.01)
-            # UPDATE self.U = self.U / (np.max(np.abs(self.U * self.X.obj_wk.data)) + 0.01)
+            #self.U = self.U / (max_X * self.U + 0.01)
+            self.U = self.U / (np.max(np.abs(self.U * FLEX.X.obj_wk.data)) + 0.01)
             FLEX.U = self.U
             IPT.U = self.U
-            print(f"{U_it}) U = {self.U:.4f}, max_X = {max_X:.4f}, U*max_X = {U_old * max_X:.4f}")
-            # UPDATE print(f"{U_it}) U = {self.U:.4f}, U_old*X = {np.max(np.abs(U_old * self.X.obj_wk.data)):.4f}")
+            #print(f"{U_it}) U = {self.U:.4f}, max_X = {max_X:.4f}, U*max_X = {U_old * max_X:.4f}")
+            print(f"{U_it}) U = {self.U:.4f}, U_old*X = {np.max(np.abs(U_old * FLEX.X.obj_wk.data)):.4f}")
 
             # Perform one FLEX loop iteration with reduced U (matching test.py logic)
             G_old = FLEX.G.obj_wk.copy()
@@ -177,8 +178,8 @@ class FLEX_DMFT_Solver:
             self.solve_FLEX_DMFT(FLEX, IPT)
 
             # Reset U back to U_old for next iteration
-            diff = abs(prev_U - self.U)
-            # UPDATE diff = np.max(np.abs(prev_U - self.U))
+            #diff = abs(prev_U - self.U)
+            diff = np.max(np.abs(prev_U - self.U))
             prev_U = self.U
             self.U = U_old
 
@@ -191,8 +192,8 @@ class FLEX_DMFT_Solver:
         self.U = prev_U
         print("Final U after renormalization: ", self.U)
         # Final UX calculation with U_old
-        # UPDATE FLEX.UX = np.max(np.abs(self.U * self.X.obj_wk.data))
-        FLEX.UX = self.U * np.max(np.abs(FLEX.X.obj_wk.data))
+        FLEX.UX = np.max(np.abs(self.U * FLEX.X.obj_wk.data))
+        #FLEX.UX = self.U * np.max(np.abs(FLEX.X.obj_wk.data))
         FLEX.U = self.U
         IPT.U = self.U
         if FLEX.UX < 1.0:

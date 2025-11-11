@@ -947,13 +947,20 @@ class Field_CM:
         data_array = bd.get_data()
 
         # Reshape from (nk*nw) to (nw, nk)
+        if bd.n_indices == 4:
+            # Matrix: (nk*nw, dim, dim) -> (nw, nk, dim, dim)
+            dim = bd.dim_indices
+            data_reshaped = data_array.reshape(bd.nw, bd.nk, dim, dim, dim, dim)
+            return data_reshaped
+            #return np.moveaxis(data_reshaped, [0, 1], [1, 0])  # swap k and w axes
         if bd.n_indices == 2:
             # Matrix: (nk*nw, dim, dim) -> (nw, nk, dim, dim)
-            data_reshaped = data_array.reshape(bd.nk, bd.nw, bd.dim_indices, bd.dim_indices)
-            return np.moveaxis(data_reshaped, [0, 1], [1, 0])  # swap k and w axes
+            data_reshaped = data_array.reshape(bd.nw, bd.nk, bd.dim_indices, bd.dim_indices)
+            return data_reshaped
+            #return np.moveaxis(data_reshaped, [0, 1], [1, 0])  # swap k and w axes
         else:
             # Scalar: (nk*nw,) -> (nw, nk)
-            return data_array.reshape(bd.nk, bd.nw).T
+            return data_array.reshape(bd.nw, bd.nk)
 
     def __del__(self):
         try:

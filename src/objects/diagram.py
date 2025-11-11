@@ -79,9 +79,13 @@ class Diagram:
     def save(self, filename):
         if self.varspace in ['wk', 'tr']:
             mesh, BZ = extract_mesh_and_bz(self.obj_wk)
+            print("saving shape out ", self.obj_wk.data.shape)
             # Reshape data to match mesh dimensions (nw, nkx, nky, nkz)
+            mesh = mesh + self.shape[2:]  # Append orbital dimensions
             obj = np.reshape(self.obj_wk.data, mesh)
+            print("saving shape out ", obj.shape)
             obj = np.fft.fftshift(obj, axes=tuple(range(1, len(mesh))))  # Shift k-points to center
+            print("saving shape out ", obj.shape)
             # When w_points is provided separately, only pass spatial mesh dimensions (not nw)
             spatial_mesh = np.array(mesh[1:], dtype=np.int32)  # Skip first element (nw)
             # Move frequency axis to last position for k-w ordering: (nkx, nky, nkz, nw)
@@ -142,18 +146,12 @@ class Diagram:
         return Diagram(data, self.statistic)
 
     def zero(self):
-        if self.varspace == 'wk':
+        if self.varspace == 'wk' or self.varspace == 'tr':
             self.obj_wk.zero()
-            self.wk_to_tr()
-        elif self.varspace == 'tr':
             self.obj_tr.zero()
-            self.tr_to_wk()
-        elif self.varspace == 'w':
+        elif self.varspace == 'w' or self.varspace == 't':
             self.obj_w.zero()
-            self.w_to_t()
-        elif self.varspace == 't':
             self.obj_t.zero()
-            self.t_to_w()
 
     def fill_from_field(self, field):
         if self.varspace == 'wk' or self.varspace == 'tr':
@@ -183,6 +181,28 @@ class Diagram:
         else:
             raise ValueError("fill_diagram_from_field only implemented for 'wk' and 'w' spaces")
 
+def make_local(data):
+    return np.einsum('wknm->wnm', data) / data.shape[1]
+
+def contract(obj1, obj2):
+    shape1 = obj1.data.shape
+    shape2 = obj2.data.shape
+    s1 = len(shape1)
+    s2 = len(shape2)
+    if shape1 == shape2:
+        new_obj = obj1.copy()
+        new_obj.data[:] = obj1.data * obj2.data
+    elif s2 > s1:
+        new_obj = obj1.copy()
+        new_obj.data[:] = np.einsum('wkabcd,wkcd->wkab', obj2.data, obj1.data, optimize=True)
+    elif s1 > s2:
+        new_obj = obj2.copy()
+        new_obj.data[:] = np.einsum('wkabcd,wkcd->wkab', obj1.data, obj2.data, optimize=True)
+    else:
+        raise ValueError("Contraction only implemented for Gf objects with same shape or differing by 2 indices")
+    return new_obj # Returns a Gf object
+
+
 def dot_t(diagram1, diagram2):
     shape1 = diagram1.obj_t.data.shape
     shape2 = diagram2.obj_t.data.shape
@@ -207,24 +227,6 @@ def dot_t(diagram1, diagram2):
         return new_obj
     else:
         raise ValueError("Convolution Sum only implemented for diagrams differing by 0 or 2 indices")
-
-def contract(obj1, obj2):
-    shape1 = obj1.data.shape
-    shape2 = obj2.data.shape
-    s1 = len(shape1)
-    s2 = len(shape2)
-    if shape1 == shape2:
-        new_obj = obj1.copy()
-        new_obj.data[:] = obj1.data * obj2.data
-    elif s2 > s1:
-        new_obj = obj1.copy()
-        new_obj.data[:] = np.einsum('wkabcd,wkcd->wkab', obj1, obj2, optimize=True)
-    elif s1 > s2:
-        new_obj = obj2.copy()
-        new_obj.data[:] = np.einsum('wkabcd,wkcd->wkab', obj2, obj1, optimize=True)
-    else:
-        raise ValueError("Contraction only implemented for Gf objects with same shape or differing by 2 indices")
-    return new_obj # Returns a Gf object
 
 
 def dot_tr(diagram1, diagram2):

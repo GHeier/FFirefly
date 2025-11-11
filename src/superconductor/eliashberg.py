@@ -16,6 +16,7 @@ from triqs_tprf import *
 outdir = cfg.outdir
 prefix = cfg.prefix
 
+nstates = cfg.nstates
 Nk = cfg.k_mesh[0]
 BZ = get_brillouin_zone()
 
@@ -97,24 +98,24 @@ def main():
     print(BZ)
     k_mesh = MeshBrZone(BZ, n_k=Nk)   # uniform Nk x Nk x Nk (third dim is 1 if 2D)
 
-    sigma = fly.Field_C(outdir + prefix + '_sigma.h5')
+    #sigma = fly.Field_C(outdir + prefix + '_sigma.h5')
     wk_mesh = MeshProduct(DLRImMesh, k_mesh) 
-    E = Gf(mesh=wk_mesh, target_shape=[1,1])
-    E.data[:, :, 0, 0] = sigma.get_data()
+    #E = Gf(mesh=wk_mesh, target_shape=[1,1])
+    #E.data[:, :, 0, 0] = sigma.get_data()
     #fly.interface_triqs.fill_triqs_from_field(E, sigma)
-    G0 = lattice_dyson_g0_wk(mu=mu, e_k=e_k, mesh=DLRImMesh)
-    G = inverse(inverse(G0) - E)
-    G_data = fly.Field_C(outdir + prefix + '_G.h5')
-    G = Gf(mesh=wk_mesh, target_shape=[1,1])
+    #G0 = lattice_dyson_g0_wk(mu=mu, e_k=e_k, mesh=DLRImMesh)
+    #G = inverse(inverse(G0) - E)
+    G_data = fly.Field_CM(outdir + prefix + '_G.h5')
+    G = Gf(mesh=wk_mesh, target_shape=[nstates, nstates])
     G = fly.diagram.Diagram(G, 'Fermion')
     G.load(G_data)
 
     # Load singlet pairing vertex (not the FLEX vertex used for self-energy)
     #vertex = fly.Field_C(outdir + prefix + '_vertex_singlet.h5')
-    vertex = fly.Field_C(outdir + prefix + '_vertex.h5')
+    vertex = fly.Field_CM(outdir + prefix + '_vertex.h5')
     DLRImMesh = fly.load_triqs_H.create_dlr_meshes(e_k, beta, statistic='Boson')
     wk_mesh = MeshProduct(DLRImMesh, k_mesh)
-    V = Gf(mesh=wk_mesh, target_shape=[1,1,1,1])
+    V = Gf(mesh=wk_mesh, target_shape=[nstates, nstates, nstates, nstates])
     V = fly.diagram.Diagram(V, 'Boson')
     #fly.interface_triqs.fill_triqs_from_field(V.obj_wk, vertex)
     V.load(vertex)

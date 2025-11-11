@@ -1,4 +1,4 @@
-from firefly.diagram import Diagram, dot_tr, dot_t
+from firefly.diagram import Diagram, dot_tr, dot_t, contract
 from triqs.gf import inverse, Gf
 from triqs.gf.meshes import MeshDLRImFreq
 from triqs_tprf.lattice import chi0_tr_from_grt_PH
@@ -67,8 +67,8 @@ class FLEXSolver:
         chi_tr = chi0_tr_from_grt_PH(self.G.obj_tr)
         self.X = Diagram(chi_tr, "Boson")
         self.X.tr_to_wk()
-        self.UX = self.U * np.max(np.abs(self.X.obj_wk.data))
-        # UPDATE self.UX = np.max(np.abs(self.U * self.X.obj_wk.data))
+        #self.UX = self.U * np.max(np.abs(self.X.obj_wk.data))
+        self.UX = np.max(np.abs(self.U * self.X.obj_wk.data))
 
     def FLEX_from_chi(self, X):
         # FLEX vertex construction from spin and charge fluctuations
@@ -78,8 +78,8 @@ class FLEXSolver:
         UX = U * X_data
 
         # Check for divergence: U * max(chi) should be < 1
-        self.UX = U * np.max(np.abs(X_data))
-        # UPDATE self.UX = np.max(np.abs(UX))
+        #self.UX = U * np.max(np.abs(X_data))
+        self.UX = np.max(np.abs(UX))
         if self.UX >= 1.0:
             #print(f"ERROR: U*max(chi0) = {self.UX:.4f} >= 1! Paramagnetic phase reached - calculations unstable!")
             self.diverged = True
@@ -116,8 +116,8 @@ class FLEXSolver:
 
     def Sigma_from_vertex(self):
         self.V.wk_to_tr()
-        self.Sigma = dot_tr(self.V, self.G)
-        # UPDATE self.Sigma = contract(self.V, self.G)
+        #self.Sigma = dot_tr(self.V, self.G)
+        self.Sigma.obj_tr = contract(self.V.obj_tr, self.G.obj_tr)
         #self.Sigma.obj_tr.data[:] = self.G.obj_tr.data * self.V.obj_tr.data[:, :, 0, 0]
         self.Sigma.tr_to_wk()
 
@@ -126,8 +126,8 @@ class FLEXSolver:
 
     def get_local_G(self):
         # Calculate local Green's function by summing over k-points
-        self.G_loc.obj_w.data[:] = np.sum(self.G.obj_wk.data[:, :, :, :], axis=1) / self.G.nk
-        # UPDATE self.G_loc.obj_w.data[:] = np.einsum('wknm->wnm', self.G.obj_wk.data) / self.G.nk
+        #self.G_loc.obj_w.data[:] = np.sum(self.G.obj_wk.data[:, :, :, :], axis=1) / self.G.nk
+        self.G_loc.obj_w.data[:] = np.einsum('wknm->wnm', self.G.obj_wk.data) / self.G.nk
 
     def calc_electron_density(self, mu):
         """
@@ -137,14 +137,12 @@ class FLEXSolver:
         self.make_G(mu)
 
         # Sum over k-points to get local G at new mu
-        self.G_loc.obj_w.data[:, 0, 0] = np.reshape(np.sum(self.G.obj_wk.data, axis=1) / self.G.nk, (self.G.nw))
-        # UPDATE get_local_G()
+        #self.G_loc.obj_w.data[:, 0, 0] = np.reshape(np.sum(self.G.obj_wk.data, axis=1) / self.G.nk, (self.G.nw))
+        self.get_local_G()
 
         # Calculate density
+        #n = self.G_loc.obj_w.density().real[0][0]
         n = self.G_loc.obj_w.density().real[0][0]
-        # UPDATE n = self.G_loc.obj_w.density().real
-        # UPDATE print(n)
-        # UPDATE n= n[0][0]
         return n
 
     def find_mu_for_density(self, n_target):
@@ -206,16 +204,16 @@ class FLEXSolver:
         prev_U = 0
 
         # Check condition: U_old * max(chi0) >= 1
-        while U_old * np.max(np.abs(self.X.obj_wk.data)) >= 1.0:
-        # UPDATE while np.max(np.abs(U_old * self.X.obj_wk.data)) >= 1.0:
+        #while U_old * np.max(np.abs(self.X.obj_wk.data)) >= 1.0:
+        while np.max(np.abs(U_old * self.X.obj_wk.data)) >= 1.0:
             U_it += 1
 
             # Reduce U temporarily to bring UX below 1
             max_X = np.max(np.abs(self.X.obj_wk.data))
-            self.U = self.U / (max_X * self.U + 0.01)
-            # UPDATE self.U = self.U / (np.max(np.abs(self.U * self.X.obj_wk.data)) + 0.01)
-            print(f"{U_it}) U = {self.U:.4f}, U_old*X = {U_old * np.max(np.abs(self.X.obj_wk.data)):.4f}")
-            # UPDATE print(f"{U_it}) U = {self.U:.4f}, U_old*X = {np.max(np.abs(U_old * self.X.obj_wk.data)):.4f}")
+            #self.U = self.U / (max_X * self.U + 0.01)
+            self.U = self.U / (np.max(np.abs(self.U * self.X.obj_wk.data)) + 0.01)
+            #print(f"{U_it}) U = {self.U:.4f}, U_old*X = {U_old * np.max(np.abs(self.X.obj_wk.data)):.4f}")
+            print(f"{U_it}) U = {self.U:.4f}, U_old*X = {np.max(np.abs(U_old * self.X.obj_wk.data)):.4f}")
 
             # Perform one FLEX loop iteration with reduced U (matching test.py logic)
             G_old = self.G.obj_wk.copy()
@@ -233,8 +231,8 @@ class FLEXSolver:
             self.chi0_from_grt_PH()
 
             # Reset U back to U_old for next iteration
-            diff = abs(prev_U - self.U)
-            # UPDATE diff = np.max(np.abs(prev_U - self.U))
+            #diff = abs(prev_U - self.U)
+            diff = np.max(np.abs(prev_U - self.U))
             prev_U = self.U
             self.U = U_old
 
@@ -245,8 +243,8 @@ class FLEXSolver:
 
         print("Leaving U renormalization...")
         # Final UX calculation with U_old
-        self.UX = self.U * np.max(np.abs(self.X.obj_wk.data))
-        # UPDATE self.UX = np.max(np.abs(self.U * self.X.obj_wk.data))
+        #self.UX = self.U * np.max(np.abs(self.X.obj_wk.data))
+        self.UX = np.max(np.abs(self.U * self.X.obj_wk.data))
 
     def loop_FLEX(self, n_loops=50, check_divergence=True):
         self.chi0_from_grt_PH()
@@ -264,8 +262,8 @@ class FLEXSolver:
             # Print max X for comparison with test.py (from newly calculated chi0)
             max_X = np.max(np.abs(self.X.obj_wk.data))
             # Recalculate UX with new chi0 for accurate reporting
-            self.UX = self.U * max_X
-            # UPDATE self.UX = np.max(np.abs(self.U * self.X.obj_wk.data))
+            #self.UX = self.U * max_X
+            self.UX = np.max(np.abs(self.U * self.X.obj_wk.data))
 
             if self.diverged:
                 print(f"Divergence detected at iteration {i+1}")
