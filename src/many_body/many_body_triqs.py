@@ -93,6 +93,7 @@ def FLEX():
 
     # Compute non-interacting Green's function
     G0 = lattice_dyson_g0_wk(mu=mu, e_k=e_k, mesh=DLRImMesh)
+    print("G0 mesh size: ", G0.data.shape)
 
     # Initialize many-body solver with mixing parameter and e_k for mu calculation
     S = FLEXSolver(G0, U=U, mix=mixing, U_maxiter=max_iters, n=n, mu=mu)

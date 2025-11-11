@@ -156,14 +156,17 @@ class FLEX_DMFT_Solver:
         prev_U = 0
         # Check condition: U_old * max(chi0) >= 1
         while U_old * np.max(np.abs(FLEX.X.obj_wk.data)) >= 1.0:
+        # UPDATE while np.max(np.abs(U_old * self.X.obj_wk.data)) >= 1.0:
             U_it += 1
 
             # Reduce U temporarily to bring UX below 1
             max_X = np.max(np.abs(FLEX.X.obj_wk.data))
             self.U = self.U / (max_X * self.U + 0.01)
+            # UPDATE self.U = self.U / (np.max(np.abs(self.U * self.X.obj_wk.data)) + 0.01)
             FLEX.U = self.U
             IPT.U = self.U
             print(f"{U_it}) U = {self.U:.4f}, max_X = {max_X:.4f}, U*max_X = {U_old * max_X:.4f}")
+            # UPDATE print(f"{U_it}) U = {self.U:.4f}, U_old*X = {np.max(np.abs(U_old * self.X.obj_wk.data)):.4f}")
 
             # Perform one FLEX loop iteration with reduced U (matching test.py logic)
             G_old = FLEX.G.obj_wk.copy()
@@ -175,6 +178,7 @@ class FLEX_DMFT_Solver:
 
             # Reset U back to U_old for next iteration
             diff = abs(prev_U - self.U)
+            # UPDATE diff = np.max(np.abs(prev_U - self.U))
             prev_U = self.U
             self.U = U_old
 
@@ -187,6 +191,7 @@ class FLEX_DMFT_Solver:
         self.U = prev_U
         print("Final U after renormalization: ", self.U)
         # Final UX calculation with U_old
+        # UPDATE FLEX.UX = np.max(np.abs(self.U * self.X.obj_wk.data))
         FLEX.UX = self.U * np.max(np.abs(FLEX.X.obj_wk.data))
         FLEX.U = self.U
         IPT.U = self.U

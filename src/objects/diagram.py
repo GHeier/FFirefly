@@ -208,6 +208,25 @@ def dot_t(diagram1, diagram2):
     else:
         raise ValueError("Convolution Sum only implemented for diagrams differing by 0 or 2 indices")
 
+def contract(obj1, obj2):
+    shape1 = obj1.data.shape
+    shape2 = obj2.data.shape
+    s1 = len(shape1)
+    s2 = len(shape2)
+    if shape1 == shape2:
+        new_obj = obj1.copy()
+        new_obj.data[:] = obj1.data * obj2.data
+    elif s2 > s1:
+        new_obj = obj1.copy()
+        new_obj.data[:] = np.einsum('wkabcd,wkcd->wkab', obj1, obj2, optimize=True)
+    elif s1 > s2:
+        new_obj = obj2.copy()
+        new_obj.data[:] = np.einsum('wkabcd,wkcd->wkab', obj2, obj1, optimize=True)
+    else:
+        raise ValueError("Contraction only implemented for Gf objects with same shape or differing by 2 indices")
+    return new_obj # Returns a Gf object
+
+
 def dot_tr(diagram1, diagram2):
     shape1 = diagram1.obj_tr.data.shape
     shape2 = diagram2.obj_tr.data.shape

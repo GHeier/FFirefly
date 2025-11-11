@@ -2,6 +2,9 @@ from triqs.gf import *
 from triqs.gf.meshes import MeshDLRImFreq
 from triqs_tprf.tight_binding import TBLattice
 
+import firefly.config as cfg
+
+hamiltonian_type = cfg.hamiltonian
 
 def create_dlr_meshes(e_k, beta, statistic='Fermion'):
     """
@@ -24,6 +27,23 @@ def create_dlr_meshes(e_k, beta, statistic='Fermion'):
 
 
 def get_energy_mesh():
+    if hamiltonian_type == "tight_binding":
+        return get_TB()
+    if hamiltonian_type == "emery":
+        return get_emery()
+    else:
+        raise ValueError(f"Hamiltonian type {hamiltonian_type} not recognized.")
+
+def get_emery():
+    """
+    Placeholder for Emery model Hamiltonian creation.
+
+    Returns:
+        tuple: (H_r, kmesh, e_k)
+    """
+    raise NotImplementedError("Emery model Hamiltonian not implemented yet.")
+
+def get_TB():
     """
     Create tight-binding lattice and energy mesh based on firefly.config parameters.
 
