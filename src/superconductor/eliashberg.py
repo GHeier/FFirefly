@@ -89,7 +89,7 @@ def symmetrize_vertex(V):
 
     print("Vertex symmetrized: V_sym(q) = (V(q) + V(-q)) / 2")
 
-def main():
+def run(bcs=False):
     H_r, kmesh, e_k = fly.load_triqs_H.get_energy_mesh()
     emax = e_k.data.max().real
     emin = e_k.data.min().real
@@ -105,7 +105,11 @@ def main():
     #fly.interface_triqs.fill_triqs_from_field(E, sigma)
     #G0 = lattice_dyson_g0_wk(mu=mu, e_k=e_k, mesh=DLRImMesh)
     #G = inverse(inverse(G0) - E)
-    G_data = fly.Field_CM(outdir + prefix + '_G.h5')
+    G_file = outdir + prefix + '_G0.h5'
+    if not bcs:
+        G_file = outdir + prefix + '_G.h5'
+    print(f"Loading G from {G_file}")
+    G_data = fly.Field_CM(G_file)
     G = Gf(mesh=wk_mesh, target_shape=[nstates, nstates])
     G = fly.diagram.Diagram(G, 'Fermion')
     G.load(G_data)
@@ -134,6 +138,7 @@ def main():
     Delta0 = G.copy()
 
     eig, Delta = solve_eliashberg_power_iteration(G, V, Delta0)
+
     print(f"Max Eig: {eig:.6f}")
 
     # Analyze gap symmetry
@@ -196,6 +201,74 @@ def Eliashberg_step(G, G_flip, V, Delta):
     Delta_new.tr_to_wk()
     return Delta_new
 
+def project_out_momentum_with_symmetry(V, G, g):
+    V.wk_to_wr()
+    G.wk_to_wr()
+    # 1) k → r for g
+    g_r = np.fft.ifft(eigvec, axis=0)  # shape (nr, a, b), up to norm
+    # 2) Contract: V(w,r,abcd) * g(r,ab) * g(r,cd) summed over r,a,b,c,d → w
+    V_w = np.einsum('wrabcd,rab,rcd->w', V.obj_wr.data, g_r, g_r)
+    iw_mesh = V.obj_wk.mesh.components[0]
+
+
+
+def run_projected_w(bcs=False):
+    H_r, kmesh, e_k = fly.load_triqs_H.get_energy_mesh()
+    emax = e_k.data.max().real
+    emin = e_k.data.min().real
+    print(f"emax: {emax}, emin: {emin}")
+    DLRImMesh = fly.load_triqs_H.create_dlr_meshes(e_k, beta, statistic='Fermion')
+    print(BZ)
+    k_mesh = MeshBrZone(BZ, n_k=Nk)   # uniform Nk x Nk x Nk (third dim is 1 if 2D)
+
+    #sigma = fly.Field_C(outdir + prefix + '_sigma.h5')
+    wk_mesh = MeshProduct(DLRImMesh, k_mesh) 
+    #E = Gf(mesh=wk_mesh, target_shape=[1,1])
+    #E.data[:, :, 0, 0] = sigma.get_data()
+    #fly.interface_triqs.fill_triqs_from_field(E, sigma)
+    #G0 = lattice_dyson_g0_wk(mu=mu, e_k=e_k, mesh=DLRImMesh)
+    #G = inverse(inverse(G0) - E)
+    G_file = outdir + prefix + '_G0.h5'
+    if not bcs:
+        G_file = outdir + prefix + '_G.h5'
+    print(f"Loading G from {G_file}")
+    G_data = fly.Field_CM(G_file)
+    G = Gf(mesh=wk_mesh, target_shape=[nstates, nstates])
+    G = fly.diagram.Diagram(G, 'Fermion')
+    G.load(G_data)
+
+    # Load singlet pairing vertex (not the FLEX vertex used for self-energy)
+    #vertex = fly.Field_C(outdir + prefix + '_vertex_singlet.h5')
+    vertex = fly.Field_CM(outdir + prefix + '_vertex.h5')
+    DLRImMesh = fly.load_triqs_H.create_dlr_meshes(e_k, beta, statistic='Boson')
+    wk_mesh = MeshProduct(DLRImMesh, k_mesh)
+    V = Gf(mesh=wk_mesh, target_shape=[nstates, nstates, nstates, nstates])
+    V = fly.diagram.Diagram(V, 'Boson')
+    #fly.interface_triqs.fill_triqs_from_field(V.obj_wk, vertex)
+    V.load(vertex)
+
+    # Check vertex structure before symmetrization
+    print_vertex_structure(V, "Before symmetrization")
+
+    # Note: test.py doesn't symmetrize the vertex, so commenting this out
+    symmetrize_vertex(V)
+
+    # Check after symmetrization
+    print_vertex_structure(V, "After symmetrization")
+
+    V.wk_to_tr()
+
+    Delta0 = G.copy()
+
+    eig, Delta = solve_eliashberg_power_iteration(G, V, Delta0)
+
+    print(f"Max Eig: {eig:.6f}")
+
+    # Analyze gap symmetry
+    analyze_gap_symmetry(Delta)
+
+    Delta.save(outdir + prefix + '_gap.h5')
+
 def project_out(v, eigvecs):
     """Project out previously found eigenvectors using Gram-Schmidt orthogonalization."""
     for x in eigvecs:
@@ -214,4 +287,5 @@ def project_out(v, eigvecs):
         raise ValueError("Deflation resulted in zero vector")
     return v
 
-
+def eliashberg():
+    run(bcs=False)

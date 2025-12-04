@@ -23,7 +23,6 @@ ALL = {
         "filetype": 'h5',
     },
     "SYSTEM": {
-        "hamiltonian": "tight_binding",
         "interaction": "none",
         "dimension": 3,
         "celltype": "",
@@ -38,6 +37,7 @@ ALL = {
         "mixing": 0.02,
         "max_iters": 100,
     },
+    "HAMILTONIAN": {"hamiltonian": "tight_binding"},
     "MESH": {"k_mesh": [10, 10, 10], "q_mesh": [10, 10, 10], "w_pts": 100},
     "CELL": {"cell": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]},
     "BRILLOUIN_ZONE": {

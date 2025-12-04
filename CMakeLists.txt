@@ -25,7 +25,7 @@ set(CMAKE_C_FLAGS "-fopenmp -fPIC")
 set(CMAKE_Fortran_FLAGS "-O3 -fopenmp -fPIC -L/usr/local/lib -I/usr/local/include -ltetrabz")
 
 # Libraries to link
-set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -ltetrabz -lopenblas -ljulia -lhdf5_cpp -lhdf5)
+set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -ltetrabz -lopenblas -ljulia -lhdf5_cpp -lhdf5 -lfftw3 -lfftw3f)
 
 # Find Python3 headers and libraries
 # Use conda environment's Python if CONDA_PREFIX is set

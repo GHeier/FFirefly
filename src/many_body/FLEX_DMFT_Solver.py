@@ -238,7 +238,7 @@ class FLEX_DMFT_Solver:
             err = np.max(np.abs(self.FLEX.G.obj_wk.data - G_old.data))
             print(f"Max change in G: {err:.3e}")
 
-            if err < 1e-6:
+            if err < 1e-4:
                 print("Convergence achieved.")
                 break
 

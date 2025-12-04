@@ -13,8 +13,12 @@ using namespace std;
  */
 extern "C" void superconductor_wrapper() {
     printv("Running superconductor_wrapper\n");
-    if (calculation == "bcs")
-        bcs();
+    if (calculation == "bcs") {
+        if (method == "grid")
+            bcs_grid();
+        else
+            bcs();
+    }
     else if (calculation == "eliashberg")
         eliashberg();
     else if (calculation == "linearized_eliashberg")

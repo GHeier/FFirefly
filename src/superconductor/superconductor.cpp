@@ -20,6 +20,7 @@
 #include "../config/load/py_interface.h"
 #include "../config/load/jl_interface.h"
 #include "../hamiltonian/band_structure.hpp"
+#include "../objects/CMField/fields.hpp"
 #include "../objects/eigenvec.hpp"
 #include "../objects/matrix.hpp"
 #include "../objects/vec.hpp"
@@ -63,7 +64,13 @@ void bcs() {
         renorm = get_renormalization(FS);
     else
         renorm = get_renormalization_off_FS(freq_FS);
-    printf("renorm = %f\n", renorm);
+    double onesum = 0.0;
+    Field_C der_sigma(outdir + prefix + "_renormalization.h5");
+    for (Vec x : FS) {
+        onesum += (x.area / vp(x.n, x) * real(der_sigma(x, 0.0)));
+    }
+    printf("Average analytic dSigma/dw on FS: %f\n", onesum / (pow(2 * M_PI, dim)));
+    printf("lambda_z = %f\n", renorm);
 
     // Calculates the susceptibility matrix if it's going to be used in the
     // potential Otherwise it's passed as empty
@@ -95,8 +102,10 @@ void bcs() {
     if (method == "power_iteration") {
         printf("Performing Power Iteration\n");
         Eigenvector top_gap = power_iteration(P);
-        printf("Max Power Iteration eigenvalue: %f\n", top_gap.eigenvalue / (1 + renorm));
-        printf("Eigenvalue with T included: %f\n", top_gap.eigenvalue / (1 + renorm) * f);
+        printf("Max Power Iteration eigenvalue: %f\n", top_gap.eigenvalue);
+        printf("Max Effective eigenvalue: %f\n", top_gap.eigenvalue / (1 + renorm));
+        printf("Max Power Iteration Eigenvalue with T included: %f\n", top_gap.eigenvalue / (1 + renorm) * f);
+        printf("Max Effective Eigenvalue with T included: %f\n", top_gap.eigenvalue / (1 + renorm) * f);
         solutions[0] = top_gap;
     }
     else if (method == "diagonalization") {
@@ -145,11 +154,18 @@ void bcs() {
     delete[] solutions;
 }
 
+void bcs_grid() {
+    string folder = "superconductor/";
+    string filename = "bcs";
+    string function = "bcs";
+    call_python_func(folder.c_str(), filename.c_str(), function.c_str());
+}
+
 void eliashberg() {
     string folder = "superconductor/";
     string filename = "eliashberg";
     string module = "Eliashberg";
-    string function = "main";
+    string function = "eliashberg";
     call_python_func(folder.c_str(), filename.c_str(), function.c_str());
     //call_julia_func(folder.c_str(), filename.c_str(), module.c_str(),
                     //function.c_str());

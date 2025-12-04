@@ -12,12 +12,13 @@
 #include "../CMField/tests/band_tests.hpp"
 #include "all.hpp"
 #include "surface_tests.hpp"
+#include "array_tests.hpp"
 
 using namespace std;
 
 extern "C" bool object_tests() {
     printf("\nRunning Object tests\n");
-    int num_tests = 7;
+    int num_tests = 8;
     bool all_tests[num_tests] = {
         base_data_tests(),
         field_tests(),
@@ -27,6 +28,7 @@ extern "C" bool object_tests() {
         //cmfield_tests(),
         band_tests(),
         surface_tests(),
+        array_tests(),
     };
     return print_test_results(all_tests, num_tests, "Object tests");
 }

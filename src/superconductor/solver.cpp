@@ -123,19 +123,24 @@ float get_Tc(
 }
 
 float get_renormalization(vector<Vec> &FS) {
+    printv("Loading Renormalization from file %s\n",
+           (outdir + prefix + "_renormalization." + filetype).c_str());
     Field_C lam_z(outdir + prefix + "_renormalization." + filetype);
     float renorm = 0;
     float norm = 0;
     int size = FS.size();
     float temp = 0;
+
     for (int i = 0; i < size; i++) {
         Vec k1 = FS[i];
         float f1 = (k1.area / vp(k1.n, k1));
         for (int j = 0; j < size; j++) {
             Vec k2 = FS[j];
             float f2 = (k2.area / vp(k2.n, k2));
-            float val = real(lam_z(k2 - k1));
-            renorm += real(lam_z(k2 - k1) * f1 * f2);
+            Vec q = k2 - k1;
+            float val = real(lam_z(q, 0.0));
+            if (isnan(val)) val = 0.0;
+            renorm += val * f1 * f2;
             temp += val;
             //cout << "Renorm at " << k2 - k1 << " is " << val << endl;
         }
@@ -143,6 +148,8 @@ float get_renormalization(vector<Vec> &FS) {
     }
     renorm /= (pow(2 * M_PI, dim));
     printf("Average Renormalization: %f\n", temp / (size * size));
+    printf("Norm: %f\n", norm);
+    printf("Total Renormalization: %f\n", renorm);
     return renorm / norm;
 }
 

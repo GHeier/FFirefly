@@ -43,6 +43,19 @@ class FLEXSolver:
 
         G_iw = Gf(mesh=dlr_iw_mesh, target_shape=G0.target_shape)
         self.G_loc = Diagram(G_iw, 'Fermion')
+        print("Max Initial G0(iw,k): ", np.max(np.abs(self.G0.obj_wk.data)))
+
+        # Find correct mu from target density FIRST
+        self.mu = self.find_mu_for_density(n)
+        print(f"Initial mu set to {self.mu:.4f} for n = {n:.6f}")
+
+        # Update G with correct mu before calculating chi0
+        self.make_G(self.mu)
+        print("Max G(iw,k) at correct mu: ", np.max(np.abs(self.G.obj_wk.data)))
+
+        # Now calculate chi0 with the correct mu
+        self.chi0_from_grt_PH()
+        print("Max Initial X(iw,k): ", np.max(np.abs(self.X.obj_wk.data)))
 
 
     def init_iw_ek(self):
@@ -61,6 +74,7 @@ class FLEXSolver:
     def make_G(self, mu):
         # Compute G(k,iw) = 1 / (iw + mu - eps(k) - Sigma(k,iw))
         self.G.obj_wk.data[:] = 1.0 / (self.iw_broadcast + mu - self.H_k - self.Sigma.obj_wk.data)
+        #print("Max G(iw,k): ", np.max(np.abs(self.G.obj_wk.data)))
 
     def chi0_from_grt_PH(self):
         self.G.wk_to_tr()
@@ -83,6 +97,10 @@ class FLEXSolver:
         if self.UX >= 1.0:
             #print(f"ERROR: U*max(chi0) = {self.UX:.4f} >= 1! Paramagnetic phase reached - calculations unstable!")
             self.diverged = True
+            V = X.copy()
+            V.zero()
+            print("Returning zero vertex due to divergence.")
+            return V
 
         chi_spin = X_data / (1 - UX)
         chi_charge = X_data / (1 + UX)
@@ -156,13 +174,13 @@ class FLEXSolver:
             return error
 
         # Search for mu in expanded energy range
+        e = inverse(self.G.obj_wk).data.real + self.mu
+        bound = 10
         if abs(n - n_target) < 1e-2:
-            mu_min = self.mu - 1.8
-            mu_max = self.mu + 1.8
-        else:
-            e = inverse(self.G.obj_wk).data.real + self.mu
-            mu_min = np.min(e)
-            mu_max = np.max(e)
+            bound = 2
+        #print("emin = ", np.min(e), " emax = ", np.max(e))
+        mu_min = max(self.mu - bound, np.min(e))
+        mu_max = min(self.mu + bound, np.max(e))
 
         try:
             mu = brentq(density_error, mu_min, mu_max, xtol=1e-4)
@@ -175,15 +193,18 @@ class FLEXSolver:
 
     def shift_mu_to_target_density(self, n_target):
         mu = self.find_mu_for_density(n_target)
-        print(f"Found mu = {mu:.4f}")
+        #print(f"Found mu = {mu:.4f}")
         self.make_G(mu)
 
     def solve_FLEX(self):
         # Use existing chi0 to calculate V and Sigma (matching test.py loop order)
         self.V = self.FLEX_from_chi(self.X.obj_wk)
+        #print("Max U*Chi during FLEX iteration: ", self.UX)
         if self.diverged:
+            print(f"Divergence detected: U*max(Chi) = {self.UX:.4f} >= 1")
             return
         self.Sigma_from_vertex()
+        #print("Max Sigma(iw,k): ", np.max(np.abs(self.Sigma.obj_wk.data)))
 
         # Match test.py: find mu, calculate G, then mix (don't use dyson_G_from_Sigma)
         G_old = self.G.obj_wk.copy()
@@ -248,6 +269,7 @@ class FLEXSolver:
 
     def loop_FLEX(self, n_loops=50, check_divergence=True):
         self.chi0_from_grt_PH()
+        print(f"Max Chi : {np.max(np.abs(self.X.obj_wk.data)):.4f}")
         # Initial check for divergence
         if check_divergence and self.UX >= 1.0:
             print(f"Initial U*max(Chi) = {self.UX:.4f} >= 1")
@@ -261,6 +283,7 @@ class FLEXSolver:
 
             # Print max X for comparison with test.py (from newly calculated chi0)
             max_X = np.max(np.abs(self.X.obj_wk.data))
+            #print(f"Max Chi after iteration {i+1}: {max_X:.4f}")
             # Recalculate UX with new chi0 for accurate reporting
             #self.UX = self.U * max_X
             self.UX = np.max(np.abs(self.U * self.X.obj_wk.data))
@@ -278,6 +301,6 @@ class FLEXSolver:
             err = np.max(np.abs(self.G.obj_wk.data - G_old.data))
             print(f"{i}) Max G(iw,k) diff = {err:.4e}, U*max(Chi) = {self.UX:.4f}")
 
-            if err < 1e-6:
+            if err < 1e-4:
                 print("Convergence achieved.")
                 break

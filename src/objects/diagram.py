@@ -11,7 +11,7 @@ import firefly.config as cfg
 class Diagram:
     def __init__(self, obj, statistic):
         varspace = describe_mesh(obj)
-        if varspace not in ['wk', 'tr', 'w', 't']:
+        if varspace not in ['wk', 'tr', 'w', 't', 'k', 'r']:
             print(f"Diagram initialized in {varspace} space.")
             raise ValueError("Object must be MeshDLRImFreq or MeshDLRImTime")
 
@@ -19,7 +19,7 @@ class Diagram:
         self.statistic = statistic
         self.shape = obj.data.shape
         self.nw = self.shape[0]
-        if varspace != 'w' and varspace != 't':
+        if varspace == 'wk':
             self.nk = self.shape[1]
         self.ind_dim = len(self.shape) - 2
 
@@ -35,8 +35,18 @@ class Diagram:
         elif varspace == 't':
             self.obj_t = obj
             self.t_to_w()
+        elif varspace == 'k':
+            self.nk = self.shape[0]
+            self.obj_k = obj
+            self.obj_r = obj.copy()
+            self.k_to_r()
+        elif varspace == 'r':
+            self.nk = self.shape[0]
+            self.obj_r = obj
+            self.obj_k = obj.copy()
+            self.r_to_k()
         else:
-            raise ValueError("varspace must be 'wk' or 'tr' or 'w' or 't'")
+            raise ValueError("varspace must be 'wk', 'tr', 'w', 't', 'k', or 'r'")
 
         # Extract w-points from mesh (Matsubara frequencies)
         if varspace == 'wk' or varspace == 'tr':
@@ -68,6 +78,18 @@ class Diagram:
             self.obj_wr = chi_wr_from_chi_tr(self.obj_tr, nw=self.nw)
             self.obj_wk = chi_wk_from_chi_wr(self.obj_wr)
 
+    def wk_to_wr(self):
+        if self.statistic == 'Fermion':
+            self.obj_wr = fourier_wk_to_wr(self.obj_wk)
+        else:
+            self.obj_wr = chi_wr_from_chi_wk(self.obj_wk)
+
+    def wr_to_wk(self):
+        if self.statistic == 'Fermion':
+            self.obj_wk = fourier_wr_to_wk(self.obj_wr)
+        else:
+            self.obj_wk = chi_wk_from_chi_wr(self.obj_wr)
+
     def w_to_t(self):
         self.dlr = make_gf_dlr(self.obj_w)
         self.obj_t = make_gf_dlr_imtime(self.dlr)
@@ -76,16 +98,26 @@ class Diagram:
         self.dlr = make_gf_dlr(self.obj_t)
         self.obj_w = make_gf_dlr_imfreq(self.dlr)
 
+    def k_to_r(self):
+        mesh, BZ = extract_mesh_and_bz(self.obj_k)
+        k_data = np.reshape(self.obj_k.data, mesh)
+        r_data = np.fft.ifftn(k_data, axes=tuple(range(1, len(mesh))))
+        self.obj_r.data[:] = np.reshape(r_data, self.shape)
+
+    def r_to_k(self):
+        mesh, BZ = extract_mesh_and_bz(self.obj_r)
+        r_data = np.reshape(self.obj_r.data, mesh)
+        k_data = np.fft.fftn(r_data, axes=tuple(range(1, len(mesh))))
+        self.obj_k.data[:] = np.reshape(k_data, self.shape)
+
     def save(self, filename):
         if self.varspace in ['wk', 'tr']:
             mesh, BZ = extract_mesh_and_bz(self.obj_wk)
-            print("saving shape out ", self.obj_wk.data.shape)
             # Reshape data to match mesh dimensions (nw, nkx, nky, nkz)
             mesh = mesh + self.shape[2:]  # Append orbital dimensions
+            #print("Save Mesh = ", mesh)
             obj = np.reshape(self.obj_wk.data, mesh)
-            print("saving shape out ", obj.shape)
             obj = np.fft.fftshift(obj, axes=tuple(range(1, len(mesh))))  # Shift k-points to center
-            print("saving shape out ", obj.shape)
             # When w_points is provided separately, only pass spatial mesh dimensions (not nw)
             spatial_mesh = np.array(mesh[1:], dtype=np.int32)  # Skip first element (nw)
             # Move frequency axis to last position for k-w ordering: (nkx, nky, nkz, nw)
@@ -100,6 +132,8 @@ class Diagram:
         data = field.get_data()
         if self.varspace in ['wk', 'tr']:
             mesh, BZ = extract_mesh_and_bz(self.obj_wk)
+            mesh = mesh + self.shape[2:]  # Append orbital dimensions
+            print("Load Mesh = ", mesh)
             data = np.reshape(data, mesh)  # First reshape to mesh dimensions
             data = np.fft.ifftshift(data, axes=tuple(range(1, len(mesh))))  # Then ifftshift k-axes
             data = np.reshape(data, self.shape)  # Finally reshape to TRIQS data shape
@@ -362,6 +396,17 @@ def extract_mesh_and_bz(G):
 
     # Convert to numpy array (shape: 3x3)
     brillouin_zone = np.array(bz_matrix, dtype=np.float32)
+
+    # Determine actual dimensionality from k_dims
+    # For 2D systems, k_dims = (nkx, nky, 1), so trim BZ to 2x2
+    # For 1D systems, k_dims = (nkx, 1, 1), so trim BZ to 1x1
+    if k_dims[2] == 1 and k_dims[1] == 1:
+        # 1D system
+        brillouin_zone = brillouin_zone[:1, :1]
+    elif k_dims[2] == 1:
+        # 2D system
+        brillouin_zone = brillouin_zone[:2, :2]
+    # else: 3D system, keep full 3x3 matrix
 
     return mesh_tuple, brillouin_zone
 

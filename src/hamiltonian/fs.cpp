@@ -14,6 +14,7 @@ void save_FS() {
     for (auto k : FS) {
         file << k << " " << k.n << "\n";
     }
+    printf("Saved to %s\n", (outdir + prefix + "_FS.dat").c_str());
     file.close();
 }
 

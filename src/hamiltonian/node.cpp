@@ -36,7 +36,7 @@ void get_DOS() {
     if (method == "gaussian") {
         string folder = "hamiltonian/";
         string filename = "DOS";
-        string function = "get_DOS";
+        string function = "get_DOS_gaussian";
         call_python_func(folder.c_str(), filename.c_str(), function.c_str());
     }
     else if (method == "tetrahedra") {

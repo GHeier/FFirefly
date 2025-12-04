@@ -36,12 +36,89 @@ def get_energy_mesh():
 
 def get_emery():
     """
-    Placeholder for Emery model Hamiltonian creation.
+    Create the Emery model (3-band model for cuprate superconductors).
+
+    The model has 3 orbitals per unit cell:
+    - Orbital 0: Cu d_{x²-y²} at (0,0)
+    - Orbital 1: O p_x at (0.5, 0)
+    - Orbital 2: O p_y at (0, 0.5)
+
+    Standard parameters (in eV):
+    - ε_d = 0.0 : Cu d-orbital on-site energy (reference)
+    - ε_p = 3.6 : O p-orbital on-site energy
+    - t_pd = 1.3 : Cu-O hopping
+    - t_pp = 0.65 : O-O hopping
 
     Returns:
         tuple: (H_r, kmesh, e_k)
     """
-    raise NotImplementedError("Emery model Hamiltonian not implemented yet.")
+    import firefly.config as cfg
+
+    # Standard Emery model parameters
+    eps_d = 0.0    # Cu d-orbital energy (reference)
+    eps_p = 3.6    # O p-orbital energy
+    t_pd = 1.3     # Cu d - O p hopping
+    t_pp = 0.65    # O p - O p hopping
+
+    Nk = cfg.k_mesh[0]
+
+    # Create 3-orbital tight binding Hamiltonian on 2D square lattice
+    # Unit cell contains: [d, px, py] orbitals
+    H_r = TBLattice(
+        units=[
+            (1, 0, 0),  # a₁ lattice vector
+            (0, 1, 0),  # a₂ lattice vector
+        ],
+        orbital_positions=[
+            (0, 0, 0),      # Cu d at origin
+            (0.5, 0, 0),    # O px along x
+            (0, 0.5, 0),    # O py along y
+        ],
+        orbital_names=['d', 'px', 'py'],
+        hoppings={
+            # On-site energies
+            (0, 0): [[eps_d, 0, 0],
+                     [0, eps_p, 0],
+                     [0, 0, eps_p]],
+
+            # Cu d - O px hopping (±x direction)
+            # d to px in same unit cell
+            # Factor includes phase from orbital positions
+            (+1, 0): [[0, -t_pd, 0],
+                      [-t_pd, 0, 0],
+                      [0, 0, 0]],
+            (-1, 0): [[0, -t_pd, 0],
+                      [-t_pd, 0, 0],
+                      [0, 0, 0]],
+
+            # Cu d - O py hopping (±y direction)
+            (0, +1): [[0, 0, -t_pd],
+                      [0, 0, 0],
+                      [-t_pd, 0, 0]],
+            (0, -1): [[0, 0, -t_pd],
+                      [0, 0, 0],
+                      [-t_pd, 0, 0]],
+
+            # O px - O py hopping (diagonal)
+            (+1, +1): [[0, 0, 0],
+                       [0, 0, t_pp],
+                       [0, t_pp, 0]],
+            (+1, -1): [[0, 0, 0],
+                       [0, 0, -t_pp],
+                       [0, -t_pp, 0]],
+            (-1, +1): [[0, 0, 0],
+                       [0, 0, -t_pp],
+                       [0, -t_pp, 0]],
+            (-1, -1): [[0, 0, 0],
+                       [0, 0, t_pp],
+                       [0, t_pp, 0]],
+        })
+
+    # Create k-mesh and compute dispersion
+    kmesh = H_r.get_kmesh(n_k=Nk)
+    e_k = H_r.fourier(kmesh)
+
+    return H_r, kmesh, e_k
 
 def get_TB():
     """
