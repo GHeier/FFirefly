@@ -222,14 +222,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     # Reshape to matrix format
     bd_data = Imports.get_data(bd)
-    # bd_data is in row-major flattened order from C++
-    # To reshape correctly in Julia (which uses column-major), we need to:
-    # 1. Reshape to reversed dimensions, then permute back to correct order
-    target_shape = (bd.nw, bd.mesh[1], bd.mesh[2], 1, 1)
-    reversed_shape = reverse(target_shape)
-    bd._data = reshape(bd_data, reversed_shape...)
-    bd._data = permutedims(bd._data, length(target_shape):-1:1)
-    bd.inds = Int32[1, 1]
+    # get_data now returns data in column-major order, ready for Julia reshape
+    bd._data = reshape(bd_data, bd.nw, bd.mesh[1], bd.mesh[2], 1, 1)
+    bd.inds = [1, 1]
     Imports.save!(bd, file)
 
     Field_CM_example()

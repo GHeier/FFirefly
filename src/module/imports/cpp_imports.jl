@@ -1492,16 +1492,40 @@ end
 function save!(obj::BaseData, filename::String, ordering::String="k-w")
     """Save BaseData to HDF5 file with specified ordering."""
     # Use save_data!() to save the data
-    data = get_data(obj)
+    # Pass as_row_major=true to get data in row-major format (as stored in C++)
+    # without conversion, since save_data! expects this format
+    data = get_data(obj, as_row_major=true)
+
     save_data!(filename, data, mesh=obj.mesh, domain=obj.domain,
                w_points=obj.w_points, inds=obj.inds)
 end
 
-function get_data(obj::BaseData)
-    """Extract data as Julia array."""
+function get_data(obj::BaseData; as_row_major::Bool=false)
+    """Extract data as Julia array.
+
+    Args:
+        as_row_major: If true, return data in row-major flattened format (as stored in C++).
+                     If false (default), convert to column-major format suitable for Julia reshaping.
+    """
     # If data was set via setter, return that
+    # User-set data is assumed to be in Julia's natural column-major format
+    # If as_row_major is requested, we need to convert it
     if obj._data !== nothing
-        return obj._data
+        if as_row_major
+            # User data is flattened in column-major order
+            # Need to reshape to (nw, mesh...) so that save_data! can reverse dimensions
+            if obj.nw > 0 && length(obj.mesh) > 0
+                # Reshape to original shape: (nw, nk1, nk2, ...)
+                target_shape = tuple(obj.nw, obj.mesh...)
+                return reshape(obj._data, target_shape)
+            else
+                # No reshaping needed for data without frequency or mesh
+                return obj._data
+            end
+        else
+            # Return as-is (flattened column-major)
+            return obj._data
+        end
     end
 
     rank = length(obj.inds)
@@ -1584,8 +1608,21 @@ function get_data(obj::BaseData)
         end
 
         # C++ data is in row-major flattened order
-        # Just return as flat array - users need to be aware of ordering when reshaping
-        return data
+        # If as_row_major is false and we have multi-dimensional data,
+        # convert to column-major so users can reshape naturally in Julia
+        if !as_row_major && length(obj.mesh) > 0 && obj.nw > 0
+            # Reconstruct the original shape that was saved
+            target_shape = tuple(obj.nw, obj.mesh...)
+            # Data is flattened row-major, so it was saved as reverse(target_shape)
+            # Reshape to that, then permute to get column-major order
+            reversed_shape = reverse(target_shape)
+            data_reshaped = reshape(data, reversed_shape...)
+            perm = length(target_shape):-1:1
+            return vec(permutedims(data_reshaped, perm))
+        else
+            # Return in row-major format (as stored in C++)
+            return data
+        end
     end
 end
 
@@ -1620,6 +1657,16 @@ function Base.getproperty(obj::BaseData, sym::Symbol)
 end
 
 function Base.setproperty!(obj::BaseData, sym::Symbol, value)
+    if typeof(value) == Float64
+        # Convert Float64 to Float32 for all Float fields
+        value = Float32(value)
+    elseif typeof(value) == Int64
+        # Convert Int64 to Int32 for all Int fields
+        value = Int32(value)
+    elseif typeof(value) == Vector{Int64}
+        # Convert Vector{Int64} to Vector{Int32} for all Int vector fields
+        value = Int32.(value)
+    end
     if sym === :data
         set_data!(obj, value)
     elseif sym === :domain && !(value isa Matrix{Float32})
