@@ -401,7 +401,7 @@ Field_RM *Field_RM_export2(const char *filename) {
 }
 
 void Field_RM_operator_export0(Field_RM *obj, const float *point, int len,
-                               float w, float **result, int *matrix_size) {
+                               float w, float *result, int *matrix_size) {
     Vec v(point, len);
     vector<vector<float>> mat = obj->operator()(v, w);
 
@@ -417,7 +417,7 @@ void Field_RM_operator_export0(Field_RM *obj, const float *point, int len,
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             int idx = i * n + j;
-            (*result)[idx] = mat[i][j];
+            result[idx] = mat[i][j];
         }
     }
 }
@@ -461,7 +461,7 @@ Field_CM *Field_CM_export2(const char *filename) {
 }
 
 void Field_CM_operator_export0(Field_CM *obj, const float *point, int len,
-                               float w, float **real_result, float **imag_result, int *matrix_size) {
+                               float w, float *real_result, float *imag_result, int *matrix_size) {
     Vec v(point, len);
     vector<vector<complex<float>>> mat = obj->operator()(v, w);
 
@@ -477,8 +477,8 @@ void Field_CM_operator_export0(Field_CM *obj, const float *point, int len,
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             int idx = i * n + j;
-            (*real_result)[idx] = real(mat[i][j]);
-            (*imag_result)[idx] = imag(mat[i][j]);
+            real_result[idx] = real(mat[i][j]);
+            imag_result[idx] = imag(mat[i][j]);
         }
     }
 }
@@ -708,7 +708,7 @@ void destroy_Vec(Vec *a) { delete a; }
 
 
 // Save data exports - handles BaseData::DataVariant conversion
-// For scalar fields (n_indices = 0)
+// For scalar fields (rank = 0, inds = {})
 // data_interleaved format: [real0, imag0, real1, imag1, ...]
 void save_data_scalar_export0(const char *filename, const float *data_interleaved,
                                int total_size, bool is_complex,
@@ -739,10 +739,11 @@ void save_data_scalar_export0(const char *filename, const float *data_interleave
 
     // Create DataVariant and call save_data
     BaseData::DataVariant data = data_vec;
-    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, 0, 0);
+    vector<int> inds = {};  // Scalar field has empty inds
+    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds);
 }
 
-// For vector fields (n_indices = 0, but is_vector = true)
+// For vector fields (rank = 0, but is_vector = true, inds = {})
 void save_data_vector_export0(const char *filename, const float *data_interleaved,
                                int nk, int vec_len, bool is_complex,
                                const int *mesh, int mesh_size,
@@ -779,10 +780,11 @@ void save_data_vector_export0(const char *filename, const float *data_interleave
 
     // Create DataVariant and call save_data
     BaseData::DataVariant data = data_vec;
-    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, 0, 0);
+    vector<int> inds = {};  // Vector field has empty inds (vec_len is handled separately)
+    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds);
 }
 
-// For matrix fields (n_indices = 2)
+// For matrix fields (rank = 2, inds = {mat_dim, mat_dim})
 void save_data_matrix_export0(const char *filename, const float *data_interleaved,
                                int num_matrices, int mat_dim, bool is_complex,
                                const int *mesh, int mesh_size,
@@ -825,7 +827,119 @@ void save_data_matrix_export0(const char *filename, const float *data_interleave
 
     // Create DataVariant and call save_data
     BaseData::DataVariant data = data_vec;
-    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, 2, mat_dim);
+    vector<int> inds = {mat_dim, mat_dim};  // 2D matrix
+    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds);
+}
+
+// For 3D tensor fields (rank = 3, inds = {ten_dim, ten_dim, ten_dim})
+void save_data_tensor3_export0(const char *filename, const float *data_interleaved,
+                               int num_tensors, int ten_dim, bool is_complex,
+                               const int *mesh, int mesh_size,
+                               const float *domain_flat, int domain_rows, int domain_cols,
+                               const float *w_points, int w_size) {
+    // Convert flat arrays to C++ types
+    vector<int> mesh_vec(mesh, mesh + mesh_size);
+    vector<vector<float>> domain_vec(domain_rows, vector<float>(domain_cols));
+    for (int i = 0; i < domain_rows; i++) {
+        for (int j = 0; j < domain_cols; j++) {
+            domain_vec[i][j] = domain_flat[i * domain_cols + j];
+        }
+    }
+    vector<float> w_vec(w_points, w_points + w_size);
+
+    // Convert interleaved data to 4D complex vector (DataVariant type 3)
+    vector<vector<vector<vector<cfloat>>>> data_vec(num_tensors,
+        vector<vector<vector<cfloat>>>(ten_dim,
+            vector<vector<cfloat>>(ten_dim,
+                vector<cfloat>(ten_dim))));
+
+    int idx = 0;
+    if (is_complex) {
+        for (int t = 0; t < num_tensors; t++) {
+            for (int i = 0; i < ten_dim; i++) {
+                for (int j = 0; j < ten_dim; j++) {
+                    for (int k = 0; k < ten_dim; k++) {
+                        data_vec[t][i][j][k] = cfloat(data_interleaved[idx], data_interleaved[idx + 1]);
+                        idx += 2;
+                    }
+                }
+            }
+        }
+    } else {
+        for (int t = 0; t < num_tensors; t++) {
+            for (int i = 0; i < ten_dim; i++) {
+                for (int j = 0; j < ten_dim; j++) {
+                    for (int k = 0; k < ten_dim; k++) {
+                        data_vec[t][i][j][k] = cfloat(data_interleaved[idx], 0.0f);
+                        idx++;
+                    }
+                }
+            }
+        }
+    }
+
+    // Create DataVariant and call save_data
+    BaseData::DataVariant data = data_vec;
+    vector<int> inds = {ten_dim, ten_dim, ten_dim};  // 3D tensor
+    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds);
+}
+
+// For 4D tensor fields (rank = 4, inds = {ten_dim, ten_dim, ten_dim, ten_dim})
+void save_data_tensor4_export0(const char *filename, const float *data_interleaved,
+                               int num_tensors, int ten_dim, bool is_complex,
+                               const int *mesh, int mesh_size,
+                               const float *domain_flat, int domain_rows, int domain_cols,
+                               const float *w_points, int w_size) {
+    // Convert flat arrays to C++ types
+    vector<int> mesh_vec(mesh, mesh + mesh_size);
+    vector<vector<float>> domain_vec(domain_rows, vector<float>(domain_cols));
+    for (int i = 0; i < domain_rows; i++) {
+        for (int j = 0; j < domain_cols; j++) {
+            domain_vec[i][j] = domain_flat[i * domain_cols + j];
+        }
+    }
+    vector<float> w_vec(w_points, w_points + w_size);
+
+    // Convert interleaved data to 5D complex vector (DataVariant type 4)
+    vector<vector<vector<vector<vector<cfloat>>>>> data_vec(num_tensors,
+        vector<vector<vector<vector<cfloat>>>>(ten_dim,
+            vector<vector<vector<cfloat>>>(ten_dim,
+                vector<vector<cfloat>>(ten_dim,
+                    vector<cfloat>(ten_dim)))));
+
+    int idx = 0;
+    if (is_complex) {
+        for (int t = 0; t < num_tensors; t++) {
+            for (int i = 0; i < ten_dim; i++) {
+                for (int j = 0; j < ten_dim; j++) {
+                    for (int k = 0; k < ten_dim; k++) {
+                        for (int l = 0; l < ten_dim; l++) {
+                            data_vec[t][i][j][k][l] = cfloat(data_interleaved[idx], data_interleaved[idx + 1]);
+                            idx += 2;
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        for (int t = 0; t < num_tensors; t++) {
+            for (int i = 0; i < ten_dim; i++) {
+                for (int j = 0; j < ten_dim; j++) {
+                    for (int k = 0; k < ten_dim; k++) {
+                        for (int l = 0; l < ten_dim; l++) {
+                            data_vec[t][i][j][k][l] = cfloat(data_interleaved[idx], 0.0f);
+                            idx++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Create DataVariant and call save_data
+    BaseData::DataVariant data = data_vec;
+    vector<int> inds = {ten_dim, ten_dim, ten_dim, ten_dim};  // 4D tensor
+    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds);
 }
 
 // BaseData exports
@@ -856,8 +970,13 @@ extern "C" int BaseData_get_is_matrix(BaseData *data) { return data->is_matrix; 
 extern "C" int BaseData_get_with_k(BaseData *data) { return data->with_k; }
 extern "C" int BaseData_get_with_w(BaseData *data) { return data->with_w; }
 extern "C" int BaseData_get_as_mesh(BaseData *data) { return data->as_mesh; }
-extern "C" int BaseData_get_n_indices(BaseData *data) { return data->n_indices; }
-extern "C" int BaseData_get_dim_indices(BaseData *data) { return data->dim_indices; }
+extern "C" int BaseData_get_rank(BaseData *data) { return data->rank(); }
+extern "C" int BaseData_get_inds_size(BaseData *data) { return data->inds.size(); }
+extern "C" void BaseData_get_inds(BaseData *data, int *inds_out) {
+    for (size_t i = 0; i < data->inds.size(); i++) {
+        inds_out[i] = data->inds[i];
+    }
+}
 extern "C" int BaseData_get_dimension(BaseData *data) { return data->dimension; }
 extern "C" int BaseData_get_nk(BaseData *data) { return data->nk(); }
 extern "C" int BaseData_get_nw(BaseData *data) { return data->nw(); }
@@ -923,6 +1042,44 @@ extern "C" void BaseData_get_data_matrix(BaseData *data, float *real_out, float 
                     imag_out[idx] = val.imag();
                 }
                 idx++;
+            }
+        }
+    }
+}
+
+extern "C" void BaseData_get_data_tensor3(BaseData *data, float *real_out, float *imag_out) {
+    auto& tensors = data->get<std::vector<std::vector<std::vector<std::vector<cfloat>>>>>();
+    int idx = 0;
+    for (const auto& tensor : tensors) {
+        for (const auto& slice : tensor) {
+            for (const auto& row : slice) {
+                for (const auto& val : row) {
+                    real_out[idx] = val.real();
+                    if (data->is_complex) {
+                        imag_out[idx] = val.imag();
+                    }
+                    idx++;
+                }
+            }
+        }
+    }
+}
+
+extern "C" void BaseData_get_data_tensor4(BaseData *data, float *real_out, float *imag_out) {
+    auto& tensors = data->get<std::vector<std::vector<std::vector<std::vector<std::vector<cfloat>>>>>>();
+    int idx = 0;
+    for (const auto& tensor : tensors) {
+        for (const auto& cube : tensor) {
+            for (const auto& slice : cube) {
+                for (const auto& row : slice) {
+                    for (const auto& val : row) {
+                        real_out[idx] = val.real();
+                        if (data->is_complex) {
+                            imag_out[idx] = val.imag();
+                        }
+                        idx++;
+                    }
+                }
             }
         }
     }

@@ -132,14 +132,14 @@ BaseData* Field_R::get_data() {
 
 // Field_CM implementation (Complex Matrix)
 Field_CM::Field_CM()
-    : cmf(vector<vector<vector<cfloat>>>(), true, false, true, {}, {}, {}, 2, 1) {}
+    : cmf(vector<vector<vector<cfloat>>>(), true, false, true, {}, {}, {}, {3, 3}) {}
 
 Field_CM::Field_CM(const BaseData::DataVariant& data,
-                   int dim_indices,
+                   const vector<int>& inds,
                    const vector<int>& mesh,
                    const vector<vector<float>>& domain,
                    const vector<float>& w_points)
-    : cmf(data, true, false, true, mesh, domain, w_points, 2, dim_indices) {}
+    : cmf(data, true, false, true, mesh, domain, w_points, inds) {}
 
 Field_CM::Field_CM(FieldImpl f) : cmf(f) {}
 
@@ -158,9 +158,60 @@ void Field_CM::save(const string& filename) {
 
 vector<vector<cfloat>> Field_CM::operator()(Vec point, float w) {
     auto result = cmf.get_array(point, w);
+
+    // Try 1D vector (rank=1) - wrap as column matrix
+    if (auto* vec = std::get_if<vector<cfloat>>(&result)) {
+        vector<vector<cfloat>> mat(vec->size(), vector<cfloat>(1));
+        for (size_t i = 0; i < vec->size(); i++) {
+            mat[i][0] = (*vec)[i];
+        }
+        return mat;
+    }
+
+    // Try 2D matrix (rank=2)
     if (auto* mat = std::get_if<vector<vector<cfloat>>>(&result)) {
         return *mat;
     }
+
+    // Try 3D tensor (rank=3) - flatten to matrix by combining first two indices
+    if (auto* ten3 = std::get_if<vector<vector<vector<cfloat>>>>(&result)) {
+        if (ten3->empty()) return vector<vector<cfloat>>();
+        int d1 = ten3->size();
+        int d2 = (*ten3)[0].size();
+        int d3 = (*ten3)[0][0].size();
+        // Flatten [d1][d2][d3] to [d1*d2][d3]
+        vector<vector<cfloat>> mat(d1 * d2, vector<cfloat>(d3));
+        for (int i = 0; i < d1; i++) {
+            for (int j = 0; j < d2; j++) {
+                for (int k = 0; k < d3; k++) {
+                    mat[i * d2 + j][k] = (*ten3)[i][j][k];
+                }
+            }
+        }
+        return mat;
+    }
+
+    // Try 4D tensor (rank=4) - flatten to matrix by combining indices pairwise
+    if (auto* ten4 = std::get_if<vector<vector<vector<vector<cfloat>>>>>(&result)) {
+        if (ten4->empty()) return vector<vector<cfloat>>();
+        int d1 = ten4->size();
+        int d2 = (*ten4)[0].size();
+        int d3 = (*ten4)[0][0].size();
+        int d4 = (*ten4)[0][0][0].size();
+        // Flatten [d1][d2][d3][d4] to [d1*d2][d3*d4]
+        vector<vector<cfloat>> mat(d1 * d2, vector<cfloat>(d3 * d4));
+        for (int i = 0; i < d1; i++) {
+            for (int j = 0; j < d2; j++) {
+                for (int k = 0; k < d3; k++) {
+                    for (int l = 0; l < d4; l++) {
+                        mat[i * d2 + j][k * d4 + l] = (*ten4)[i][j][k][l];
+                    }
+                }
+            }
+        }
+        return mat;
+    }
+
     // Return empty matrix on error
     return vector<vector<cfloat>>();
 }
@@ -253,14 +304,14 @@ BaseData* Field_CM::get_data() {
 
 // Field_RM implementation (Real Matrix)
 Field_RM::Field_RM()
-    : cmf(vector<vector<vector<cfloat>>>(), false, false, true, {}, {}, {}, 2, 1) {}
+    : cmf(vector<vector<vector<cfloat>>>(), false, false, true, {}, {}, {}, {3, 3}) {}
 
 Field_RM::Field_RM(const BaseData::DataVariant& data,
-                   int dim_indices,
+                   const vector<int>& inds,
                    const vector<int>& mesh,
                    const vector<vector<float>>& domain,
                    const vector<float>& w_points)
-    : cmf(data, false, false, true, mesh, domain, w_points, 2, dim_indices) {}
+    : cmf(data, false, false, true, mesh, domain, w_points, inds) {}
 
 Field_RM::Field_RM(FieldImpl f) : cmf(f) {}
 

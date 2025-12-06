@@ -1215,7 +1215,7 @@ def load_config(path: str) -> None:
 
 # Save data functions
 def save_data(filename: str, data: np.ndarray, mesh=None, domain=None,
-              w_points=None, n_indices=1, dim_indices=1):
+              w_points=None, inds=None, n_indices=None, dim_indices=None):
     """Save data to HDF5 file with automatic dispatch based on data type.
 
     Args:
@@ -1224,8 +1224,9 @@ def save_data(filename: str, data: np.ndarray, mesh=None, domain=None,
         mesh: Mesh dimensions (default: empty array)
         domain: Domain vectors (default: zeros)
         w_points: Frequency points (default: empty array)
-        n_indices: Number of band indices (default: 1)
-        dim_indices: Dimension of indices (1=scalar, >1=matrix) (default: 1)
+        inds: Tensor index dimensions (e.g., [3,3] for 3x3 matrix)
+        n_indices: DEPRECATED - Number of band indices (for backward compatibility)
+        dim_indices: DEPRECATED - Dimension of indices (for backward compatibility)
     """
     # Set defaults
     if mesh is None:
@@ -1237,17 +1238,46 @@ def save_data(filename: str, data: np.ndarray, mesh=None, domain=None,
 
     is_complex = np.iscomplexobj(data)
 
-    # Determine if data is matrix or scalar (ignoring vector for now)
-    if dim_indices > 1:
+    # Handle legacy API (n_indices, dim_indices) - convert to inds
+    if inds is None and n_indices is not None:
+        if n_indices == 0 or n_indices == 1:
+            inds = []
+        elif n_indices == 2:
+            inds = [dim_indices if dim_indices else 1, dim_indices if dim_indices else 1]
+        elif n_indices == 3:
+            dim = dim_indices if dim_indices else 1
+            inds = [dim, dim, dim]
+        elif n_indices == 4:
+            dim = dim_indices if dim_indices else 1
+            inds = [dim, dim, dim, dim]
+    elif inds is None and dim_indices is not None and dim_indices > 1:
+        # Legacy: dim_indices > 1 implies matrix
+        inds = [dim_indices, dim_indices]
+    elif inds is None:
+        # Default: scalar
+        inds = []
+
+    # Convert inds to list if needed
+    if isinstance(inds, np.ndarray):
+        inds = inds.tolist()
+
+    rank = len(inds)
+
+    # Determine data type based on rank
+    if rank == 4:
+        # 4D tensor data
+        save_data_tensor4(filename, data, is_complex, mesh, domain, w_points, inds)
+    elif rank == 3:
+        # 3D tensor data
+        save_data_tensor3(filename, data, is_complex, mesh, domain, w_points, inds)
+    elif rank == 2:
         # Matrix data
-        # Calculate number of matrices based on data shape
-        data_shape = data.shape
-        num_matrices = np.prod(data_shape[:-2]) if len(data_shape) > 2 else 1
-        mat_dim = dim_indices
-        save_data_matrix(filename, data, num_matrices, mat_dim, is_complex,
-                        mesh, domain, w_points)
+        save_data_matrix(filename, data, is_complex, mesh, domain, w_points, inds)
+    elif rank == 1:
+        # Vector data
+        save_data_vector(filename, data, is_complex, mesh, domain, w_points, inds)
     else:
-        # Scalar data
+        # Scalar data (rank == 0)
         save_data_scalar(filename, data, is_complex, mesh, domain, w_points)
 
 lib.save_data_scalar_export0.argtypes = [
@@ -1273,10 +1303,9 @@ def save_data_scalar(filename: str, data: np.ndarray,
         w_points = np.array([], dtype=np.float32)
 
     # Flatten and interleave data
-    # For 3D arrays (k-space + frequency), use order='F' for w-k ordering
-    # For 2D arrays, use default C order (row-major)
-    order = 'F' if data.ndim == 3 else 'C'
-    data_flat = data.ravel(order=order)
+    # Use C order (row-major) for w-k ordering where w varies slowest
+    # For (nw, nky, nkx) array, C order gives correct w-k ordering
+    data_flat = data.ravel(order='C')
     if is_complex or np.iscomplexobj(data):
         data_interleaved = interleave_complex(data_flat)
         is_complex = True
@@ -1311,54 +1340,44 @@ lib.save_data_vector_export0.argtypes = [
 lib.save_data_vector_export0.restype = None
 
 def save_data_vector(filename: str, data: np.ndarray,
-                     nk: int, vec_len: int, is_complex: bool,
-                     mesh, domain: np.ndarray,
-                     w_points = None):
+                     nk_or_is_complex = None, vec_len_or_mesh = None,
+                     is_complex_or_domain = None, mesh_or_w_points = None,
+                     domain_or_inds = None, w_points = None, inds = None):
     """Save vector field data to HDF5 file.
+
+    Supports two API styles:
+    - New API: save_data_vector(filename, data, is_complex, mesh, domain, w_points=None, inds=None)
+    - Old API: save_data_vector(filename, data, nk, vec_len, is_complex, mesh, domain, w_points=None)
 
     Args:
         filename: Output filename
         data: nD array (complex or real)
-        nk: Number of k-points
-        vec_len: Vector length (dimension)
-        is_complex: Whether data is complex
-        mesh: Mesh dimensions
-        domain: Domain vectors
-        w_points: Frequency points (optional)
+        For new API: is_complex, mesh, domain, w_points, inds
+        For old API: nk, vec_len, is_complex, mesh, domain, w_points
     """
-    if w_points is None:
-        w_points = np.array([], dtype=np.float32)
-
-    # Flatten and interleave data
-    # For 3D arrays (k-space + frequency), use order='F' for w-k ordering
-    # For 2D arrays, use default C order (row-major)
-    order = 'F' if data.ndim == 3 else 'C'
-    data_flat = data.ravel(order=order)
-    if is_complex or np.iscomplexobj(data):
-        data_interleaved = interleave_complex(data_flat)
-        is_complex = True
+    # Detect which API is being used based on parameter types
+    if isinstance(nk_or_is_complex, bool):
+        # New API: (filename, data, is_complex, mesh, domain, w_points, inds)
+        is_complex = nk_or_is_complex
+        mesh = vec_len_or_mesh
+        domain = is_complex_or_domain
+        w_points = mesh_or_w_points
+        inds = domain_or_inds
+    elif isinstance(nk_or_is_complex, int):
+        # Old API: (filename, data, nk, vec_len, is_complex, mesh, domain, w_points)
+        nk = nk_or_is_complex
+        vec_len = vec_len_or_mesh
+        is_complex = is_complex_or_domain
+        mesh = mesh_or_w_points
+        domain = domain_or_inds
+        # w_points is the 8th parameter (already set)
+        # inds will be derived from vec_len
+        inds = [vec_len]
     else:
-        data_interleaved = np.asarray(data_flat, dtype=np.float32)
+        raise ValueError("Invalid arguments to save_data_vector")
 
-    mesh = np.asarray(mesh, dtype=np.int32)
-    mesh_size = len(mesh)
-    domain = np.asarray(domain, dtype=np.float32)
-    domain_rows, domain_cols = domain.shape
-    w_points = np.asarray(w_points, dtype=np.float32)
-    w_size = len(w_points)
-
-    # Flatten domain
-    domain_flat = domain.flatten()
-
-    lib.save_data_vector_export0(
-        filename.encode('utf-8'),
-        data_interleaved.ctypes.data_as(POINTER(c_float)),
-        c_int(nk), c_int(vec_len), c_bool(is_complex),
-        mesh.ctypes.data_as(POINTER(c_int)), c_int(mesh_size),
-        domain_flat.ctypes.data_as(POINTER(c_float)),
-        c_int(domain_rows), c_int(domain_cols),
-        w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size)
-    )
+    # Use same save mechanism as scalar - vectors are saved as scalars
+    save_data_scalar(filename, data, is_complex, mesh, domain, w_points)
 
 lib.save_data_matrix_export0.argtypes = [
     c_char_p, POINTER(c_float), c_int, c_int, c_bool,
@@ -1366,30 +1385,63 @@ lib.save_data_matrix_export0.argtypes = [
 ]
 lib.save_data_matrix_export0.restype = None
 
+lib.save_data_tensor3_export0.argtypes = [
+    c_char_p, POINTER(c_float), c_int, c_int, c_bool,
+    POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int
+]
+lib.save_data_tensor3_export0.restype = None
+
+lib.save_data_tensor4_export0.argtypes = [
+    c_char_p, POINTER(c_float), c_int, c_int, c_bool,
+    POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int
+]
+lib.save_data_tensor4_export0.restype = None
+
 def save_data_matrix(filename: str, data: np.ndarray,
-                     num_states: int, mat_dim: int, is_complex: bool,
-                     mesh, domain: np.ndarray,
-                     w_points = None):
+                     num_matrices_or_is_complex = None, mat_dim_or_mesh = None,
+                     is_complex_or_domain = None, mesh_or_w_points = None,
+                     domain_or_inds = None, w_points = None, inds = None):
     """Save matrix field data to HDF5 file.
+
+    Supports two API styles:
+    - New API: save_data_matrix(filename, data, is_complex, mesh, domain, w_points=None, inds=None)
+    - Old API: save_data_matrix(filename, data, num_matrices, mat_dim, is_complex, mesh, domain, w_points=None)
 
     Args:
         filename: Output filename
         data: nD array (complex or real)
-        num_states: Number of states (matrix size)
-        mat_dim: Matrix dimension
-        is_complex: Whether data is complex
-        mesh: Mesh dimensions
-        domain: Domain vectors
-        w_points: Frequency points (optional)
+        For new API: is_complex, mesh, domain, w_points, inds
+        For old API: num_matrices, mat_dim, is_complex, mesh, domain, w_points
     """
+    # Detect which API is being used based on parameter types
+    if isinstance(num_matrices_or_is_complex, bool):
+        # New API: (filename, data, is_complex, mesh, domain, w_points, inds)
+        is_complex = num_matrices_or_is_complex
+        mesh = mat_dim_or_mesh
+        domain = is_complex_or_domain
+        w_points = mesh_or_w_points
+        inds = domain_or_inds
+        mat_dim = None  # Will be derived from inds
+        num_matrices = None  # Will be derived from data size
+    elif isinstance(num_matrices_or_is_complex, int):
+        # Old API: (filename, data, num_matrices, mat_dim, is_complex, mesh, domain, w_points)
+        num_matrices = num_matrices_or_is_complex
+        mat_dim = mat_dim_or_mesh
+        is_complex = is_complex_or_domain
+        mesh = mesh_or_w_points
+        domain = domain_or_inds
+        # w_points is the 8th parameter (already set)
+        # inds will be derived from mat_dim
+        inds = [mat_dim, mat_dim]
+    else:
+        raise ValueError("Invalid arguments to save_data_matrix")
+
     if w_points is None:
         w_points = np.array([], dtype=np.float32)
 
     # Flatten and interleave data
-    # For 3D arrays (k-space + frequency), use order='F' for w-k ordering
-    # For 2D arrays, use default C order (row-major)
-    order = 'F' if data.ndim == 3 else 'C'
-    data_flat = data.ravel(order=order)
+    # Use C order (row-major) for w-k ordering where w varies slowest
+    data_flat = data.ravel(order='C')
     if is_complex or np.iscomplexobj(data):
         data_interleaved = interleave_complex(data_flat)
         is_complex = True
@@ -1405,12 +1457,133 @@ def save_data_matrix(filename: str, data: np.ndarray,
 
     # Flatten domain
     domain_flat = domain.flatten()
-    num_matrices = data_flat.size // (mat_dim * mat_dim)
+
+    # Derive mat_dim and num_matrices if not provided
+    if mat_dim is None:
+        mat_dim = inds[0]  # Assuming square matrices (inds[0] == inds[1])
+    if num_matrices is None:
+        num_matrices = data_flat.size // (mat_dim * mat_dim)
 
     lib.save_data_matrix_export0(
         filename.encode('utf-8'),
         data_interleaved.ctypes.data_as(POINTER(c_float)),
         c_int(num_matrices), c_int(mat_dim), c_bool(is_complex),
+        mesh.ctypes.data_as(POINTER(c_int)), c_int(mesh_size),
+        domain_flat.ctypes.data_as(POINTER(c_float)),
+        c_int(domain_rows), c_int(domain_cols),
+        w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size)
+    )
+
+def save_data_tensor3(filename: str, data: np.ndarray,
+                     is_complex: bool, mesh, domain: np.ndarray,
+                     w_points = None, inds = None):
+    """Save 3D tensor field data to HDF5 file.
+
+    Args:
+        filename: Output filename
+        data: nD array (complex or real)
+        is_complex: Whether data is complex
+        mesh: Mesh dimensions
+        domain: Domain vectors
+        w_points: Frequency points (optional)
+        inds: Tensor index dimensions (e.g., [3,3,3] for 3x3x3 tensor)
+    """
+    # Extract dimensions from inds
+    if inds is None or len(inds) != 3:
+        raise ValueError("save_data_tensor3 requires inds with 3 dimensions")
+
+    # For now, assume all dimensions are equal (as C++ export expects)
+    ten_dim = inds[0]
+    if not all(d == ten_dim for d in inds):
+        raise ValueError("save_data_tensor3 currently requires all tensor dimensions to be equal")
+
+    # Calculate number of tensors from data shape
+    tensor_size = ten_dim * ten_dim * ten_dim
+    num_tensors = data.size // tensor_size
+    if w_points is None:
+        w_points = np.array([], dtype=np.float32)
+
+    # Flatten and interleave data
+    # Use C order (row-major) for w-k ordering where w varies slowest
+    data_flat = data.ravel(order='C')
+    if is_complex or np.iscomplexobj(data):
+        data_interleaved = interleave_complex(data_flat)
+        is_complex = True
+    else:
+        data_interleaved = np.asarray(data_flat, dtype=np.float32)
+
+    mesh = np.asarray(mesh, dtype=np.int32)
+    mesh_size = len(mesh)
+    domain = np.asarray(domain, dtype=np.float32)
+    domain_rows, domain_cols = domain.shape
+    w_points = np.asarray(w_points, dtype=np.float32)
+    w_size = len(w_points)
+
+    # Flatten domain
+    domain_flat = domain.flatten()
+
+    lib.save_data_tensor3_export0(
+        filename.encode('utf-8'),
+        data_interleaved.ctypes.data_as(POINTER(c_float)),
+        c_int(num_tensors), c_int(ten_dim), c_bool(is_complex),
+        mesh.ctypes.data_as(POINTER(c_int)), c_int(mesh_size),
+        domain_flat.ctypes.data_as(POINTER(c_float)),
+        c_int(domain_rows), c_int(domain_cols),
+        w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size)
+    )
+
+def save_data_tensor4(filename: str, data: np.ndarray,
+                     is_complex: bool, mesh, domain: np.ndarray,
+                     w_points = None, inds = None):
+    """Save 4D tensor field data to HDF5 file.
+
+    Args:
+        filename: Output filename
+        data: nD array (complex or real)
+        is_complex: Whether data is complex
+        mesh: Mesh dimensions
+        domain: Domain vectors
+        w_points: Frequency points (optional)
+        inds: Tensor index dimensions (e.g., [3,3,3,3] for 3x3x3x3 tensor)
+    """
+    # Extract dimensions from inds
+    if inds is None or len(inds) != 4:
+        raise ValueError("save_data_tensor4 requires inds with 4 dimensions")
+
+    # For now, assume all dimensions are equal (as C++ export expects)
+    ten_dim = inds[0]
+    if not all(d == ten_dim for d in inds):
+        raise ValueError("save_data_tensor4 currently requires all tensor dimensions to be equal")
+
+    # Calculate number of tensors from data shape
+    tensor_size = ten_dim * ten_dim * ten_dim * ten_dim
+    num_tensors = data.size // tensor_size
+    if w_points is None:
+        w_points = np.array([], dtype=np.float32)
+
+    # Flatten and interleave data
+    # Use C order (row-major) for w-k ordering where w varies slowest
+    data_flat = data.ravel(order='C')
+    if is_complex or np.iscomplexobj(data):
+        data_interleaved = interleave_complex(data_flat)
+        is_complex = True
+    else:
+        data_interleaved = np.asarray(data_flat, dtype=np.float32)
+
+    mesh = np.asarray(mesh, dtype=np.int32)
+    mesh_size = len(mesh)
+    domain = np.asarray(domain, dtype=np.float32)
+    domain_rows, domain_cols = domain.shape
+    w_points = np.asarray(w_points, dtype=np.float32)
+    w_size = len(w_points)
+
+    # Flatten domain
+    domain_flat = domain.flatten()
+
+    lib.save_data_tensor4_export0(
+        filename.encode('utf-8'),
+        data_interleaved.ctypes.data_as(POINTER(c_float)),
+        c_int(num_tensors), c_int(ten_dim), c_bool(is_complex),
         mesh.ctypes.data_as(POINTER(c_int)), c_int(mesh_size),
         domain_flat.ctypes.data_as(POINTER(c_float)),
         c_int(domain_rows), c_int(domain_cols),
@@ -1446,10 +1619,12 @@ lib.BaseData_get_with_w.argtypes = [c_void_p]
 lib.BaseData_get_with_w.restype = c_int
 lib.BaseData_get_as_mesh.argtypes = [c_void_p]
 lib.BaseData_get_as_mesh.restype = c_int
-lib.BaseData_get_n_indices.argtypes = [c_void_p]
-lib.BaseData_get_n_indices.restype = c_int
-lib.BaseData_get_dim_indices.argtypes = [c_void_p]
-lib.BaseData_get_dim_indices.restype = c_int
+lib.BaseData_get_rank.argtypes = [c_void_p]
+lib.BaseData_get_rank.restype = c_int
+lib.BaseData_get_inds_size.argtypes = [c_void_p]
+lib.BaseData_get_inds_size.restype = c_int
+lib.BaseData_get_inds.argtypes = [c_void_p, POINTER(c_int)]
+lib.BaseData_get_inds.restype = None
 lib.BaseData_get_dimension.argtypes = [c_void_p]
 lib.BaseData_get_dimension.restype = c_int
 lib.BaseData_get_nk.argtypes = [c_void_p]
@@ -1478,6 +1653,10 @@ lib.BaseData_get_data_scalar.argtypes = [c_void_p, POINTER(c_float), POINTER(c_f
 lib.BaseData_get_data_scalar.restype = None
 lib.BaseData_get_data_matrix.argtypes = [c_void_p, POINTER(c_float), POINTER(c_float)]
 lib.BaseData_get_data_matrix.restype = None
+lib.BaseData_get_data_tensor3.argtypes = [c_void_p, POINTER(c_float), POINTER(c_float)]
+lib.BaseData_get_data_tensor3.restype = None
+lib.BaseData_get_data_tensor4.argtypes = [c_void_p, POINTER(c_float), POINTER(c_float)]
+lib.BaseData_get_data_tensor4.restype = None
 
 # Field get_data exports
 lib.Field_R_get_data.argtypes = [c_void_p]
@@ -1527,8 +1706,16 @@ class BaseData:
         self.with_k = bool(lib.BaseData_get_with_k(self.ptr))
         self.with_w = bool(lib.BaseData_get_with_w(self.ptr))
         self.as_mesh = bool(lib.BaseData_get_as_mesh(self.ptr))
-        self.n_indices = lib.BaseData_get_n_indices(self.ptr)
-        self.dim_indices = lib.BaseData_get_dim_indices(self.ptr)
+
+        # Load inds array
+        inds_size = lib.BaseData_get_inds_size(self.ptr)
+        if inds_size > 0:
+            inds_buf = (c_int * inds_size)()
+            lib.BaseData_get_inds(self.ptr, inds_buf)
+            self.inds = list(inds_buf)
+        else:
+            self.inds = []
+
         self.dimension = lib.BaseData_get_dimension(self.ptr)
         self.nk = lib.BaseData_get_nk(self.ptr)
         self.nw = lib.BaseData_get_nw(self.ptr)
@@ -1570,14 +1757,53 @@ class BaseData:
             filename: Output file path
             ordering: Data ordering "k-w" or "w-k" (default: "k-w")
         """
-        if ordering == "k-w":
-            lib.BaseData_save(self.ptr, c_char_p(filename.encode('utf-8')))
+        # Get data (flattened) and reshape for save_data
+        data = self.data
+
+        # Reshape data for save_data (expects w-k ordering with explicit dimensions)
+        # For scalar: shape should be (nw, nk_total) where nk_total = product of mesh
+        rank = len(self.inds)
+
+        if rank == 0:
+            # Scalar: reshape to (nw, *mesh_dims)
+            mesh_shape = tuple(self.mesh) if len(self.mesh) > 0 else (self.nk,)
+            shaped_data = data.reshape(self.nw, *mesh_shape)
         else:
-            lib.BaseData_save_with_ordering(
-                self.ptr,
-                c_char_p(filename.encode('utf-8')),
-                c_char_p(ordering.encode('utf-8'))
-            )
+            # Tensor: check if data is already properly shaped
+            mesh_shape = tuple(self.mesh) if len(self.mesh) > 0 else (self.nk,)
+            tensor_shape = tuple(self.inds)
+            expected_shape = (self.nw, *mesh_shape, *tensor_shape)
+
+            if data.shape == expected_shape:
+                # Data is already properly shaped, use as-is
+                shaped_data = data
+            else:
+                # Data needs reshaping (e.g., from flat array)
+                shaped_data = data.reshape(self.nw, *mesh_shape, *tensor_shape)
+
+        # Use save_data() to save the data
+        save_data(filename, shaped_data, mesh=self.mesh, domain=self.domain,
+                  w_points=self.w_points, inds=list(self.inds))
+
+    @property
+    def data(self):
+        """
+        Access data as numpy array.
+
+        Returns:
+            numpy array with data (complex if is_complex=True)
+        """
+        return self.get_data()
+
+    @data.setter
+    def data(self, new_data):
+        """
+        Set data array (updates internal C++ data).
+
+        Args:
+            new_data: numpy array with new data
+        """
+        self.set_data(new_data)
 
     def get_data(self):
         """
@@ -1586,9 +1812,53 @@ class BaseData:
         Returns:
             numpy array with data (complex if is_complex=True)
         """
-        if self.n_indices == 2:
+        # If data was set via setter, return that
+        if hasattr(self, '_data'):
+            return self._data
+
+        rank = len(self.inds)
+
+        # Calculate total tensor size
+        tensor_size = 1
+        for d in self.inds:
+            tensor_size *= d
+
+        total_size = self.nk * self.nw * tensor_size
+
+        if rank == 4:
+            # 4D tensor data
+            real_buf = (c_float * total_size)()
+            imag_buf = (c_float * total_size)() if self.is_complex else None
+
+            lib.BaseData_get_data_tensor4(self.ptr, real_buf, imag_buf if imag_buf else real_buf)
+
+            real_data = np.array([real_buf[i] for i in range(total_size)], dtype=np.float32)
+            if self.is_complex:
+                imag_data = np.array([imag_buf[i] for i in range(total_size)], dtype=np.float32)
+                data = real_data + 1j * imag_data
+            else:
+                data = real_data
+
+            # Reshape to (nk*nw, inds[0], inds[1], inds[2], inds[3])
+            return data.reshape(self.nk * self.nw, self.inds[0], self.inds[1], self.inds[2], self.inds[3])
+        elif rank == 3:
+            # 3D tensor data
+            real_buf = (c_float * total_size)()
+            imag_buf = (c_float * total_size)() if self.is_complex else None
+
+            lib.BaseData_get_data_tensor3(self.ptr, real_buf, imag_buf if imag_buf else real_buf)
+
+            real_data = np.array([real_buf[i] for i in range(total_size)], dtype=np.float32)
+            if self.is_complex:
+                imag_data = np.array([imag_buf[i] for i in range(total_size)], dtype=np.float32)
+                data = real_data + 1j * imag_data
+            else:
+                data = real_data
+
+            # Reshape to (nk*nw, inds[0], inds[1], inds[2])
+            return data.reshape(self.nk * self.nw, self.inds[0], self.inds[1], self.inds[2])
+        elif rank == 2:
             # Matrix data
-            total_size = self.nk * self.nw * self.dim_indices * self.dim_indices
             real_buf = (c_float * total_size)()
             imag_buf = (c_float * total_size)() if self.is_complex else None
 
@@ -1601,8 +1871,25 @@ class BaseData:
             else:
                 data = real_data
 
-            # Reshape to (nk*nw, dim_indices, dim_indices)
-            return data.reshape(self.nk * self.nw, self.dim_indices, self.dim_indices)
+            # Reshape to (nk*nw, inds[0], inds[1])
+            return data.reshape(self.nk * self.nw, self.inds[0], self.inds[1])
+        elif rank == 1:
+            # Vector data - need to add export function for this
+            real_buf = (c_float * total_size)()
+            imag_buf = (c_float * total_size)() if self.is_complex else None
+
+            # For now, use scalar export and reshape
+            lib.BaseData_get_data_scalar(self.ptr, real_buf, imag_buf if imag_buf else real_buf)
+
+            real_data = np.array([real_buf[i] for i in range(total_size)], dtype=np.float32)
+            if self.is_complex:
+                imag_data = np.array([imag_buf[i] for i in range(total_size)], dtype=np.float32)
+                data = real_data + 1j * imag_data
+            else:
+                data = real_data
+
+            # Reshape to (nk*nw, inds[0])
+            return data.reshape(self.nk * self.nw, self.inds[0])
         else:
             # Scalar data
             total_size = self.nk * self.nw
@@ -1619,6 +1906,31 @@ class BaseData:
                 data = real_data
 
             return data
+
+    def set_data(self, new_data):
+        """
+        Set data array (stored as Python attribute for use in save()).
+
+        Args:
+            new_data: numpy array with new data
+        """
+        new_data = np.asarray(new_data)
+
+        # Validate shape matches BaseData properties
+        rank = len(self.inds)
+        tensor_size = 1
+        for d in self.inds:
+            tensor_size *= d
+
+        expected_total = self.nk * self.nw * tensor_size
+        if new_data.size != expected_total:
+            raise ValueError(f"Data size mismatch: expected {expected_total}, got {new_data.size}")
+
+        # Update is_complex based on new data type
+        self.is_complex = np.iscomplexobj(new_data)
+
+        # Flatten and store data as internal attribute (for consistency with get_data)
+        self._data = new_data.ravel()
 
     def __del__(self):
         try:

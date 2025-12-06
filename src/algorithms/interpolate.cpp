@@ -1189,3 +1189,221 @@ vector<vector<cfloat>> interpolate_3D_mat(float x_val, float y_val, float z_val,
     }
     return result;
 }
+// ============================================================================
+// 3D Tensor Interpolation Functions (n_indices=3)
+// ============================================================================
+
+vector<vector<vector<cfloat>>> interpolate_2D_ten3(float x_val, float y_val, float x_min, float x_max, float y_min, float y_max, int nx, int ny, const vector<vector<vector<vector<cfloat>>>>& f) {
+    x_val = sanitize_within_bounds(x_val, x_min, x_max);
+    y_val = sanitize_within_bounds(y_val, y_min, y_max);
+
+    float dx = (x_max - x_min) / (nx - 1);
+    float dy = (y_max - y_min) / (ny - 1);
+
+    int i = (x_val - x_min) / dx;
+    int j = (y_val - y_min) / dy;
+    if (i >= nx - 1) i = nx - 2;
+    if (j >= ny - 1) j = ny - 2;
+
+    float x_rel = (x_val - x_min) / dx - i;
+    float y_rel = (y_val - y_min) / dy - j;
+
+    int d1 = f[0].size();
+    int d2 = f[0][0].size();
+    int d3 = f[0][0][0].size();
+    vector<vector<vector<cfloat>>> result(d1, vector<vector<cfloat>>(d2, vector<cfloat>(d3)));
+
+    for (int a = 0; a < d1; a++) {
+        for (int b = 0; b < d2; b++) {
+            for (int c = 0; c < d3; c++) {
+                result[a][b][c] =
+                    (1 - x_rel) * (1 - y_rel) * f[i * ny + j][a][b][c] +
+                    x_rel * (1 - y_rel) * f[(i + 1) * ny + j][a][b][c] +
+                    (1 - x_rel) * y_rel * f[i * ny + (j + 1)][a][b][c] +
+                    x_rel * y_rel * f[(i + 1) * ny + (j + 1)][a][b][c];
+            }
+        }
+    }
+    return result;
+}
+
+vector<vector<vector<cfloat>>> interpolate_1D_ten3(float x_val, float x_min, float x_max, int nx, const vector<vector<vector<vector<cfloat>>>>& f) {
+    x_val = sanitize_within_bounds(x_val, x_min, x_max);
+
+    float dx = (x_max - x_min) / (nx - 1);
+    int i = (x_val - x_min) / dx;
+    if (i >= nx - 1) i = nx - 2;
+
+    float x_rel = (x_val - x_min) / dx - i;
+
+    int d1 = f[0].size();
+    int d2 = f[0][0].size();
+    int d3 = f[0][0][0].size();
+    vector<vector<vector<cfloat>>> result(d1, vector<vector<cfloat>>(d2, vector<cfloat>(d3)));
+
+    for (int a = 0; a < d1; a++) {
+        for (int b = 0; b < d2; b++) {
+            for (int c = 0; c < d3; c++) {
+                result[a][b][c] = (1 - x_rel) * f[i][a][b][c] + x_rel * f[i + 1][a][b][c];
+            }
+        }
+    }
+    return result;
+}
+
+vector<vector<vector<cfloat>>> interpolate_3D_ten3(float x_val, float y_val, float z_val, float x_min, float x_max, float y_min, float y_max, float z_min, float z_max, int nx, int ny, int nz, const vector<vector<vector<vector<cfloat>>>>& f) {
+    x_val = sanitize_within_bounds(x_val, x_min, x_max);
+    y_val = sanitize_within_bounds(y_val, y_min, y_max);
+    z_val = sanitize_within_bounds(z_val, z_min, z_max);
+
+    float dx = (x_max - x_min) / (nx - 1);
+    float dy = (y_max - y_min) / (ny - 1);
+    float dz = (z_max - z_min) / (nz - 1);
+
+    int i = (x_val - x_min) / dx;
+    int j = (y_val - y_min) / dy;
+    int k = (z_val - z_min) / dz;
+    if (i >= nx - 1) i = nx - 2;
+    if (j >= ny - 1) j = ny - 2;
+    if (k >= nz - 1) k = nz - 2;
+
+    float x_rel = (x_val - x_min) / dx - i;
+    float y_rel = (y_val - y_min) / dy - j;
+    float z_rel = (z_val - z_min) / dz - k;
+
+    int d1 = f[0].size();
+    int d2 = f[0][0].size();
+    int d3 = f[0][0][0].size();
+    vector<vector<vector<cfloat>>> result(d1, vector<vector<cfloat>>(d2, vector<cfloat>(d3)));
+
+    for (int a = 0; a < d1; a++) {
+        for (int b = 0; b < d2; b++) {
+            for (int c = 0; c < d3; c++) {
+                result[a][b][c] =
+                    (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * f[i * ny * nz + j * nz + k][a][b][c] +
+                    x_rel * (1 - y_rel) * (1 - z_rel) * f[(i + 1) * ny * nz + j * nz + k][a][b][c] +
+                    (1 - x_rel) * y_rel * (1 - z_rel) * f[i * ny * nz + (j + 1) * nz + k][a][b][c] +
+                    x_rel * y_rel * (1 - z_rel) * f[(i + 1) * ny * nz + (j + 1) * nz + k][a][b][c] +
+                    (1 - x_rel) * (1 - y_rel) * z_rel * f[i * ny * nz + j * nz + k + 1][a][b][c] +
+                    x_rel * (1 - y_rel) * z_rel * f[(i + 1) * ny * nz + j * nz + k + 1][a][b][c] +
+                    (1 - x_rel) * y_rel * z_rel * f[i * ny * nz + (j + 1) * nz + k + 1][a][b][c] +
+                    x_rel * y_rel * z_rel * f[(i + 1) * ny * nz + (j + 1) * nz + k + 1][a][b][c];
+            }
+        }
+    }
+    return result;
+}
+
+// ============================================================================
+// 4D Tensor Interpolation Functions (n_indices=4)
+// ============================================================================
+
+vector<vector<vector<vector<cfloat>>>> interpolate_2D_ten4(float x_val, float y_val, float x_min, float x_max, float y_min, float y_max, int nx, int ny, const vector<vector<vector<vector<vector<cfloat>>>>>& f) {
+    x_val = sanitize_within_bounds(x_val, x_min, x_max);
+    y_val = sanitize_within_bounds(y_val, y_min, y_max);
+
+    float dx = (x_max - x_min) / (nx - 1);
+    float dy = (y_max - y_min) / (ny - 1);
+
+    int i = (x_val - x_min) / dx;
+    int j = (y_val - y_min) / dy;
+    if (i >= nx - 1) i = nx - 2;
+    if (j >= ny - 1) j = ny - 2;
+
+    float x_rel = (x_val - x_min) / dx - i;
+    float y_rel = (y_val - y_min) / dy - j;
+
+    int d1 = f[0].size();
+    int d2 = f[0][0].size();
+    int d3 = f[0][0][0].size();
+    int d4 = f[0][0][0][0].size();
+    vector<vector<vector<vector<cfloat>>>> result(d1, vector<vector<vector<cfloat>>>(d2, vector<vector<cfloat>>(d3, vector<cfloat>(d4))));
+
+    for (int a = 0; a < d1; a++) {
+        for (int b = 0; b < d2; b++) {
+            for (int c = 0; c < d3; c++) {
+                for (int d = 0; d < d4; d++) {
+                    result[a][b][c][d] =
+                        (1 - x_rel) * (1 - y_rel) * f[i * ny + j][a][b][c][d] +
+                        x_rel * (1 - y_rel) * f[(i + 1) * ny + j][a][b][c][d] +
+                        (1 - x_rel) * y_rel * f[i * ny + (j + 1)][a][b][c][d] +
+                        x_rel * y_rel * f[(i + 1) * ny + (j + 1)][a][b][c][d];
+                }
+            }
+        }
+    }
+    return result;
+}
+
+vector<vector<vector<vector<cfloat>>>> interpolate_1D_ten4(float x_val, float x_min, float x_max, int nx, const vector<vector<vector<vector<vector<cfloat>>>>>& f) {
+    x_val = sanitize_within_bounds(x_val, x_min, x_max);
+
+    float dx = (x_max - x_min) / (nx - 1);
+    int i = (x_val - x_min) / dx;
+    if (i >= nx - 1) i = nx - 2;
+
+    float x_rel = (x_val - x_min) / dx - i;
+
+    int d1 = f[0].size();
+    int d2 = f[0][0].size();
+    int d3 = f[0][0][0].size();
+    int d4 = f[0][0][0][0].size();
+    vector<vector<vector<vector<cfloat>>>> result(d1, vector<vector<vector<cfloat>>>(d2, vector<vector<cfloat>>(d3, vector<cfloat>(d4))));
+
+    for (int a = 0; a < d1; a++) {
+        for (int b = 0; b < d2; b++) {
+            for (int c = 0; c < d3; c++) {
+                for (int d = 0; d < d4; d++) {
+                    result[a][b][c][d] = (1 - x_rel) * f[i][a][b][c][d] + x_rel * f[i + 1][a][b][c][d];
+                }
+            }
+        }
+    }
+    return result;
+}
+
+vector<vector<vector<vector<cfloat>>>> interpolate_3D_ten4(float x_val, float y_val, float z_val, float x_min, float x_max, float y_min, float y_max, float z_min, float z_max, int nx, int ny, int nz, const vector<vector<vector<vector<vector<cfloat>>>>>& f) {
+    x_val = sanitize_within_bounds(x_val, x_min, x_max);
+    y_val = sanitize_within_bounds(y_val, y_min, y_max);
+    z_val = sanitize_within_bounds(z_val, z_min, z_max);
+
+    float dx = (x_max - x_min) / (nx - 1);
+    float dy = (y_max - y_min) / (ny - 1);
+    float dz = (z_max - z_min) / (nz - 1);
+
+    int i = (x_val - x_min) / dx;
+    int j = (y_val - y_min) / dy;
+    int k = (z_val - z_min) / dz;
+    if (i >= nx - 1) i = nx - 2;
+    if (j >= ny - 1) j = ny - 2;
+    if (k >= nz - 1) k = nz - 2;
+
+    float x_rel = (x_val - x_min) / dx - i;
+    float y_rel = (y_val - y_min) / dy - j;
+    float z_rel = (z_val - z_min) / dz - k;
+
+    int d1 = f[0].size();
+    int d2 = f[0][0].size();
+    int d3 = f[0][0][0].size();
+    int d4 = f[0][0][0][0].size();
+    vector<vector<vector<vector<cfloat>>>> result(d1, vector<vector<vector<cfloat>>>(d2, vector<vector<cfloat>>(d3, vector<cfloat>(d4))));
+
+    for (int a = 0; a < d1; a++) {
+        for (int b = 0; b < d2; b++) {
+            for (int c = 0; c < d3; c++) {
+                for (int d = 0; d < d4; d++) {
+                    result[a][b][c][d] =
+                        (1 - x_rel) * (1 - y_rel) * (1 - z_rel) * f[i * ny * nz + j * nz + k][a][b][c][d] +
+                        x_rel * (1 - y_rel) * (1 - z_rel) * f[(i + 1) * ny * nz + j * nz + k][a][b][c][d] +
+                        (1 - x_rel) * y_rel * (1 - z_rel) * f[i * ny * nz + (j + 1) * nz + k][a][b][c][d] +
+                        x_rel * y_rel * (1 - z_rel) * f[(i + 1) * ny * nz + (j + 1) * nz + k][a][b][c][d] +
+                        (1 - x_rel) * (1 - y_rel) * z_rel * f[i * ny * nz + j * nz + k + 1][a][b][c][d] +
+                        x_rel * (1 - y_rel) * z_rel * f[(i + 1) * ny * nz + j * nz + k + 1][a][b][c][d] +
+                        (1 - x_rel) * y_rel * z_rel * f[i * ny * nz + (j + 1) * nz + k + 1][a][b][c][d] +
+                        x_rel * y_rel * z_rel * f[(i + 1) * ny * nz + (j + 1) * nz + k + 1][a][b][c][d];
+                }
+            }
+        }
+    }
+    return result;
+}

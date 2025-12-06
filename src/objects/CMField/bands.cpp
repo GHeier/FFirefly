@@ -39,7 +39,7 @@ Bands::Bands(Field_CM &H) {
 
 void Bands::fill_grid(Field_CM &H) {
     vector<int> nk = H.cmf.data.mesh;
-    nbands = H.cmf.data.n_indices;
+    nbands = H.cmf.data.inds[0];  // First dimension of matrix (number of bands)
     vector<vector<cfloat>> eigs(nbands, vector<cfloat>(nk[0] * nk[1] * nk[2]));
     vector<vector<Eigenvector>> eigenvectors(nbands, vector<Eigenvector>(nk[0] * nk[1] * nk[2]));
     int ind = 0;

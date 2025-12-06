@@ -114,7 +114,12 @@ class FLEXSolver:
         V = X.copy()
         V.data[:] = V_wk
         self.diverged = False
-        return Diagram(V, 'Boson')
+        # Vertex is 4-index V_{ijkl} even for single-band (stored as scalar)
+        diagram_V = Diagram(V, 'Boson', physics_n_indices=4)
+        print(f"Created vertex Diagram: type={type(diagram_V)}, has save={hasattr(diagram_V, 'save')}")
+        with open('/tmp/vertex_creation.txt', 'w') as f:
+            f.write(f"Vertex created: type={type(diagram_V)}, save method={diagram_V.save}\n")
+        return diagram_V
 
     #def compute_V_singlet(self):
     #    """

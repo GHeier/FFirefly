@@ -22,7 +22,9 @@ export epsilon,
        save_field!,
        save_data_scalar,
        save_data_vector,
-       save_data_matrix
+       save_data_matrix,
+       save_data_tensor3,
+       save_data_tensor4
 
 # Struct for Vec
 struct RawVec
@@ -944,25 +946,55 @@ end
 
 function save_data!(
     path::String,
-    data::AbstractArray,
+    data::AbstractArray;
     mesh::AbstractVector{<:Integer} = Int[],
     domain::AbstractMatrix{<:AbstractFloat} = zeros(Float64, 0, 0),
     w_points::AbstractVector{<:AbstractFloat} = Float64[],
-    n_indices::Integer = 1,
-    dim_indices::Integer = 1,
+    inds::Union{AbstractVector{<:Integer}, Nothing} = nothing,
+    n_indices::Union{Integer, Nothing} = nothing,
+    dim_indices::Union{Integer, Nothing} = nothing,
 )
     is_complex = eltype(data) <: Complex
 
-    # Determine if data is matrix or scalar (ignoring vector for now)
-    if dim_indices > 1
+    # Handle legacy API (n_indices, dim_indices) - convert to inds
+    if inds === nothing && n_indices !== nothing
+        if n_indices == 0 || n_indices == 1
+            inds = Int[]
+        elseif n_indices == 2
+            dim = (dim_indices !== nothing) ? dim_indices : 1
+            inds = [dim, dim]
+        elseif n_indices == 3
+            dim = (dim_indices !== nothing) ? dim_indices : 1
+            inds = [dim, dim, dim]
+        elseif n_indices == 4
+            dim = (dim_indices !== nothing) ? dim_indices : 1
+            inds = [dim, dim, dim, dim]
+        end
+    elseif inds === nothing && dim_indices !== nothing && dim_indices > 1
+        # Legacy: dim_indices > 1 implies matrix
+        inds = [dim_indices, dim_indices]
+    elseif inds === nothing
+        # Default: scalar
+        inds = Int[]
+    end
+
+    rank = length(inds)
+
+    # Determine data type based on rank
+    if rank == 4
+        # 4D tensor data
+        save_data_tensor4(path, data, is_complex, mesh, domain, w_points, inds)
+    elseif rank == 3
+        # 3D tensor data
+        save_data_tensor3(path, data, is_complex, mesh, domain, w_points, inds)
+    elseif rank == 2
         # Matrix data
-        # Calculate number of matrices based on data shape
-        data_shape = size(data)
-        num_matrices = prod(data_shape[1:end-2])  # All dimensions except last two (matrix dimensions)
-        mat_dim = dim_indices
-        save_data_matrix(path, data, num_matrices, mat_dim, is_complex, mesh, domain, w_points)
+        save_data_matrix(path, data, is_complex, mesh, domain, w_points, inds)
+    elseif rank == 1
+        # Vector data
+        save_data_vector(path, data, is_complex, mesh, domain, w_points, inds)
     else
-        # Scalar data
+        # Scalar data (rank == 0)
         save_data_scalar(path, data, is_complex, mesh, domain, w_points)
     end
 end
@@ -978,11 +1010,16 @@ function data_save!(path::String, points, data, dimension, with_w, is_complex, i
 end
 
 function interleave_complex(A::AbstractArray)
+    # Julia uses column-major order (first index varies fastest)
+    # C++ expects row-major order (last index varies fastest)
     # For 2D arrays (k-space only), transpose for row-major conversion
-    # For 3D arrays (k-space + frequency), Julia's native column-major order
-    # already gives w-k ordering, so no permutation needed
     if ndims(A) == 2
         A = permutedims(A, (2, 1))
+    # For 3D+ arrays, reverse dimension order to convert column-major to row-major
+    else
+        n = ndims(A)
+        perm = tuple(n:-1:1...)  # Reverse all dimensions
+        A = permutedims(A, perm)
     end
 
     out = Vector{Float32}(undef, 2 * length(A))
@@ -1017,13 +1054,16 @@ function load_config!(path::String)
 end
 
 function flatten_real(data::AbstractArray{<:Real})
+    # Julia uses column-major order (first index varies fastest)
+    # C++ expects row-major order (last index varies fastest)
     # For 2D arrays (k-space only), transpose for row-major conversion
-    # For 3D arrays (k-space + frequency), Julia's native column-major order
-    # already gives w-k ordering, so no permutation needed
     if ndims(data) == 2
         return Float32.(vec(permutedims(data, (2, 1))))
+    # For 3D+ arrays, reverse dimension order to convert column-major to row-major
     else
-        return Float32.(vec(data))
+        n = ndims(data)
+        perm = tuple(n:-1:1...)  # Reverse all dimensions
+        return Float32.(vec(permutedims(data, perm)))
     end
 end
 
@@ -1057,9 +1097,18 @@ function save_data_scalar(filename::String, data::AbstractArray,
 end
 
 function save_data_vector(filename::String, data::AbstractArray,
-                          nk::Integer, vec_len::Integer, is_complex::Bool,
-                          mesh::Vector{<:Integer}, domain::Matrix{<:Real},
-                          w_points::Vector{<:Real}=Float32[])
+                          is_complex::Bool, mesh::Vector{<:Integer}, domain::Matrix{<:Real},
+                          w_points::Vector{<:Real}=Float32[], inds::Vector{<:Integer}=Int[])
+    # Extract dimensions from inds
+    if length(inds) != 1
+        error("save_data_vector requires inds with 1 dimension")
+    end
+
+    vec_len = inds[1]
+
+    # Calculate nk from data size
+    nk = length(data) ÷ vec_len
+
     # Flatten and interleave data
     if is_complex
         data_interleaved = interleave_complex(data)
@@ -1087,9 +1136,23 @@ function save_data_vector(filename::String, data::AbstractArray,
 end
 
 function save_data_matrix(filename::String, data::AbstractArray,
-                          num_matrices::Integer, mat_dim::Integer, is_complex::Bool,
-                          mesh::Vector{<:Integer}, domain::Matrix{<:Real},
-                          w_points::Vector{<:Real}=Float32[])
+                          is_complex::Bool, mesh::Vector{<:Integer}, domain::Matrix{<:Real},
+                          w_points::Vector{<:Real}=Float32[], inds::Vector{<:Integer}=Int[])
+    # Extract dimensions from inds
+    if length(inds) != 2
+        error("save_data_matrix requires inds with 2 dimensions")
+    end
+
+    # For now, assume both dimensions are equal (as C++ export expects)
+    mat_dim = inds[1]
+    if inds[1] != inds[2]
+        error("save_data_matrix currently requires both matrix dimensions to be equal")
+    end
+
+    # Calculate number of matrices from data size
+    matrix_size = mat_dim * mat_dim
+    num_matrices = length(data) ÷ matrix_size
+
     # Flatten and interleave data
     if is_complex
         data_interleaved = interleave_complex(data)
@@ -1116,6 +1179,94 @@ function save_data_matrix(filename::String, data::AbstractArray,
           mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size)
 end
 
+function save_data_tensor3(filename::String, data::AbstractArray,
+                          is_complex::Bool, mesh::Vector{<:Integer}, domain::Matrix{<:Real},
+                          w_points::Vector{<:Real}=Float32[], inds::Vector{<:Integer}=Int[])
+    # Extract dimensions from inds
+    if length(inds) != 3
+        error("save_data_tensor3 requires inds with 3 dimensions")
+    end
+
+    # For now, assume all dimensions are equal (as C++ export expects)
+    ten_dim = inds[1]
+    if !all(d == ten_dim for d in inds)
+        error("save_data_tensor3 currently requires all tensor dimensions to be equal")
+    end
+
+    # Calculate number of tensors from data size
+    tensor_size = ten_dim * ten_dim * ten_dim
+    num_tensors = length(data) ÷ tensor_size
+
+    # Flatten and interleave data
+    if is_complex
+        data_interleaved = interleave_complex(data)
+    else
+        data_interleaved = flatten_real(data)
+    end
+
+    num_tensors_i32 = Int32(num_tensors)
+    ten_dim_i32 = Int32(ten_dim)
+    mesh_i32 = Int32.(mesh)
+    mesh_size = length(mesh_i32)
+    domain_f32 = Float32.(domain)
+    domain_rows, domain_cols = size(domain_f32)
+    w_points_f32 = Float32.(w_points)
+    w_size = length(w_points_f32)
+
+    # Flatten domain
+    domain_flat = reshape(domain_f32', :)
+
+    ccall((:save_data_tensor3_export0, libfly), Cvoid,
+          (Cstring, Ptr{Float32}, Cint, Cint, Bool,
+           Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint),
+          filename, data_interleaved, num_tensors_i32, ten_dim_i32, is_complex,
+          mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size)
+end
+
+function save_data_tensor4(filename::String, data::AbstractArray,
+                          is_complex::Bool, mesh::Vector{<:Integer}, domain::Matrix{<:Real},
+                          w_points::Vector{<:Real}=Float32[], inds::Vector{<:Integer}=Int[])
+    # Extract dimensions from inds
+    if length(inds) != 4
+        error("save_data_tensor4 requires inds with 4 dimensions")
+    end
+
+    # For now, assume all dimensions are equal (as C++ export expects)
+    ten_dim = inds[1]
+    if !all(d == ten_dim for d in inds)
+        error("save_data_tensor4 currently requires all tensor dimensions to be equal")
+    end
+
+    # Calculate number of tensors from data size
+    tensor_size = ten_dim * ten_dim * ten_dim * ten_dim
+    num_tensors = length(data) ÷ tensor_size
+
+    # Flatten and interleave data
+    if is_complex
+        data_interleaved = interleave_complex(data)
+    else
+        data_interleaved = flatten_real(data)
+    end
+
+    num_tensors_i32 = Int32(num_tensors)
+    ten_dim_i32 = Int32(ten_dim)
+    mesh_i32 = Int32.(mesh)
+    mesh_size = length(mesh_i32)
+    domain_f32 = Float32.(domain)
+    domain_rows, domain_cols = size(domain_f32)
+    w_points_f32 = Float32.(w_points)
+    w_size = length(w_points_f32)
+
+    # Flatten domain
+    domain_flat = reshape(domain_f32', :)
+
+    ccall((:save_data_tensor4_export0, libfly), Cvoid,
+          (Cstring, Ptr{Float32}, Cint, Cint, Bool,
+           Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint),
+          filename, data_interleaved, num_tensors_i32, ten_dim_i32, is_complex,
+          mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size)
+end
+
 # BaseData exports
 mutable struct BaseData
     ptr::Ptr{Cvoid}
@@ -1125,14 +1276,14 @@ mutable struct BaseData
     with_k::Bool
     with_w::Bool
     as_mesh::Bool
-    n_indices::Int32
-    dim_indices::Int32
+    inds::Vector{Int32}
     dimension::Int32
     nk::Int32
     nw::Int32
     mesh::Vector{Int32}
     domain::Matrix{Float32}
     w_points::Vector{Float32}
+    _data::Union{AbstractArray, Nothing}  # For storing modified data
 
     function BaseData(filename::String, ordering::String="k-w")
         # Load from file
@@ -1157,8 +1308,17 @@ mutable struct BaseData
         obj.with_k = Bool(ccall((:BaseData_get_with_k, libfly), Cint, (Ptr{Cvoid},), ptr))
         obj.with_w = Bool(ccall((:BaseData_get_with_w, libfly), Cint, (Ptr{Cvoid},), ptr))
         obj.as_mesh = Bool(ccall((:BaseData_get_as_mesh, libfly), Cint, (Ptr{Cvoid},), ptr))
-        obj.n_indices = ccall((:BaseData_get_n_indices, libfly), Cint, (Ptr{Cvoid},), ptr)
-        obj.dim_indices = ccall((:BaseData_get_dim_indices, libfly), Cint, (Ptr{Cvoid},), ptr)
+
+        # Load inds array
+        inds_size = ccall((:BaseData_get_inds_size, libfly), Cint, (Ptr{Cvoid},), ptr)
+        if inds_size > 0
+            inds_buf = Vector{Int32}(undef, inds_size)
+            ccall((:BaseData_get_inds, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Cint}), ptr, inds_buf)
+            obj.inds = inds_buf
+        else
+            obj.inds = Int32[]
+        end
+
         obj.dimension = ccall((:BaseData_get_dimension, libfly), Cint, (Ptr{Cvoid},), ptr)
         obj.nk = ccall((:BaseData_get_nk, libfly), Cint, (Ptr{Cvoid},), ptr)
         obj.nw = ccall((:BaseData_get_nw, libfly), Cint, (Ptr{Cvoid},), ptr)
@@ -1194,6 +1354,9 @@ mutable struct BaseData
             obj.w_points = Float32[]
         end
 
+        # Initialize _data to nothing (no modified data)
+        obj._data = nothing
+
         # Register finalizer to cleanup C++ object
         finalizer(obj) do x
             if x.ptr != C_NULL
@@ -1210,7 +1373,7 @@ end
 function _basedata_from_ptr(ptr::Ptr{Cvoid})
     # Directly create object without calling the constructor
     obj = BaseData(ptr, false, false, false, false, false, false, 0, 0, 0, 0, 0,
-                   Int32[], Matrix{Float32}(undef, 0, 0), Float32[])
+                   Int32[], Matrix{Float32}(undef, 0, 0), Float32[], nothing)
 
     # Load metadata
     obj.is_complex = Bool(ccall((:BaseData_get_is_complex, libfly), Cint, (Ptr{Cvoid},), ptr))
@@ -1219,8 +1382,17 @@ function _basedata_from_ptr(ptr::Ptr{Cvoid})
     obj.with_k = Bool(ccall((:BaseData_get_with_k, libfly), Cint, (Ptr{Cvoid},), ptr))
     obj.with_w = Bool(ccall((:BaseData_get_with_w, libfly), Cint, (Ptr{Cvoid},), ptr))
     obj.as_mesh = Bool(ccall((:BaseData_get_as_mesh, libfly), Cint, (Ptr{Cvoid},), ptr))
-    obj.n_indices = ccall((:BaseData_get_n_indices, libfly), Cint, (Ptr{Cvoid},), ptr)
-    obj.dim_indices = ccall((:BaseData_get_dim_indices, libfly), Cint, (Ptr{Cvoid},), ptr)
+
+    # Load inds array
+    inds_size = ccall((:BaseData_get_inds_size, libfly), Cint, (Ptr{Cvoid},), ptr)
+    if inds_size > 0
+        inds_buf = Vector{Int32}(undef, inds_size)
+        ccall((:BaseData_get_inds, libfly), Cvoid, (Ptr{Cvoid}, Ptr{Cint}), ptr, inds_buf)
+        obj.inds = inds_buf
+    else
+        obj.inds = Int32[]
+    end
+
     obj.dimension = ccall((:BaseData_get_dimension, libfly), Cint, (Ptr{Cvoid},), ptr)
     obj.nk = ccall((:BaseData_get_nk, libfly), Cint, (Ptr{Cvoid},), ptr)
     obj.nw = ccall((:BaseData_get_nw, libfly), Cint, (Ptr{Cvoid},), ptr)
@@ -1262,22 +1434,60 @@ end
 
 function save!(obj::BaseData, filename::String, ordering::String="k-w")
     """Save BaseData to HDF5 file with specified ordering."""
-    if ordering == "k-w"
-        ccall((:BaseData_save, libfly), Cvoid, (Ptr{Cvoid}, Cstring), obj.ptr, filename)
-    else
-        ccall((:BaseData_save_with_ordering, libfly), Cvoid,
-              (Ptr{Cvoid}, Cstring, Cstring), obj.ptr, filename, ordering)
-    end
+    # Use save_data!() to save the data
+    data = get_data(obj)
+    save_data!(filename, data, mesh=obj.mesh, domain=obj.domain,
+               w_points=obj.w_points, inds=obj.inds)
 end
 
 function get_data(obj::BaseData)
     """Extract data as Julia array."""
-    if obj.n_indices == 2
-        # Matrix data
-        total_size = obj.nk * obj.nw * obj.dim_indices * obj.dim_indices
-        real_buf = Vector{Float32}(undef, total_size)
-        imag_buf = obj.is_complex ? Vector{Float32}(undef, total_size) : real_buf
+    # If data was set via setter, return that
+    if obj._data !== nothing
+        return obj._data
+    end
 
+    rank = length(obj.inds)
+
+    # Calculate total tensor size
+    tensor_size = 1
+    for d in obj.inds
+        tensor_size *= d
+    end
+
+    total_size = obj.nk * obj.nw * tensor_size
+
+    real_buf = Vector{Float32}(undef, total_size)
+    imag_buf = obj.is_complex ? Vector{Float32}(undef, total_size) : real_buf
+
+    if rank == 4
+        # 4D tensor data
+        ccall((:BaseData_get_data_tensor4, libfly), Cvoid,
+              (Ptr{Cvoid}, Ptr{Float32}, Ptr{Float32}), obj.ptr, real_buf, imag_buf)
+
+        if obj.is_complex
+            data = complex.(real_buf, imag_buf)
+        else
+            data = real_buf
+        end
+
+        # Reshape - Julia is column-major, opposite order from C++
+        return reshape(data, obj.inds[4], obj.inds[3], obj.inds[2], obj.inds[1], obj.nk * obj.nw)
+    elseif rank == 3
+        # 3D tensor data
+        ccall((:BaseData_get_data_tensor3, libfly), Cvoid,
+              (Ptr{Cvoid}, Ptr{Float32}, Ptr{Float32}), obj.ptr, real_buf, imag_buf)
+
+        if obj.is_complex
+            data = complex.(real_buf, imag_buf)
+        else
+            data = real_buf
+        end
+
+        # Reshape - Julia is column-major
+        return reshape(data, obj.inds[3], obj.inds[2], obj.inds[1], obj.nk * obj.nw)
+    elseif rank == 2
+        # Matrix data
         ccall((:BaseData_get_data_matrix, libfly), Cvoid,
               (Ptr{Cvoid}, Ptr{Float32}, Ptr{Float32}), obj.ptr, real_buf, imag_buf)
 
@@ -1287,22 +1497,79 @@ function get_data(obj::BaseData)
             data = real_buf
         end
 
-        # Reshape to (dim_indices, dim_indices, nk*nw) - Julia column-major
-        return reshape(data, obj.dim_indices, obj.dim_indices, obj.nk * obj.nw)
-    else
-        # Scalar data
-        total_size = obj.nk * obj.nw
-        real_buf = Vector{Float32}(undef, total_size)
-        imag_buf = obj.is_complex ? Vector{Float32}(undef, total_size) : real_buf
-
+        # Reshape - Julia is column-major
+        return reshape(data, obj.inds[2], obj.inds[1], obj.nk * obj.nw)
+    elseif rank == 1
+        # Vector data
         ccall((:BaseData_get_data_scalar, libfly), Cvoid,
               (Ptr{Cvoid}, Ptr{Float32}, Ptr{Float32}), obj.ptr, real_buf, imag_buf)
 
         if obj.is_complex
-            return complex.(real_buf, imag_buf)
+            data = complex.(real_buf, imag_buf)
         else
-            return real_buf
+            data = real_buf
         end
+
+        # Reshape to (inds[1], nk*nw)
+        return reshape(data, obj.inds[1], obj.nk * obj.nw)
+    else
+        # Scalar data (rank == 0)
+        ccall((:BaseData_get_data_scalar, libfly), Cvoid,
+              (Ptr{Cvoid}, Ptr{Float32}, Ptr{Float32}), obj.ptr, real_buf, imag_buf)
+
+        # C++ returns data in row-major flattened order
+        # For Julia users to reshape correctly, we need to reverse the permutation
+        # that was applied during save
+        data = if obj.is_complex
+            complex.(real_buf, imag_buf)
+        else
+            real_buf
+        end
+
+        # C++ data is in row-major flattened order
+        # Just return as flat array - users need to be aware of ordering when reshaping
+        return data
+    end
+end
+
+function set_data!(obj::BaseData, new_data::AbstractArray)
+    """Set data array (stored for use in save!())."""
+    # Validate shape matches BaseData properties
+    rank = length(obj.inds)
+    tensor_size = 1
+    for d in obj.inds
+        tensor_size *= d
+    end
+
+    expected_total = obj.nk * obj.nw * tensor_size
+    if length(new_data) != expected_total
+        error("Data size mismatch: expected $expected_total, got $(length(new_data))")
+    end
+
+    # Update is_complex based on new data type
+    obj.is_complex = eltype(new_data) <: Complex
+
+    # Store data as internal field
+    obj._data = new_data
+end
+
+# Add data property-like function using Base.getproperty
+function Base.getproperty(obj::BaseData, sym::Symbol)
+    if sym === :data
+        return get_data(obj)
+    else
+        return getfield(obj, sym)
+    end
+end
+
+function Base.setproperty!(obj::BaseData, sym::Symbol, value)
+    if sym === :data
+        set_data!(obj, value)
+    elseif sym === :domain && !(value isa Matrix{Float32})
+        # Convert domain to proper type if needed
+        setfield!(obj, sym, Matrix{Float32}(value))
+    else
+        setfield!(obj, sym, value)
     end
 end
 

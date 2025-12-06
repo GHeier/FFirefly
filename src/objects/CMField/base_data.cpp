@@ -32,8 +32,21 @@ BaseData load_data_from_hdf5(const std::string& filename) {
     field.with_k = temp_with_k;
     field.with_w = temp_with_w;
 
-    file.openDataSet("/n_indices").read(&field.n_indices, PredType::NATIVE_INT);
-    file.openDataSet("/dim_indices").read(&field.dim_indices, PredType::NATIVE_INT);
+    // Read inds (tensor indices)
+    try {
+        DataSet ds_inds = file.openDataSet("/inds");
+        DataSpace space_inds = ds_inds.getSpace();
+        hsize_t inds_size;
+        space_inds.getSimpleExtentDims(&inds_size);
+        field.inds.resize(inds_size);
+        ds_inds.read(field.inds.data(), PredType::NATIVE_INT);
+        space_inds.close();
+        ds_inds.close();
+    } catch (...) {
+        // Legacy format: use empty inds for scalar
+        field.inds = {};
+    }
+
     file.openDataSet("/dimension").read(&field.dimension, PredType::NATIVE_INT);
 
     file.openDataSet("/as_mesh").read(&temp_as_mesh, PredType::NATIVE_INT);
@@ -116,7 +129,7 @@ BaseData load_data_from_hdf5(const std::string& filename) {
     }
 
     // -- Compute sizes --
-    int total_indices = std::pow(field.dim_indices, field.n_indices);
+    int total_indices = field.total_index_size();  // FIX: Use new method instead of buggy pow
     int nk = field.nk();
     int nw = field.nw();
     int vec_len = field.vec_len();
@@ -147,42 +160,91 @@ BaseData load_data_from_hdf5(const std::string& filename) {
         imag_ds.close();
     }
 
-    // -- Populate variant --
-    if (field.n_indices == 2) {
-        // Matrix data: 3D structure [nk*nw][mat_dim][mat_dim]
-        int mat_dim = field.dim_indices;
-        int total_matrices = nk * nw;
-        std::vector<std::vector<std::vector<cfloat>>> matrices(total_matrices);
+    // -- Populate variant based on tensor rank --
+    int rank = field.rank();
+    int total_tensors = nk * nw;
+
+    if (rank == 4) {
+        // 4D tensor: [nk*nw][d0][d1][d2][d3] with potentially non-uniform dimensions
+        int d0 = field.inds[0], d1 = field.inds[1], d2 = field.inds[2], d3 = field.inds[3];
+        std::vector<std::vector<std::vector<std::vector<std::vector<cfloat>>>>> tensors(total_tensors);
 
         int idx = 0;
-        for (int m = 0; m < total_matrices; ++m) {
-            matrices[m].resize(mat_dim);
-            for (int i = 0; i < mat_dim; ++i) {
-                matrices[m][i].resize(mat_dim);
-                for (int j = 0; j < mat_dim; ++j) {
-                    matrices[m][i][j] = cfloat(real_flat[idx], field.is_complex ? imag_flat[idx] : 0.0f);
+        for (int t = 0; t < total_tensors; ++t) {
+            tensors[t].resize(d0);
+            for (int i = 0; i < d0; ++i) {
+                tensors[t][i].resize(d1);
+                for (int j = 0; j < d1; ++j) {
+                    tensors[t][i][j].resize(d2);
+                    for (int k = 0; k < d2; ++k) {
+                        tensors[t][i][j][k].resize(d3);
+                        for (int l = 0; l < d3; ++l) {
+                            tensors[t][i][j][k][l] = cfloat(real_flat[idx], field.is_complex ? imag_flat[idx] : 0.0f);
+                            idx++;
+                        }
+                    }
+                }
+            }
+        }
+        field.data = tensors;
+    } else if (rank == 3) {
+        // 3D tensor: [nk*nw][d0][d1][d2]
+        int d0 = field.inds[0], d1 = field.inds[1], d2 = field.inds[2];
+        std::vector<std::vector<std::vector<std::vector<cfloat>>>> tensors(total_tensors);
+
+        int idx = 0;
+        for (int t = 0; t < total_tensors; ++t) {
+            tensors[t].resize(d0);
+            for (int i = 0; i < d0; ++i) {
+                tensors[t][i].resize(d1);
+                for (int j = 0; j < d1; ++j) {
+                    tensors[t][i][j].resize(d2);
+                    for (int k = 0; k < d2; ++k) {
+                        tensors[t][i][j][k] = cfloat(real_flat[idx], field.is_complex ? imag_flat[idx] : 0.0f);
+                        idx++;
+                    }
+                }
+            }
+        }
+        field.data = tensors;
+    } else if (rank == 2) {
+        // Matrix: [nk*nw][d0][d1] (supports non-square matrices!)
+        int d0 = field.inds[0], d1 = field.inds[1];
+        std::vector<std::vector<std::vector<cfloat>>> matrices(total_tensors);
+
+        int idx = 0;
+        for (int t = 0; t < total_tensors; ++t) {
+            matrices[t].resize(d0);
+            for (int i = 0; i < d0; ++i) {
+                matrices[t][i].resize(d1);
+                for (int j = 0; j < d1; ++j) {
+                    matrices[t][i][j] = cfloat(real_flat[idx], field.is_complex ? imag_flat[idx] : 0.0f);
                     idx++;
                 }
             }
         }
         field.data = matrices;
-    } else if (vec_len == 1) {
-        // Flat vector of scalars
-        std::vector<cfloat> flat(total_elements);
-        for (int i = 0; i < total_elements; ++i) {
-            flat[i] = cfloat(real_flat[i], field.is_complex ? imag_flat[i] : 0.0f);
-        }
-        field.data = flat;
-    } else {
-        // 2D: nk × vec_len
-        std::vector<std::vector<cfloat>> mat(nk, std::vector<cfloat>(vec_len));
-        for (int i = 0; i < nk; ++i) {
-            for (int v = 0; v < vec_len; ++v) {
-                int idx = i * vec_len + v;
-                mat[i][v] = cfloat(real_flat[idx], field.is_complex ? imag_flat[idx] : 0.0f);
+    } else if (rank == 1) {
+        // Vector: [nk*nw][d0]
+        int d0 = field.inds[0];
+        std::vector<std::vector<cfloat>> vectors(total_tensors);
+
+        int idx = 0;
+        for (int t = 0; t < total_tensors; ++t) {
+            vectors[t].resize(d0);
+            for (int i = 0; i < d0; ++i) {
+                vectors[t][i] = cfloat(real_flat[idx], field.is_complex ? imag_flat[idx] : 0.0f);
+                idx++;
             }
         }
-        field.data = mat;
+        field.data = vectors;
+    } else {
+        // Scalar: rank = 0, inds = {}
+        std::vector<cfloat> scalars(total_tensors);
+        for (int i = 0; i < total_tensors; ++i) {
+            scalars[i] = cfloat(real_flat[i], field.is_complex ? imag_flat[i] : 0.0f);
+        }
+        field.data = scalars;
     }
 
     // Explicitly close the file to release locks immediately
@@ -200,36 +262,61 @@ BaseData load_data_from_hdf5(const std::string& filename, const std::string& ord
         int nk = field.nk();
         int nw = field.nw();
 
-        // Reorder based on the data variant type
-        if (field.n_indices == 2) {
+        // Reorder based on tensor rank
+        int rank = field.rank();
+
+        if (rank == 4) {
+            // 4D tensor data
+            auto& tensors = field.get<std::vector<std::vector<std::vector<std::vector<std::vector<cfloat>>>>>>();
+            std::vector<std::vector<std::vector<std::vector<std::vector<cfloat>>>>> reordered(nk * nw);
+
+            for (int k = 0; k < nk; ++k) {
+                for (int w = 0; w < nw; ++w) {
+                    reordered[w * nk + k] = tensors[k * nw + w];
+                }
+            }
+            field.data = reordered;
+        } else if (rank == 3) {
+            // 3D tensor data
+            auto& tensors = field.get<std::vector<std::vector<std::vector<std::vector<cfloat>>>>>();
+            std::vector<std::vector<std::vector<std::vector<cfloat>>>> reordered(nk * nw);
+
+            for (int k = 0; k < nk; ++k) {
+                for (int w = 0; w < nw; ++w) {
+                    reordered[w * nk + k] = tensors[k * nw + w];
+                }
+            }
+            field.data = reordered;
+        } else if (rank == 2) {
             // Matrix data
             auto& matrices = field.get<std::vector<std::vector<std::vector<cfloat>>>>();
             std::vector<std::vector<std::vector<cfloat>>> reordered(nk * nw);
 
             for (int k = 0; k < nk; ++k) {
                 for (int w = 0; w < nw; ++w) {
-                    // k-w: index = k * nw + w
-                    // w-k: index = w * nk + k
                     reordered[w * nk + k] = matrices[k * nw + w];
                 }
             }
             field.data = reordered;
-        } else {
-            // Scalar/vector data
-            auto& flat = field.get<std::vector<cfloat>>();
-            int vec_len = field.vec_len();
-            int total_indices = field.total_index_size();
-            int elements_per_point = vec_len * total_indices;
+        } else if (rank == 1) {
+            // Vector data
+            auto& vectors = field.get<std::vector<std::vector<cfloat>>>();
+            std::vector<std::vector<cfloat>> reordered(nk * nw);
 
-            std::vector<cfloat> reordered(flat.size());
             for (int k = 0; k < nk; ++k) {
                 for (int w = 0; w < nw; ++w) {
-                    for (int e = 0; e < elements_per_point; ++e) {
-                        // k-w: index = (k * nw + w) * elements_per_point + e
-                        // w-k: index = (w * nk + k) * elements_per_point + e
-                        reordered[(w * nk + k) * elements_per_point + e] =
-                            flat[(k * nw + w) * elements_per_point + e];
-                    }
+                    reordered[w * nk + k] = vectors[k * nw + w];
+                }
+            }
+            field.data = reordered;
+        } else {
+            // Scalar data
+            auto& scalars = field.get<std::vector<cfloat>>();
+            std::vector<cfloat> reordered(nk * nw);
+
+            for (int k = 0; k < nk; ++k) {
+                for (int w = 0; w < nw; ++w) {
+                    reordered[w * nk + k] = scalars[k * nw + w];
                 }
             }
             field.data = reordered;
@@ -247,8 +334,7 @@ void save_data_to_hdf5(BaseData& field, const std::string& filename) {
                        field.with_k,
                        field.with_w,
                        field.as_mesh,
-                       field.n_indices,
-                       field.dim_indices,
+                       field.inds,  // CHANGED: use inds instead of n_indices/dim_indices
                        field.mesh,
                        field.domain,
                        field.dimension,
@@ -271,36 +357,51 @@ void save_data_to_hdf5(BaseData& field, const std::string& filename, const std::
         int nk = field.nk();
         int nw = field.nw();
 
-        // Reorder based on the data variant type
-        if (field.n_indices == 2) {
-            // Matrix data
-            auto& matrices = field.get<std::vector<std::vector<std::vector<cfloat>>>>();
-            std::vector<std::vector<std::vector<cfloat>>> reordered_data(nk * nw);
+        // Reorder based on tensor rank (same as in load function)
+        int rank = field.rank();
 
+        if (rank == 4) {
+            auto& tensors = field.get<std::vector<std::vector<std::vector<std::vector<std::vector<cfloat>>>>>>();
+            std::vector<std::vector<std::vector<std::vector<std::vector<cfloat>>>>> reordered_data(nk * nw);
             for (int k = 0; k < nk; ++k) {
                 for (int w = 0; w < nw; ++w) {
-                    // k-w: index = k * nw + w
-                    // w-k: index = w * nk + k
+                    reordered_data[w * nk + k] = tensors[k * nw + w];
+                }
+            }
+            reordered.data = reordered_data;
+        } else if (rank == 3) {
+            auto& tensors = field.get<std::vector<std::vector<std::vector<std::vector<cfloat>>>>>();
+            std::vector<std::vector<std::vector<std::vector<cfloat>>>> reordered_data(nk * nw);
+            for (int k = 0; k < nk; ++k) {
+                for (int w = 0; w < nw; ++w) {
+                    reordered_data[w * nk + k] = tensors[k * nw + w];
+                }
+            }
+            reordered.data = reordered_data;
+        } else if (rank == 2) {
+            auto& matrices = field.get<std::vector<std::vector<std::vector<cfloat>>>>();
+            std::vector<std::vector<std::vector<cfloat>>> reordered_data(nk * nw);
+            for (int k = 0; k < nk; ++k) {
+                for (int w = 0; w < nw; ++w) {
                     reordered_data[w * nk + k] = matrices[k * nw + w];
                 }
             }
             reordered.data = reordered_data;
-        } else {
-            // Scalar/vector data
-            auto& flat = field.get<std::vector<cfloat>>();
-            int vec_len = field.vec_len();
-            int total_indices = field.total_index_size();
-            int elements_per_point = vec_len * total_indices;
-
-            std::vector<cfloat> reordered_data(flat.size());
+        } else if (rank == 1) {
+            auto& vectors = field.get<std::vector<std::vector<cfloat>>>();
+            std::vector<std::vector<cfloat>> reordered_data(nk * nw);
             for (int k = 0; k < nk; ++k) {
                 for (int w = 0; w < nw; ++w) {
-                    for (int e = 0; e < elements_per_point; ++e) {
-                        // k-w: index = (k * nw + w) * elements_per_point + e
-                        // w-k: index = (w * nk + k) * elements_per_point + e
-                        reordered_data[(w * nk + k) * elements_per_point + e] =
-                            flat[(k * nw + w) * elements_per_point + e];
-                    }
+                    reordered_data[w * nk + k] = vectors[k * nw + w];
+                }
+            }
+            reordered.data = reordered_data;
+        } else {
+            auto& scalars = field.get<std::vector<cfloat>>();
+            std::vector<cfloat> reordered_data(nk * nw);
+            for (int k = 0; k < nk; ++k) {
+                for (int w = 0; w < nw; ++w) {
+                    reordered_data[w * nk + k] = scalars[k * nw + w];
                 }
             }
             reordered.data = reordered_data;
@@ -312,16 +413,16 @@ void save_data_to_hdf5(BaseData& field, const std::string& filename, const std::
     }
 }
 
-void save_data(string filename, BaseData::DataVariant& data, bool is_complex, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, int n_indices, int dim_indices) {
+void save_data(string filename, BaseData::DataVariant& data, bool is_complex, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<int>& inds) {
     bool is_vector = false; // Will add vector support when it becomes relevant
     bool with_k = mesh.size() > 0;
     bool with_w = w_points.size() > 0;
     bool as_mesh = mesh.size() > 0; // Would be false if points were given or if mesh is empty
     // Dimension is the spatial dimension (from domain), not the mesh size
     int dim = domain.empty() ? 3 : domain.size();
-    bool is_matrix = n_indices > 1;
+    bool is_matrix = inds.size() == 2;  // Matrix if rank = 2
     vector<vector<float>> points = {}; // Empty for this wrapper function
-    save_data_to_hdf5(filename, is_complex, is_vector, is_matrix, with_k, with_w, as_mesh, n_indices, dim_indices, mesh, domain, dim, w_points, points, data);
+    save_data_to_hdf5(filename, is_complex, is_vector, is_matrix, with_k, with_w, as_mesh, inds, mesh, domain, dim, w_points, points, data);
 }
 
 void save_data_to_hdf5(const std::string& filename,
@@ -331,8 +432,7 @@ void save_data_to_hdf5(const std::string& filename,
                         bool with_k,
                         bool with_w,
                         bool as_mesh,
-                        int n_indices,
-                        int dim_indices,
+                        const std::vector<int>& inds,  // CHANGED: inds instead of n_indices/dim_indices
                         std::vector<int>& mesh,
                         std::vector<std::vector<float>>& domain,
                         int dimension,
@@ -353,10 +453,21 @@ void save_data_to_hdf5(const std::string& filename,
     write_scalar("/is_matrix", is_matrix);
     write_scalar("/with_k", with_k);
     write_scalar("/with_w", with_w);
-    write_scalar("/n_indices", n_indices);
-    write_scalar("/dim_indices", dim_indices);
     write_scalar("/dimension", dimension);
     write_scalar("/as_mesh", as_mesh);
+
+    // -- Write inds (tensor indices) as array --
+    if (!inds.empty()) {
+        hsize_t dims[1] = { inds.size() };
+        DataSpace space(1, dims);
+        DataSet ds = file.createDataSet("/inds", PredType::NATIVE_INT, space);
+        ds.write(inds.data(), PredType::NATIVE_INT);
+    } else {
+        // Write empty inds for scalar
+        hsize_t dims[1] = { 0 };
+        DataSpace space(1, dims);
+        DataSet ds = file.createDataSet("/inds", PredType::NATIVE_INT, space);
+    }
 
     // -- Mesh --
     if (!mesh.empty()) {
@@ -416,24 +527,52 @@ void save_data_to_hdf5(const std::string& filename,
     auto flatten = [&](auto const& container) {
         using T = std::decay_t<decltype(container)>;
         if constexpr (std::is_same_v<T, std::vector<cfloat>>) {
+            // Scalar
             for (auto& v : container) {
                 real_flat.push_back(v.real());
                 if (is_complex) imag_flat.push_back(v.imag());
             }
         } else if constexpr (std::is_same_v<T, std::vector<std::vector<cfloat>>>) {
-            for (auto& row : container) {
-                for (auto& v : row) {
+            // Vector (rank=1)
+            for (auto& vec : container) {
+                for (auto& v : vec) {
                     real_flat.push_back(v.real());
                     if (is_complex) imag_flat.push_back(v.imag());
                 }
             }
         } else if constexpr (std::is_same_v<T, std::vector<std::vector<std::vector<cfloat>>>>) {
-            // For matrix data (3D)
+            // Matrix (rank=2)
             for (auto& matrix : container) {
                 for (auto& row : matrix) {
                     for (auto& v : row) {
                         real_flat.push_back(v.real());
                         if (is_complex) imag_flat.push_back(v.imag());
+                    }
+                }
+            }
+        } else if constexpr (std::is_same_v<T, std::vector<std::vector<std::vector<std::vector<cfloat>>>>>) {
+            // 3D tensor (rank=3)
+            for (auto& tensor : container) {
+                for (auto& plane : tensor) {
+                    for (auto& row : plane) {
+                        for (auto& v : row) {
+                            real_flat.push_back(v.real());
+                            if (is_complex) imag_flat.push_back(v.imag());
+                        }
+                    }
+                }
+            }
+        } else if constexpr (std::is_same_v<T, std::vector<std::vector<std::vector<std::vector<std::vector<cfloat>>>>>>) {
+            // 4D tensor (rank=4)
+            for (auto& tensor : container) {
+                for (auto& vol : tensor) {
+                    for (auto& plane : vol) {
+                        for (auto& row : plane) {
+                            for (auto& v : row) {
+                                real_flat.push_back(v.real());
+                                if (is_complex) imag_flat.push_back(v.imag());
+                            }
+                        }
                     }
                 }
             }

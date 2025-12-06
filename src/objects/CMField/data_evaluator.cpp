@@ -7,22 +7,7 @@
 #include <cmath>
 
 using namespace std;
-using ResultVariant = variant<
-    float,
-    cfloat,
-    Vec,
-    complex<Vec>,
-    vector<float>,
-    vector<cfloat>,
-    vector<vector<float>>,
-    vector<vector<cfloat>>
->;
-using DataVariant = variant<
-    vector<cfloat>,
-    vector<vector<cfloat>>,
-    vector<vector<vector<cfloat>>>,
-    vector<vector<vector<vector<cfloat>>>>
->;
+// Note: ResultVariant and DataVariant are defined in data_evaluator.hpp
 
 DataEvaluator::DataEvaluator(BaseData& f) {
     dimension = f.dimension;
@@ -32,8 +17,7 @@ DataEvaluator::DataEvaluator(BaseData& f) {
     is_matrix = f.is_matrix;
     w_points = f.w_points;
     with_w = w_points.size() > 0;
-    n_indices = f.n_indices;
-    dim_indices = f.dim_indices;
+    inds = f.inds;
 
     if (!f.domain.empty()) {
         domain = float_matrix_to_vec(f.domain);
@@ -52,7 +36,8 @@ DataEvaluator::DataEvaluator(BaseData& f) {
         }
     }
 
-    if (n_indices == 0) {
+    int rank = f.rank();
+    if (rank == 0) {
         // Regular scalar/vector field
         data = transform_data(f.data, f.dimension);
     } else {
@@ -63,19 +48,22 @@ DataEvaluator::DataEvaluator(BaseData& f) {
 
 void DataEvaluator::load_indexed_data(BaseData& f) {
     // Data layout expected in BaseData (w-k ordering):
-    // For n_indices=1: vector<vector<cfloat>> where outer is w/spatial, inner is index dim
-    // For n_indices=2: vector<vector<vector<cfloat>>> where [w/spatial][i][j]
+    // For rank=1: vector<vector<cfloat>> where outer is w/spatial, inner is index dim
+    // For rank=2: vector<vector<vector<cfloat>>> where [w/spatial][i][j]
+    // For rank=3: vector<vector<vector<vector<cfloat>>>> where [w/spatial][i][j][k]
+    // For rank=4: vector<vector<vector<vector<vector<cfloat>>>>> where [w/spatial][i][j][k][l]
 
-    if (n_indices == 1) {
+    // Determine spatial dimensions
+    int n_spatial = 1;
+    if (f.with_k) {
+        for (int m : f.mesh) n_spatial *= m;
+    }
+    int n_w = f.with_w ? f.w_points.size() : 1;
+    int rank = f.rank();
+
+    if (rank == 1) {
         // Extract 1D indexed data
         if (auto* vec_data = std::get_if<vector<vector<cfloat>>>(&f.data)) {
-            // Determine spatial dimensions
-            int n_spatial = 1;
-            if (f.with_k) {
-                for (int m : f.mesh) n_spatial *= m;
-            }
-            int n_w = f.with_w ? f.w_points.size() : 1;
-
             // Reshape: indexed_data_1d[w][spatial][index] (w-k ordering)
             indexed_data_1d.resize(n_w);
             for (int w = 0; w < n_w; w++) {
@@ -88,16 +76,9 @@ void DataEvaluator::load_indexed_data(BaseData& f) {
                 }
             }
         }
-    } else if (n_indices == 2) {
+    } else if (rank == 2) {
         // Extract 2D indexed data (matrix)
         if (auto* mat_data = std::get_if<vector<vector<vector<cfloat>>>>(&f.data)) {
-            // Determine spatial dimensions
-            int n_spatial = 1;
-            if (f.with_k) {
-                for (int m : f.mesh) n_spatial *= m;
-            }
-            int n_w = f.with_w ? f.w_points.size() : 1;
-
             // Reshape: indexed_data_2d[w][spatial][i][j] (w-k ordering)
             indexed_data_2d.resize(n_w);
             for (int w = 0; w < n_w; w++) {
@@ -106,6 +87,36 @@ void DataEvaluator::load_indexed_data(BaseData& f) {
                     int flat_idx = w * n_spatial + s;
                     if (flat_idx < mat_data->size()) {
                         indexed_data_2d[w][s] = (*mat_data)[flat_idx];
+                    }
+                }
+            }
+        }
+    } else if (rank == 3) {
+        // Extract 3D indexed data
+        if (auto* tensor_data = std::get_if<vector<vector<vector<vector<cfloat>>>>>(&f.data)) {
+            // Reshape: indexed_data_3d[w][spatial][i][j][k] (w-k ordering)
+            indexed_data_3d.resize(n_w);
+            for (int w = 0; w < n_w; w++) {
+                indexed_data_3d[w].resize(n_spatial);
+                for (int s = 0; s < n_spatial; s++) {
+                    int flat_idx = w * n_spatial + s;
+                    if (flat_idx < tensor_data->size()) {
+                        indexed_data_3d[w][s] = (*tensor_data)[flat_idx];
+                    }
+                }
+            }
+        }
+    } else if (rank == 4) {
+        // Extract 4D indexed data
+        if (auto* tensor_data = std::get_if<vector<vector<vector<vector<vector<cfloat>>>>>>(&f.data)) {
+            // Reshape: indexed_data_4d[w][spatial][i][j][k][l] (w-k ordering)
+            indexed_data_4d.resize(n_w);
+            for (int w = 0; w < n_w; w++) {
+                indexed_data_4d[w].resize(n_spatial);
+                for (int s = 0; s < n_spatial; s++) {
+                    int flat_idx = w * n_spatial + s;
+                    if (flat_idx < tensor_data->size()) {
+                        indexed_data_4d[w][s] = (*tensor_data)[flat_idx];
                     }
                 }
             }
@@ -245,21 +256,31 @@ ResultVariant DataEvaluator::operator()(Vec point, float w) {
 }
 
 ResultVariant DataEvaluator::get_array(Vec point, float w) {
-    if (n_indices == 0) {
+    int rank = inds.size();
+
+    if (rank == 0) {
         // No indices - just return the scalar value
         return (*this)(point, w);
     }
 
     // Check if data is empty
-    if ((n_indices == 1 && indexed_data_1d.empty()) ||
-        (n_indices == 2 && indexed_data_2d.empty())) {
+    if ((rank == 1 && indexed_data_1d.empty()) ||
+        (rank == 2 && indexed_data_2d.empty()) ||
+        (rank == 3 && indexed_data_3d.empty()) ||
+        (rank == 4 && indexed_data_4d.empty())) {
         // Return empty array
-        if (n_indices == 1) {
+        if (rank == 1) {
             if (is_complex) return vector<cfloat>();
             else return vector<float>();
-        } else {
+        } else if (rank == 2) {
             if (is_complex) return vector<vector<cfloat>>();
             else return vector<vector<float>>();
+        } else if (rank == 3) {
+            if (is_complex) return vector<vector<vector<cfloat>>>();
+            else return vector<vector<vector<float>>>();
+        } else if (rank == 4) {
+            if (is_complex) return vector<vector<vector<vector<cfloat>>>>();
+            else return vector<vector<vector<vector<float>>>>();
         }
     }
 
@@ -267,7 +288,7 @@ ResultVariant DataEvaluator::get_array(Vec point, float w) {
     Vec p = vec_matrix_multiplication2(inv_domain, point, dimension);
     fold_to_first_BZ2(p);
 
-    if (n_indices == 1) {
+    if (rank == 1) {
         // Return 1D array (vector)
         vector<cfloat> result;
 
@@ -308,7 +329,7 @@ ResultVariant DataEvaluator::get_array(Vec point, float w) {
         }
         return result;
 
-    } else if (n_indices == 2) {
+    } else if (rank == 2) {
         // Return 2D array (matrix)
         vector<vector<cfloat>> result;
 
@@ -376,29 +397,180 @@ ResultVariant DataEvaluator::get_array(Vec point, float w) {
             return real_result;
         }
         return result;
+    } else if (rank == 3) {
+        // Return 3D array (3-index tensor)
+        vector<vector<vector<cfloat>>> result;
+
+        if (!with_w) {
+            // Spatial interpolation only - use w=0 data
+            if (dimension == 1) {
+                result = interpolate_1D_ten3(p.x, 0, 1, mesh[0], indexed_data_3d[0]);
+            } else if (dimension == 2) {
+                result = interpolate_2D_ten3(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_3d[0]);
+            } else if (dimension == 3) {
+                result = interpolate_3D_ten3(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_3d[0]);
+            }
+        } else {
+            // With frequency dimension - interpolate in frequency
+            int w_idx = 0;
+            for (size_t i = 0; i < w_points.size(); i++) {
+                if (w >= w_points[i]) w_idx = i;
+            }
+            if (w_idx >= w_points.size() - 1) w_idx = w_points.size() - 2;
+
+            float w_weight = 0.0;
+            if (w_points.size() > 1 && w_idx < w_points.size() - 1) {
+                w_weight = (w - w_points[w_idx]) / (w_points[w_idx + 1] - w_points[w_idx]);
+            }
+
+            vector<vector<vector<cfloat>>> result_w0, result_w1;
+
+            if (dimension == 1) {
+                result_w0 = interpolate_1D_ten3(p.x, 0, 1, mesh[0], indexed_data_3d[w_idx]);
+                result_w1 = interpolate_1D_ten3(p.x, 0, 1, mesh[0], indexed_data_3d[w_idx + 1]);
+            } else if (dimension == 2) {
+                result_w0 = interpolate_2D_ten3(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_3d[w_idx]);
+                result_w1 = interpolate_2D_ten3(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_3d[w_idx + 1]);
+            } else if (dimension == 3) {
+                result_w0 = interpolate_3D_ten3(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_3d[w_idx]);
+                result_w1 = interpolate_3D_ten3(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_3d[w_idx + 1]);
+            }
+
+            // Interpolate between the two frequency points
+            int d1 = result_w0.size();
+            int d2 = result_w0.empty() ? 0 : result_w0[0].size();
+            int d3 = (result_w0.empty() || result_w0[0].empty()) ? 0 : result_w0[0][0].size();
+            result.resize(d1, vector<vector<cfloat>>(d2, vector<cfloat>(d3)));
+            for (int i = 0; i < d1; i++) {
+                for (int j = 0; j < d2; j++) {
+                    for (int k = 0; k < d3; k++) {
+                        result[i][j][k] = (1.0f - w_weight) * result_w0[i][j][k] + w_weight * result_w1[i][j][k];
+                    }
+                }
+            }
+        }
+
+        // Convert to real if needed
+        if (!is_complex) {
+            if (result.empty() || result[0].empty() || result[0][0].empty()) {
+                return vector<vector<vector<float>>>();
+            }
+            int d1 = result.size();
+            int d2 = result[0].size();
+            int d3 = result[0][0].size();
+            vector<vector<vector<float>>> real_result(d1, vector<vector<float>>(d2, vector<float>(d3)));
+            for (int i = 0; i < d1; i++) {
+                for (int j = 0; j < d2; j++) {
+                    for (int k = 0; k < d3; k++) {
+                        real_result[i][j][k] = result[i][j][k].real();
+                    }
+                }
+            }
+            return real_result;
+        }
+        return result;
+
+    } else if (rank == 4) {
+        // Return 4D array (4-index tensor)
+        vector<vector<vector<vector<cfloat>>>> result;
+
+        if (!with_w) {
+            // Spatial interpolation only - use w=0 data
+            if (dimension == 1) {
+                result = interpolate_1D_ten4(p.x, 0, 1, mesh[0], indexed_data_4d[0]);
+            } else if (dimension == 2) {
+                result = interpolate_2D_ten4(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_4d[0]);
+            } else if (dimension == 3) {
+                result = interpolate_3D_ten4(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_4d[0]);
+            }
+        } else {
+            // With frequency dimension - interpolate in frequency
+            int w_idx = 0;
+            for (size_t i = 0; i < w_points.size(); i++) {
+                if (w >= w_points[i]) w_idx = i;
+            }
+            if (w_idx >= w_points.size() - 1) w_idx = w_points.size() - 2;
+
+            float w_weight = 0.0;
+            if (w_points.size() > 1 && w_idx < w_points.size() - 1) {
+                w_weight = (w - w_points[w_idx]) / (w_points[w_idx + 1] - w_points[w_idx]);
+            }
+
+            vector<vector<vector<vector<cfloat>>>> result_w0, result_w1;
+
+            if (dimension == 1) {
+                result_w0 = interpolate_1D_ten4(p.x, 0, 1, mesh[0], indexed_data_4d[w_idx]);
+                result_w1 = interpolate_1D_ten4(p.x, 0, 1, mesh[0], indexed_data_4d[w_idx + 1]);
+            } else if (dimension == 2) {
+                result_w0 = interpolate_2D_ten4(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_4d[w_idx]);
+                result_w1 = interpolate_2D_ten4(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_4d[w_idx + 1]);
+            } else if (dimension == 3) {
+                result_w0 = interpolate_3D_ten4(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_4d[w_idx]);
+                result_w1 = interpolate_3D_ten4(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_4d[w_idx + 1]);
+            }
+
+            // Interpolate between the two frequency points
+            int d1 = result_w0.size();
+            int d2 = result_w0.empty() ? 0 : result_w0[0].size();
+            int d3 = (result_w0.empty() || result_w0[0].empty()) ? 0 : result_w0[0][0].size();
+            int d4 = (result_w0.empty() || result_w0[0].empty() || result_w0[0][0].empty()) ? 0 : result_w0[0][0][0].size();
+            result.resize(d1, vector<vector<vector<cfloat>>>(d2, vector<vector<cfloat>>(d3, vector<cfloat>(d4))));
+            for (int i = 0; i < d1; i++) {
+                for (int j = 0; j < d2; j++) {
+                    for (int k = 0; k < d3; k++) {
+                        for (int l = 0; l < d4; l++) {
+                            result[i][j][k][l] = (1.0f - w_weight) * result_w0[i][j][k][l] + w_weight * result_w1[i][j][k][l];
+                        }
+                    }
+                }
+            }
+        }
+
+        // Convert to real if needed
+        if (!is_complex) {
+            if (result.empty() || result[0].empty() || result[0][0].empty() || result[0][0][0].empty()) {
+                return vector<vector<vector<vector<float>>>>();
+            }
+            int d1 = result.size();
+            int d2 = result[0].size();
+            int d3 = result[0][0].size();
+            int d4 = result[0][0][0].size();
+            vector<vector<vector<vector<float>>>> real_result(d1, vector<vector<vector<float>>>(d2, vector<vector<float>>(d3, vector<float>(d4))));
+            for (int i = 0; i < d1; i++) {
+                for (int j = 0; j < d2; j++) {
+                    for (int k = 0; k < d3; k++) {
+                        for (int l = 0; l < d4; l++) {
+                            real_result[i][j][k][l] = result[i][j][k][l].real();
+                        }
+                    }
+                }
+            }
+            return real_result;
+        }
+        return result;
     } else {
-        throw std::runtime_error("n_indices > 2 not yet supported");
+        throw std::runtime_error("Tensor rank > 4 not yet supported");
     }
 }
 
 ResultVariant DataEvaluator::operator()(Vec point, vector<int> indices, float w) {
-    if (n_indices == 0) {
+    int rank = inds.size();
+
+    if (rank == 0) {
         throw std::runtime_error("Indexed operator called on non-indexed field");
     }
 
-    if (indices.size() != n_indices) {
-        throw std::runtime_error("Number of indices doesn't match n_indices");
+    if (indices.size() != rank) {
+        throw std::runtime_error("Number of indices doesn't match tensor rank");
     }
 
-    // Calculate the linear index from multi-dimensional indices
-    int linear_idx = 0;
-    int multiplier = 1;
-    for (int i = n_indices - 1; i >= 0; i--) {
-        if (indices[i] < 0 || indices[i] >= dim_indices) {
-            throw std::runtime_error("Index out of bounds");
+    // Validate indices against the actual dimensions (supporting non-uniform tensors)
+    for (int i = 0; i < rank; i++) {
+        if (indices[i] < 0 || indices[i] >= inds[i]) {
+            throw std::runtime_error("Index out of bounds for dimension " + std::to_string(i) +
+                                     " (index=" + std::to_string(indices[i]) +
+                                     ", max=" + std::to_string(inds[i] - 1) + ")");
         }
-        linear_idx += indices[i] * multiplier;
-        multiplier *= dim_indices;
     }
 
     // For now, just evaluate the point normally and return a placeholder

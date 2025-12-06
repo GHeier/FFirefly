@@ -78,7 +78,7 @@ public:
 
   Field_CM();
   Field_CM(const BaseData::DataVariant& data,
-           int dim_indices,
+           const vector<int>& inds,
            const vector<int>& mesh = {},
            const vector<vector<float>>& domain = {},
            const vector<float>& w_points = {});
@@ -113,7 +113,7 @@ public:
 
   Field_RM();
   Field_RM(const BaseData::DataVariant& data,
-           int dim_indices,
+           const vector<int>& inds,
            const vector<int>& mesh = {},
            const vector<vector<float>>& domain = {},
            const vector<float>& w_points = {});

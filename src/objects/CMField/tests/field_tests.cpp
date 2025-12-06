@@ -330,7 +330,7 @@ static bool field_cm_1d_k() {
     vector<vector<float>> domain = {{1.0}};
     auto data = create_matrix_data(1, mpts, mat_dim);
 
-    Field_CM field(data, mat_dim, mesh, domain);
+    Field_CM field(data, {mat_dim, mat_dim}, mesh, domain);
 
     Vec v(0.0);  // Centered at origin, corresponds to x=0.5 in [0,1]
     auto result = field(v);
@@ -350,7 +350,7 @@ static bool field_rm_1d_k() {
     vector<vector<float>> domain = {{1.0}};
     auto data = create_matrix_data(1, mpts, mat_dim);
 
-    Field_RM field(data, mat_dim, mesh, domain);
+    Field_RM field(data, {mat_dim, mat_dim}, mesh, domain);
 
     Vec v(0.0);  // Centered at origin, corresponds to x=0.5 in [0,1]
     auto result = field(v);
@@ -370,7 +370,7 @@ static bool field_cm_2d_k() {
     vector<vector<float>> domain = {{1.0, 0.0}, {0.0, 1.0}};
     auto data = create_matrix_data(2, mpts, mat_dim);
 
-    Field_CM field(data, mat_dim, mesh, domain);
+    Field_CM field(data, {mat_dim, mat_dim}, mesh, domain);
 
     Vec v(0.0, 0.0);  // Center corresponds to (0.5, 0.5)
     auto result = field(v);
@@ -390,7 +390,7 @@ static bool field_rm_2d_k() {
     vector<vector<float>> domain = {{1.0, 0.0}, {0.0, 1.0}};
     auto data = create_matrix_data(2, mpts, mat_dim);
 
-    Field_RM field(data, mat_dim, mesh, domain);
+    Field_RM field(data, {mat_dim, mat_dim}, mesh, domain);
 
     Vec v(0.0, 0.0);  // Center corresponds to (0.5, 0.5)
     auto result = field(v);
@@ -411,7 +411,7 @@ static bool field_cm_1d_w() {
     vector<float> w_points = {1.0, 2.0, 3.0};
     auto data = create_matrix_data(1, mpts, mat_dim, w_points);
 
-    Field_CM field(data, mat_dim, mesh, domain, w_points);
+    Field_CM field(data, {mat_dim, mat_dim}, mesh, domain, w_points);
 
     Vec v(0.0);  // Centered at x=0.5
     auto result = field(v, 1.5);
@@ -432,7 +432,7 @@ static bool field_rm_1d_w() {
     vector<float> w_points = {1.0, 2.0, 3.0};
     auto data = create_matrix_data(1, mpts, mat_dim, w_points);
 
-    Field_RM field(data, mat_dim, mesh, domain, w_points);
+    Field_RM field(data, {mat_dim, mat_dim}, mesh, domain, w_points);
 
     Vec v(0.0);  // Centered at x=0.5
     auto result = field(v, 1.5);
@@ -453,7 +453,7 @@ static bool field_cm_2d_w() {
     vector<float> w_points = {1.0, 2.0, 3.0};
     auto data = create_matrix_data(2, mpts, mat_dim, w_points);
 
-    Field_CM field(data, mat_dim, mesh, domain, w_points);
+    Field_CM field(data, {mat_dim, mat_dim}, mesh, domain, w_points);
 
     Vec v(0.1, 0.1);  // Centered coords -> (0.6, 0.6)
     auto result = field(v, 1.1);
@@ -474,7 +474,7 @@ static bool field_rm_2d_w() {
     vector<float> w_points = {1.0, 2.0, 3.0};
     auto data = create_matrix_data(2, mpts, mat_dim, w_points);
 
-    Field_RM field(data, mat_dim, mesh, domain, w_points);
+    Field_RM field(data, {mat_dim, mat_dim}, mesh, domain, w_points);
 
     Vec v(0.1, 0.1);  // Centered coords -> (0.6, 0.6)
     auto result = field(v, 1.1);
@@ -495,7 +495,7 @@ static bool field_cm_3d_w() {
     vector<float> w_points = {1.0, 2.0, 3.0};
     auto data = create_matrix_data(3, mpts, mat_dim, w_points);
 
-    Field_CM field(data, mat_dim, mesh, domain, w_points);
+    Field_CM field(data, {mat_dim, mat_dim}, mesh, domain, w_points);
 
     Vec v(-0.25, -0.25, -0.25);  // Centered coords -> (0.25, 0.25, 0.25)
     auto result = field(v, 1.5);
@@ -516,7 +516,7 @@ static bool field_rm_3d_w() {
     vector<float> w_points = {1.0, 2.0, 3.0};
     auto data = create_matrix_data(3, mpts, mat_dim, w_points);
 
-    Field_RM field(data, mat_dim, mesh, domain, w_points);
+    Field_RM field(data, {mat_dim, mat_dim}, mesh, domain, w_points);
 
     Vec v(-0.25, -0.25, -0.25);  // Centered coords -> (0.25, 0.25, 0.25)
     auto result = field(v, 1.5);

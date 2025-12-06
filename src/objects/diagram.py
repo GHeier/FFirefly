@@ -9,7 +9,16 @@ import firefly as fly
 import firefly.config as cfg
 
 class Diagram:
-    def __init__(self, obj, statistic):
+    def __init__(self, obj, statistic, physics_n_indices=None):
+        """
+        Initialize a Diagram from a TRIQS Gf object.
+
+        Args:
+            obj: TRIQS Gf object
+            statistic: 'Fermion' or 'Boson'
+            physics_n_indices: Optional override for n_indices when saving
+                              (e.g., vertex V is 4-index even if stored as scalar for single-band)
+        """
         varspace = describe_mesh(obj)
         if varspace not in ['wk', 'tr', 'w', 't', 'k', 'r']:
             print(f"Diagram initialized in {varspace} space.")
@@ -22,6 +31,7 @@ class Diagram:
         if varspace == 'wk':
             self.nk = self.shape[1]
         self.ind_dim = len(self.shape) - 2
+        self.physics_n_indices = physics_n_indices  # Override for physics context
 
         if varspace == 'wk':
             self.obj_wk = obj
@@ -113,20 +123,31 @@ class Diagram:
     def save(self, filename):
         if self.varspace in ['wk', 'tr']:
             mesh, BZ = extract_mesh_and_bz(self.obj_wk)
-            # Reshape data to match mesh dimensions (nw, nkx, nky, nkz)
-            mesh = mesh + self.shape[2:]  # Append orbital dimensions
-            #print("Save Mesh = ", mesh)
-            obj = np.reshape(self.obj_wk.data, mesh)
-            obj = np.fft.fftshift(obj, axes=tuple(range(1, len(mesh))))  # Shift k-points to center
-            # When w_points is provided separately, only pass spatial mesh dimensions (not nw)
-            spatial_mesh = np.array(mesh[1:], dtype=np.int32)  # Skip first element (nw)
-            # Move frequency axis to last position for k-w ordering: (nkx, nky, nkz, nw)
-            #obj_kw = np.moveaxis(obj, 0, -1)
-            fly.save_data(filename, obj, mesh=spatial_mesh, domain=BZ, w_points=self.w_points)
+            # mesh is (nw, nkx, nky, nkz) for k-space dimensions only
+            # Append orbital/tensor dimensions for reshaping
+            full_shape = mesh + self.shape[2:]  # (nw, nkx, nky, nkz, orbital_dims...)
+            obj = np.reshape(self.obj_wk.data, full_shape)
+            # Shift k-points to center (only shift spatial dimensions, not orbital indices)
+            n_spatial_dims = len(mesh) - 1  # Exclude nw
+            obj = np.fft.fftshift(obj, axes=tuple(range(1, n_spatial_dims + 1)))
+
+            # Spatial mesh should ONLY contain k-space dimensions, not tensor indices
+            spatial_mesh = np.array(mesh[1:], dtype=np.int32)  # Skip nw: (nkx, nky, nkz)
+
+            # Determine n_indices from shape: number of orbital/band indices
+            # Use physics_n_indices if provided (for cases like vertex which is 4-index even for single-band)
+            if self.physics_n_indices is not None:
+                n_indices = self.physics_n_indices
+                dim_indices = 1  # For single-band vertex stored as scalar
+            else:
+                n_indices = self.ind_dim  # Number of indices beyond (w, k)
+                dim_indices = self.shape[2] if n_indices > 0 else 1  # Size of each index
+
+            fly.save_data(filename, obj, mesh=spatial_mesh, domain=BZ, w_points=self.w_points,
+                         n_indices=n_indices, dim_indices=dim_indices)
         else:
             obj = np.reshape(self.obj_w.data, (self.nw, ))
             fly.save_data(filename, obj, mesh=None, domain=None, w_points=self.w_points)
-        print(f"Diagram saved to {filename}")
 
     def load(self, field):
         data = field.get_data()

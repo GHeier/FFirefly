@@ -90,7 +90,7 @@ static bool field_cm_1d_k() {
     vector<vector<float>> domain = {{1.0}};
     auto data = create_matrix_data(1, mpts, mat_dim);
 
-    Field_CM field(data, mat_dim, mesh, domain);
+    Field_CM field(data, {mat_dim, mat_dim}, mesh, domain);
 
     Vec v(0.0);  // Centered at origin, corresponds to x=0.5 in [0,1]
     auto result = field(v);
@@ -111,7 +111,7 @@ static bool field_rm_1d_k() {
     vector<vector<float>> domain = {{1.0}};
     auto data = create_matrix_data(1, mpts, mat_dim);
 
-    Field_RM field(data, mat_dim, mesh, domain);
+    Field_RM field(data, {mat_dim, mat_dim}, mesh, domain);
 
     Vec v(0.0);
     auto result = field(v);
@@ -132,7 +132,7 @@ static bool field_cm_2d_k() {
     vector<vector<float>> domain = {{1.0, 0.0}, {0.0, 1.0}};
     auto data = create_matrix_data(2, mpts, mat_dim);
 
-    Field_CM field(data, mat_dim, mesh, domain);
+    Field_CM field(data, {mat_dim, mat_dim}, mesh, domain);
 
     Vec v(0.0, 0.0);  // Center corresponds to (0.5, 0.5)
     auto result = field(v);
@@ -153,7 +153,7 @@ static bool field_rm_2d_k() {
     vector<vector<float>> domain = {{1.0, 0.0}, {0.0, 1.0}};
     auto data = create_matrix_data(2, mpts, mat_dim);
 
-    Field_RM field(data, mat_dim, mesh, domain);
+    Field_RM field(data, {mat_dim, mat_dim}, mesh, domain);
 
     Vec v(0.0, 0.0);
     auto result = field(v);
@@ -174,7 +174,7 @@ static bool field_cm_3d_k() {
     vector<vector<float>> domain = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
     auto data = create_matrix_data(3, mpts, mat_dim);
 
-    Field_CM field(data, mat_dim, mesh, domain);
+    Field_CM field(data, {mat_dim, mat_dim}, mesh, domain);
 
     Vec v(0.0, 0.0, 0.0);  // Center corresponds to (0.5, 0.5, 0.5)
     auto result = field(v);
@@ -195,7 +195,7 @@ static bool field_rm_3d_k() {
     vector<vector<float>> domain = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
     auto data = create_matrix_data(3, mpts, mat_dim);
 
-    Field_RM field(data, mat_dim, mesh, domain);
+    Field_RM field(data, {mat_dim, mat_dim}, mesh, domain);
 
     Vec v(0.0, 0.0, 0.0);
     auto result = field(v);
@@ -217,7 +217,7 @@ static bool field_cm_2d_w() {
     vector<float> w_points = {1.0, 2.0, 3.0};
     auto data = create_matrix_data(2, mpts, mat_dim, w_points);
 
-    Field_CM field(data, mat_dim, mesh, domain, w_points);
+    Field_CM field(data, {mat_dim, mat_dim}, mesh, domain, w_points);
 
     Vec v(0.1, 0.1);  // Slightly offset from center
     float w = 1.5;
@@ -241,7 +241,7 @@ static bool field_rm_2d_w() {
     vector<float> w_points = {1.0, 2.0, 3.0};
     auto data = create_matrix_data(2, mpts, mat_dim, w_points);
 
-    Field_RM field(data, mat_dim, mesh, domain, w_points);
+    Field_RM field(data, {mat_dim, mat_dim}, mesh, domain, w_points);
 
     Vec v(0.1, 0.1);
     float w = 1.5;
@@ -264,7 +264,7 @@ static bool field_cm_save_load() {
     vector<vector<float>> domain = {{1.0}};
     auto data = create_matrix_data(1, mpts, mat_dim);
 
-    Field_CM field1(data, mat_dim, mesh, domain);
+    Field_CM field1(data, {mat_dim, mat_dim}, mesh, domain);
 
     string fname = "test_matrix_field.h5";
     field1.save(fname);
@@ -294,7 +294,7 @@ static bool field_rm_save_load() {
     vector<vector<float>> domain = {{1.0}};
     auto data = create_matrix_data(1, mpts, mat_dim);
 
-    Field_RM field1(data, mat_dim, mesh, domain);
+    Field_RM field1(data, {mat_dim, mat_dim}, mesh, domain);
 
     string fname = "test_matrix_field.h5";
     field1.save(fname);
@@ -324,7 +324,7 @@ static bool field_cm_copy() {
     vector<vector<float>> domain = {{1.0}};
     auto data = create_matrix_data(1, mpts, mat_dim);
 
-    Field_CM field1(data, mat_dim, mesh, domain);
+    Field_CM field1(data, {mat_dim, mat_dim}, mesh, domain);
     Field_CM field2;
     field2 = field1;
 
@@ -350,7 +350,7 @@ static bool field_rm_copy() {
     vector<vector<float>> domain = {{1.0}};
     auto data = create_matrix_data(1, mpts, mat_dim);
 
-    Field_RM field1(data, mat_dim, mesh, domain);
+    Field_RM field1(data, {mat_dim, mat_dim}, mesh, domain);
     Field_RM field2;
     field2 = field1;
 

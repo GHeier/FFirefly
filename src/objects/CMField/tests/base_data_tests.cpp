@@ -76,6 +76,56 @@ vector<cfloat> create_data(int dim, int pnts, vector<float> w_points = {}) {
     return values;
 }
 
+vector<cfloat> create_data_tensor(int dim, int pnts, vector<float> w_points = {}, int mat_dim = 1, int n_inds = 0) {
+    vector<cfloat> values;
+    int w_pts = w_points.empty() ? 1 : w_points.size();
+    int idx = 0;
+
+    // w-k ordering: frequency varies slowest, then spatial indices
+    if (dim == 3) {
+        for (int w = 0; w < w_pts; w++) {
+            for (int i = 0; i < pnts; i++) {
+                for (int j = 0; j < pnts; j++) {
+                    for (int k = 0; k < pnts; k++) {
+                        float w_val = w_points.empty() ? 0.0 : w_points[w];
+                        Vec point = get_vec(i, j, k, pnts);
+                        cfloat base = func_linear(point, dim);
+                        cfloat value = base + cfloat(w_val, w_val / 10);
+                        for (int n = 0; n < n_inds; n++) {
+                            values.push_back(value);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (dim == 2) {
+        for (int w = 0; w < w_pts; w++) {
+            for (int i = 0; i < pnts; i++) {
+                for (int j = 0; j < pnts; j++) {
+                    float w_val = w_points.empty() ? 0.0 : w_points[w];
+                    Vec point = get_vec(i, j, 0, pnts);
+                    cfloat base = func_linear(point, dim);
+                    cfloat value = base + cfloat(w_val, w_val / 10);
+                    values.push_back(value);
+                }
+            }
+        }
+    }
+    if (dim == 1) {
+        for (int w = 0; w < w_pts; w++) {
+            for (int i = 0; i < pnts; i++) {
+                float w_val = w_points.empty() ? 0.0 : w_points[w];
+                Vec point = get_vec(i, 0, 0, pnts);
+                cfloat base = func_linear(point, dim);
+                cfloat value = base + cfloat(w_val, w_val / 10);
+                values.push_back(value);
+            }
+        }
+    }
+    return values;
+}
+
 bool evaluate_real_scalar_1d_w() {
     // 1. Create a simple BaseData
     BaseData data;
@@ -402,6 +452,7 @@ bool create_destroy() {
     field.mesh = {2};   // 2 k-points
     field.dimension = 3; // 3-component vector
     field.domain = {{1.0}};
+    field.inds = {3};   // 3-component vector (rank-1)
 
     // Fill with 2x3 complex values
     vector<vector<cfloat>> vecs = {
@@ -581,6 +632,32 @@ bool point_storage_with_frequency() {
 
     filesystem::remove(fname);
     return true;
+}
+
+bool evaluate_tensor_complex_1d_w() {
+    BaseData data;
+    data.is_complex = true;
+    data.is_vector = false;
+    data.with_k = false;
+    data.with_w = true;
+    data.as_mesh = true;
+    data.mesh = {mpts};
+    data.dimension = 1;
+    data.inds = {2, 2};  // 2x2 matrix
+
+    data.domain = {
+        {1.0}
+    };
+    data.w_points = {1.0, 2.0, 3.0};
+    data.data = create_data(data.dimension, mpts, data.w_points);
+
+    DataEvaluator field(data);
+    Vec p(0.25, 0.25, 0.25);
+    auto result = field(p, 1.5);
+    if (auto* s = std::get_if<cfloat>(&result)) {
+        return fabs(*s - cfloat(2.25, 0.225)) < 1e-6;
+    }
+    return false;
 }
 
 bool base_data_tests() {

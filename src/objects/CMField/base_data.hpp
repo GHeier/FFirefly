@@ -19,25 +19,42 @@ public:
     bool with_w = false;
     bool as_mesh = false;
 
-    int n_indices = 0;
-    int dim_indices = 1;
-    vector<int> mesh;
-    int dimension = 1;
-    vector<vector<float>> domain;
+    // Tensor indices: inds[i] = size of i-th tensor dimension
+    // Examples:
+    //   Scalar: inds = {}
+    //   3-vector: inds = {3}
+    //   3x3 matrix: inds = {3, 3}
+    //   2x3 matrix: inds = {2, 3}
+    //   Single-band 4-vertex: inds = {1, 1, 1, 1}
+    vector<int> inds;
 
-    vector<float> w_points;
+    vector<int> mesh;      // Spatial mesh dimensions (k-points): e.g. {60, 60} for 60x60 grid
+    int dimension = 1;     // Spatial dimension (1D, 2D, or 3D)
+    vector<vector<float>> domain;  // Real-space domain (lattice vectors)
+
+    vector<float> w_points;  // Frequency points (if with_w==true)
     vector<vector<float>> points;  // k-point data storage when as_mesh = false
 
     using DataVariant = variant<
-        vector<cfloat>,
-        vector<vector<cfloat>>,
-        vector<vector<vector<cfloat>>>,  // For n_indices arrays at each point
-        vector<vector<vector<vector<cfloat>>>>  // For nested multi-dimensional indices
+        vector<cfloat>,                                // rank=0: scalars (inds={})
+        vector<vector<cfloat>>,                        // rank=1: vectors (inds={n})
+        vector<vector<vector<cfloat>>>,                // rank=2: matrices (inds={m,n})
+        vector<vector<vector<vector<cfloat>>>>,        // rank=3: 3D tensors (inds={l,m,n})
+        vector<vector<vector<vector<vector<cfloat>>>>> // rank=4: 4D tensors (inds={i,j,k,l})
     >;
 
     DataVariant data;
 
-    int total_index_size() const { return pow(dim_indices, n_indices); }
+    // Calculate total number of tensor elements
+    int total_index_size() const {
+        if (inds.empty()) return 1;  // Scalar
+        int total = 1;
+        for (int d : inds) total *= d;
+        return total;
+    }
+
+    // Get tensor rank (number of indices)
+    int rank() const { return inds.size(); }
     int nk() const {
         if (!with_k) return 1;
         if (as_mesh) {
@@ -83,6 +100,6 @@ BaseData load_data_from_hdf5(const std::string& filename, const std::string& ord
 // Save overloads
 void save_data_to_hdf5(BaseData& data, const std::string& filename);
 void save_data_to_hdf5(BaseData& data, const std::string& filename, const std::string& ordering);  // ordering: "k-w" or "w-k"
-void save_data(string filename, BaseData::DataVariant& data, bool is_complex = false, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, int n_indices = 0, int dim_indices = 0);
+void save_data(string filename, BaseData::DataVariant& data, bool is_complex = false, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<int>& inds = {});
 
-void save_data_to_hdf5(const std::string& filename, bool is_complex, bool is_vector, bool is_matrix, bool with_k, bool with_w, bool as_mesh, int n_indices, int dim_indices, vector<int> &mesh, vector<vector<float>> &domain, int dimension, vector<float> &w_points, vector<vector<float>> &points, const BaseData::DataVariant& data);
+void save_data_to_hdf5(const std::string& filename, bool is_complex, bool is_vector, bool is_matrix, bool with_k, bool with_w, bool as_mesh, const vector<int>& inds, vector<int> &mesh, vector<vector<float>> &domain, int dimension, vector<float> &w_points, vector<vector<float>> &points, const BaseData::DataVariant& data);

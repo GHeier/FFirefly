@@ -6,9 +6,12 @@ from triqs.gf import *
 from triqs_tprf.lattice import lattice_dyson_g0_wk
 from triqs.lattice import BrillouinZone, BravaisLattice
 from triqs.gf.mesh_product import MeshProduct
-import numpy as np
 from triqs_tprf.lattice import *
 from triqs_tprf import *
+
+import numpy as np
+from scipy.sparse.linalg import LinearOperator, eigsh
+
 
 outdir = cfg.outdir
 prefix = cfg.prefix
@@ -38,16 +41,58 @@ def get_k_mesh(BZ, nx, ny, nz):
 
     return K.reshape(-1, 3)           # full grid, flattened grid
 
+def make_lanczos(A):
+
+    def mv(x):
+        #y = np.zeros_like(x)
+        y = np.fft(x)
+        convd = A * y
+        result = np.ifft(convd)
+        return result
+
+    n = 1000
+    A = LinearOperator((n, n), matvec=mv, dtype=float)
+
+    # ARPACK uses Lanczos for symmetric problems
+    vals, vecs = eigsh(A, k=5, which="LM")  # 5 largest-magnitude eigenpairs
+
 def bcs():
     H_r, kmesh, e_k = fly.load_triqs_H.get_energy_mesh()
     Delta = Gf(name='Delta', mesh=kmesh, target_shape=[nstates, nstates])
     V = Gf(name='Vertex', mesh=kmesh, target_shape=[nstates, nstates, nstates, nstates])
     kmesh = get_k_mesh(BZ, nx, ny, nz)
-    print(outdir + prefix + '_vertex.h5')
-    vertex = fly.Field_CM(outdir + prefix + '_vertex.h5')
-    print(vertex([0.1,0.2,0.3]))
-    data = vertex(kmesh)
-    V.data[:] = np.reshape(data, (Nk, nstates, nstates, nstates, nstates))
 
-    # Randomize initial gap function
-    #Delta.data[:] = 1/(nx*ny*nz) * (np.random.rand(Nk, nstates, nstates) - 0.5)
+    # Load vertex data using BaseData (4-index tensor stored as scalar for single-band)
+    vertex_file = outdir + prefix + '_vertex.h5'
+    print(f"Loading vertex from {vertex_file}")
+    test_V = fly.Field_CM(vertex_file)
+    print(test_V([0.0,0.0,0.0]))
+    base_data = fly.BaseData(vertex_file)
+
+    # Get metadata
+    n_indices = base_data.n_indices
+    dim_indices = base_data.dim_indices
+    print(f"Vertex file: n_indices={n_indices}, dim_indices={dim_indices}")
+
+    # Get raw data
+    data_flat = base_data.get_data()
+    nw = len(base_data.w_points)
+    nk_total = len(data_flat) // nw
+    mesh_shape = tuple(base_data.mesh)
+    nk = np.prod(mesh_shape)  # Total number of k-points
+    print(f"Data shape: nw={nw}, nk={nk}, mesh={mesh_shape}")
+
+    # Reshape to (nw, nk) for single-band system
+    vertex_data = np.array(data_flat).reshape((nw, nk))
+
+    # Take w=0 component (middle frequency for now, should find closest to 0)
+    w0_idx = nw // 2
+    V.data[:, 0, 0, 0, 0] = vertex_data[w0_idx, :]
+
+    eigs, vecs = make_lanczos(V.data[:,0,0,0,0])
+    print(eigs)
+    for i in range(len(eigs)):
+        if eigs[i] > 0:
+            fly.save_data(outdir + prefix + "_gap.h5", vecs[i], cfg.k_mesh, BZ)
+            break
+    print("Saved to ", outdir + prefix + "_gap.h5")

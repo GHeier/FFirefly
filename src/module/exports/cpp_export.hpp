@@ -155,8 +155,9 @@ int BaseData_get_is_matrix(BaseData *data);
 int BaseData_get_with_k(BaseData *data);
 int BaseData_get_with_w(BaseData *data);
 int BaseData_get_as_mesh(BaseData *data);
-int BaseData_get_n_indices(BaseData *data);
-int BaseData_get_dim_indices(BaseData *data);
+int BaseData_get_rank(BaseData *data);  // Replaces n_indices (returns inds.size())
+int BaseData_get_inds_size(BaseData *data);  // Same as rank, for consistency
+void BaseData_get_inds(BaseData *data, int *inds_out);  // Get inds array
 int BaseData_get_dimension(BaseData *data);
 int BaseData_get_nk(BaseData *data);
 int BaseData_get_nw(BaseData *data);

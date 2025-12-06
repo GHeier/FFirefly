@@ -81,8 +81,7 @@ public:
           const vector<int>& mesh = {},
           const vector<vector<float>>& domain = {},
           const vector<float>& w_points = {},
-          int n_indices = 0,
-          int dim_indices = 1)
+          const vector<int>& inds = {})
     {
         data.data = data_variant;
         data.is_complex = is_complex;
@@ -91,8 +90,7 @@ public:
         data.mesh = mesh;
         data.domain = domain;
         data.w_points = w_points;
-        data.n_indices = n_indices;
-        data.dim_indices = dim_indices;
+        data.inds = inds;
 
         // Infer with_w based on w_points
         data.with_w = !w_points.empty();

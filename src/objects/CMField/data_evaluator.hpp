@@ -17,17 +17,22 @@ using DataVariant = variant<
     vector<cfloat>,
     vector<vector<cfloat>>,
     vector<vector<vector<cfloat>>>,
-    vector<vector<vector<vector<cfloat>>>>
+    vector<vector<vector<vector<cfloat>>>>,
+    vector<vector<vector<vector<vector<cfloat>>>>>
 >;
 using ResultVariant = variant<
     float,
     cfloat,
     Vec,
     complex<Vec>,
-    vector<float>,           // For real indexed arrays
-    vector<cfloat>,          // For complex indexed arrays
-    vector<vector<float>>,   // For real multi-dimensional indexed arrays
-    vector<vector<cfloat>>   // For complex multi-dimensional indexed arrays
+    vector<float>,                                    // For real 1D indexed arrays
+    vector<cfloat>,                                   // For complex 1D indexed arrays
+    vector<vector<float>>,                            // For real 2D indexed arrays (matrices)
+    vector<vector<cfloat>>,                           // For complex 2D indexed arrays (matrices)
+    vector<vector<vector<float>>>,                    // For real 3D indexed arrays
+    vector<vector<vector<cfloat>>>,                   // For complex 3D indexed arrays
+    vector<vector<vector<vector<float>>>>,            // For real 4D indexed arrays
+    vector<vector<vector<vector<cfloat>>>>            // For complex 4D indexed arrays
 >;
 
 
@@ -92,14 +97,17 @@ inline vector<Vec> float_matrix_to_vec(vector<vector<float>> a) {
 }
 
 struct DataEvaluator {
-    // For scalar/vector fields (n_indices = 0)
+    // For scalar/vector fields (rank = 0, inds = {})
     vector<complex<Vec>> data;
 
-    // For indexed fields (n_indices > 0)
-    // Storage layout (w-k ordering): indexed_data[w_idx][spatial_idx][flat_index]
-    // where flat_index = i0 + i1*dim_indices + i2*dim_indices^2 + ...
-    vector<vector<vector<cfloat>>> indexed_data_1d;  // For 1D indexed (vectors)
-    vector<vector<vector<vector<cfloat>>>> indexed_data_2d;  // For 2D indexed (matrices)
+    // For indexed fields (rank > 0)
+    // Storage layout (w-k ordering): indexed_data[w_idx][spatial_idx][indices...]
+    // For example, rank=2: indexed_data_2d[w_idx][spatial_idx][i][j] where i ∈ [0, inds[0]), j ∈ [0, inds[1])
+    //              rank=4: indexed_data_4d[w_idx][spatial_idx][i][j][k][l] where i ∈ [0, inds[0]), etc.
+    vector<vector<vector<cfloat>>> indexed_data_1d;                         // rank=1: [w][spatial][i]
+    vector<vector<vector<vector<cfloat>>>> indexed_data_2d;                 // rank=2: [w][spatial][i][j]
+    vector<vector<vector<vector<vector<cfloat>>>>> indexed_data_3d;         // rank=3: [w][spatial][i][j][k]
+    vector<vector<vector<vector<vector<vector<cfloat>>>>>> indexed_data_4d; // rank=4: [w][spatial][i][j][k][l]
 
     vector<float> w_points;
     bool is_complex;
@@ -107,15 +115,14 @@ struct DataEvaluator {
     bool is_matrix;
     bool with_w;
     int dimension;
-    int n_indices;
-    int dim_indices;
+    vector<int> inds;  // Tensor indices: inds[i] = size of i-th dimension
     vector<int> mesh;
     vector<Vec> domain;
     vector<Vec> inv_domain;
 
     // Default constructor
     DataEvaluator()
-        : is_complex(false), is_vector(false), is_matrix(false), with_w(false), dimension(1), n_indices(0), dim_indices(1) {}
+        : is_complex(false), is_vector(false), is_matrix(false), with_w(false), dimension(1), inds({}) {}
 
     DataEvaluator(BaseData& f);
 
