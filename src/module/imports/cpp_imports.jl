@@ -946,14 +946,31 @@ end
 
 function save_data!(
     path::String,
-    data::AbstractArray;
-    mesh::AbstractVector{<:Integer} = Int[],
-    domain::AbstractMatrix{<:AbstractFloat} = zeros(Float64, 0, 0),
+    data::AbstractArray,
+    mesh_arg::Union{AbstractVector{<:Integer}, Nothing} = nothing,
+    domain_arg::Union{AbstractMatrix{<:AbstractFloat}, Nothing} = nothing;
+    mesh::Union{AbstractVector{<:Integer}, Nothing} = nothing,
+    domain::Union{AbstractMatrix{<:AbstractFloat}, Nothing} = nothing,
     w_points::AbstractVector{<:AbstractFloat} = Float64[],
     inds::Union{AbstractVector{<:Integer}, Nothing} = nothing,
     n_indices::Union{Integer, Nothing} = nothing,
     dim_indices::Union{Integer, Nothing} = nothing,
 )
+    # Handle positional vs keyword arguments
+    # Positional args take precedence over keyword args
+    if mesh_arg !== nothing
+        mesh = mesh_arg
+    end
+    if domain_arg !== nothing
+        domain = domain_arg
+    end
+
+    if mesh === nothing
+        mesh = Int[]
+    end
+    if domain === nothing
+        domain = zeros(Float64, 0, 0)
+    end
     is_complex = eltype(data) <: Complex
 
     # Handle legacy API (n_indices, dim_indices) - convert to inds
@@ -1097,17 +1114,36 @@ function save_data_scalar(filename::String, data::AbstractArray,
 end
 
 function save_data_vector(filename::String, data::AbstractArray,
-                          is_complex::Bool, mesh::Vector{<:Integer}, domain::Matrix{<:Real},
-                          w_points::Vector{<:Real}=Float32[], inds::Vector{<:Integer}=Int[])
-    # Extract dimensions from inds
-    if length(inds) != 1
-        error("save_data_vector requires inds with 1 dimension")
+                          nk_or_is_complex = nothing, vec_len_or_mesh = nothing,
+                          is_complex_or_domain = nothing, mesh_or_w_points = nothing,
+                          domain_or_inds = nothing, w_points = nothing, inds = nothing)
+    # Detect which API is being used based on parameter types
+    # NOTE: Check Bool FIRST since Bool <: Integer in Julia!
+    if isa(nk_or_is_complex, Bool)
+        # New API: (filename, data, is_complex, mesh, domain, w_points, inds)
+        is_complex = nk_or_is_complex
+        mesh = vec_len_or_mesh
+        domain = is_complex_or_domain
+        w_points = something(mesh_or_w_points, Float32[])
+        inds = something(domain_or_inds, Int[])
+
+        if length(inds) != 1
+            error("save_data_vector requires inds with 1 dimension")
+        end
+        vec_len = inds[1]
+        nk = length(data) ÷ vec_len
+    elseif isa(nk_or_is_complex, Integer)
+        # Old API: (filename, data, nk, vec_len, is_complex, mesh, domain, w_points=Float32[])
+        nk = nk_or_is_complex
+        vec_len = vec_len_or_mesh
+        is_complex = is_complex_or_domain
+        mesh = mesh_or_w_points
+        domain = domain_or_inds
+        w_points = something(w_points, Float32[])
+        inds = [vec_len]
+    else
+        error("Invalid arguments to save_data_vector")
     end
-
-    vec_len = inds[1]
-
-    # Calculate nk from data size
-    nk = length(data) ÷ vec_len
 
     # Flatten and interleave data
     if is_complex
@@ -1136,24 +1172,45 @@ function save_data_vector(filename::String, data::AbstractArray,
 end
 
 function save_data_matrix(filename::String, data::AbstractArray,
-                          is_complex::Bool, mesh::Vector{<:Integer}, domain::Matrix{<:Real},
-                          w_points::Vector{<:Real}=Float32[], inds::Vector{<:Integer}=Int[])
-    # Extract dimensions from inds
-    if length(inds) != 2
-        error("save_data_matrix requires inds with 2 dimensions")
-    end
+                          num_matrices_or_is_complex = nothing, mat_dim_or_mesh = nothing,
+                          is_complex_or_domain = nothing, mesh_or_w_points = nothing,
+                          domain_or_inds = nothing, w_points = nothing, inds = nothing)
+    # Detect which API is being used based on parameter types
+    # NOTE: Check Bool FIRST since Bool <: Integer in Julia!
+    if isa(num_matrices_or_is_complex, Bool)
+        # New API: (filename, data, is_complex, mesh, domain, w_points, inds)
+        is_complex = num_matrices_or_is_complex
+        mesh = mat_dim_or_mesh
+        domain = is_complex_or_domain
+        w_points = something(mesh_or_w_points, Float32[])
+        inds = something(domain_or_inds, Int[])
 
-    # For now, assume both dimensions are equal (as C++ export expects)
-    mat_dim = inds[1]
-    if inds[1] != inds[2]
-        error("save_data_matrix currently requires both matrix dimensions to be equal")
+        if length(inds) != 2
+            error("save_data_matrix requires inds with 2 dimensions")
+        end
+        mat_dim = inds[1]
+        if inds[1] != inds[2]
+            error("save_data_matrix currently requires both matrix dimensions to be equal")
+        end
+        matrix_size = mat_dim * mat_dim
+        num_matrices = length(data) ÷ matrix_size
+    elseif isa(num_matrices_or_is_complex, Integer)
+        # Old API: (filename, data, num_matrices, mat_dim, is_complex, mesh, domain, w_points=Float32[])
+        num_matrices = num_matrices_or_is_complex
+        mat_dim = mat_dim_or_mesh
+        is_complex = is_complex_or_domain
+        mesh = mesh_or_w_points
+        domain = domain_or_inds
+        w_points = something(w_points, Float32[])
+        inds = [mat_dim, mat_dim]
+    else
+        error("Invalid arguments to save_data_matrix")
     end
-
-    # Calculate number of matrices from data size
-    matrix_size = mat_dim * mat_dim
-    num_matrices = length(data) ÷ matrix_size
 
     # Flatten and interleave data
+    if !isa(is_complex, Bool)
+        error("save_data_matrix: is_complex should be Bool but got $(typeof(is_complex)): $is_complex")
+    end
     if is_complex
         data_interleaved = interleave_complex(data)
     else

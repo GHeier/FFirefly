@@ -209,13 +209,14 @@ def test_save_read_with_frequency():
         filename = os.path.join(tmpdir, "test_roundtrip_freq.h5")
 
         # Create test data - 5x5 k-grid with 8 frequencies
+        # FFirefly convention: (nw, nx, ny)
         nk1, nk2 = 5, 5
         nw = 8
-        data = np.zeros((nk1, nk2, nw), dtype=np.float32)
-        for i in range(nk1):
-            for j in range(nk2):
-                for w in range(nw):
-                    data[i, j, w] = float(i + j + w)
+        data = np.zeros((nw, nk1, nk2), dtype=np.float32)
+        for w in range(nw):
+            for i in range(nk1):
+                for j in range(nk2):
+                    data[w, i, j] = float(i + j + w)
 
         mesh = [nk1, nk2]  # Only k-space dimensions
         domain = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
@@ -235,7 +236,7 @@ def test_save_read_with_frequency():
                 for w in [1, 3, 5]:
                     k_point = [float(i)/(nk1-1) - 0.5, float(j)/(nk2-1) - 0.5, 0.0]
                     value = field(k_point, float(w))
-                    expected = data[i, j, w]
+                    expected = data[w, i, j]  # Changed from data[i,j,w] to match (nw,nx,ny) layout
                     if abs(value - expected) > tolerance:
                         print(f"Mismatch at ({i},{j},w={w}): got {value}, expected {expected}")
                         passed = False

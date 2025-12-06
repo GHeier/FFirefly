@@ -6,10 +6,6 @@ BaseData and Fields Tutorial. Very simple, just go to bottom of file
 using LinearAlgebra
 using Printf
 
-# Activate the Firefly project environment
-import Pkg
-Pkg.activate(joinpath(@__DIR__, "../jlpkg/Firefly"))
-
 using Firefly
 using Firefly.Imports
 

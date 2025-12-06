@@ -232,13 +232,14 @@ function test_save_read_with_frequency()
         filename = joinpath(tmpdir, "test_roundtrip_freq.h5")
 
         # Create test data - 5x5 k-grid with 8 frequencies
+        # FFirefly convention: (nw, nx, ny)
         nk1, nk2 = 5, 5
         nw = 8
-        data = zeros(Float32, nk1, nk2, nw)
-        for i in 1:nk1
-            for j in 1:nk2
-                for w in 1:nw
-                    data[i, j, w] = Float32(i + j + w - 3)  # -3 because Julia is 1-indexed
+        data = zeros(Float32, nw, nk1, nk2)
+        for w in 1:nw
+            for i in 1:nk1
+                for j in 1:nk2
+                    data[w, i, j] = Float32(i + j + w - 3)  # -3 because Julia is 1-indexed
                 end
             end
         end
@@ -261,7 +262,7 @@ function test_save_read_with_frequency()
                 for w in [2, 4, 6]
                     k_point = Float64[(i-1)/(nk1-1) - 0.5, (j-1)/(nk2-1) - 0.5, 0.0]
                     value = field(k_point, Float64(w-1))
-                    expected = data[i, j, w]
+                    expected = data[w, i, j]  # Changed from data[i,j,w] to match (nw,nx,ny) layout
                     if abs(value - expected) > tolerance
                         println("Mismatch at ($i,$j,w=$w): got $value, expected $expected")
                         passed = false
