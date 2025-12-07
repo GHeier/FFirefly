@@ -10,6 +10,7 @@ from triqs_tprf.lattice import *
 from triqs_tprf import *
 
 import numpy as np
+from numpy.fft import fftn, ifftn
 from scipy.sparse.linalg import LinearOperator, eigsh
 
 
@@ -41,6 +42,14 @@ def get_k_mesh(BZ, nx, ny, nz):
 
     return K.reshape(-1, 3)           # full grid, flattened grid
 
+def multiply(V_r, D_k, mesh, arrsize):
+    axes = (i for i in range(len(mesh)))
+    D_k = np.reshape(D_k, mesh)
+    D_r = fftn(D_k, axes=axes)
+    D_r = np.einsum('rabcd,rcd->rab', V_r, D_r)
+    D_k = ifftn(D_r, axes=axes)
+    return D_k.flatten()
+
 def make_lanczos(A):
 
     def mv(x):
@@ -59,35 +68,22 @@ def make_lanczos(A):
 def bcs():
     H_r, kmesh, e_k = fly.load_triqs_H.get_energy_mesh()
     Delta = Gf(name='Delta', mesh=kmesh, target_shape=[nstates, nstates])
+    Delta = Diagram(Delta, 'Fermion')
+    Delta.obj_k.data[:] = 1.0
     V = Gf(name='Vertex', mesh=kmesh, target_shape=[nstates, nstates, nstates, nstates])
-    kmesh = get_k_mesh(BZ, nx, ny, nz)
 
-    # Load vertex data using BaseData (4-index tensor stored as scalar for single-band)
+    kpts = get_k_mesh(BZ, nx, ny, nz)
+
     vertex_file = outdir + prefix + '_vertex.h5'
     print(f"Loading vertex from {vertex_file}")
-    test_V = fly.Field_CM(vertex_file)
-    print(test_V([0.0,0.0,0.0]))
-    base_data = fly.BaseData(vertex_file)
+    V_vq = fly.Field_CM(vertex_file)
+    V_q = np.array(V_vq(kpts))
+    nk = V_q.shape[0]
+    V_q = V_q.reshape(nk, nstates, nstates, nstates, nstates)
 
-    # Get metadata
-    n_indices = base_data.n_indices
-    dim_indices = base_data.dim_indices
-    print(f"Vertex file: n_indices={n_indices}, dim_indices={dim_indices}")
-
-    # Get raw data
-    data_flat = base_data.get_data()
-    nw = len(base_data.w_points)
-    nk_total = len(data_flat) // nw
-    mesh_shape = tuple(base_data.mesh)
-    nk = np.prod(mesh_shape)  # Total number of k-points
-    print(f"Data shape: nw={nw}, nk={nk}, mesh={mesh_shape}")
-
-    # Reshape to (nw, nk) for single-band system
-    vertex_data = np.array(data_flat).reshape((nw, nk))
-
-    # Take w=0 component (middle frequency for now, should find closest to 0)
-    w0_idx = nw // 2
-    V.data[:, 0, 0, 0, 0] = vertex_data[w0_idx, :]
+    V.data[:] = V_q
+    new_val = multiply(V.data, Delta.obj_k.data, mesh=[nx, ny, nz], arr_size=(nstates, nstates))
+    print("New val shape: ", new_val.shape)
 
     eigs, vecs = make_lanczos(V.data[:,0,0,0,0])
     print(eigs)

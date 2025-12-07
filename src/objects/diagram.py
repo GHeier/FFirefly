@@ -9,15 +9,13 @@ import firefly as fly
 import firefly.config as cfg
 
 class Diagram:
-    def __init__(self, obj, statistic, physics_n_indices=None):
+    def __init__(self, obj, statistic):
         """
         Initialize a Diagram from a TRIQS Gf object.
 
         Args:
             obj: TRIQS Gf object
             statistic: 'Fermion' or 'Boson'
-            physics_n_indices: Optional override for n_indices when saving
-                              (e.g., vertex V is 4-index even if stored as scalar for single-band)
         """
         varspace = describe_mesh(obj)
         if varspace not in ['wk', 'tr', 'w', 't', 'k', 'r']:
@@ -30,8 +28,7 @@ class Diagram:
         self.nw = self.shape[0]
         if varspace == 'wk':
             self.nk = self.shape[1]
-        self.ind_dim = len(self.shape) - 2
-        self.physics_n_indices = physics_n_indices  # Override for physics context
+        self.ind_dim = len(self.shape) - len(varspace)
 
         if varspace == 'wk':
             self.obj_wk = obj
@@ -109,7 +106,7 @@ class Diagram:
         self.obj_w = make_gf_dlr_imfreq(self.dlr)
 
     def k_to_r(self):
-        mesh, BZ = extract_mesh_and_bz(self.obj_k)
+        mesh = self.obj_k.mesh.dims
         k_data = np.reshape(self.obj_k.data, mesh)
         r_data = np.fft.ifftn(k_data, axes=tuple(range(1, len(mesh))))
         self.obj_r.data[:] = np.reshape(r_data, self.shape)
@@ -134,20 +131,15 @@ class Diagram:
             # Spatial mesh should ONLY contain k-space dimensions, not tensor indices
             spatial_mesh = np.array(mesh[1:], dtype=np.int32)  # Skip nw: (nkx, nky, nkz)
 
-            # Determine n_indices from shape: number of orbital/band indices
-            # Use physics_n_indices if provided (for cases like vertex which is 4-index even for single-band)
-            if self.physics_n_indices is not None:
-                n_indices = self.physics_n_indices
-                dim_indices = 1  # For single-band vertex stored as scalar
-            else:
-                n_indices = self.ind_dim  # Number of indices beyond (w, k)
-                dim_indices = self.shape[2] if n_indices > 0 else 1  # Size of each index
+            n_indices = self.ind_dim  # Number of indices beyond (w, k)
+            dim_indices = self.shape[2] if n_indices > 0 else 1  # Size of each index
 
             fly.save_data(filename, obj, mesh=spatial_mesh, domain=BZ, w_points=self.w_points,
                          n_indices=n_indices, dim_indices=dim_indices)
         else:
             obj = np.reshape(self.obj_w.data, (self.nw, ))
             fly.save_data(filename, obj, mesh=None, domain=None, w_points=self.w_points)
+        print(f"Diagram saved to {filename}")
 
     def load(self, field):
         data = field.get_data()
@@ -369,9 +361,10 @@ def describe_mesh(G):
         return "w"
     elif isinstance(mesh, MeshDLRImTime):
         return "t"
-    elif isinstance(mesh, BrillouinZoneMesh):
+    elif isinstance(mesh, BrillouinZone):
         return "k"
     else:
+        return "k"
         return "unknown mesh type"
 
 
@@ -394,7 +387,8 @@ def extract_mesh_and_bz(G):
     mesh = G.mesh
 
     if not isinstance(mesh, MeshProduct):
-        raise ValueError("Green's function must have a MeshProduct mesh")
+        if isinstance(mesh, MeshBrillouinZone):
+            raise ValueError("Mesh is only MeshBrillouinZone, missing frequency component")
 
     mesh_w, mesh_k = mesh.components
 
