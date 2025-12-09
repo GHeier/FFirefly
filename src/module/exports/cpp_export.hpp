@@ -66,6 +66,8 @@ void Field_RM_operator_export0(Field_RM *obj, const float *point, int len,
                                float w, float **result, int *matrix_size);
 void Field_RM_operator_export_list(Field_RM *obj, const float *points, int num_points, int len,
                                    float w, float *output, int *matrix_size);
+void Field_RM_operator_export_w(Field_RM *obj, float w, float *result, int *matrix_size);
+void Field_RM_operator_export_w_list(Field_RM *obj, const float *w_points, int num_w, float *output, int *matrix_size);
 
 // Field_RM metadata exports
 int Field_RM_get_mesh_size(Field_RM *obj);
@@ -83,6 +85,8 @@ void Field_CM_operator_export0(Field_CM *obj, const float *point, int len,
                                float w, float **real_result, float **imag_result, int *matrix_size);
 void Field_CM_operator_export_list(Field_CM *obj, const float *points, int num_points, int len,
                                    float w, float *real_output, float *imag_output, int *matrix_size);
+void Field_CM_operator_export_w(Field_CM *obj, float w, float *real_result, float *imag_result, int *matrix_size);
+void Field_CM_operator_export_w_list(Field_CM *obj, const float *w_points, int num_w, float *real_output, float *imag_output, int *matrix_size);
 
 // Field_CM metadata exports
 int Field_CM_get_mesh_size(Field_CM *obj);

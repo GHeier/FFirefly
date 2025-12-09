@@ -451,6 +451,49 @@ void Field_RM_operator_export_list(Field_RM *obj, const float *points, int num_p
     }
 }
 
+void Field_RM_operator_export_w(Field_RM *obj, float w, float *result, int *matrix_size) {
+    vector<vector<float>> mat = obj->operator()(w);
+
+    if (mat.empty()) {
+        *matrix_size = 0;
+        return;
+    }
+
+    int n = mat.size();
+    *matrix_size = n;
+
+    // Flatten matrix to 1D array
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            int idx = i * n + j;
+            result[idx] = mat[i][j];
+        }
+    }
+}
+
+void Field_RM_operator_export_w_list(Field_RM *obj, const float *w_points, int num_w, float *output, int *matrix_size) {
+    vector<float> w_vec(w_points, w_points + num_w);
+    vector<vector<vector<float>>> results = obj->operator()(w_vec);
+
+    if (results.empty() || results[0].empty()) {
+        *matrix_size = 0;
+        return;
+    }
+
+    int n = results[0].size();
+    *matrix_size = n;
+
+    // Flatten all matrices to output array
+    for (int w_idx = 0; w_idx < num_w; ++w_idx) {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                int idx = w_idx * n * n + i * n + j;
+                output[idx] = results[w_idx][i][j];
+            }
+        }
+    }
+}
+
 Field_CM *Field_CM_export0() {
     ensure_cpp_config_loaded();
     return new Field_CM();
@@ -508,6 +551,51 @@ void Field_CM_operator_export_list(Field_CM *obj, const float *points, int num_p
                 int idx = p * n * n + i * n + j;
                 real_output[idx] = real(results[p][i][j]);
                 imag_output[idx] = imag(results[p][i][j]);
+            }
+        }
+    }
+}
+
+void Field_CM_operator_export_w(Field_CM *obj, float w, float *real_result, float *imag_result, int *matrix_size) {
+    vector<vector<complex<float>>> mat = obj->operator()(w);
+
+    if (mat.empty()) {
+        *matrix_size = 0;
+        return;
+    }
+
+    int n = mat.size();
+    *matrix_size = n;
+
+    // Flatten matrix to 1D arrays (real and imaginary parts)
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            int idx = i * n + j;
+            real_result[idx] = real(mat[i][j]);
+            imag_result[idx] = imag(mat[i][j]);
+        }
+    }
+}
+
+void Field_CM_operator_export_w_list(Field_CM *obj, const float *w_points, int num_w, float *real_output, float *imag_output, int *matrix_size) {
+    vector<float> w_vec(w_points, w_points + num_w);
+    vector<vector<vector<complex<float>>>> results = obj->operator()(w_vec);
+
+    if (results.empty() || results[0].empty()) {
+        *matrix_size = 0;
+        return;
+    }
+
+    int n = results[0].size();
+    *matrix_size = n;
+
+    // Flatten all matrices to output arrays
+    for (int w_idx = 0; w_idx < num_w; ++w_idx) {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                int idx = w_idx * n * n + i * n + j;
+                real_output[idx] = real(results[w_idx][i][j]);
+                imag_output[idx] = imag(results[w_idx][i][j]);
             }
         }
     }

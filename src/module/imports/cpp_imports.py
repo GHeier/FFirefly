@@ -198,7 +198,10 @@ class Field_R:
         if filename is None:
             self.ptr = lib.Field_R_export0()
         else:
-            self.ptr = lib.Field_R_export2(c_char_p(filename.encode('utf-8')))
+            if os.path.exists(filename):
+                self.ptr = lib.Field_R_export2(c_char_p(filename.encode('utf-8')))
+            else:
+                raise FileNotFoundError(f"File {filename} does not exist")
         if not self.ptr:
             raise RuntimeError("Failed to initialize Field_R")
 
@@ -307,9 +310,12 @@ class Field_R:
         data_array = bd.get_data()
 
         # Reshape from (nk*nw) to (nw, nk)
-        if bd.n_indices == 2:
+        if len(bd.inds) == 2:
             # Matrix: (nk*nw, dim, dim) -> (nw, nk, dim, dim)
-            data_reshaped = data_array.reshape(bd.nk, bd.nw, bd.dim_indices, bd.dim_indices)
+            data_reshaped = data_array.reshape(bd.nk, bd.nw, bd.inds[0], bd.inds[1])
+            return np.moveaxis(data_reshaped, [0, 1], [1, 0])  # swap k and w axes
+        elif len(bd.inds) == 4:
+            data_reshaped = data_array.reshape(bd.nk, bd.nw, bd.inds[0], bd.inds[1], bd.inds[2], bd.inds[3])
             return np.moveaxis(data_reshaped, [0, 1], [1, 0])  # swap k and w axes
         else:
             # Scalar: (nk*nw,) -> (nw, nk)
@@ -419,7 +425,10 @@ class Field_C:
         if filename is None:
             self.ptr = lib.Field_C_export0()
         else:
-            self.ptr = lib.Field_C_export2(c_char_p(filename.encode('utf-8')))
+            if os.path.exists(filename):
+                self.ptr = lib.Field_C_export2(c_char_p(filename.encode('utf-8')))
+            else:
+                raise FileNotFoundError(f"File {filename} does not exist")
         if not self.ptr:
             raise RuntimeError('Failed to initialize Field_C')
 
@@ -625,6 +634,10 @@ lib.Field_RM_operator_export0.argtypes = [c_void_p, POINTER(c_float), c_int, c_f
 lib.Field_RM_operator_export0.restype = None
 lib.Field_RM_operator_export_list.argtypes = [c_void_p, POINTER(c_float), c_int, c_int, c_float, POINTER(c_float), POINTER(c_int)]
 lib.Field_RM_operator_export_list.restype = None
+lib.Field_RM_operator_export_w.argtypes = [c_void_p, c_float, POINTER(c_float), POINTER(c_int)]
+lib.Field_RM_operator_export_w.restype = None
+lib.Field_RM_operator_export_w_list.argtypes = [c_void_p, POINTER(c_float), c_int, POINTER(c_float), POINTER(c_int)]
+lib.Field_RM_operator_export_w_list.restype = None
 
 # Field_RM metadata functions
 lib.Field_RM_get_mesh_size.argtypes = [c_void_p]
@@ -649,7 +662,10 @@ class Field_RM:
         if filename is None:
             self.ptr = lib.Field_RM_export0()
         else:
-            self.ptr = lib.Field_RM_export2(c_char_p(filename.encode('utf-8')))
+            if os.path.exists(filename):
+                self.ptr = lib.Field_RM_export2(c_char_p(filename.encode('utf-8')))
+            else:
+                raise FileNotFoundError(f"File {filename} does not exist")
         if not self.ptr:
             raise RuntimeError('Failed to initialize Field_RM')
 
@@ -685,19 +701,71 @@ class Field_RM:
         else:
             self.w_points = np.array([], dtype=np.float32)
 
-    def __call__(self, k, w=0.0):
+    def __call__(self, k=None, w=0.0):
         """
         Evaluate Field_RM at point(s) k with frequency w and return as numpy matrix or list of matrices.
 
         Args:
-            k: momentum point (list or array) or list of momentum points
+            k: momentum point (list or array), list of momentum points, or w value(s) if omitted
             w: frequency (default 0.0)
 
         Returns:
             numpy array of shape (n, n) with real values, or list of such arrays
         """
+        # Overload for (w: float) - w-only call
+        if k is not None and isinstance(k, (int, float, np.float32, np.float64)) and w == 0.0:
+            w_val = c_float(k)
+            matrix_size = c_int(0)
+
+            # Allocate space for a maximum size matrix
+            max_size = 100
+            result = (c_float * (max_size * max_size))()
+
+            lib.Field_RM_operator_export_w(
+                self.ptr, w_val, result, ctypes.byref(matrix_size)
+            )
+
+            n = matrix_size.value
+            if n == 0:
+                return np.array([[]], dtype=np.float32)
+
+            # Reshape flattened array to matrix
+            matrix = np.array([result[i] for i in range(n*n)]).reshape(n, n)
+
+            return matrix
+
+        # Overload for (w_points: list[float]) - list of w values
+        if k is not None and isinstance(k, (list, tuple, np.ndarray)) and len(k) > 0 and isinstance(k[0], (int, float, np.float32, np.float64)) and w == 0.0:
+            w_points = k
+            num_w = len(w_points)
+            w_array = (c_float * num_w)(*[float(wval) for wval in w_points])
+            matrix_size = c_int(0)
+
+            # Allocate space for multiple matrices
+            max_size = 100
+            output = (c_float * (num_w * max_size * max_size))()
+
+            lib.Field_RM_operator_export_w_list(
+                self.ptr, w_array, c_int(num_w),
+                output, ctypes.byref(matrix_size)
+            )
+
+            n = matrix_size.value
+            if n == 0:
+                return [np.array([[]], dtype=np.float32) for _ in range(num_w)]
+
+            # Reshape to list of matrices
+            matrices = []
+            for i in range(num_w):
+                start_idx = i * n * n
+                end_idx = (i + 1) * n * n
+                matrix = np.array([output[j] for j in range(start_idx, end_idx)]).reshape(n, n)
+                matrices.append(matrix)
+
+            return matrices
+
         # Check if k is a list of points (list of lists)
-        if len(k) > 0 and isinstance(k[0], (list, tuple, np.ndarray)):
+        if k is not None and len(k) > 0 and isinstance(k[0], (list, tuple, np.ndarray)):
             # List of points
             points = k
             num_points = len(points)
@@ -796,6 +864,10 @@ lib.Field_CM_operator_export0.argtypes = [c_void_p, POINTER(c_float), c_int, c_f
 lib.Field_CM_operator_export0.restype = None
 lib.Field_CM_operator_export_list.argtypes = [c_void_p, POINTER(c_float), c_int, c_int, c_float, POINTER(c_float), POINTER(c_float), POINTER(c_int)]
 lib.Field_CM_operator_export_list.restype = None
+lib.Field_CM_operator_export_w.argtypes = [c_void_p, c_float, POINTER(c_float), POINTER(c_float), POINTER(c_int)]
+lib.Field_CM_operator_export_w.restype = None
+lib.Field_CM_operator_export_w_list.argtypes = [c_void_p, POINTER(c_float), c_int, POINTER(c_float), POINTER(c_float), POINTER(c_int)]
+lib.Field_CM_operator_export_w_list.restype = None
 
 # Field_CM metadata functions
 lib.Field_CM_get_mesh_size.argtypes = [c_void_p]
@@ -820,7 +892,10 @@ class Field_CM:
         if filename is None:
             self.ptr = lib.Field_CM_export0()
         else:
-            self.ptr = lib.Field_CM_export2(c_char_p(filename.encode('utf-8')))
+            if os.path.exists(filename):
+                self.ptr = lib.Field_CM_export2(c_char_p(filename.encode('utf-8')))
+            else:
+                raise FileNotFoundError(f"File {filename} does not exist")
         if not self.ptr:
             raise RuntimeError('Failed to initialize Field_CM')
 
@@ -856,19 +931,75 @@ class Field_CM:
         else:
             self.w_points = np.array([], dtype=np.float32)
 
-    def __call__(self, k, w=0.0):
+    def __call__(self, k=None, w=0.0):
         """
         Evaluate Field_CM at point(s) k with frequency w and return as numpy matrix or list of matrices.
 
         Args:
-            k: momentum point (list or array) or list of momentum points
+            k: momentum point (list or array), list of momentum points, or w value(s) if omitted
             w: frequency (default 0.0)
 
         Returns:
             numpy array of shape (n, n) with complex values, or list of such arrays
         """
+        # Overload for (w: float) - w-only call
+        if k is not None and isinstance(k, (int, float, np.float32, np.float64)) and w == 0.0:
+            w_val = c_float(k)
+            matrix_size = c_int(0)
+
+            # Allocate space for a maximum size matrix
+            max_size = 100
+            real_result = (c_float * (max_size * max_size))()
+            imag_result = (c_float * (max_size * max_size))()
+
+            lib.Field_CM_operator_export_w(
+                self.ptr, w_val, real_result, imag_result, ctypes.byref(matrix_size)
+            )
+
+            n = matrix_size.value
+            if n == 0:
+                return np.array([[]], dtype=np.complex64)
+
+            # Reshape flattened arrays to matrix
+            real_matrix = np.array([real_result[i] for i in range(n*n)]).reshape(n, n)
+            imag_matrix = np.array([imag_result[i] for i in range(n*n)]).reshape(n, n)
+
+            return real_matrix + 1j * imag_matrix
+
+        # Overload for (w_points: list[float]) - list of w values
+        if k is not None and isinstance(k, (list, tuple, np.ndarray)) and len(k) > 0 and isinstance(k[0], (int, float, np.float32, np.float64)) and w == 0.0:
+            w_points = k
+            num_w = len(w_points)
+            w_array = (c_float * num_w)(*[float(wval) for wval in w_points])
+            matrix_size = c_int(0)
+
+            # Allocate space for multiple matrices
+            max_size = 100
+            real_output = (c_float * (num_w * max_size * max_size))()
+            imag_output = (c_float * (num_w * max_size * max_size))()
+
+            lib.Field_CM_operator_export_w_list(
+                self.ptr, w_array, c_int(num_w),
+                real_output, imag_output, ctypes.byref(matrix_size)
+            )
+
+            n = matrix_size.value
+            if n == 0:
+                return [np.array([[]], dtype=np.complex64) for _ in range(num_w)]
+
+            # Reshape to list of matrices
+            matrices = []
+            for i in range(num_w):
+                start_idx = i * n * n
+                end_idx = (i + 1) * n * n
+                real_mat = np.array([real_output[j] for j in range(start_idx, end_idx)]).reshape(n, n)
+                imag_mat = np.array([imag_output[j] for j in range(start_idx, end_idx)]).reshape(n, n)
+                matrices.append(real_mat + 1j * imag_mat)
+
+            return matrices
+
         # Check if k is a list of points (list of lists)
-        if len(k) > 0 and isinstance(k[0], (list, tuple, np.ndarray)):
+        if k is not None and len(k) > 0 and isinstance(k[0], (list, tuple, np.ndarray)):
             # List of points
             points = k
             num_points = len(points)

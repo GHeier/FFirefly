@@ -94,8 +94,14 @@ public:
   // Returns full matrix at point
   vector<vector<cfloat>> operator()(Vec point, float w = 0);
 
+  // Returns full matrix at frequency only (k-independent, averaged over k if needed)
+  vector<vector<cfloat>> operator()(float w);
+
   // List-based operator for multiple points
   vector<vector<vector<cfloat>>> operator()(const vector<Vec>& points, float w = 0);
+
+  // List-based operator for multiple w-points
+  vector<vector<vector<cfloat>>> operator()(const vector<float>& w_points);
 
   // Diagonalize matrix at point and return eigenvalues
   vector<float> diag(Vec point, float w = 0);
@@ -129,8 +135,14 @@ public:
   // Returns full matrix at point
   vector<vector<float>> operator()(Vec point, float w = 0);
 
+  // Returns full matrix at frequency only (k-independent, averaged over k if needed)
+  vector<vector<float>> operator()(float w);
+
   // List-based operator for multiple points
   vector<vector<vector<float>>> operator()(const vector<Vec>& points, float w = 0);
+
+  // List-based operator for multiple w-points
+  vector<vector<vector<float>>> operator()(const vector<float>& w_points);
 
   // Diagonalize matrix at point and return eigenvalues
   vector<float> diag(Vec point, float w = 0);
