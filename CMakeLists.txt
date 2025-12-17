@@ -18,14 +18,18 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${CMAKE_SOURCE_DIR}/external/h2pack/include)
 
 # Compiler flags
 set(CMAKE_CXX_FLAGS "-O3 -fopenmp -fPIC")
 set(CMAKE_C_FLAGS "-fopenmp -fPIC")
-set(CMAKE_Fortran_FLAGS "-O3 -fopenmp -fPIC -L/usr/local/lib -I/usr/local/include -ltetrabz")
+set(CMAKE_Fortran_FLAGS "-O3 -fopenmp -fPIC")
+
+# H2Pack library paths
+link_directories(${CMAKE_SOURCE_DIR}/external/h2pack/lib)
 
 # Libraries to link
-set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -ltetrabz -lopenblas -ljulia -lhdf5_cpp -lhdf5 -lfftw3 -lfftw3f)
+set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -lopenblas -ljulia -lhdf5_cpp -lhdf5 -lfftw3 -lfftw3f -lH2Pack)
 
 # Find Python3 headers and libraries
 # Use conda environment's Python if CONDA_PREFIX is set

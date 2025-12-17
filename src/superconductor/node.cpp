@@ -14,13 +14,21 @@ using namespace std;
 extern "C" void superconductor_wrapper() {
     printv("Running superconductor_wrapper\n");
     if (calculation == "bcs") {
-        if (method == "grid")
-            bcs_grid();
+        if (method == "power_iteration")
+            bcs_power_iteration();
+        else if (method == "lanczos")
+            bcs_lanczos();
         else
             bcs();
     }
-    else if (calculation == "eliashberg")
-        eliashberg();
+    else if (calculation == "eliashberg") {
+        if (method == "power_iteration")
+            eliashberg_power_iteration();
+        else if (method == "lanczos")
+            eliashberg_lanczos();
+        else
+            cout << "method " << method << " not recognized" << endl;
+    }
     else if (calculation == "linearized_eliashberg")
         linearized_eliashberg();
     else if (calculation == "debug")

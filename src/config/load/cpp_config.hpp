@@ -20,7 +20,6 @@ extern bool write_result;
 extern string filetype;
 
 //[SYSTEM]
-extern string hamiltonian;
 extern string interaction;
 extern int dimension;
 extern string celltype;
@@ -34,6 +33,10 @@ extern float cutoff_energy;
 extern float smearing;
 extern float mixing;
 extern int max_iters;
+extern int num_solutions;
+
+//[HAMILTONIAN]
+extern string hamiltonian;
 
 //[MESH]
 extern vector<int> k_mesh;

@@ -36,6 +36,7 @@ ALL = {
         "smearing": 0.02,
         "mixing": 0.02,
         "max_iters": 100,
+        "num_solutions": 5,
     },
     "HAMILTONIAN": {"hamiltonian": "tight_binding"},
     "MESH": {"k_mesh": [10, 10, 10], "q_mesh": [10, 10, 10], "w_pts": 100},

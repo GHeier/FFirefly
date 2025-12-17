@@ -13,7 +13,7 @@ import numpy as np
 from numpy.fft import fftn, ifftn
 from scipy.sparse.linalg import LinearOperator, eigsh
 
-
+# Load config variables on file call
 outdir = cfg.outdir
 prefix = cfg.prefix
 
@@ -27,6 +27,7 @@ BZ = np.array(cfg.brillouin_zone)
 
 mu = cfg.fermi_energy
 beta = 1.0 / cfg.Temperature
+max_eigs_searched = cfg.num_solutions
 
 def get_k_mesh(BZ, nx, ny, nz):
     # fractional grid (0→1)
@@ -42,305 +43,428 @@ def get_k_mesh(BZ, nx, ny, nz):
 
     return K.reshape(-1, 3)           # full grid, flattened grid
 
-def multiply(V_r, f_k, f_r, D_k_flat, mesh, arrsize):
+def f(e, beta, eps=1e-6):
     """
-    Perform convolution: result = IFFT[V(r) * FFT[D(k)]]
-
-    Args:
-        V_r: Vertex in real space, shape (nkx, nky, nkz, nstates, nstates, nstates, nstates)
-        f_k: Square root of form factor in momentum space, shape (nkx, nky, nkz, 1, 1)
-        f_r: Square root of form factor in real space, shape (nkx, nky, nkz, 1, 1)
-        D_k_flat: Gap function in k-space, flattened, shape (nkx*nky*nkz*nstates*nstates,)
-        mesh: (nkx, nky, nkz)
-        arrsize: (nstates, nstates)
-
-    Returns:
-        Flattened result in k-space
+    Elementwise: tanh(beta*e)/(2e), with the e->0 limit = beta/2.
+    NOTE: your code used beta/4; the actual limit of tanh(beta e)/(2e) is beta/2.
+    If you truly want beta/4, change the constant below.
     """
-    nkx, nky, nkz = mesh
-    nstates_a, nstates_b = arrsize
+    e = np.asarray(e)
+    small = np.abs(e) < eps
+    out = np.empty_like(e, dtype=np.result_type(e, 1.0))
+    out[small] = beta / 4.0
+    out[~small] = np.tanh(beta * e[~small] / 2) / (2.0 * e[~small])
+    return out
 
-    # Reshape D_k_flat from (nk*nstates*nstates,) to (nkx, nky, nkz, nstates, nstates)
-    D_k = D_k_flat.reshape(nkx, nky, nkz, nstates_a, nstates_b)
-    D_r = fftn(D_k, axes=(0, 1, 2))
-    #D_r_flip = D_r[::-1, ::-1, ::-1, :, :]
-    #D_r_even = (D_r + D_r_flip) / 2.0
+def construct_form_factor(e_k, Z):
+    """Construct form factor f(k) = tanh(βε_k/Z) / (2ε_k)"""
+    norb1, norb2 = e_k.data.shape[-2], e_k.data.shape[-1]
+    e_k = np.reshape(e_k.data - mu, (nx, ny, nz, norb1, norb2))
+    f_k = f(e_k / Z, beta) / Z
+    print("Minum abs value of ek:", np.min(np.abs(e_k)))
+    # Keep f_k in momentum space (reshape to match Delta dimensions)
+    f_k = f_k.reshape(nx, ny, nz, nstates, nstates)
+    return f_k
 
-    #h_r = np.einsum('xyzabcd,xyzcd->xyzab', V_r, f_r * D_r_even)
-    h_r = np.einsum('xyzabcd,xyzcd->xyzab', V_r, D_r)
-    h_k = ifftn(h_r, axes=(0, 1, 2))
-    return h_k.flatten()
-    phi_k = h_k * f_k
-
-    # Flatten back to 1D vector
-    return phi_k.flatten()
-
-def multiply_basic(V_r, f_r, D_k_flat, mesh, arrsize):
-    nkx, nky, nkz = mesh
-    nstates_a, nstates_b = arrsize
-    D_k = D_k_flat.reshape(nkx, nky, nkz, nstates_a, nstates_b)
-    D_r = fftn(D_k, axes=(0, 1, 2))
-    D_r_flip = D_r[::-1, ::-1, ::-1, :, :]
-    D_r_even = (D_r + D_r_flip) / 2.0
-
-    #h_r = np.einsum('xyzabcd,xyzcd->xyzab', V_r, f_r * D_r_even)
-    h_r = np.einsum('xyzabcd,xyzcd->xyzab', V_r, f_r * D_r)
-    h_k = ifftn(h_r, axes=(0, 1, 2))
-    return h_k.flatten()
-
-def project_out(v, eigvecs):
-    """
-    Project out previously found eigenvectors using Gram-Schmidt orthogonalization.
-
-    Args:
-        v: Vector to project, shape (n,)
-        eigvecs: List of previously found eigenvectors to project out
-
-    Returns:
-        Orthogonalized and normalized vector
-    """
-    for x in eigvecs:
-        # Compute projection: proj = (x·v / x·x) * x
-        # Use vdot for proper complex conjugation: vdot(a,b) = sum(conj(a) * b)
-        proj = (np.vdot(x, v) / np.vdot(x, x)) * x
-        v = v - proj
-
-    # Normalize
-    nv = np.linalg.norm(v)
-    if nv > 1e-14:
-        v = v / nv
-    else:
-        # If deflation results in zero vector, return random orthogonal vector
-        print("Warning: Deflation resulted in near-zero vector, using random initialization")
-        v = np.random.randn(len(v)) + 1j * np.random.randn(len(v))
-        v = project_out(v, eigvecs)  # Recursive call to ensure orthogonality
-    return v
-
-
-def make_power_iteration(V_r, f_r, n_eig=5, max_iter=100, tol=1e-6):
-    """
-    Solve BCS eigenvalue problem using power iteration with projection.
-
-    This method finds multiple eigenpairs by:
-    1. Power iteration to find largest eigenvalue
-    2. Project out found eigenvector
-    3. Repeat for next eigenvalue
-
-    Args:
-        V_r: Vertex in real space, shape (nkx, nky, nkz, nstates, nstates, nstates, nstates)
-        f_r: Form factor in real space
-        n_eig: Number of eigenpairs to find
-        max_iter: Maximum iterations per eigenpair
-        tol: Convergence tolerance
-
-    Returns:
-        eigenvalues (array of shape (n_eig,)), eigenvectors (array of shape (n, n_eig))
-    """
-    n = nx * ny * nz * nstates * nstates
-
-    # Define matrix-vector product
-    def mv(D_k_flat):
-        """Apply the kernel: result = V * D"""
-        result = multiply_basic(V_r, f_r, D_k_flat, mesh=(nx, ny, nz), arrsize=(nstates, nstates))
-        return result
-
-    eigenvalues = []
-    eigenvectors = []
-    old_eigvecs = []  # Store previously found eigenvectors for projection
-
-    print(f"\n{'='*70}")
-    print(f"Power Iteration Solver (finding {n_eig} eigenpairs)")
-    print(f"{'='*70}")
-
-    for ieig in range(n_eig):
-        print(f"\nSearching for eigenpair #{ieig+1}...")
-
-        # Random initial guess
-        v = np.random.randn(n) + 1j * np.random.randn(n)
-        v = v / np.linalg.norm(v)
-
-        # Project out previously found eigenvectors
-        if len(old_eigvecs) > 0:
-            v = project_out(v, old_eigvecs)
-
-        eig = 0.0
-        prev_eig = 0.0
-
-        for it in range(max_iter):
-            # Power iteration step: v_new = A * v
-            v_new = mv(v)
-
-            # Project out old eigenvectors to avoid convergence to them
-            if len(old_eigvecs) > 0:
-                v_new = project_out(v_new, old_eigvecs)
-
-            # Compute eigenvalue (Rayleigh quotient): λ = v† A v / v† v
-            # Since v is normalized, this simplifies to: λ = v† v_new
-            eig = np.vdot(v, v_new).real
-
-            # Normalize
-            norm = np.linalg.norm(v_new)
-            v_new = v_new / norm
-
-            # Check convergence
-            diff = np.abs(eig - prev_eig)
-            prev_eig = eig
-            v = v_new
-
-            if (it + 1) % 10 == 0:
-                print(f"  Iteration {it+1:3d}: λ = {eig:12.6f}, Δλ = {diff:.6e}")
-
-            if diff < tol or np.isnan(diff):
-                print(f"  Converged after {it+1} iterations: λ = {eig:.6f}")
-                break
-
-        if it == max_iter - 1:
-            print(f"  Warning: Did not converge after {max_iter} iterations (Δλ = {diff:.6e})")
-
-        eigenvalues.append(eig)
-        eigenvectors.append(v.copy())
-        old_eigvecs.append(v.copy())
-
-        # Stop if eigenvalue is too small (hit null space)
-        if np.abs(eig) < 1e-3:
-            print(f"  Eigenvalue too small (|λ| < 1e-3), stopping search")
-            break
-
-    # Convert to arrays and sort by magnitude
-    eigenvalues = np.array(eigenvalues)
-    eigenvectors = np.column_stack(eigenvectors)
-
-    # Sort by descending |λ|
-    idx = np.argsort(np.abs(eigenvalues))[::-1]
-    eigenvalues = eigenvalues[idx]
-    eigenvectors = eigenvectors[:, idx]
-
-    print(f"\n{'='*70}")
-    print(f"Power Iteration Complete")
-    print(f"{'='*70}")
-    print(f"Found {len(eigenvalues)} eigenpairs:")
-    for i, eig in enumerate(eigenvalues):
-        print(f"  λ_{i+1} = {eig:12.6f}")
-
-    return eigenvalues, eigenvectors
-
-
-def make_lanczos(V_r, f_r, f_k):
-    """
-    Set up and solve eigenvalue problem on k-grid using Lanczos (ARPACK)
-
-    Args:
-        V_r: Vertex in real space, shape (nkx, nky, nkz, nstates, nstates, nstates, nstates)
-
-    Returns:
-        eigenvalues, eigenvectors
-    """
-    n = nx * ny * nz * nstates * nstates
-
-    # Define matrix-vector product for the eigenvalue problem
-    def mv(D_k_flat):
-        """
-        Apply the kernel: result = V * D
-        where the multiplication is a convolution in real space
-        """
-        result = multiply(V_r, f_k, f_r, D_k_flat, mesh=(nx, ny, nz), arrsize=(nstates, nstates))
-        return result
-
-    # Create linear operator for ARPACK
-    A = LinearOperator((n, n), matvec=mv, dtype=complex)
-
-    # Check both ends of spectrum to avoid null space
-    k_check = min(10, n // 2 - 1)
-
-    # Find most positive eigenvalues
-    try:
-        vals_pos, vecs_pos = eigsh(A, k=k_check, which='LA', tol=1e-10)
-    except:
-        vals_pos = np.array([])
-        vecs_pos = np.zeros((n, 0))
-
-    # Find most negative eigenvalues
-    try:
-        vals_neg, vecs_neg = eigsh(A, k=k_check, which='SA', tol=1e-10)
-    except:
-        vals_neg = np.array([])
-        vecs_neg = np.zeros((n, 0))
-
-    # Combine and sort by magnitude (largest |λ| first)
-    vals = np.concatenate([vals_pos, vals_neg])
-    vecs = np.column_stack([vecs_pos, vecs_neg])
-
-    idx = np.argsort(np.abs(vals))[::-1]
-    vals = vals[idx]
-    vecs = vecs[:, idx]
-
-    # Return top 5 eigenpairs
-    n_return = min(5, len(vals))
-    return vals[:n_return], vecs[:, :n_return]
-
-def bcs():
+def load():
+    """Load data needed for BCS calculation (FFT-based convolution method)"""
     H_r, kmesh, e_k = fly.load_triqs_H.get_energy_mesh()
     kpts = get_k_mesh(BZ, nx, ny, nz)
 
+    # Load vertex
     vertex_file = outdir + prefix + '_vertex.h5'
     print(f"Loading vertex from {vertex_file}")
     V_vq = fly.Field_CM(vertex_file)
     V_q = np.array(V_vq(kpts))
-    #V_q[:, 0, 0] = 1.0
-    #V_q[:, 0, 0] = np.cos(kpts[:,0]) + np.cos(kpts[:,1])
-    #V_q[:, 0, 0] = np.exp(-kpts[:,0]**2 - kpts[:,1]**2)
+
     nk = V_q.shape[0]
     V_q = V_q.reshape(nk, nstates, nstates, nstates, nstates)
     V_q = V_q.reshape(nx, ny, nz, nstates, nstates, nstates, nstates)
+
+    # Apply k=0 factors
+    V_q[0,:, :, :, :, :, :] *= 0.5
+    V_q[:,0, :, :, :, :, :] *= 0.5
+    if dim > 2:
+        V_q[:,:, 0, :, :, :, :] *= 0.5
 
     # Transform V from k-space to real-space (spatial dimensions only)
     V_r = fftn(V_q, axes=(0, 1, 2))
     print(f"V_r shape: {V_r.shape}")
 
+    # Load self-energy and compute quasiparticle weight
     sigma_file = outdir + prefix + '_sigma_iw.h5'
     Sigma_w = fly.Field_C(sigma_file)
     dw = 1e-2
     Z = 1.0 - (Sigma_w(dw).imag - Sigma_w(-dw).imag) / (dw)
     print(f"Quasiparticle weight Z: {Z}")
 
+    # Compute form factor f(k) = tanh(βε_k/Z) / (2ε_k)
+    f_k = construct_form_factor(e_k, Z)
+
+    # Initialize Delta0 (starting gap function)
+    Delta0_shape = (nx, ny, nz, nstates, nstates)
+    Delta0 = np.zeros(Delta0_shape, dtype=complex)
+
+    return V_r, f_k, Z, Delta0
+
+
+def load_matrix():
+    """Load data and build full V(k-k') matrix for direct matrix multiplication"""
+    import time
+    start_time = time.time()
+
+    H_r, kmesh, e_k = fly.load_triqs_H.get_energy_mesh()
+    kpts = get_k_mesh(BZ, nx, ny, nz)
+    nk = len(kpts)
+
+    print(f"Building full V(k-k') matrix for {nk} k-points...")
+    print(f"WARNING: This requires O(nk^2) = {nk**2/1e6:.1f}M evaluations and may take several minutes")
+
+    # Load vertex field
+    vertex_file = outdir + prefix + '_vertex.h5'
+    print(f"Loading vertex from {vertex_file}")
+    V_field = fly.Field_CM(vertex_file)
+
+    # Compute all momentum differences k - k'
+    # For now, assume single band (nstates=1) for simplicity
+    # V_matrix will be shape (nk, nk) for single band
+    # or (nk*nstates, nk*nstates) for multi-band
+
+    if nstates == 1:
+        # Single band case: V_matrix[k, k'] = V(k-k')[0,0,0,0]
+        V_matrix = np.zeros((nk, nk), dtype=complex)
+        print("Computing V(k-k') matrix (single band)...")
+
+        dk = kpts[:, None, :] - kpts[None, :, :]
+        V_vals = V_field(dk.reshape(-1, 3))
+        V_vals = np.array(V_vals).reshape(nk, nk)
+        V_matrix[:, :] = V_vals
+
+    else:
+        raise NotImplementedError("Multi-band V(k-k') matrix construction not implemented yet")
+
+    # Load self-energy and compute quasiparticle weight
+    sigma_file = outdir + prefix + '_sigma_iw.h5'
+    Sigma_w = fly.Field_C(sigma_file)
+    dw = 1e-2
+    Z = 1.0 - (Sigma_w(dw).imag - Sigma_w(-dw).imag) / (dw)
+    print(f"Quasiparticle weight Z: {Z}")
+
+    # Compute form factor f(k) = tanh(βε_k/Z) / (2ε_k)
     norb1, norb2 = e_k.data.shape[-2], e_k.data.shape[-1]
-    e_k = np.reshape(e_k.data - mu, (nx, ny, nz, norb1, norb2))
-    f_k = np.tanh(beta * e_k / Z) / (2.0 * e_k)
-    f_r = fftn(f_k.reshape(nx, ny, nz, 1, 1), axes=(0, 1, 2))
-    #f_r[:] = 1.0
-    f_k_sqrt = np.sqrt(f_k)
-    f_r_sqrt = fftn(f_k_sqrt.reshape(nx, ny, nz, 1, 1), axes=(0, 1, 2))
+    e_k_flat = e_k.data.reshape(nk, norb1, norb2) - mu
+    f_k = np.tanh(beta * e_k_flat / Z) / (2.0 * e_k_flat)  # shape (nk, nstates, nstates)
 
-    # Solve BCS eigenvalue problem
-    method = cfg.method if hasattr(cfg, 'method') else ''
-    print(f"Solving BCS gap equation using {method}...")
+    # Initialize Delta0
+    if nstates == 1:
+        Delta0 = np.zeros(nk, dtype=complex)
+    else:
+        Delta0 = np.zeros((nk, nstates, nstates), dtype=complex)
 
-    eigs, vecs = make_power_iteration(V_r, f_r, n_eig=5, max_iter=100, tol=1e-6)
-        #if method == 'power_iteration':
-        #    eigs, vecs = make_power_iteration(V_r, f_r, f_sqrt, n_eig=5, max_iter=100, tol=1e-6)
-        #elif method == "lanczos":
-        #    eigs, vecs = make_lanczos(V_r, f_r, f_sqrt)
-        #else:
-        #    raise ValueError(f"Unknown method '{method}' for BCS solver")
+    print(f"V_matrix shape: {V_matrix.shape}")
+    print(f"f_k shape: {f_k.shape}")
+    print(f"Delta0 shape: {Delta0.shape}")
 
-    eigs /= (nk * Z)
+    return V_matrix, f_k, Z, Delta0
 
-    for i in range(len(eigs)):
-        if abs(eigs[i]) > 1e-3:
-            plot_gap(vecs[:,i].reshape(nx, ny))
 
-    print(f"Eigenvalues: {eigs}")
-    print(f"Largest eigenvalue: {eigs[0]:.6f}")
+# Main function 1
+def run_lanczos():
+    V_r, f_r, Z, Delta0 = load()
+    eigs, Deltas = solve_bcs_lanczos(V_r, f_r, Z, Delta0)
+
+    # Find max positive eigenvalue
+    i = np.where(eigs > 0, eigs, -np.inf).argmax()
+    print(f"Max Eig: {eigs[i]:.6f}")
+
+    # Save gap function
     gap_file = outdir + prefix + '_gap.h5'
-    gap = vecs[:,0].reshape(nx, ny, nz)
+    gap = Deltas[:, i].reshape(nx, ny, nz)
     fly.save_data(gap_file, gap, mesh=[nx, ny, nz], domain=BZ[:2,:2])
     print(f"Saved gap function to {gap_file}")
+    plot_gap(gap.reshape(nx, ny))
+
+
+# Main function 2
+def run_power_iteration():
+    V_r, f_r, Z, Delta0 = load()
+    eig, Delta = solve_bcs_power_iteration(V_r, f_r, Z, Delta0)
+    print(f"Max Eig: {eig:.6f}")
+
+    # Save gap function
+    gap_file = outdir + prefix + '_gap.h5'
+    gap = Delta.reshape(nx, ny, nz)
+    fly.save_data(gap_file, gap, mesh=[nx, ny, nz], domain=BZ[:2,:2])
+    print(f"Saved gap function to {gap_file}")
+    plot_gap(gap.reshape(nx, ny))
+
+
+# Main function 3 - Full matrix method
+def run_matrix_power_iteration():
+    V_matrix, f_k, Z, Delta0 = load_matrix()
+    eig, Delta = solve_bcs_matrix_power_iteration(V_matrix, f_k, Z, Delta0)
+    print(f"Max Eig: {eig:.6f}")
+
+    # Save gap function
+    gap_file = outdir + prefix + '_gap.h5'
+    if nstates == 1:
+        gap = Delta.reshape(nx, ny, nz)
+    else:
+        # Multi-band case: save all bands
+        gap = Delta.reshape(nx, ny, nz, nstates, nstates)
+    fly.save_data(gap_file, gap, mesh=[nx, ny, nz], domain=BZ[:2,:2])
+    print(f"Saved gap function to {gap_file}")
+    plot_gap(gap.reshape(nx, ny))
+
+def solve_bcs_lanczos(V_r, f_k, Z, Delta0):
+    """Returns multiple eigenvalues/vectors for case of competing solutions"""
+
+    # Get shape for flattening
+    shape = Delta0.shape
+    n = np.prod(shape)
+    nk = nx * ny * nz
+
+    # Define matrix-vector product for BCS kernel
+    def mv(D_flat):
+        # Load in unflattened data, perform the convolution, and flatten result
+        D_k = D_flat.reshape(shape)
+        Delta_new = BCS_step(V_r, f_k, D_k)
+        return Delta_new.flatten()
+
+    # Create linear operator for ARPACK
+    A = LinearOperator((n, n), matvec=mv, dtype=complex)
+
+    k_check = max_eigs_searched
+    print(f"Searching for {k_check} eigenvalues at each end of spectrum...")
+
+    # Find most positive eigenvalues
+    eigs, vecs = eigsh(A, k=k_check, which='LM', tol=1e-8, maxiter=1000)
+
+    # Scale eigenvalues by quasiparticle weight and k-mesh size
+    eigs /= (nk * Z)
+
+    for i, eig in enumerate(eigs):
+        print(f"     eig{i}: {eig:12.6f}")
+
+    # Return top eigenpairs (vecs is already in column format)
+    return eigs, vecs
+
+
+def solve_bcs_power_iteration(V_r, f_k, Z, Delta0):
+    max_iter = 100
+    tol = 1e-4
+    Delta = Delta0.copy()
+
+    shape = Delta.shape
+    nk = nx * ny * nz
+
+    eig = 0.0
+    prev_eig = 0.0
+    diff = 1.0
+    old_Deltas = []
+
+    while eig <= 0.0 and len(old_Deltas) < max_eigs_searched:
+        print("shape: ", shape)
+        Delta[:] = np.random.rand(*shape) + 1j * np.random.rand(*shape)
+        iter = 0
+
+        for it in range(max_iter):
+            Delta_new = BCS_step(V_r, f_k, Delta)
+
+            # Compute eigenvalue (Rayleigh quotient): eig = <D|K*D> / <D|D> = <D|D_new> / <D|D>
+            norm = np.sum(Delta * np.conj(Delta)).real
+            eig = np.sum(np.conj(Delta) * Delta_new).real / norm
+
+            # Project out previously found eigenvectors
+            Delta_new_flat = Delta_new.flatten()
+            Delta_new_flat = project_out(Delta_new_flat, old_Deltas)
+            Delta_new = Delta_new_flat.reshape(shape)
+
+            # Check convergence
+            diff = np.abs(eig - prev_eig)
+            prev_eig = eig
+
+            # Normalize new Delta
+            norm = np.sum(Delta_new * np.conj(Delta_new)).real
+            Delta_new = Delta_new / np.sqrt(norm)
+
+            Delta = Delta_new.copy()
+            print(f"Eig: {eig} Error = {diff:.6e}")
+            iter = it
+            if (diff < tol and it > 10) or np.isnan(diff):
+                break
+
+        print(f"Iterations: {iter+1}")
+        print(f"eig{len(old_Deltas)} = {eig}")
+        old_Deltas.append(Delta.flatten().copy())
+
+    # Scale by quasiparticle weight and k-mesh size
+    eig /= (nk * Z)
+
+    return eig, Delta.flatten()
+
+
+def solve_bcs_matrix_power_iteration(V_matrix, f_k, Z, Delta0):
+    """
+    Solve BCS eigenvalue problem using full matrix V(k-k') with power iteration
+
+    The BCS equation in matrix form:
+        Delta(k) = sum_{k'} V(k-k') * f(k') * Delta(k')
+
+    Args:
+        V_matrix: Full interaction matrix V(k-k')
+                  Single band: shape (nk, nk)
+                  Multi-band: shape (nk, nstates, nstates, nk, nstates, nstates)
+        f_k: Form factor at each k-point, shape (nk, nstates, nstates)
+        Z: Quasiparticle weight
+        Delta0: Initial gap function
+
+    Returns:
+        eig: Largest eigenvalue
+        Delta: Corresponding eigenvector (gap function)
+    """
+    max_iter = 100
+    tol = 1e-4
+    Delta = Delta0.copy()
+
+    nk = len(f_k)
+    shape = Delta.shape
+
+    eig = 0.0
+    prev_eig = 0.0
+    diff = 1.0
+    old_Deltas = []
+
+    while eig <= 0.0 and len(old_Deltas) < max_eigs_searched:
+        print("shape: ", shape)
+        Delta[:] = np.random.rand(*shape) + 1j * np.random.rand(*shape)
+        iter = 0
+
+        for it in range(max_iter):
+            Delta_new = BCS_step_matrix(V_matrix, f_k, Delta)
+
+            # Compute eigenvalue (Rayleigh quotient): eig = <D|K*D> / <D|D> = <D|D_new> / <D|D>
+            norm = np.sum(Delta * np.conj(Delta)).real
+            eig = np.sum(np.conj(Delta) * Delta_new).real / norm
+
+            # Project out previously found eigenvectors
+            Delta_new_flat = Delta_new.flatten()
+            Delta_new_flat = project_out(Delta_new_flat, old_Deltas)
+            Delta_new = Delta_new_flat.reshape(shape)
+
+            # Check convergence
+            diff = np.abs(eig - prev_eig)
+            prev_eig = eig
+
+            # Normalize new Delta
+            norm = np.sum(Delta_new * np.conj(Delta_new)).real
+            Delta_new = Delta_new / np.sqrt(norm)
+
+            Delta = Delta_new.copy()
+            print(f"Eig: {eig} Error = {diff:.6e}")
+            iter = it
+            if (diff < tol and it > 10) or np.isnan(diff):
+                break
+
+        print(f"Iterations: {iter+1}")
+        print(f"eig{len(old_Deltas)} = {eig}")
+        old_Deltas.append(Delta.flatten().copy())
+
+    # Scale by quasiparticle weight and k-mesh size
+    eig /= (nk * Z)
+
+    return eig, Delta.flatten()
+
+
+def BCS_step(V_r, f_k, Delta):
+    """
+    Perform one step of BCS iteration: Delta_new = V * (f * Delta)
+    (FFT-based convolution method)
+
+    IMPORTANT: The correct BCS equation is:
+        Delta_new(k) = sum_k' V(k-k') * f(k') * Delta(k')
+
+    In FFT form, f(k) must be applied BEFORE the transform:
+        Delta_new = IFFT[V(r) * FFT[f(k) * Delta(k)]]
+
+    Args:
+        V_r: Vertex in real space, shape (nx, ny, nz, nstates, nstates, nstates, nstates)
+        f_k: Form factor in k-space, shape (nx, ny, nz, 1, 1) or (nx, ny, nz, nstates, nstates)
+        Delta: Gap function in k-space, shape (nx, ny, nz, nstates, nstates)
+
+    Returns:
+        Delta_new: Updated gap function in k-space
+    """
+    Delta_reverse = Delta[::-1, ::-1, ::-1, :, :]
+    # CRITICAL: Multiply f(k) * Delta(k) in k-space FIRST
+    f_Delta_k = f_k * (Delta + Delta_reverse) / 2 # symmetrize Delta
+
+    # Transform to real space
+    f_Delta_r = fftn(f_Delta_k, axes=(0, 1, 2))
+
+    # Convolve with vertex in real space
+    h_r = -np.einsum('xyzabcd,xyzcd->xyzab', V_r, f_Delta_r)
+
+    # Transform back to k-space
+    h_k = ifftn(h_r, axes=(0, 1, 2))
+
+    return h_k
+
+
+def BCS_step_matrix(V_matrix, f_k, Delta):
+    """
+    Perform one step of BCS iteration using full matrix multiplication:
+        Delta_new(k) = sum_{k'} V(k-k') * f(k') * Delta(k')
+
+    Args:
+        V_matrix: Full interaction matrix V(k-k')
+                  Single band: shape (nk, nk)
+                  Multi-band: shape (nk, nstates, nstates, nk, nstates, nstates)
+        f_k: Form factor at each k-point, shape (nk, nstates, nstates)
+        Delta: Gap function, shape (nk,) for single band or (nk, nstates, nstates) for multi-band
+
+    Returns:
+        Delta_new: Updated gap function, same shape as Delta
+    """
+    if len(Delta.shape) == 1:
+        # Single band case: Delta[k], f_k[k,0,0], V_matrix[k,k']
+        # Delta_new[k] = sum_{k'} V[k,k'] * f[k',0,0] * Delta[k']
+        f_Delta = f_k[:, 0, 0] * Delta  # shape (nk,)
+        Delta_new = V_matrix @ f_Delta  # shape (nk,)
+    else:
+        # Multi-band case: Delta[k,a,b], f_k[k,c,d], V_matrix[k,a,b,k',c,d]
+        # Delta_new[k,a,b] = sum_{k',c,d} V[k,a,b,k',c,d] * f[k',c,d] * Delta[k',c,d]
+        f_Delta = f_k * Delta  # shape (nk, nstates, nstates)
+        # Reshape for einsum: V[k,a,b,k',c,d] * f_Delta[k',c,d] -> Delta_new[k,a,b]
+        Delta_new = np.einsum('kabkcd,kcd->kab', V_matrix, f_Delta)
+
+    return Delta_new
+
+
+def project_out(v, eigvecs):
+    """Project out previously found eigenvectors using Gram-Schmidt orthogonalization."""
+    for x in eigvecs:
+        # Compute projection: proj = (x*v / x*x) * x
+        # Use vdot for proper complex conjugation: vdot(a,b) = sum(conj(a) * b)
+        proj = (np.vdot(x, v) / np.vdot(x, x)) * x
+        v = v - proj
+
+    # Normalize
+    nv = np.linalg.norm(v)
+    return v / nv
+
 
 def plot_gap(gap):
     import matplotlib.pyplot as plt
-    fig, ax = plt.subplots(1, 2, figsize=(10, 4))
-    im0 = ax[0].contourf(gap.real, levels=50, cmap='plasma')
-    fig.colorbar(im0, ax=ax[0], label='real Δ(k)')
-    im1 = ax[1].contourf(gap.imag, levels=50, cmap='viridis')
-    fig.colorbar(im1, ax=ax[1], label='imag Δ(k)')
+
+    fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+
+    im0 = ax.contourf(gap.real, levels=50, cmap='bwr')
+    fig.colorbar(im0, ax=ax, label='real Δ(k)')
+    ax.set_axis_off()
+
+    #im1 = ax[1].contourf(gap.imag, levels=50, cmap='viridis')
+    #fig.colorbar(im1, ax=ax[1], label='imag Δ(k)')
+    #ax[1].set_axis_off()
+
     plt.show()

@@ -33,8 +33,6 @@ char* c_filetype = "h5";
 char* get_filetype() {return c_filetype;}
 
 //[SYSTEM]
-char* c_hamiltonian = "tight_binding";
-char* get_hamiltonian() {return c_hamiltonian;}
 char* c_interaction = "none";
 char* get_interaction() {return c_interaction;}
 int c_dimension = 3;
@@ -50,6 +48,11 @@ float c_cutoff_energy = 0.05;
 float c_smearing = 0.02;
 float c_mixing = 0.02;
 int c_max_iters = 100;
+int c_num_solutions = 5;
+
+//[HAMILTONIAN]
+char* c_hamiltonian = "tight_binding";
+char* get_hamiltonian() {return c_hamiltonian;}
 
 //[MESH]
 int c_k_mesh[3] = {10, 10, 10};
@@ -310,9 +313,6 @@ void read_c_config(const char *path) {
             }
 
 //[SYSTEM]
-            else if (strstr(key, "hamiltonian") != NULL) {
-                set_string(&c_hamiltonian, value);
-            }
             else if (strstr(key, "interaction") != NULL) {
                 set_string(&c_interaction, value);
             }
@@ -353,6 +353,14 @@ void read_c_config(const char *path) {
             }
             else if (strstr(key, "max_iters") != NULL) {
                 c_max_iters = atoi(value);
+            }
+            else if (strstr(key, "num_solutions") != NULL) {
+                c_num_solutions = atoi(value);
+            }
+
+//[HAMILTONIAN]
+            else if (strstr(key, "hamiltonian") != NULL) {
+                set_string(&c_hamiltonian, value);
             }
 
 //[MESH]

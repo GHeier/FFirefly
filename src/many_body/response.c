@@ -5,9 +5,7 @@
 extern void polarization_wrapper();
 
 void response_wrapper() {
-    if (!strcmp(c_method, "libtetrabz"))
-        polarization_wrapper();
-    else if (!strcmp(c_method, "sparse_ir"))
+    if (!strcmp(c_method, "sparse_ir"))
         ir_wrapper();
     else
         printf("Method not found\n");

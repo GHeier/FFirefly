@@ -20,7 +20,6 @@ write_result::Bool = cfg.write_result
 filetype::String = cfg.filetype
 
 #[SYSTEM]
-hamiltonian::String = cfg.hamiltonian
 interaction::String = cfg.interaction
 dimension::Int = cfg.dimension
 celltype::String = cfg.celltype
@@ -34,6 +33,10 @@ cutoff_energy::Float64 = cfg.cutoff_energy
 smearing::Float64 = cfg.smearing
 mixing::Float64 = cfg.mixing
 max_iters::Int = cfg.max_iters
+num_solutions::Int = cfg.num_solutions
+
+#[HAMILTONIAN]
+hamiltonian::String = cfg.hamiltonian
 
 #[MESH]
 k_mesh::Array{Int} = cfg.k_mesh

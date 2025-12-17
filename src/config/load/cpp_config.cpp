@@ -24,7 +24,6 @@ bool write_result;
 string filetype;
 
 //[SYSTEM]
-string hamiltonian;
 string interaction;
 int dimension;
 string celltype;
@@ -38,6 +37,10 @@ float cutoff_energy;
 float smearing;
 float mixing;
 int max_iters;
+int num_solutions;
+
+//[HAMILTONIAN]
+string hamiltonian;
 
 //[MESH]
 vector<int> k_mesh(3);
@@ -102,7 +105,6 @@ extern "C" void load_cpp_config() {
     filetype = c_filetype;
 
 //[SYSTEM]
-    hamiltonian = c_hamiltonian;
     interaction = c_interaction;
     dimension = c_dimension;
     celltype = c_celltype;
@@ -116,6 +118,10 @@ extern "C" void load_cpp_config() {
     smearing = c_smearing;
     mixing = c_mixing;
     max_iters = c_max_iters;
+    num_solutions = c_num_solutions;
+
+//[HAMILTONIAN]
+    hamiltonian = c_hamiltonian;
 
 //[MESH]
     for (int i = 0; i < 3; i++) k_mesh[i] = c_k_mesh[i];

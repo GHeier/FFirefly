@@ -14,7 +14,6 @@ write_result = True
 filetype = 'h5'
 
 #[SYSTEM]
-hamiltonian = 'tight_binding'
 interaction = 'none'
 dimension = 3
 celltype = ''
@@ -28,6 +27,10 @@ cutoff_energy = 0.05
 smearing = 0.02
 mixing = 0.02
 max_iters = 100
+num_solutions = 5
+
+#[HAMILTONIAN]
+hamiltonian = 'tight_binding'
 
 #[MESH]
 k_mesh = [10, 10, 10]
@@ -141,9 +144,6 @@ def load_config():
                 filetype = value
 
 #[SYSTEM]
-            if "hamiltonian" in key:
-                global hamiltonian
-                hamiltonian = value
             if "interaction" in key:
                 global interaction
                 interaction = value
@@ -184,6 +184,14 @@ def load_config():
             if "max_iters" in key:
                 global max_iters
                 max_iters = int(value)
+            if "num_solutions" in key:
+                global num_solutions
+                num_solutions = int(value)
+
+#[HAMILTONIAN]
+            if "hamiltonian" in key:
+                global hamiltonian
+                hamiltonian = value
 
 #[MESH]
             if "k_mesh" in key:

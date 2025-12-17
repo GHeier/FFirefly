@@ -20,7 +20,6 @@ extern bool c_write_result;
 extern char* c_filetype; char* get_filetype();
 
 //[SYSTEM]
-extern char* c_hamiltonian; char* get_hamiltonian();
 extern char* c_interaction; char* get_interaction();
 extern int c_dimension;
 extern char* c_celltype; char* get_celltype();
@@ -34,6 +33,10 @@ extern float c_cutoff_energy;
 extern float c_smearing;
 extern float c_mixing;
 extern int c_max_iters;
+extern int c_num_solutions;
+
+//[HAMILTONIAN]
+extern char* c_hamiltonian; char* get_hamiltonian();
 
 //[MESH]
 extern int c_k_mesh[3];

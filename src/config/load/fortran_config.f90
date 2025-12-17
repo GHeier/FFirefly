@@ -43,7 +43,6 @@ module ffirefly
     character(len=50) :: filetype
 
 ![SYSTEM]
-    character(len=50) :: hamiltonian
     character(len=50) :: interaction
     integer(c_int), bind(C, name="c_dimension") :: c_dimension
     integer :: dimension
@@ -68,6 +67,11 @@ module ffirefly
     real :: mixing
     integer(c_int), bind(C, name="c_max_iters") :: c_max_iters
     integer :: max_iters
+    integer(c_int), bind(C, name="c_num_solutions") :: c_num_solutions
+    integer :: num_solutions
+
+![HAMILTONIAN]
+    character(len=50) :: hamiltonian
 
 ![MESH]
     integer(c_int), bind(C, name="c_k_mesh") :: c_k_mesh(3)
@@ -175,10 +179,6 @@ module ffirefly
     end function get_filetype
 
 ![SYSTEM]
-        function get_hamiltonian() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_hamiltonian
-    end function get_hamiltonian
         function get_interaction() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_interaction
@@ -198,6 +198,13 @@ module ffirefly
 
 
 
+
+
+![HAMILTONIAN]
+        function get_hamiltonian() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_hamiltonian
+    end function get_hamiltonian
 
 ![MESH]
 
@@ -317,7 +324,6 @@ contains
         filetype = get_string(get_filetype())
 
 ![SYSTEM]
-        hamiltonian = get_string(get_hamiltonian())
         interaction = get_string(get_interaction())
         dimension = c_dimension
         celltype = get_string(get_celltype())
@@ -331,6 +337,10 @@ contains
         smearing = c_smearing
         mixing = c_mixing
         max_iters = c_max_iters
+        num_solutions = c_num_solutions
+
+![HAMILTONIAN]
+        hamiltonian = get_string(get_hamiltonian())
 
 ![MESH]
         k_mesh = c_k_mesh

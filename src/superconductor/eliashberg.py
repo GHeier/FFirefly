@@ -1,18 +1,13 @@
 import firefly as fly
 import firefly.config as cfg
 from firefly.diagram import *
-from firefly.diagram import flip_wk
 
 from triqs.gf import *
-from triqs_tprf.lattice import lattice_dyson_g0_wk
-from triqs.lattice import BrillouinZone, BravaisLattice
 from triqs.gf.mesh_product import MeshProduct
 import numpy as np
-from triqs_tprf.lattice import *
-from triqs_tprf import *
-#from interface_triqs import *
-#from load_triqs_H import *
+from scipy.sparse.linalg import LinearOperator, eigsh
 
+# Load config variables on file call
 outdir = cfg.outdir
 prefix = cfg.prefix
 
@@ -22,257 +17,164 @@ BZ = get_brillouin_zone()
 
 mu = cfg.fermi_energy
 beta = 1.0 / cfg.Temperature
+max_eigs_searched = cfg.num_solutions
 
-def analyze_gap_symmetry(Delta):
-    """Analyze the symmetry of the gap function."""
-    mesh, BZ = extract_mesh_and_bz(Delta.obj_wk)
-    original_shape = Delta.obj_wk.data.shape
-    nk = int(np.sqrt(original_shape[1]))
-
-    # Reshape to (nw, nkx, nky, nkz, orb, orb) and take lowest Matsubara frequency
-    data = np.reshape(Delta.obj_wk.data, mesh + original_shape[2:])
-    gap_k = data[0, :, :, 0, 0, 0]  # lowest frequency, 2D slice
-
-    print(f"\nGap function analysis:")
-    print(f"  Shape: {gap_k.shape}")
-    print(f"  Sign changes along kx: {np.sum(np.diff(np.sign(gap_k[:, nk//2].real)) != 0)}")
-    print(f"  Sign changes along ky: {np.sum(np.diff(np.sign(gap_k[nk//2, :].real)) != 0)}")
-    print(f"  Corner values: Δ(0,0)={gap_k[0,0]:.4f}, Δ(π,0)={gap_k[nk//2,0]:.4f}, Δ(π,π)={gap_k[nk//2,nk//2]:.4f}")
-    print(f"  d-wave test: Δ(π,0)/Δ(0,π) = {gap_k[nk//2,0]/gap_k[0,nk//2]:.4f} (expect ~1 for d-wave)")
-    print(f"  s-wave test: Δ(0,0)/Δ(π,π) = {gap_k[0,0]/gap_k[nk//2,nk//2]:.4f} (expect >0 for s-wave)")
-
-
-def print_vertex_structure(V, label):
-    """Print diagnostic info about vertex structure."""
-    mesh, BZ = extract_mesh_and_bz(V.obj_wk)
-    original_shape = V.obj_wk.data.shape
-    nw, nk_total = original_shape[0], original_shape[1]
-    nk = int(np.sqrt(nk_total))
-
-    # Reshape and average over frequency for visualization
-    data = np.reshape(V.obj_wk.data, mesh + original_shape[2:])
-    vertex_k = np.mean(np.abs(data[:, :, :, 0, 0, 0, 0, 0]), axis=0)  # average over freq
-
-    max_idx = np.unravel_index(np.argmax(vertex_k), vertex_k.shape)
-    print(f"\n{label}:")
-    print(f"  Max at k=({max_idx[0]}, {max_idx[1]}) (expect (π,π) at ({nk//2}, {nk//2}))")
-    print(f"  Max value: {np.max(vertex_k):.4f}")
-    print(f"  Corner values (π,π): V[0,0]={vertex_k[0,0]:.4f}, V[{nk//2},{nk//2}]={vertex_k[nk//2,nk//2]:.4f}")
-
-
-def symmetrize_vertex(V):
-    """
-    Symmetrize the vertex by computing V_sym(q) = (V(q) + V(-q)) / 2.
-
-    Args:
-        V: Diagram object containing the vertex in wk space
-    """
-    # Extract mesh dimensions
-    mesh, BZ = extract_mesh_and_bz(V.obj_wk)
-    original_shape = V.obj_wk.data.shape
-
-    # Reshape to mesh dimensions (nw, nkx, nky, nkz, orb1, orb2, orb3, orb4)
-    data = np.reshape(V.obj_wk.data, mesh + original_shape[2:])
-
-    # fftshift k-axes to center k-points
-    k_axes = tuple(range(1, len(mesh)))  # axes 1, 2, 3 for kx, ky, kz
-    data = np.fft.fftshift(data, axes=k_axes)
-
-    # Flip k-axes to get V(-q) and average
-    data = (data + np.flip(data, axis=k_axes)) / 2.0
-
-    # ifftshift back to original k-ordering
-    data = np.fft.ifftshift(data, axes=k_axes)
-
-    # Reshape back to TRIQS data shape
-    V.obj_wk.data[:] = np.reshape(data, original_shape)
-
-    print("Vertex symmetrized: V_sym(q) = (V(q) + V(-q)) / 2")
-
-def run(bcs=False):
+def load():
     H_r, kmesh, e_k = fly.load_triqs_H.get_energy_mesh()
     emax = e_k.data.max().real
     emin = e_k.data.min().real
     print(f"emax: {emax}, emin: {emin}")
+    # Build Discrete Lehman Representation (DLR) mesh for imaginary frequencies
     DLRImMesh = fly.load_triqs_H.create_dlr_meshes(e_k, beta, statistic='Fermion')
-    print(BZ)
     k_mesh = MeshBrZone(BZ, n_k=Nk)   # uniform Nk x Nk x Nk (third dim is 1 if 2D)
 
-    #sigma = fly.Field_C(outdir + prefix + '_sigma.h5')
-    wk_mesh = MeshProduct(DLRImMesh, k_mesh) 
-    #E = Gf(mesh=wk_mesh, target_shape=[1,1])
-    #E.data[:, :, 0, 0] = sigma.get_data()
-    #fly.interface_triqs.fill_triqs_from_field(E, sigma)
-    #G0 = lattice_dyson_g0_wk(mu=mu, e_k=e_k, mesh=DLRImMesh)
-    #G = inverse(inverse(G0) - E)
-    G_file = outdir + prefix + '_G0.h5'
-    if not bcs:
-        G_file = outdir + prefix + '_G.h5'
-    print(f"Loading G from {G_file}")
-    G_data = fly.Field_CM(G_file)
+    # Create TRIQS object for Green's function G(k, iw)
+    wk_mesh = MeshProduct(DLRImMesh, k_mesh)
     G = Gf(mesh=wk_mesh, target_shape=[nstates, nstates])
     G = fly.diagram.Diagram(G, 'Fermion')
+
+    # Load Green's function using Firefly interface
+    G_file = outdir + prefix + '_G.h5'
+    print(f"Loading G from {G_file}")
+    G_data = fly.Field_CM(G_file)
     G.load(G_data)
 
-    # Load singlet pairing vertex (not the FLEX vertex used for self-energy)
-    #vertex = fly.Field_C(outdir + prefix + '_vertex_singlet.h5')
-    vertex = fly.Field_CM(outdir + prefix + '_vertex.h5')
     DLRImMesh = fly.load_triqs_H.create_dlr_meshes(e_k, beta, statistic='Boson')
     wk_mesh = MeshProduct(DLRImMesh, k_mesh)
     V = Gf(mesh=wk_mesh, target_shape=[nstates, nstates, nstates, nstates])
     V = fly.diagram.Diagram(V, 'Boson')
-    #fly.interface_triqs.fill_triqs_from_field(V.obj_wk, vertex)
+
+    vertex = fly.Field_CM(outdir + prefix + '_vertex.h5')
     V.load(vertex)
-
-    # Check vertex structure before symmetrization
-    print_vertex_structure(V, "Before symmetrization")
-
-    # Note: test.py doesn't symmetrize the vertex, so commenting this out
-    symmetrize_vertex(V)
-
-    # Check after symmetrization
-    print_vertex_structure(V, "After symmetrization")
 
     V.wk_to_tr()
 
     Delta0 = G.copy()
 
+    return G, V, Delta0
+
+
+# Main function 1
+def run_lanczos():
+    G, V, Delta0 = load()
+    eigs, Deltas = solve_eliashberg_lanczos(G, V, Delta0)
+    # Find max positive eigenvalue
+    i = np.where(eigs > 0, eigs, -np.inf).argmax() 
+    print(f"Max Eig: {eigs[i]:.6f}")
+    Deltas[i].save(outdir + prefix + '_gap.h5')
+
+# Main function 2
+def run_power_iteration():
+    G, V, Delta0 = load()
     eig, Delta = solve_eliashberg_power_iteration(G, V, Delta0)
-
     print(f"Max Eig: {eig:.6f}")
-
-    # Analyze gap symmetry
-    analyze_gap_symmetry(Delta)
-
     Delta.save(outdir + prefix + '_gap.h5')
 
+
+def solve_eliashberg_lanczos(G, V, Delta0):
+    """ Returns multiple eigenvalues/vectors for case of competing solutions """
+
+    # Properly flip G(k, iw) to G(-k, -iw) for Cooper pair formation
+    G_flip = flip_wk(G)
+
+    # Get shape for flattening
+    shape = Delta0.obj_wk.data.shape
+    n = np.prod(shape)
+
+    # Define matrix-vector product for Eliashberg kernel
+    def mv(D_flat):
+        # Load in unflattened data, perform the convolution, and flatten result
+        Delta0.obj_wk.data[:] = D_flat.reshape(shape)
+        Delta_new = Eliashberg_step(G, G_flip, V, Delta0)
+        return Delta_new.obj_wk.data.flatten()
+
+    # Create linear operator for ARPACK
+    A = LinearOperator((n, n), matvec=mv, dtype=complex)
+
+    k_check = max_eigs_searched
+    print(f"Searching for {k_check} eigenvalues at each end of spectrum...")
+
+    # Find most positive eigenvalues
+    eigs, vecs = eigsh(A, k=k_check, which='LM', tol=1e-8, maxiter=1000)
+    for i, eig in enumerate(eigs):
+          print(f"     eig{i}: {eig:12.6f}")
+
+    # Convert eigenvectors back to Diagram objects
+    vecs_list = []
+    for i in range(k_check):
+        Delta_eig = Delta0.copy()
+        Delta_eig.obj_wk.data[:] = vecs[:, i].reshape(shape)
+        vecs_list.append(Delta_eig)
+
+    # Return top 5 eigenpairs
+    return eigs, vecs_list
 
 def solve_eliashberg_power_iteration(G, V, Delta0):
     max_iter = 100
     tol = 1e-4
     Delta = Delta0.copy()
 
-    # Properly flip G(k, iω) → G(-k, -iω) for Cooper pair formation
+    # Properly flip G(k, iw) to G(-k, -iw) for Cooper pair formation
     G_flip = flip_wk(G)
 
-    # Create d-wave initial guess: cos(2πkx) - cos(2πky) (matching test.py)
-    # Extract mesh dimensions
     mesh, BZ = extract_mesh_and_bz(Delta.obj_wk)
 
     eig = 0.0
     prev_eig = 0.0
+    diff = 1.0
     old_Deltas = []
-    max_eigs_searched = 5
 
     while eig <= 0.0 and len(old_Deltas) < max_eigs_searched:
-        Delta.init_tail()
+        shape = Delta.obj_wk.data.shape
+        print("shape: ", shape)
         Delta.obj_wk.data[:] = np.random.rand(*Delta.obj_wk.data.shape) + 1j * np.random.rand(*Delta.obj_wk.data.shape)
-        #Delta.obj_wk.data[:] = 1
         iter = 0
         for it in range(max_iter):
             Delta_new = Eliashberg_step(G, G_flip, V, Delta)
-            norm = np.sum(Delta.obj_wk.data * np.conj(Delta.obj_wk.data)).real
-            eig = np.sum(Delta_new.obj_wk.data * np.conj(Delta.obj_wk.data)).real / norm
-            # Normalize
-            Delta_new.obj_wk.data[:] = project_out(Delta_new.obj_wk.data, old_Deltas)
+
+            D_wk = Delta.obj_wk.data
+            new_D_wk = Delta_new.obj_wk.data
+
+            # Compute eigenvalue (Rayleigh quotient): eig = <D|K*D> / <D|D> = <D|D_new> / <D|D>
+            norm = np.sum(D_wk * np.conj(D_wk)).real
+            eig = np.sum(np.conj(D_wk) * new_D_wk).real / norm
+
+            # Project out previously found eigenvectors
+            new_D_wk = project_out(new_D_wk, old_Deltas)
 
             # Check convergence
             diff = np.abs(eig - prev_eig)
             prev_eig = eig
-            norm = np.sum(Delta_new.obj_wk.data * np.conj(Delta_new.obj_wk.data)).real
-            Delta_new.obj_wk.data[:] = Delta_new.obj_wk.data / norm
+
+            # Normalize new Delta
+            norm = np.sum(new_D_wk * np.conj(new_D_wk)).real
+            Delta_new.obj_wk.data[:] = new_D_wk / np.sqrt(norm)
+
             Delta = Delta_new.copy()
             print(f"Eig: {eig} Error = {diff:.6e}")
             iter = it
-            if diff < tol or np.isnan(diff):
+            if (diff < tol and it > 10) or np.isnan(diff):
                 break
+
         print(f"Iterations: {iter+1}")
         print(f"eig{len(old_Deltas)} = {eig}")
         old_Deltas.append(Delta.obj_wk.data.copy())
+
     return eig, Delta
 
 def Eliashberg_step(G, G_flip, V, Delta):
     F = Delta.copy()
-    # Use conj(G) to match test.py's linearized gap equation formula
-    # F = -G(k,iω) * conj(G(k,iω)) * Δ(k,iω) = -|G(k,iω)|² * Δ(k,iω)
-    F.obj_wk.data[:] = -1.0 * G.obj_wk.data * np.conj(G.obj_wk.data) * Delta.obj_wk.data
+    # F = -G(k,iw) * G(-k,-iw) * Delta(k,iw)
+    F.obj_wk.data[:] = -1.0 * G_flip.obj_wk.data * np.conj(G.obj_wk.data) * Delta.obj_wk.data
     F.wk_to_tr()
     Delta_new = dot_tr(V, F)
     Delta_new.tr_to_wk()
     return Delta_new
 
-def project_out_momentum_with_symmetry(V, G, g):
-    V.wk_to_wr()
-    G.wk_to_wr()
-    # 1) k → r for g
-    g_r = np.fft.ifft(eigvec, axis=0)  # shape (nr, a, b), up to norm
-    # 2) Contract: V(w,r,abcd) * g(r,ab) * g(r,cd) summed over r,a,b,c,d → w
-    V_w = np.einsum('wrabcd,rab,rcd->w', V.obj_wr.data, g_r, g_r)
-    iw_mesh = V.obj_wk.mesh.components[0]
-
-
-
-def run_projected_w(bcs=False):
-    H_r, kmesh, e_k = fly.load_triqs_H.get_energy_mesh()
-    emax = e_k.data.max().real
-    emin = e_k.data.min().real
-    print(f"emax: {emax}, emin: {emin}")
-    DLRImMesh = fly.load_triqs_H.create_dlr_meshes(e_k, beta, statistic='Fermion')
-    print(BZ)
-    k_mesh = MeshBrZone(BZ, n_k=Nk)   # uniform Nk x Nk x Nk (third dim is 1 if 2D)
-
-    #sigma = fly.Field_C(outdir + prefix + '_sigma.h5')
-    wk_mesh = MeshProduct(DLRImMesh, k_mesh) 
-    #E = Gf(mesh=wk_mesh, target_shape=[1,1])
-    #E.data[:, :, 0, 0] = sigma.get_data()
-    #fly.interface_triqs.fill_triqs_from_field(E, sigma)
-    #G0 = lattice_dyson_g0_wk(mu=mu, e_k=e_k, mesh=DLRImMesh)
-    #G = inverse(inverse(G0) - E)
-    G_file = outdir + prefix + '_G0.h5'
-    if not bcs:
-        G_file = outdir + prefix + '_G.h5'
-    print(f"Loading G from {G_file}")
-    G_data = fly.Field_CM(G_file)
-    G = Gf(mesh=wk_mesh, target_shape=[nstates, nstates])
-    G = fly.diagram.Diagram(G, 'Fermion')
-    G.load(G_data)
-
-    # Load singlet pairing vertex (not the FLEX vertex used for self-energy)
-    #vertex = fly.Field_C(outdir + prefix + '_vertex_singlet.h5')
-    vertex = fly.Field_CM(outdir + prefix + '_vertex.h5')
-    DLRImMesh = fly.load_triqs_H.create_dlr_meshes(e_k, beta, statistic='Boson')
-    wk_mesh = MeshProduct(DLRImMesh, k_mesh)
-    V = Gf(mesh=wk_mesh, target_shape=[nstates, nstates, nstates, nstates])
-    V = fly.diagram.Diagram(V, 'Boson')
-    #fly.interface_triqs.fill_triqs_from_field(V.obj_wk, vertex)
-    V.load(vertex)
-
-    # Check vertex structure before symmetrization
-    print_vertex_structure(V, "Before symmetrization")
-
-    # Note: test.py doesn't symmetrize the vertex, so commenting this out
-    symmetrize_vertex(V)
-
-    # Check after symmetrization
-    print_vertex_structure(V, "After symmetrization")
-
-    V.wk_to_tr()
-
-    Delta0 = G.copy()
-
-    eig, Delta = solve_eliashberg_power_iteration(G, V, Delta0)
-
-    print(f"Max Eig: {eig:.6f}")
-
-    # Analyze gap symmetry
-    analyze_gap_symmetry(Delta)
-
-    Delta.save(outdir + prefix + '_gap.h5')
-
 def project_out(v, eigvecs):
     """Project out previously found eigenvectors using Gram-Schmidt orthogonalization."""
     for x in eigvecs:
-        # Compute projection: proj = (x·v / x·x) * x
+        # Compute projection: proj = (x*v / x*x) * x
         # Use vdot for proper complex conjugation: vdot(a,b) = sum(conj(a) * b)
         v_flat = v.flatten()
         x_flat = x.flatten()
@@ -281,11 +183,4 @@ def project_out(v, eigvecs):
 
     # Normalize
     nv = np.linalg.norm(v)
-    if nv > 0:
-        v = v / nv
-    else:
-        raise ValueError("Deflation resulted in zero vector")
-    return v
-
-def eliashberg():
-    run(bcs=False)
+    return v / nv

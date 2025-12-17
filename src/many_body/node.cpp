@@ -56,12 +56,8 @@ void self_energy_wrapper() {
 }
 
 
-extern "C" void polarization_wrapper();
-
 void response_wrapper() {
-    if (method == "libtetrabz")
-        polarization_wrapper();
-    else if (method == "sparse_ir")
+    if (method == "sparse_ir")
         ir_wrapper();
     else
         printf("Method `%s` not found\n", method.c_str());

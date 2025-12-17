@@ -2,6 +2,19 @@
 #include "field.hpp"
 #include "../vec.hpp"
 #include <openblas/lapacke.h>
+#include <filesystem>
+#include <cstdlib>
+#include <iostream>
+
+using namespace std;
+
+// Helper function to validate file existence before construction
+static void validate_file_exists(const string& filename) {
+    if (!filesystem::exists(filename)) {
+        cerr << "Error: File does not exist: " << filename << endl;
+        exit(1);
+    }
+}
 
 // Field_C implementation
 Field_C::Field_C()
@@ -15,7 +28,9 @@ Field_C::Field_C(const BaseData::DataVariant& data,
 
 Field_C::Field_C(FieldImpl f) : cmf(f) {}
 
-Field_C::Field_C(const string& filename) : cmf(filename) {}
+Field_C::Field_C(const string& filename)
+    : cmf((validate_file_exists(filename), filename)) {
+}
 
 complex<float> Field_C::operator()(float w) {
     auto result = cmf(w);
@@ -79,7 +94,9 @@ Field_R::Field_R(const BaseData::DataVariant& data,
 
 Field_R::Field_R(FieldImpl f) : cmf(f) {}
 
-Field_R::Field_R(const string& filename) : cmf(filename) {}
+Field_R::Field_R(const string& filename)
+    : cmf((validate_file_exists(filename), filename)) {
+}
 
 float Field_R::operator()(float w) {
     auto result = cmf(w);
@@ -143,8 +160,9 @@ Field_CM::Field_CM(const BaseData::DataVariant& data,
 
 Field_CM::Field_CM(FieldImpl f) : cmf(f) {}
 
-Field_CM::Field_CM(const string& filename) : cmf(filename) {}
-
+Field_CM::Field_CM(const string& filename)
+    : cmf((validate_file_exists(filename), filename)) {
+}
 Field_CM& Field_CM::operator=(const Field_CM& other) {
     if (this != &other) {
         cmf = other.cmf;
@@ -390,7 +408,9 @@ Field_RM::Field_RM(const BaseData::DataVariant& data,
 
 Field_RM::Field_RM(FieldImpl f) : cmf(f) {}
 
-Field_RM::Field_RM(const string& filename) : cmf(filename) {}
+Field_RM::Field_RM(const string& filename)
+    : cmf((validate_file_exists(filename), filename)) {
+}
 
 Field_RM& Field_RM::operator=(const Field_RM& other) {
     if (this != &other) {

@@ -85,6 +85,12 @@ void bcs() {
     else {
         create_P_freq(P, freq_FS, T);
     }
+
+    // Test H2Pack hierarchical compression (only for FS_only mode)
+    if (FS_only) {
+        create_P_h2pack(P, FS, renorm);
+    }
+
     float f = f_singlet_integral(T);
     cout << "F-integral value: " << f << endl;
 
@@ -154,21 +160,32 @@ void bcs() {
     delete[] solutions;
 }
 
-void bcs_grid() {
+void bcs_power_iteration() {
     string folder = "superconductor/";
     string filename = "bcs";
-    string function = "bcs";
+    string function = "run_power_iteration";
     call_python_func(folder.c_str(), filename.c_str(), function.c_str());
 }
 
-void eliashberg() {
+void bcs_lanczos() {
+    string folder = "superconductor/";
+    string filename = "bcs";
+    string function = "run_lanczos";
+    call_python_func(folder.c_str(), filename.c_str(), function.c_str());
+}
+
+void eliashberg_power_iteration() {
     string folder = "superconductor/";
     string filename = "eliashberg";
-    string module = "Eliashberg";
-    string function = "eliashberg";
+    string function = "run_power_iteration";
     call_python_func(folder.c_str(), filename.c_str(), function.c_str());
-    //call_julia_func(folder.c_str(), filename.c_str(), module.c_str(),
-                    //function.c_str());
+}
+
+void eliashberg_lanczos() {
+    string folder = "superconductor/";
+    string filename = "eliashberg";
+    string function = "run_lanczos";
+    call_python_func(folder.c_str(), filename.c_str(), function.c_str());
 }
 
 void linearized_eliashberg() {
