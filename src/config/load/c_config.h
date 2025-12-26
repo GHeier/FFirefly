@@ -110,6 +110,7 @@ typedef enum {
 void read_c_config(const char *path);
 void printcolor(Color color, const char *format, ...);
 bool print_test_results(bool all_tests[], int num_tests, const char *test_name);
+void load_cpp_config();
 
 #ifdef __cplusplus
 }

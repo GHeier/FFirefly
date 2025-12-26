@@ -13,6 +13,7 @@ void renormalization_wrapper();
 void triqs_loop();
 void self_energy_wrapper();
 void response_wrapper();
+void tetra_wrapper();
 void ir_wrapper();
 void vertex_wrapper();
 

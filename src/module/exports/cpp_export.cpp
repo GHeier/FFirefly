@@ -249,10 +249,10 @@ Hamiltonian *Hamiltonian_export0() {
     return new Hamiltonian();
 }
 
-void Hamiltonian_operator_export0(Hamiltonian *obj, const float *point, int len, float w,
+void Hamiltonian_operator_export0(Hamiltonian *obj, const float *point, int len,
                                    float *real_result, float *imag_result, int *matrix_size) {
     Vec v(point, len);
-    vector<vector<complex<float>>> H = obj->operator()(v, w);
+    vector<vector<complex<float>>> H = obj->operator()(v);
 
     if (H.empty()) {
         *matrix_size = 0;
@@ -1324,6 +1324,162 @@ extern "C" void Field_call_matrix_real(Field* obj, const float* point, int len, 
 
 extern "C" BaseData* Field_get_data(Field *obj) {
     return obj->get_data();
+}
+
+// ============================================================================
+// Additional Hamiltonian exports
+// ============================================================================
+
+void Hamiltonian_operator_export_list(Hamiltonian *obj, const float *points, int num_points, int len, float *real_output, float *imag_output, int *matrix_size) {
+    vector<Vec> vec_points;
+    vec_points.reserve(num_points);
+    for (int i = 0; i < num_points; ++i) {
+        const float* point_row = points + i * len;
+        vec_points.emplace_back(point_row, len);
+    }
+
+    // For Hamiltonian, we need to call operator() for each point individually
+    // since it doesn't have a batch interface like Field_CM
+    if (vec_points.empty()) {
+        *matrix_size = 0;
+        return;
+    }
+
+    auto first_result = obj->operator()(vec_points[0]);
+    if (first_result.empty()) {
+        *matrix_size = 0;
+        return;
+    }
+
+    int n = first_result.size();
+    *matrix_size = n;
+
+    // Store first result
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            int idx = i * n + j;
+            real_output[idx] = real(first_result[i][j]);
+            imag_output[idx] = imag(first_result[i][j]);
+        }
+    }
+
+    // Process remaining points
+    for (int k = 1; k < num_points; ++k) {
+        auto mat = obj->operator()(vec_points[k]);
+        int offset = k * n * n;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                int idx = offset + i * n + j;
+                real_output[idx] = real(mat[i][j]);
+                imag_output[idx] = imag(mat[i][j]);
+            }
+        }
+    }
+}
+
+bool Hamiltonian_file_found(Hamiltonian *obj) {
+    return obj->file_found;
+}
+
+void Hamiltonian_get_bands_export0(Hamiltonian *obj, const float *point, int len,
+                                    float *eigenvalues_out, int *num_bands) {
+    Vec v(point, len);
+    vector<float> eigs = obj->get_bands(v);
+
+    *num_bands = eigs.size();
+    for (size_t i = 0; i < eigs.size(); i++) {
+        eigenvalues_out[i] = eigs[i];
+    }
+}
+
+void Hamiltonian_get_wavefunctions_export0(Hamiltonian *obj, const float *point, int len,
+                                            float *eigenvalues_out, float *eigvecs_real,
+                                            float *eigvecs_imag, int *num_bands) {
+    Vec v(point, len);
+    vector<eigvec> result = obj->get_wavefunctions(v);
+
+    if (result.empty()) {
+        *num_bands = 0;
+        return;
+    }
+
+    int n = result.size();
+    *num_bands = n;
+
+    // Extract eigenvalues and eigenvectors
+    for (int i = 0; i < n; i++) {
+        eigenvalues_out[i] = result[i].eigenvalue;
+
+        // Eigenvectors: store i-th eigenvector in i-th column
+        for (int j = 0; j < n; j++) {
+            int idx = j * n + i;  // Column-major: eigvec i is in column i
+            eigvecs_real[idx] = result[i].eigenvector[j].real();
+            eigvecs_imag[idx] = result[i].eigenvector[j].imag();
+        }
+    }
+}
+
+void Hamiltonian_get_bands_export_list(Hamiltonian *obj, const float *points, int num_points, int len,
+                                        float *eigenvalues_out, int *num_bands) {
+    vector<Vec> vec_points;
+    vec_points.reserve(num_points);
+    for (int i = 0; i < num_points; ++i) {
+        const float* point_row = points + i * len;
+        vec_points.emplace_back(point_row, len);
+    }
+
+    vector<vector<float>> results = obj->get_bands(vec_points);
+
+    if (results.empty() || results[0].empty()) {
+        *num_bands = 0;
+        return;
+    }
+
+    int n = results[0].size();
+    *num_bands = n;
+
+    // Flatten all eigenvalue arrays to output
+    for (int p = 0; p < num_points; ++p) {
+        for (int i = 0; i < n; i++) {
+            eigenvalues_out[p * n + i] = results[p][i];
+        }
+    }
+}
+
+void Hamiltonian_get_wavefunctions_export_list(Hamiltonian *obj, const float *points, int num_points, int len,
+                                                 float *eigenvalues_out, float *eigvecs_real,
+                                                 float *eigvecs_imag, int *num_bands) {
+    vector<Vec> vec_points;
+    vec_points.reserve(num_points);
+    for (int i = 0; i < num_points; ++i) {
+        const float* point_row = points + i * len;
+        vec_points.emplace_back(point_row, len);
+    }
+
+    vector<vector<eigvec>> results = obj->get_wavefunctions(vec_points);
+
+    if (results.empty() || results[0].empty()) {
+        *num_bands = 0;
+        return;
+    }
+
+    int n = results[0].size();
+    *num_bands = n;
+
+    // Extract eigenvalues and eigenvectors for all k-points
+    for (int p = 0; p < num_points; ++p) {
+        for (int i = 0; i < n; i++) {
+            // Store eigenvalue
+            eigenvalues_out[p * n + i] = results[p][i].eigenvalue;
+
+            // Store eigenvectors: for k-point p, eigenvector i, component j
+            for (int j = 0; j < n; j++) {
+                int idx = p * n * n + j * n + i;  // Column-major: eigvec i is in column i
+                eigvecs_real[idx] = results[p][i].eigenvector[j].real();
+                eigvecs_imag[idx] = results[p][i].eigenvector[j].imag();
+            }
+        }
+    }
 }
 
 }

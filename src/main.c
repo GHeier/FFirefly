@@ -16,7 +16,6 @@
 #include "superconductor/node.hpp"
 
 // Test nodes below
-#include "hamiltonian/tests/all.hpp"
 #include "objects/tests/all.hpp"
 #include "algorithms/tests/all.hpp"
 #include "config/load/tests/all.hpp"
@@ -59,14 +58,13 @@ void print_banner_bottom(time_t now) {
 void test() {
     printf("Starting Test Calculations\n");
 
-    int num_tests = 5;
+    int num_tests = 4;
 
     bool all_tests[num_tests];
-    all_tests[0] = hamiltonian_tests();
-    all_tests[1] = object_tests();
-    all_tests[2] = algorithm_tests();
-    all_tests[3] = config_load_tests();
-    all_tests[4] = module_tests();
+    all_tests[0] = object_tests();
+    all_tests[1] = algorithm_tests();
+    all_tests[2] = config_load_tests();
+    all_tests[3] = module_tests();
 
     printf("\n");
     print_test_results(all_tests, num_tests, "Test Categories");
@@ -137,7 +135,7 @@ int main() {
             ind = ccount - 1;
         if (c_calculation[0] != '\0')
             c_calculation = calc_tokens[ind];
-        load_cpp_config_wrapper(); 
+        load_cpp_config(); 
     /*
         * ADDING A CATEGORY OCCURS BELOW
         * FOLLOW THE PATTERN

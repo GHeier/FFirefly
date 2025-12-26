@@ -59,8 +59,19 @@ void self_energy_wrapper() {
 void response_wrapper() {
     if (method == "sparse_ir")
         ir_wrapper();
+    else if (method == "tetrahedra") {
+        tetra_wrapper();
+    }
     else
         printf("Method `%s` not found\n", method.c_str());
+}
+
+void tetra_wrapper() {
+    string folder = "many_body/";
+    string filename = "response_tetra";
+    string module = "Tetrahedron";
+    string function = "response_bz_integral";
+    call_julia_func(folder.c_str(), filename.c_str(), module.c_str(), function.c_str());
 }
 
 void ir_wrapper() {

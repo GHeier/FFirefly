@@ -9,6 +9,7 @@
 #include "../CMField/tests/field_tests.hpp"
 #include "../CMField/tests/field_wrapper_tests.hpp"
 #include "../CMField/tests/matrix_field_tests.hpp"
+#include "../CMField/tests/hamiltonian_tests.hpp"
 #include "../CMField/tests/tensor_field_tests.hpp"
 #include "../CMField/tests/inds_field_tests.hpp"
 #include "../CMField/tests/band_tests.hpp"
@@ -20,7 +21,7 @@ using namespace std;
 
 extern "C" bool object_tests() {
     printf("\nRunning Object tests\n");
-    int num_tests = 10;
+    int num_tests = 11;
     bool all_tests[num_tests] = {
         base_data_tests(),
         field_tests(),
@@ -33,6 +34,7 @@ extern "C" bool object_tests() {
         surface_tests(),
         array_tests(),
         inds_tests(),
+        hamiltonian_tests(),
     };
 
     return print_test_results(all_tests, num_tests, "Object tests");

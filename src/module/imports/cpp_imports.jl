@@ -11,6 +11,9 @@ export epsilon,
        Vertex,
        Self_Energy,
        Hamiltonian,
+       file_found,
+       get_bands,
+       get_wavefunctions,
        Field_C,
        Field_R,
        Field_RM,
@@ -911,10 +914,15 @@ mutable struct Hamiltonian
     end
 end
 
-function (self::Hamiltonian)(k::Vector{Float64}, w::Float64=0.0)::Matrix{ComplexF32}
+# Property accessors
+function file_found(self::Hamiltonian)::Bool
+    return ccall((:Hamiltonian_file_found, libfly), Bool, (Ptr{Cvoid},), self.ptr)
+end
+
+# Single k-point evaluation
+function (self::Hamiltonian)(k::Vector{Float64})::Matrix{ComplexF32}
     k_arr = Float32.(k)
     k_len = Cint(length(k))
-    w_val = Float32(w)
 
     # Allocate space for matrix results
     max_size = 100
@@ -923,8 +931,8 @@ function (self::Hamiltonian)(k::Vector{Float64}, w::Float64=0.0)::Matrix{Complex
     matrix_size = Ref{Cint}(0)
 
     ccall((:Hamiltonian_operator_export0, libfly), Cvoid,
-          (Ptr{Cvoid}, Ptr{Float32}, Cint, Float32, Ptr{Float32}, Ptr{Float32}, Ptr{Cint}),
-          self.ptr, k_arr, k_len, w_val, real_result, imag_result, matrix_size)
+          (Ptr{Cvoid}, Ptr{Float32}, Cint, Ptr{Float32}, Ptr{Float32}, Ptr{Cint}),
+          self.ptr, k_arr, k_len, real_result, imag_result, matrix_size)
 
     n = matrix_size[]
     if n == 0
@@ -936,6 +944,252 @@ function (self::Hamiltonian)(k::Vector{Float64}, w::Float64=0.0)::Matrix{Complex
     imag_mat = reshape(imag_result[1:n*n], n, n)
 
     return complex.(real_mat, imag_mat)
+end
+
+# List of k-points evaluation
+function (self::Hamiltonian)(k_points::Vector{Vector{Float64}})::Vector{Matrix{ComplexF32}}
+    num_points = length(k_points)
+    if num_points == 0
+        return Matrix{ComplexF32}[]
+    end
+
+    point_len = length(k_points[1])
+
+    # Flatten k-points to 1D array
+    points_flat = zeros(Float32, num_points * point_len)
+    for (i, k) in enumerate(k_points)
+        for (j, val) in enumerate(k)
+            points_flat[(i-1)*point_len + j] = Float32(val)
+        end
+    end
+
+    matrix_size = Ref{Cint}(0)
+
+    # Allocate space for multiple matrices
+    max_size = 100
+    real_output = zeros(Float32, num_points * max_size * max_size)
+    imag_output = zeros(Float32, num_points * max_size * max_size)
+
+    ccall((:Hamiltonian_operator_export_list, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Ptr{Float32}, Ptr{Cint}),
+          self.ptr, points_flat, Cint(num_points), Cint(point_len),
+          real_output, imag_output, matrix_size)
+
+    n = matrix_size[]
+    if n == 0
+        return [Matrix{ComplexF32}(undef, 0, 0) for _ in 1:num_points]
+    end
+
+    # Reshape to vector of matrices
+    result = Vector{Matrix{ComplexF32}}(undef, num_points)
+    for i in 1:num_points
+        offset = (i-1) * n * n
+        real_mat = reshape(real_output[offset+1:offset+n*n], n, n)
+        imag_mat = reshape(imag_output[offset+1:offset+n*n], n, n)
+        result[i] = complex.(real_mat, imag_mat)
+    end
+
+    return result
+end
+
+# Matrix of k-points evaluation (Nk × 3 format)
+function (self::Hamiltonian)(k_points::Matrix{Float64})::Array{ComplexF32, 3}
+    num_points = size(k_points, 1)
+    if num_points == 0
+        return Array{ComplexF32, 3}(undef, 0, 0, 0)
+    end
+
+    point_len = size(k_points, 2)
+
+    # Flatten k-points to 1D array (row-major order)
+    points_flat = zeros(Float32, num_points * point_len)
+    for i in 1:num_points
+        for j in 1:point_len
+            points_flat[(i-1)*point_len + j] = Float32(k_points[i, j])
+        end
+    end
+
+    matrix_size = Ref{Cint}(0)
+
+    # Allocate space for multiple matrices
+    max_size = 100
+    real_output = zeros(Float32, num_points * max_size * max_size)
+    imag_output = zeros(Float32, num_points * max_size * max_size)
+
+    ccall((:Hamiltonian_operator_export_list, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Ptr{Float32}, Ptr{Cint}),
+          self.ptr, points_flat, Cint(num_points), Cint(point_len),
+          real_output, imag_output, matrix_size)
+
+    n = matrix_size[]
+    if n == 0
+        return Array{ComplexF32, 3}(undef, 0, 0, 0)
+    end
+
+    # Reshape to 3D array (nkpts, nbnd, nbnd)
+    result = Array{ComplexF32, 3}(undef, num_points, n, n)
+    for i in 1:num_points
+        offset = (i-1) * n * n
+        real_mat = reshape(real_output[offset+1:offset+n*n], n, n)
+        imag_mat = reshape(imag_output[offset+1:offset+n*n], n, n)
+        result[i, :, :] = complex.(real_mat, imag_mat)
+    end
+
+    return result
+end
+
+# get_bands - returns eigenvalues at k-point or list of k-points
+function get_bands(self::Hamiltonian, k::Vector{Float64})::Vector{Float32}
+    k_arr = Float32.(k)
+    k_len = Cint(length(k))
+
+    # Allocate space for eigenvalues
+    max_bands = 100
+    eigenvalues_out = zeros(Float32, max_bands)
+    num_bands = Ref{Cint}(0)
+
+    ccall((:Hamiltonian_get_bands_export0, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Float32}, Cint, Ptr{Float32}, Ptr{Cint}),
+          self.ptr, k_arr, k_len, eigenvalues_out, num_bands)
+
+    n = num_bands[]
+    if n == 0
+        return Float32[]
+    end
+
+    return eigenvalues_out[1:n]
+end
+
+# get_bands for list of k-points
+function get_bands(self::Hamiltonian, k_points::Vector{Vector{Float64}})::Matrix{Float32}
+    num_points = length(k_points)
+    if num_points == 0
+        return Matrix{Float32}(undef, 0, 0)
+    end
+
+    point_len = length(k_points[1])
+
+    # Flatten k-points to 1D array
+    points_flat = zeros(Float32, num_points * point_len)
+    for (i, k) in enumerate(k_points)
+        for (j, val) in enumerate(k)
+            points_flat[(i-1)*point_len + j] = Float32(val)
+        end
+    end
+
+    # Allocate space for eigenvalues
+    max_bands = 100
+    eigenvalues_out = zeros(Float32, num_points * max_bands)
+    num_bands = Ref{Cint}(0)
+
+    ccall((:Hamiltonian_get_bands_export_list, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Ptr{Cint}),
+          self.ptr, points_flat, Cint(num_points), Cint(point_len),
+          eigenvalues_out, num_bands)
+
+    n = num_bands[]
+    if n == 0
+        return zeros(Float32, num_points, 0)
+    end
+
+    # Reshape to (num_points, n)
+    result = reshape(eigenvalues_out[1:num_points*n], n, num_points)'
+    return result
+end
+
+# get_bands for matrix of k-points (Nk × 3 format)
+function get_bands(self::Hamiltonian, k_points::Matrix{Float64})::Matrix{Float32}
+    # Convert matrix to vector of vectors and call the other method
+    k_vec = [k_points[i, :] for i in 1:size(k_points, 1)]
+    return get_bands(self, k_vec)
+end
+
+# get_wavefunctions - returns eigenvalues and eigenvectors at k-point
+function get_wavefunctions(self::Hamiltonian, k::Vector{Float64})::Tuple{Vector{Float32}, Matrix{ComplexF32}}
+    k_arr = Float32.(k)
+    k_len = Cint(length(k))
+
+    # Allocate space for eigenvalues and eigenvectors
+    max_bands = 100
+    eigenvalues_out = zeros(Float32, max_bands)
+    eigvecs_real = zeros(Float32, max_bands * max_bands)
+    eigvecs_imag = zeros(Float32, max_bands * max_bands)
+    num_bands = Ref{Cint}(0)
+
+    ccall((:Hamiltonian_get_wavefunctions_export0, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Float32}, Cint, Ptr{Float32}, Ptr{Float32}, Ptr{Float32}, Ptr{Cint}),
+          self.ptr, k_arr, k_len, eigenvalues_out, eigvecs_real, eigvecs_imag, num_bands)
+
+    n = num_bands[]
+    if n == 0
+        return Float32[], Matrix{ComplexF32}(undef, 0, 0)
+    end
+
+    # Extract eigenvalues
+    eigs = eigenvalues_out[1:n]
+
+    # Extract eigenvectors (stored in column-major format)
+    real_part = reshape(eigvecs_real[1:n*n], n, n)
+    imag_part = reshape(eigvecs_imag[1:n*n], n, n)
+    vecs = complex.(real_part, imag_part)
+
+    return eigs, vecs
+end
+
+# get_wavefunctions for list of k-points
+function get_wavefunctions(self::Hamiltonian, k_points::Vector{Vector{Float64}})::Tuple{Matrix{Float32}, Array{ComplexF32, 3}}
+    num_points = length(k_points)
+    if num_points == 0
+        return Matrix{Float32}(undef, 0, 0), Array{ComplexF32, 3}(undef, 0, 0, 0)
+    end
+
+    point_len = length(k_points[1])
+
+    # Flatten k-points to 1D array
+    points_flat = zeros(Float32, num_points * point_len)
+    for (i, k) in enumerate(k_points)
+        for (j, val) in enumerate(k)
+            points_flat[(i-1)*point_len + j] = Float32(val)
+        end
+    end
+
+    # Allocate space for eigenvalues and eigenvectors
+    max_bands = 100
+    eigenvalues_out = zeros(Float32, num_points * max_bands)
+    eigvecs_real = zeros(Float32, num_points * max_bands * max_bands)
+    eigvecs_imag = zeros(Float32, num_points * max_bands * max_bands)
+    num_bands = Ref{Cint}(0)
+
+    ccall((:Hamiltonian_get_wavefunctions_export_list, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Ptr{Float32}, Ptr{Float32}, Ptr{Cint}),
+          self.ptr, points_flat, Cint(num_points), Cint(point_len),
+          eigenvalues_out, eigvecs_real, eigvecs_imag, num_bands)
+
+    n = num_bands[]
+    if n == 0
+        return zeros(Float32, num_points, 0), Array{ComplexF32, 3}(undef, num_points, 0, 0)
+    end
+
+    # Extract eigenvalues and reshape to (num_points, n)
+    eigs = reshape(eigenvalues_out[1:num_points*n], n, num_points)'
+
+    # Extract eigenvectors (stored in column-major format for each k-point)
+    vecs = Array{ComplexF32, 3}(undef, num_points, n, n)
+    for p in 1:num_points
+        offset = (p-1) * n * n
+        real_part = reshape(eigvecs_real[offset+1:offset+n*n], n, n)
+        imag_part = reshape(eigvecs_imag[offset+1:offset+n*n], n, n)
+        vecs[p, :, :] = complex.(real_part, imag_part)
+    end
+
+    return eigs, vecs
+end
+
+# get_wavefunctions for matrix of k-points (Nk × 3 format)
+function get_wavefunctions(self::Hamiltonian, k_points::Matrix{Float64})::Tuple{Matrix{Float32}, Array{ComplexF32, 3}}
+    # Convert matrix to vector of vectors and call the other method
+    k_vec = [k_points[i, :] for i in 1:size(k_points, 1)]
+    return get_wavefunctions(self, k_vec)
 end
 
 # End Functions

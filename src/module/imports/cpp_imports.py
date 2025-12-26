@@ -573,6 +573,10 @@ class Field_C:
 lib.Hamiltonian_export0.restype = c_void_p
 lib.Hamiltonian_operator_export0.argtypes = [c_void_p, POINTER(c_float), c_int, c_float, POINTER(c_float), POINTER(c_float), POINTER(c_int)]
 lib.Hamiltonian_operator_export0.restype = None
+lib.Hamiltonian_operator_export_list.argtypes = [c_void_p, POINTER(c_float), c_int, c_int, c_float, POINTER(c_float), POINTER(c_float), POINTER(c_int)]
+lib.Hamiltonian_operator_export_list.restype = None
+lib.Hamiltonian_file_found.argtypes = [c_void_p]
+lib.Hamiltonian_file_found.restype = ctypes.c_bool
 
 class Hamiltonian:
     def __init__(self):
@@ -580,17 +584,65 @@ class Hamiltonian:
         if not self.ptr:
             raise RuntimeError('Failed to initialize Hamiltonian')
 
+    @property
+    def file_found(self):
+        """Check if Hamiltonian was loaded from file."""
+        return lib.Hamiltonian_file_found(self.ptr)
+
     def __call__(self, k, w=0.0):
         """
-        Evaluate Hamiltonian H(k, w) and return as numpy matrix.
+        Evaluate Hamiltonian H(k, w) and return as numpy matrix or list of matrices.
 
         Args:
-            k: momentum point (list or array)
+            k: momentum point (list or array) or list of momentum points
             w: frequency (default 0.0)
 
         Returns:
-            numpy array of shape (n, n) with complex values
+            numpy array of shape (n, n) with complex values, or list of such arrays
         """
+        # Check if k is a list of points
+        if isinstance(k, (list, tuple, np.ndarray)) and len(k) > 0:
+            if isinstance(k[0], (list, tuple, np.ndarray)):
+                # List of k-points
+                points = k
+                num_points = len(points)
+                if num_points == 0:
+                    return []
+
+                point_len = len(points[0])
+                points_flat = (c_float * (num_points * point_len))()
+                for i, p in enumerate(points):
+                    for j, val in enumerate(p):
+                        points_flat[i * point_len + j] = float(val)
+
+                w_val = c_float(w)
+                matrix_size = c_int(0)
+
+                # Allocate space for maximum size matrices
+                max_size = 100
+                real_output = (c_float * (num_points * max_size * max_size))()
+                imag_output = (c_float * (num_points * max_size * max_size))()
+
+                lib.Hamiltonian_operator_export_list(
+                    self.ptr, points_flat, c_int(num_points), c_int(point_len), w_val,
+                    real_output, imag_output, ctypes.byref(matrix_size)
+                )
+
+                n = matrix_size.value
+                if n == 0:
+                    return [np.array([[]], dtype=np.complex64) for _ in range(num_points)]
+
+                # Reshape flattened arrays to list of matrices
+                result = []
+                for i in range(num_points):
+                    offset = i * n * n
+                    real_matrix = np.array([real_output[offset + j] for j in range(n*n)]).reshape(n, n)
+                    imag_matrix = np.array([imag_output[offset + j] for j in range(n*n)]).reshape(n, n)
+                    result.append(real_matrix + 1j * imag_matrix)
+
+                return result
+
+        # Single k-point
         k_array = (c_float * len(k))(*[float(x) for x in k])
         k_len = c_int(len(k))
         w_val = c_float(w)
@@ -617,6 +669,164 @@ class Hamiltonian:
         imag_matrix = np.array([imag_result[i] for i in range(n*n)]).reshape(n, n)
 
         return real_matrix + 1j * imag_matrix
+
+    def get_bands(self, k):
+        """
+        Diagonalize Hamiltonian at k-point(s) and return eigenvalues (band energies).
+
+        Args:
+            k: momentum point (list/array of length 3) or list of momentum points
+
+        Returns:
+            numpy array of eigenvalues (floats), or 2D array for multiple k-points
+        """
+        # Check if k is a list of points
+        if isinstance(k, (list, tuple, np.ndarray)) and len(k) > 0:
+            if isinstance(k[0], (list, tuple, np.ndarray)):
+                # List of k-points
+                points = k
+                num_points = len(points)
+                if num_points == 0:
+                    return np.array([], dtype=np.float32)
+
+                point_len = len(points[0])
+                points_flat = (c_float * (num_points * point_len))()
+                for i, p in enumerate(points):
+                    for j, val in enumerate(p):
+                        points_flat[i * point_len + j] = float(val)
+
+                # Allocate space for eigenvalues
+                max_bands = 100
+                eigenvalues_out = (c_float * (num_points * max_bands))()
+                num_bands = c_int(0)
+
+                lib.Hamiltonian_get_bands_export_list(
+                    self.ptr, points_flat, c_int(num_points), c_int(point_len),
+                    eigenvalues_out, ctypes.byref(num_bands)
+                )
+
+                n = num_bands.value
+                if n == 0:
+                    return np.zeros((num_points, 0), dtype=np.float32)
+
+                # Reshape to (num_points, n)
+                result = np.array([eigenvalues_out[i] for i in range(num_points * n)], dtype=np.float32)
+                return result.reshape(num_points, n)
+
+        # Single k-point
+        k_array = (c_float * len(k))(*[float(x) for x in k])
+        k_len = c_int(len(k))
+
+        # Allocate space for eigenvalues
+        max_bands = 100
+        eigenvalues_out = (c_float * max_bands)()
+        num_bands = c_int(0)
+
+        lib.Hamiltonian_get_bands_export0(
+            self.ptr, k_array, k_len,
+            eigenvalues_out, ctypes.byref(num_bands)
+        )
+
+        n = num_bands.value
+        if n == 0:
+            return np.array([], dtype=np.float32)
+
+        return np.array([eigenvalues_out[i] for i in range(n)], dtype=np.float32)
+
+    def get_wavefunctions(self, k):
+        """
+        Diagonalize Hamiltonian at k-point(s) and return eigenvalues and eigenvectors.
+
+        Args:
+            k: momentum point (list/array of length 3) or list of momentum points
+
+        Returns:
+            For single k-point:
+                tuple (eigenvalues, eigenvectors) where:
+                    - eigenvalues: numpy array of shape (n,) with floats
+                    - eigenvectors: numpy array of shape (n, n) with complex values
+                      (each column is an eigenvector)
+            For multiple k-points:
+                tuple (eigenvalues, eigenvectors) where:
+                    - eigenvalues: numpy array of shape (num_points, n) with floats
+                    - eigenvectors: numpy array of shape (num_points, n, n) with complex values
+        """
+        # Check if k is a list of points
+        if isinstance(k, (list, tuple, np.ndarray)) and len(k) > 0:
+            if isinstance(k[0], (list, tuple, np.ndarray)):
+                # List of k-points
+                points = k
+                num_points = len(points)
+                if num_points == 0:
+                    return np.array([], dtype=np.float32), np.array([[]], dtype=np.complex64)
+
+                point_len = len(points[0])
+                points_flat = (c_float * (num_points * point_len))()
+                for i, p in enumerate(points):
+                    for j, val in enumerate(p):
+                        points_flat[i * point_len + j] = float(val)
+
+                # Allocate space for eigenvalues and eigenvectors
+                max_bands = 100
+                eigenvalues_out = (c_float * (num_points * max_bands))()
+                eigvecs_real = (c_float * (num_points * max_bands * max_bands))()
+                eigvecs_imag = (c_float * (num_points * max_bands * max_bands))()
+                num_bands = c_int(0)
+
+                lib.Hamiltonian_get_wavefunctions_export_list(
+                    self.ptr, points_flat, c_int(num_points), c_int(point_len),
+                    eigenvalues_out, eigvecs_real, eigvecs_imag,
+                    ctypes.byref(num_bands)
+                )
+
+                n = num_bands.value
+                if n == 0:
+                    return np.zeros((num_points, 0), dtype=np.float32), np.zeros((num_points, 0, 0), dtype=np.complex64)
+
+                # Extract eigenvalues
+                eigs = np.array([eigenvalues_out[i] for i in range(num_points * n)], dtype=np.float32)
+                eigs = eigs.reshape(num_points, n)
+
+                # Extract eigenvectors (stored in column-major format for each k-point)
+                vecs = np.zeros((num_points, n, n), dtype=np.complex64)
+                for p in range(num_points):
+                    offset = p * n * n
+                    real_part = np.array([eigvecs_real[offset + i] for i in range(n*n)]).reshape(n, n)
+                    imag_part = np.array([eigvecs_imag[offset + i] for i in range(n*n)]).reshape(n, n)
+                    vecs[p] = real_part + 1j * imag_part
+
+                return eigs, vecs
+
+        # Single k-point
+        k_array = (c_float * len(k))(*[float(x) for x in k])
+        k_len = c_int(len(k))
+
+        # Allocate space for eigenvalues and eigenvectors
+        max_bands = 100
+        eigenvalues_out = (c_float * max_bands)()
+        eigvecs_real = (c_float * (max_bands * max_bands))()
+        eigvecs_imag = (c_float * (max_bands * max_bands))()
+        num_bands = c_int(0)
+
+        lib.Hamiltonian_get_wavefunctions_export0(
+            self.ptr, k_array, k_len,
+            eigenvalues_out, eigvecs_real, eigvecs_imag,
+            ctypes.byref(num_bands)
+        )
+
+        n = num_bands.value
+        if n == 0:
+            return np.array([], dtype=np.float32), np.array([[]], dtype=np.complex64)
+
+        # Extract eigenvalues
+        eigs = np.array([eigenvalues_out[i] for i in range(n)], dtype=np.float32)
+
+        # Extract eigenvectors (stored in column-major format)
+        real_part = np.array([eigvecs_real[i] for i in range(n*n)]).reshape(n, n)
+        imag_part = np.array([eigvecs_imag[i] for i in range(n*n)]).reshape(n, n)
+        vecs = real_part + 1j * imag_part
+
+        return eigs, vecs
 
     def __del__(self):
         try:

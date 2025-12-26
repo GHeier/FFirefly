@@ -240,7 +240,10 @@ vector<float> Field_CM::diag(Vec point, float w) {
     if (matrix.empty()) {
         return vector<float>();
     }
+    return ::diag(matrix);
+}
 
+vector<float> diag(vector<vector<cfloat>> &matrix) {
     int N = matrix.size();
 
     // Copy matrix data into lapack_complex_float array
@@ -266,13 +269,7 @@ vector<float> Field_CM::diag(Vec point, float w) {
     return eigenvalues;
 }
 
-vector<Eigenvector> Field_CM::fulldiag(Vec point, float w) {
-    // Get matrix at the specified point
-    auto matrix = (*this)(point, w);
-    if (matrix.empty()) {
-        return vector<Eigenvector>();
-    }
-
+vector<eigvec> fulldiag(vector<vector<cfloat>> &matrix) {
     int N = matrix.size();
 
     // Copy matrix data into lapack_complex_float array
@@ -292,20 +289,32 @@ vector<Eigenvector> Field_CM::fulldiag(Vec point, float w) {
 
     if (info != 0) {
         std::cerr << "Error: LAPACKE_cheev returned " << info << std::endl;
-        return vector<Eigenvector>();
+        return vector<eigvec>();
     }
 
-    // Convert to Eigenvector format
-    vector<Eigenvector> eigenvectors(N, Eigenvector(N));
+    // Convert to eigvec format
+    vector<eigvec> eigenvectors(N, eigvec(N));
     for (int i = 0; i < N; i++) {
         eigenvectors[i].eigenvalue = eigenvalues[i];
         for (int j = 0; j < N; j++) {
-            // Eigenvectors are stored in columns
-            eigenvectors[i][j] = reinterpret_cast<float(&)[2]>(A[j * N + i])[0];
+            // eigvecs are stored in columns
+            float real_part = reinterpret_cast<float(&)[2]>(A[j * N + i])[0];
+            float imag_part = reinterpret_cast<float(&)[2]>(A[j * N + i])[1];
+            eigenvectors[i].eigenvector[j] = cfloat(real_part, imag_part);
         }
     }
 
     return eigenvectors;
+
+}
+
+vector<eigvec> Field_CM::fulldiag(Vec point, float w) {
+    // Get matrix at the specified point
+    auto matrix = (*this)(point, w);
+    if (matrix.empty()) {
+        return vector<eigvec>();
+    }
+    return ::fulldiag(matrix);
 }
 
 vector<vector<vector<cfloat>>> Field_CM::operator()(const vector<Vec>& points, float w) {
@@ -463,11 +472,11 @@ vector<float> Field_RM::diag(Vec point, float w) {
     return eigenvalues;
 }
 
-vector<Eigenvector> Field_RM::fulldiag(Vec point, float w) {
+vector<eigvec> Field_RM::fulldiag(Vec point, float w) {
     // Get matrix at the specified point
     auto matrix = (*this)(point, w);
     if (matrix.empty()) {
-        return vector<Eigenvector>();
+        return vector<eigvec>();
     }
 
     int N = matrix.size();
@@ -488,17 +497,18 @@ vector<Eigenvector> Field_RM::fulldiag(Vec point, float w) {
 
     if (info != 0) {
         std::cerr << "Error: LAPACKE_ssyev returned " << info << std::endl;
-        return vector<Eigenvector>();
+        return vector<eigvec>();
     }
 
-    // Convert to Eigenvector format
+    // Convert to eigvec format
     // After ssyev, A contains eigenvectors in columns
-    vector<Eigenvector> eigenvectors(N, Eigenvector(N));
+    vector<eigvec> eigenvectors(N, eigvec(N));
     for (int i = 0; i < N; i++) {
         eigenvectors[i].eigenvalue = eigenvalues[i];
         for (int j = 0; j < N; j++) {
-            // Eigenvectors are stored in columns
-            eigenvectors[i][j] = A[j * N + i];
+            // eigvecs are stored in columns
+            // For real matrices, store as complex with zero imaginary part
+            eigenvectors[i].eigenvector[j] = cfloat(A[j * N + i], 0.0f);
         }
     }
 

@@ -3,6 +3,7 @@
 
 #include <complex>
 #include <vector>
+#include <string>
 
 using namespace std;
 
@@ -12,6 +13,13 @@ class Hamiltonian {
     bool file_found;
 
     Hamiltonian();
-    // Returns matrix H_ab(k) where result[a][b] is the Hamiltonian element
-    vector<vector<complex<float>>> operator()(Vec k, float w = 0);
+    vector<vector<complex<float>>> operator()(Vec k);
+    vector<vector<vector<complex<float>>>> operator()(vector<Vec> kpoints);
+
+    vector<float> get_bands(Vec k);
+    vector<vector<float>> get_bands(vector<Vec> kpoints);
+
+    vector<eigvec> get_wavefunctions(Vec k);
+    vector<vector<eigvec>> get_wavefunctions(vector<Vec> kpoints);
 };
+

@@ -1,12 +1,14 @@
 name = "Firefly"
 uuid = "f0119071-79de-41eb-b75f-69c202aeece9"
-authors = ["Griffin Heier <griffinheier@gmail.com>"]
 version = "0.1.0"
+authors = ["Griffin Heier <griffinheier@gmail.com>"]
 
 [deps]
 HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
+Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 
 [compat]
 HDF5 = "0.17.2"
+Interpolations = "0.16.2"
 PyCall = "1.96.4"

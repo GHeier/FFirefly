@@ -1,35 +1,68 @@
 #include "hamiltonian.hpp"
+#include "../../hamiltonian/preloaded_hamiltonians.hpp"
 #include "../../config/load/cpp_config.hpp"
+#include "fields.hpp"
 #include <complex>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
+#include <cctype>
 
 using namespace std;
 
 Hamiltonian::Hamiltonian() {
-    string fname = indir + prefix + "_hamiltonian.h5";
+    string fname = outdir + prefix + "_hamiltonian.h5";
     file_found = false;
 
-    // Try to load from file if automatic_file_read is enabled
-    if (automatic_file_read) {
-        ifstream f(fname.c_str());
-        if (f.good()) {
-            field = Field_CM(fname.c_str());
-            file_found = true;
-            if (verbosity == "high")
-                cout << "Loaded Hamiltonian from " << fname << endl;
-        } else {
-            if (verbosity == "high")
-                cout << "Hamiltonian file not found: " << fname << endl;
-        }
+    ifstream file(fname.c_str());
+    if (file.good()) {
+        file_found = true;
+        printv("Loading Hamiltonian from file: %s\n\n", fname.c_str());
+        field = Field_CM(fname.c_str());
+    }
+    else {
+        printv("Hamiltonian file not found: %s\n", fname.c_str());
+        printv("Using preloaded hamiltonian model: %s\n\n", hamiltonian.c_str());
     }
 }
 
-vector<vector<complex<float>>> Hamiltonian::operator()(Vec k, float w) {
-    if (!file_found) {
-        cerr << "Error: Hamiltonian not loaded from file" << endl;
-        // Return empty matrix
-        return vector<vector<complex<float>>>();
+vector<vector<complex<float>>> Hamiltonian::operator()(Vec k) {
+    if (file_found)
+        return field(k, 0);
+    else 
+        return H(k);
+}
+
+vector<vector<vector<complex<float>>>> Hamiltonian::operator()(vector<Vec> kpoints) {
+    vector<vector<vector<complex<float>>>> Hkpoints;
+    for (auto k : kpoints) {
+        Hkpoints.push_back(operator()(k));
     }
-    return field(k, w);
+    return Hkpoints;
+}
+
+vector<float> Hamiltonian::get_bands(Vec k) {
+    vector<vector<complex<float>>> Hk = operator()(k);
+    return diag(Hk);
+}
+
+vector<vector<float>> Hamiltonian::get_bands(vector<Vec> kpoints) {
+    vector<vector<float>> bands;
+    for (auto k : kpoints) {
+        bands.push_back(get_bands(k));
+    }
+    return bands;
+}
+
+vector<eigvec> Hamiltonian::get_wavefunctions(Vec k) {
+    vector<vector<complex<float>>> Hk = operator()(k);
+    return fulldiag(Hk);
+}
+
+vector<vector<eigvec>> Hamiltonian::get_wavefunctions(vector<Vec> kpoints) {
+    vector<vector<eigvec>> wavefunctions;
+    for (auto k : kpoints) {
+        wavefunctions.push_back(get_wavefunctions(k));
+    }
+    return wavefunctions;
 }

@@ -7,6 +7,15 @@
 #include "field.hpp"
 
 using namespace std;
+using cfloat = complex<float>;
+
+// Struct for eigenvalue/eigenvector pairs
+struct eigvec {
+    float eigenvalue;
+    vector<cfloat> eigenvector;
+
+    eigvec(int size) : eigenvector(size) {}
+};
 
 // Scalar fields
 class Field_C {
@@ -107,7 +116,7 @@ public:
   vector<float> diag(Vec point, float w = 0);
 
   // Diagonalize matrix at point and return eigenvalues and eigenvectors
-  vector<Eigenvector> fulldiag(Vec point, float w = 0);
+  vector<eigvec> fulldiag(Vec point, float w = 0);
 
   // Get underlying data
   BaseData* get_data();
@@ -148,7 +157,7 @@ public:
   vector<float> diag(Vec point, float w = 0);
 
   // Diagonalize matrix at point and return eigenvalues and eigenvectors
-  vector<Eigenvector> fulldiag(Vec point, float w = 0);
+  vector<eigvec> fulldiag(Vec point, float w = 0);
 
   // Get underlying data
   BaseData* get_data();
@@ -205,3 +214,5 @@ public:
   // Get underlying data
   BaseData* get_data();
 };
+vector<eigvec> fulldiag(vector<vector<cfloat>> &matrix);
+vector<float> diag(vector<vector<cfloat>> &matrix);

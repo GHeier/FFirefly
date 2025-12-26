@@ -21,7 +21,7 @@ include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/external/h2pack/include)
 
 # Compiler flags
-set(CMAKE_CXX_FLAGS "-O3 -fopenmp -fPIC")
+set(CMAKE_CXX_FLAGS "-O3 -fopenmp -fPIC -march=native -ffast-math")
 set(CMAKE_C_FLAGS "-fopenmp -fPIC")
 set(CMAKE_Fortran_FLAGS "-O3 -fopenmp -fPIC")
 
