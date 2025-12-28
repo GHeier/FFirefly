@@ -14,7 +14,6 @@
 #include "matrix_creation.hpp"
 #include "solver.hpp"
 #include "utilities.hpp"
-#include "h2pack_wrapper.hpp"
 
 using namespace std;
 
@@ -118,88 +117,3 @@ void freq_vector_to_wave(vector<vector<Vec>> &freq_FS, Eigenvector *vectors) {
     }
 }
 
-/**
- * Create and test H2Pack hierarchical matrix compression of P
- *
- * This function demonstrates H2Pack compression on the BCS pairing matrix.
- * It builds both the dense matrix P and the H2Pack compressed version,
- * then compares them and outputs compression statistics.
- *
- * @param P Dense pairing matrix (output)
- * @param k Fermi surface k-points
- * @param renorm Renormalization factor
- */
-void create_P_h2pack(Matrix &P, vector<Vec> &k, float renorm) {
-    cout << "\n" << string(70, '=') << endl;
-    cout << "H2Pack Hierarchical Matrix Compression Test" << endl;
-    cout << string(70, '=') << endl;
-
-    // First create the dense P matrix using standard method
-    create_P(P, k);
-
-    // Create H2Pack compressed version
-    H2PackMatrix h2_matrix(dim, 1e-6);  // 2D/3D, relative tolerance 1e-6
-
-    cout << "\nBuilding H2Pack representation from kernel..." << endl;
-    h2_matrix.build_from_kernel(k, renorm);
-
-    // Alternative: build from dense matrix
-    // cout << "\nBuilding H2Pack representation from dense matrix..." << endl;
-    // h2_matrix.build_from_matrix(P, k);
-
-    // Print compression statistics
-    h2_matrix.print_stats();
-
-    // Test matrix-vector multiplication
-    cout << "\nTesting H2Pack matrix-vector multiplication..." << endl;
-    int n = k.size();
-    vector<float> x(n, 1.0);  // Test vector (all ones)
-    vector<float> y_dense(n, 0.0);
-    vector<float> y_h2(n, 0.0);
-
-    // Dense matvec
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            y_dense[i] += P(i, j) * x[j];
-        }
-    }
-
-    // H2Pack matvec
-    h2_matrix.matvec(x, y_h2);
-
-    // Compare results
-    float max_diff = 0.0;
-    float rel_err = 0.0;
-    for (int i = 0; i < n; i++) {
-        float diff = abs(y_dense[i] - y_h2[i]);
-        max_diff = max(max_diff, diff);
-        rel_err += diff * diff;
-    }
-    rel_err = sqrt(rel_err / n);
-
-    cout << "\nMatrix-vector multiplication comparison:" << endl;
-    cout << "  Max absolute error:  " << max_diff << endl;
-    cout << "  RMS relative error:  " << rel_err << endl;
-
-    // Summary
-    cout << "\n" << string(70, '=') << endl;
-    cout << "Summary:" << endl;
-    cout << string(70, '=') << endl;
-    cout << "  Original matrix:       " << n << " x " << n << endl;
-    cout << "  Original storage:      " << n*n << " elements" << endl;
-    cout << "  Compressed storage:    " << h2_matrix.compressed_nnz << " elements" << endl;
-    cout << "  Compression ratio:     " << h2_matrix.get_compression_ratio() << "x" << endl;
-    cout << "  Maximum block rank:    " << h2_matrix.get_max_rank() << endl;
-    cout << "  Build time:            " << h2_matrix.build_time << " seconds" << endl;
-    cout << "  Matvec accuracy:       " << rel_err << " (relative error)" << endl;
-    cout << string(70, '=') << "\n" << endl;
-
-    // Memory comparison
-    float dense_mb = (n * n * sizeof(float)) / (1024.0 * 1024.0);
-    float h2_mb = (h2_matrix.compressed_nnz * sizeof(double)) / (1024.0 * 1024.0);
-    cout << "Memory savings: " << dense_mb - h2_mb << " MB ("
-         << 100.0 * (1.0 - h2_mb/dense_mb) << "%)" << endl;
-
-    cout << "\nNote: To enable H2Pack, uncomment the H2Pack code in" << endl;
-    cout << "      h2pack_wrapper.cpp and link against libH2Pack.a" << endl;
-}

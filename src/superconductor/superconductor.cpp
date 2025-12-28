@@ -86,11 +86,6 @@ void bcs() {
         create_P_freq(P, freq_FS, T);
     }
 
-    // Test H2Pack hierarchical compression (only for FS_only mode)
-    if (FS_only) {
-        create_P_h2pack(P, FS, renorm);
-    }
-
     float f = f_singlet_integral(T);
     cout << "F-integral value: " << f << endl;
 

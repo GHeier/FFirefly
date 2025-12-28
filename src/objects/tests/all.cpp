@@ -16,7 +16,7 @@
 #include "all.hpp"
 #include "surface_tests.hpp"
 #include "array_tests.hpp"
-#include "h2matrix_tests.hpp"
+#include "hmatrix_tests.hpp"
 
 using namespace std;
 
@@ -36,7 +36,7 @@ extern "C" bool object_tests() {
         array_tests(),
         inds_tests(),
         hamiltonian_tests(),
-        h2matrix_tests()
+        hmatrix_tests(),
     };
 
     return print_test_results(all_tests, num_tests, "Object tests");
