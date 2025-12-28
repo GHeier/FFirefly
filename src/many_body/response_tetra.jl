@@ -41,6 +41,27 @@ U = cfg.onsite_U
 BZ = cfg.brillouin_zone
 
 
+function get_fractional_mesh(n; centered=true)
+    nx, ny, nz = n
+
+    if centered
+        xs = (0:nx-1) ./ nx .- 0.5
+        ys = (0:ny-1) ./ ny .- 0.5
+        zs = (0:nz-1) ./ nz .- 0.5
+    else
+        xs = (0:nx-1) ./ nx
+        ys = (0:ny-1) ./ ny
+        zs = (0:nz-1) ./ nz
+    end
+
+    # fractional k-points: 3 × Nk
+    frac = hcat(vec(repeat(xs, inner=(ny*nz))),
+                vec(repeat(ys, inner=(nz,), outer=(nx))),
+                vec(repeat(zs, outer=(nx*ny))))'
+    # Return as Nk × 3 matrix (transpose from 3 × Nk)
+    return Matrix{Float64}(frac')
+end
+
 function get_kmesh(BZ::AbstractMatrix{<:Real}, n; centered=true)
     nx, ny, nz = n
 
@@ -118,13 +139,23 @@ For the integrand F(k) = 1/[ω + ε(k) - ε(k+q) + iη], we compute:
   ∫ Θ(-ε(k+q)) * F(k) dk  -  ∫ Θ(-ε(k)) * F(k) dk
 """
 function calculate_response_bzintegral_2(w, Ek_mesh, Ekq_mesh, mu, iter=2)
-    # Denominator: ω + ε(k) - ε(k+q) (REAL - no iη, since Quad2DRuleΘ𝔇 doesn't support complex)
-    denom = w .+ Ek_mesh .- Ekq_mesh
+    # Denominator: ω + ε(k) - ε(k+q) + small eta to avoid division by zero
+    # Using real eta since Quad2DRuleΘ𝔇 doesn't support complex denominators
+    eta = 1e-4  # Small broadening parameter
+    denom = w .+ Ek_mesh .- Ekq_mesh .+ eta
+
     Wmesh = Quad2DRuleΘ𝔇(Ek_mesh, mu , denom, iter)-Quad2DRuleΘ𝔇(Ekq_mesh, mu, denom, iter)
     out = -2.0 * sum(Wmesh)  # Include -2 spin factor
     return out
 end
 
+function print_progress(current, total, start_time)
+    elapsed = time() - start_time
+    rate = current / elapsed
+    remaining = (total - current) / rate
+    @printf("  Progress: %d/%d | Rate: %.1f/s | ETA: %.1f s\r", current, total, rate, remaining)
+    flush(stdout)
+end
 
 """
     calculate_response_grid(kmesh, qmesh, w_pts, iter=2)
@@ -137,21 +168,18 @@ Returns: 3D array chi[iw, iqx, iqy]
 function calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, BZ, iter=2)
     nw = length(w_pts)
     nkx, nky, nkz = kmesh
+    nqx, nqy, nqz = qmesh
     nqpts = prod(qmesh)
-    qpts = get_kmesh(BZ, qmesh; centered=true)
+    qpts = get_fractional_mesh(qmesh; centered=true)
 
     # Get nbnd from Ek_grids
     nbnd = Int(sqrt(length(Ek_grids)))
-
     println("nbnd: ", nbnd)
 
     # Initialize susceptibility
     chi = zeros(ComplexF64, nw, nqpts, nbnd, nbnd, nbnd, nbnd)
     println("Starting band and q-ω loops...")
     start_time = time()
-
-    # Compute inverse BZ matrix for coordinate conversion
-    BZ_inv = inv(BZ)
 
     function eval(ipt)
         if dim == 2
@@ -173,7 +201,9 @@ function calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, BZ, it
         for k in 1:nbnd, l in 1:nbnd
             # Parallelize over q-points
             Threads.@threads for iq in 1:nqpts
+            #for iq in 1:nqpts
                 q = qpts[iq, :]
+                #println("q = ", q)
                 Ekq_grid = evaluate_Ekq_on_grid(Ek_grids[k, l], (nkx, nky, nkz), q, dim)
                 for (iw, w) in enumerate(w_pts)
                     result = calculate_response_bzintegral_2(w, Ek_grid, Ekq_grid, mu, iter)
@@ -185,16 +215,12 @@ function calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, BZ, it
                     # Only print progress from one thread occasionally
                     if current % 10 == 0
                         lock(progress_lock) do
-                            elapsed = time() - start_time
-                            rate = current / elapsed
-                            remaining = (total_iterations - current) / rate
-                            @printf("  Bands: (%d,%d)-(%d,%d) | q-point: %d/%d | Progress: %d/%d | Rate: %.1f/s | ETA: %.1f s\r",
-                                    i, j, k, l, iq, nqpts, current, total_iterations, rate, remaining)
-                            flush(stdout)
+                            print_progress(current, total_iterations, start_time)
                         end
                     end
                 end
             end
+            println("\nCompleted bands (", i, ", ", j, ", ", k, ", ", l, ")")
         end
     end
 
@@ -202,6 +228,7 @@ function calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, BZ, it
     elapsed_total = time() - start_time
     println("Total computation time: $(round(elapsed_total, digits=3)) s")
     println()
+    chi = reshape(chi, (nw, nqx, nqy, nqz, nbnd, nbnd, nbnd, nbnd))
 
     return chi
 end
@@ -214,7 +241,12 @@ function response_bz_integral()
     print("  Dimension: $(dim)D\n")
     print("  w-pts: $(wpts)\n")
     w_max = cfg.cutoff_energy
-    w_list = range(0, w_max, length=wpts)
+    if wpts == 1
+        w_list = [0.0]
+    else
+        w_list = collect(range(-w_max, w_max, length=wpts))
+    end
+    #w_list = range(-w_max, w_max, length=wpts)
     print("  Taking ω ∈ [0, $(w_max)] and projecting for -ω\n")
 
     println("Setting up grid calculation:")
@@ -271,9 +303,17 @@ function response_bz_integral()
     chi = calculate_response_grid(Ek_grids, Uk_grids, w_list, kmesh, qmesh, BZ, 2)
     #print(chi)
     println("Max chi real part: ", maximum(x -> isfinite(x) ? x : -Inf, real(chi)))
+    println("Min chi real part: ", minimum(x -> isfinite(x) ? x : -Inf, real(chi)))
+    println("Max chi(w_max) = ", maximum(real(chi[end, :, :, :, 1, 1, 1, 1])))
+    println("Min chi(w_max) = ", minimum(real(chi[end, :, :, :, 1, 1, 1, 1])))
     chi_neg = conj.(chi)
-    chi = vcat(reverse(chi_neg[2:end, :], dims=1), chi)  # Combine -ω and +ω
-    save_data!(outdir*prefix*"_chi."*filetype, chi)
+    #chi = vcat(reverse(chi_neg[2:end, :], dims=1), chi)  # Combine -ω and +ω
+    println("w_points = ", w_list)
+    BZ_save = BZ[1:dim, 1:dim]  # Adjust BZ for dimension
+    qmesh_save = qmesh[1:dim]  # Adjust qmesh for dimension
+    save_data!(outdir*prefix*"_chi."*filetype, chi[:,:,:,:,1,1,1,1], qmesh_save, BZ_save, w_points=w_list)
+    println("Saved response function to "*outdir*prefix*"_chi."*filetype)
+    
 end
 
 

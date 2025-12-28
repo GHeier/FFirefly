@@ -418,8 +418,14 @@ void save_data(string filename, BaseData::DataVariant& data, bool is_complex, ve
     bool with_k = mesh.size() > 0;
     bool with_w = w_points.size() > 0;
     bool as_mesh = mesh.size() > 0; // Would be false if points were given or if mesh is empty
-    // Dimension is the spatial dimension (from domain), not the mesh size
-    int dim = domain.empty() ? 3 : domain.size();
+
+    // Determine dimension from mesh: count non-trivial dimensions (mesh[i] > 1)
+    int dim = 0;
+    for (size_t i = 0; i < mesh.size(); i++) {
+        if (mesh[i] > 1) dim++;
+    }
+    if (dim == 0) dim = domain.empty() ? 3 : domain.size();  // Fallback to domain size
+
     bool is_matrix = inds.size() == 2;  // Matrix if rank = 2
     vector<vector<float>> points = {}; // Empty for this wrapper function
     save_data_to_hdf5(filename, is_complex, is_vector, is_matrix, with_k, with_w, as_mesh, inds, mesh, domain, dim, w_points, points, data);

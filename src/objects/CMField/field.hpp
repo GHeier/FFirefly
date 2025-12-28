@@ -49,9 +49,13 @@ private:
 
     // Helper to initialize shift vectors and evaluator
     void initialize() {
-        // Infer dimension from domain
-        dimension = data.domain.empty() ? 1 : data.domain.size();
-        data.dimension = dimension;
+        // Use dimension from data if already set (e.g., from file), otherwise infer from domain
+        if (data.dimension > 0) {
+            dimension = data.dimension;
+        } else {
+            dimension = data.domain.empty() ? 1 : data.domain.size();
+            data.dimension = dimension;
+        }
 
         // Create shift vectors for centering
         shift_vectors.resize(1);

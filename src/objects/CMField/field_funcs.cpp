@@ -63,6 +63,11 @@ complex<Vec> CMF_search_2d(float x_val, float w_val, int nx,
     // of y f: vector of function values at the grid points returns:
     // interpolated value of f(x_val)
 
+    // Special case: if only one frequency point, reduce to 1D spatial interpolation
+    if (w_points.size() == 1) {
+        return interpolate_1D(x_val, 0, 1, f);
+    }
+
     // Special case: if nx=1, reduce to 1D interpolation
     if (nx == 1) {
         return CMF_search_1d(w_val, w_points, f);
@@ -118,6 +123,11 @@ complex<Vec> CMF_search_3d(float x_val, float y_val, float w_val, int nx,
     // y_max: minimum and maximum values of y w_min, w_max: minimum and maximum
     // values of w f: vector of function values at the grid points returns:
     // interpolated value of f(x_val, y_val, w_val)
+
+    // Special case: if only one frequency point, reduce to 2D spatial interpolation
+    if (w_points.size() == 1) {
+        return interpolate_2D(x_val, y_val, 0, 1, 0, 1, nx, ny, f);
+    }
 
     // Special case: if ny=1, reduce to 2D interpolation
     if (ny == 1) {
@@ -196,6 +206,11 @@ complex<Vec> CMF_search_4d(float x_val, float y_val, float z_val, float w_val,
     // of y z_min, z_max: minimum and maximum values of z w_min, w_max: minimum
     // and maximum values of w f: vector of function values at the grid points
     // returns: interpolated value of f(x_val, y_val, z_val, w_val)
+
+    // Special case: if only one frequency point, reduce to 3D spatial interpolation
+    if (w_points.size() == 1) {
+        return interpolate_3D(x_val, y_val, z_val, 0, 1, 0, 1, 0, 1, nx, ny, nz, f);
+    }
 
     // Special case: if nz=1, reduce to 3D interpolation
     if (nz == 1) {

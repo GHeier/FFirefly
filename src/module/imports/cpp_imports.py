@@ -548,13 +548,11 @@ class Field_C:
         data_array = bd.get_data()
 
         # Reshape from (nk*nw) to (nw, nk)
-        if bd.n_indices == 2:
-            print("reshaping matrix data")
+        if len(bd.inds) == 2:
             # Matrix: (nk*nw, dim, dim) -> (nw, nk, dim, dim)
             data_reshaped = data_array.reshape(bd.nk, bd.nw, bd.dim_indices, bd.dim_indices)
             return np.moveaxis(data_reshaped, [0, 1], [1, 0])  # swap k and w axes
         else:
-            print("reshaping scalar data")
             # Scalar: (nk*nw,) -> (nw, nk)
             return data_array.reshape(bd.nw, bd.nk)
             #return data_array.reshape(bd.nk, bd.nw)
