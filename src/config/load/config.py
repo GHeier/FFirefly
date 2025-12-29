@@ -18,7 +18,7 @@ interaction = 'none'
 dimension = 3
 celltype = ''
 nbnd = 0
-nstates = 1
+nstates = 0
 fermi_energy = 0.0
 num_electrons = 0.0
 Temperature = 0.0
@@ -64,8 +64,8 @@ t10 = 0.0
 
 #[SUPERCONDUCTOR]
 FS_only = True
-num_eigenvalues_to_save = 1
-frequency_pts = 5
+num_eigenvalues_to_save = 0
+frequency_pts = 0
 projections = ''
 
 #[RESPONSE]

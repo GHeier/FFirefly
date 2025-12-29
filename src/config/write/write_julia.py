@@ -1,35 +1,43 @@
 from .write_c import add_lines
 from .write_py import replace_comments
 def format_var_line(key, value, section):
+    # Format value for Julia, using default values instead of PyCall
+    # to avoid Python/Julia interpreter conflicts
     makevec = False
     if (type(value) == str):
         if makevec:
-            return f"{key}::Vector{{String}} = cfg.{key}"
-        return f"{key}::String = cfg.{key}"
+            return f'{key}::Vector{{String}} = ["{value}"]'
+        return f'{key}::String = "{value}"'
     elif (type(value) == int):
         if makevec:
-            return f"{key}::Vector{{Int}} = cfg.{key}"
-        return f"{key}::Int = cfg.{key}"
+            return f"{key}::Vector{{Int}} = [{value}]"
+        return f"{key}::Int = {value}"
     elif (type(value) == float):
         if makevec:
-            return f"{key}::Vector{{Float64}} = cfg.{key}"
-        return f"{key}::Float64 = cfg.{key}"
+            return f"{key}::Vector{{Float64}} = [{value}]"
+        return f"{key}::Float64 = {value}"
     elif (type(value) == bool):
+        val_str = "true" if value else "false"
         if makevec:
-            return f"{key}::Vector{{Bool}} = cfg.{key}"
-        return f"{key}::Bool = cfg.{key}"
+            return f"{key}::Vector{{Bool}} = [{val_str}]"
+        return f"{key}::Bool = {val_str}"
     elif (type(value) == list):
         if (type(value[0]) == str):
-            return f"{key}::Vector{{String}} = cfg.{key}"
+            vals = ', '.join([f'"{v}"' for v in value])
+            return f"{key}::Vector{{String}} = [{vals}]"
         elif (type(value[0]) == int):
-            return f"{key}::Array{{Int}} = cfg.{key}"
+            vals = ', '.join([str(v) for v in value])
+            return f"{key}::Array{{Int}} = [{vals}]"
         elif (type(value[0]) == float):
-            return f"{key}::Array{{Float64}} = cfg.{key}"
+            vals = ', '.join([str(v) for v in value])
+            return f"{key}::Array{{Float64}} = [{vals}]"
         elif (type(value[0]) == list):
             if (type(value[0][0]) == int):
-                return f"{key}::Array{{Int}} = cfg.{key}"
+                vals = ', '.join(['[' + ', '.join([str(x) for x in row]) + ']' for row in value])
+                return f"{key}::Vector{{Vector{{Int}}}} = [{vals}]"
             elif (type(value[0][0]) == float):
-                return f"{key}::Array{{Float64}} = cfg.{key}"
+                vals = ', '.join(['[' + ', '.join([str(x) for x in row]) + ']' for row in value])
+                return f"{key}::Vector{{Vector{{Float64}}}} = [{vals}]"
         else:
             print("Error: Unsupported type in config file ")
             exit(1)

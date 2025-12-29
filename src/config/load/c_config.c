@@ -39,7 +39,7 @@ int c_dimension = 3;
 char* c_celltype = "";
 char* get_celltype() {return c_celltype;}
 int c_nbnd = 0;
-int c_nstates = 1;
+int c_nstates = 0;
 float c_fermi_energy = 0.0;
 float c_num_electrons = 0.0;
 float c_Temperature = 0.0;
@@ -88,8 +88,8 @@ float c_t10 = 0.0;
 
 //[SUPERCONDUCTOR]
 bool c_FS_only = true;
-int c_num_eigenvalues_to_save = 1;
-int c_frequency_pts = 5;
+int c_num_eigenvalues_to_save = 0;
+int c_frequency_pts = 0;
 char* c_projections = "";
 char* get_projections() {return c_projections;}
 

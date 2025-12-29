@@ -175,12 +175,12 @@ static bool field_c_1d_w() {
     vector<float> w_points = {1.0, 2.0, 3.0};
     vector<cfloat> data = create_data(1, mpts, w_points);
 
-    Field_C field(data, mesh, domain, w_points);
+    Field_C field(data, mesh, domain, w_points, false);
 
-    Vec v(0.0);
+    Vec v(0.1);
     cfloat result = field(v, 1.5);
 
-    return fabs(result - cfloat(2.0, 0.20)) < 1e-6;
+    return fabs(result - cfloat(1.6, 0.16)) < 1e-6;
 }
 
 static bool field_r_2d_w() {
@@ -188,14 +188,13 @@ static bool field_r_2d_w() {
     vector<vector<float>> domain = {{1.0, 0.0}, {0.0, 1.0}};
     vector<float> w_points = {1.0, 2.0, 3.0};
     vector<cfloat> data = create_data(2, mpts, w_points);
+    Field_R field(data, mesh, domain, w_points, false);
 
-    Field_R field(data, mesh, domain, w_points);
-
-    Vec v(0.1, 0.1);  // Centered coords
-    float result = field(v, 1.1);
+    Vec v1(0.1, 0.3);  // Centered coords
+    float result = field(v1, 1.5);
 
     // Original point at (0.6, 0.6): spatial = 1.2, w = 1.1, total = 2.3
-    return fabs(result - 2.3) < 1e-6;
+    return fabs(result - 1.9) < 1e-6;
 }
 
 static bool field_c_2d_w() {

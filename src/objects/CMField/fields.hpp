@@ -26,9 +26,10 @@ public:
   Field_C(const BaseData::DataVariant& data,
           const vector<int>& mesh = {},
           const vector<vector<float>>& domain = {},
-          const vector<float>& w_points = {});
+          const vector<float>& w_points = {},
+          bool centered = true);
   Field_C(FieldImpl f);
-  Field_C(const string& filename);
+  Field_C(const string& filename, bool centered = true);
 
   // Copy assignment operator
   Field_C& operator=(const Field_C& other);
@@ -57,9 +58,10 @@ public:
   Field_R(const BaseData::DataVariant& data,
           const vector<int>& mesh = {},
           const vector<vector<float>>& domain = {},
-          const vector<float>& w_points = {});
+          const vector<float>& w_points = {},
+          bool centered = true);
   Field_R(FieldImpl f);
-  Field_R(const string& filename);
+  Field_R(const string& filename, bool centered = true);
 
   // Copy assignment operator
   Field_R& operator=(const Field_R& other);
@@ -90,9 +92,10 @@ public:
            const vector<int>& inds,
            const vector<int>& mesh = {},
            const vector<vector<float>>& domain = {},
-           const vector<float>& w_points = {});
+           const vector<float>& w_points = {},
+           bool centered = true);
   Field_CM(FieldImpl f);
-  Field_CM(const string& filename);
+  Field_CM(const string& filename, bool centered = true);
 
   // Copy assignment operator
   Field_CM& operator=(const Field_CM& other);
@@ -131,9 +134,10 @@ public:
            const vector<int>& inds,
            const vector<int>& mesh = {},
            const vector<vector<float>>& domain = {},
-           const vector<float>& w_points = {});
+           const vector<float>& w_points = {},
+           bool centered = true);
   Field_RM(FieldImpl f);
-  Field_RM(const string& filename);
+  Field_RM(const string& filename, bool centered = true);
 
   // Copy assignment operator
   Field_RM& operator=(const Field_RM& other);
@@ -182,7 +186,7 @@ public:
   string y_label;
 
   Field();
-  Field(const string& filename);
+  Field(const string& filename, bool centered = true);
   ~Field();
 
   // Generate plot labels from filename

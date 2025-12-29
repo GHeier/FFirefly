@@ -17,7 +17,7 @@ using namespace std;
  * compression ratios.
  */
 bool test_hmatrix_creation() {
-    printf("  Test 1: H-matrix creation... ");
+    //printf("  Test 1: H-matrix creation... ");
 
     try {
         // Create points on a circle
@@ -56,7 +56,7 @@ bool test_hmatrix_creation() {
         // Print statistics (optional, comment out for quiet tests)
         // hm.print_stats();
 
-        printf("PASSED (compression: %.2fx)\n", compression);
+        //printf("PASSED (compression: %.2fx)\n", compression);
         return true;
 
     } catch (const exception& e) {
@@ -72,7 +72,7 @@ bool test_hmatrix_creation() {
  * Uses a smaller matrix size for feasibility of dense computation.
  */
 bool test_hmatrix_matvec() {
-    printf("  Test 2: Matrix-vector multiplication... ");
+    //printf("  Test 2: Matrix-vector multiplication... ");
 
     try {
         // Create smaller point set for dense comparison
@@ -134,7 +134,7 @@ bool test_hmatrix_matvec() {
             return false;
         }
 
-        printf("PASSED (relative error: %.2e)\n", relative_error);
+        //printf("PASSED (relative error: %.2e)\n", relative_error);
         return true;
 
     } catch (const exception& e) {
@@ -149,7 +149,7 @@ bool test_hmatrix_matvec() {
  * Tests H-matrix with various kernel types to ensure generality
  */
 bool test_hmatrix_kernels() {
-    printf("  Test 3: Different kernel functions... ");
+    //printf("  Test 3: Different kernel functions... ");
 
     try {
         // Create points
@@ -191,7 +191,7 @@ bool test_hmatrix_kernels() {
         vector<double> y1 = hm_newton.matvec(x);
         vector<double> y2 = hm_gauss.matvec(x);
 
-        printf("PASSED\n");
+        //printf("PASSED\n");
         return true;
 
     } catch (const exception& e) {
@@ -204,7 +204,7 @@ bool test_hmatrix_kernels() {
  * Main test runner for H-matrix tests
  */
 bool hmatrix_tests() {
-    printf("\nRunning H-matrix tests\n");
+    //printf("\nRunning H-matrix tests\n");
 
     bool all_tests[3] = {
         test_hmatrix_creation(),

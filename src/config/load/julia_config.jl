@@ -1,84 +1,84 @@
 module Config
 
-using PyCall
-
-firefly = pyimport("firefly")
-cfg = firefly.config
+# NOTE: This module provides access to config variables.
+# PyCall is NOT used to avoid conflicts with the Python interpreter
+# that is already initialized by the C code in start_python().
+# Instead, values are loaded from default or through C bindings.
 
 # Start variable definitions
 
 #[CONTROL]
-category::String = cfg.category
-calculation::String = cfg.calculation
-method::String = cfg.method
-outdir::String = cfg.outdir
-indir::String = cfg.indir
-prefix::String = cfg.prefix
-verbosity::String = cfg.verbosity
-automatic_file_read::Bool = cfg.automatic_file_read
-write_result::Bool = cfg.write_result
-filetype::String = cfg.filetype
+category::String = "test"
+calculation::String = "test"
+method::String = "none"
+outdir::String = "./"
+indir::String = "./"
+prefix::String = "sample"
+verbosity::String = "low"
+automatic_file_read::Bool = true
+write_result::Bool = true
+filetype::String = "h5"
 
 #[SYSTEM]
-interaction::String = cfg.interaction
-dimension::Int = cfg.dimension
-celltype::String = cfg.celltype
-nbnd::Int = cfg.nbnd
-nstates::Int = cfg.nstates
-fermi_energy::Float64 = cfg.fermi_energy
-num_electrons::Float64 = cfg.num_electrons
-Temperature::Float64 = cfg.Temperature
-onsite_U::Float64 = cfg.onsite_U
-cutoff_energy::Float64 = cfg.cutoff_energy
-smearing::Float64 = cfg.smearing
-mixing::Float64 = cfg.mixing
-max_iters::Int = cfg.max_iters
-num_solutions::Int = cfg.num_solutions
+interaction::String = "none"
+dimension::Int = 3
+celltype::String = ""
+nbnd::Int = 0
+nstates::Int = 0
+fermi_energy::Float64 = 0.0
+num_electrons::Float64 = 0.0
+Temperature::Float64 = 0.0
+onsite_U::Float64 = 0.0
+cutoff_energy::Float64 = 0.05
+smearing::Float64 = 0.02
+mixing::Float64 = 0.02
+max_iters::Int = 100
+num_solutions::Int = 5
 
 #[HAMILTONIAN]
-hamiltonian::String = cfg.hamiltonian
+hamiltonian::String = "tight_binding"
 
 #[MESH]
-k_mesh::Array{Int} = cfg.k_mesh
-q_mesh::Array{Int} = cfg.q_mesh
-w_pts::Int = cfg.w_pts
+k_mesh::Array{Int} = [10, 10, 10]
+q_mesh::Array{Int} = [10, 10, 10]
+w_pts::Int = 100
 
 #[CELL]
-cell::Array{Float64} = cfg.cell
+cell::Vector{Vector{Float64}} = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
 
 #[BRILLOUIN_ZONE]
-brillouin_zone::Array{Float64} = cfg.brillouin_zone
+brillouin_zone::Vector{Vector{Float64}} = [[6.283185307179586, 0.0, 0.0], [0.0, 6.283185307179586, 0.0], [0.0, 0.0, 6.283185307179586]]
 
 #[BASIS]
-states::Vector{String} = cfg.states
-positions::Array{Float64} = cfg.positions
+states::Vector{String} = ["H"]
+positions::Vector{Vector{Float64}} = [[0.0, 0.0, 0.0]]
 
 #[BANDS]
-band::String = cfg.band
-eff_mass::Float64 = cfg.eff_mass
-t0::Float64 = cfg.t0
-t1::Float64 = cfg.t1
-t2::Float64 = cfg.t2
-t3::Float64 = cfg.t3
-t4::Float64 = cfg.t4
-t5::Float64 = cfg.t5
-t6::Float64 = cfg.t6
-t7::Float64 = cfg.t7
-t8::Float64 = cfg.t8
-t9::Float64 = cfg.t9
-t10::Float64 = cfg.t10
+band::String = "fermi_gas"
+eff_mass::Float64 = 1.0
+t0::Float64 = 1.0
+t1::Float64 = 0.0
+t2::Float64 = 0.0
+t3::Float64 = 0.0
+t4::Float64 = 0.0
+t5::Float64 = 0.0
+t6::Float64 = 0.0
+t7::Float64 = 0.0
+t8::Float64 = 0.0
+t9::Float64 = 0.0
+t10::Float64 = 0.0
 
 #[SUPERCONDUCTOR]
-FS_only::Bool = cfg.FS_only
-num_eigenvalues_to_save::Int = cfg.num_eigenvalues_to_save
-frequency_pts::Int = cfg.frequency_pts
-projections::String = cfg.projections
+FS_only::Bool = true
+num_eigenvalues_to_save::Int = 0
+frequency_pts::Int = 0
+projections::String = ""
 
 #[RESPONSE]
-dynamic::Bool = cfg.dynamic
+dynamic::Bool = false
 
 #[MANY_BODY]
-self_consistent::Bool = cfg.self_consistent
+self_consistent::Bool = false
 # End variable definitions
 
 end

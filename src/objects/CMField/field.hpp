@@ -14,6 +14,7 @@ using cfloat = complex<float>;
 class FieldImpl {
 public:
     BaseData data;
+    bool centered;  // Whether to apply coordinate centering
 
 private:
     DataEvaluator evaluator;
@@ -33,12 +34,8 @@ private:
     Vec apply_periodic_bc(Vec point) const {
         Vec wrapped = point;
         for (int i = 0; i < dimension; i++) {
-            // Get the domain extent for this dimension
-            float extent = 0.0;
-            for (int j = 0; j < dimension; j++) {
-                extent += data.domain[i][j] * data.domain[i][j];
-            }
-            extent = sqrt(extent);
+            // Get the domain extent for this dimension (i-th diagonal element)
+            float extent = data.domain[i][i];
 
             // Wrap to [-extent/2, extent/2]
             while (wrapped(i) > extent / 2.0) wrapped(i) -= extent;
@@ -49,11 +46,17 @@ private:
 
     // Helper to initialize shift vectors and evaluator
     void initialize() {
-        // Use dimension from data if already set (e.g., from file), otherwise infer from domain
-        if (data.dimension > 0) {
+        // Infer dimension from mesh or domain if provided, otherwise use data.dimension
+        if (!data.mesh.empty()) {
+            dimension = data.mesh.size();
+            data.dimension = dimension;
+        } else if (!data.domain.empty()) {
+            dimension = data.domain.size();
+            data.dimension = dimension;
+        } else if (data.dimension > 0) {
             dimension = data.dimension;
         } else {
-            dimension = data.domain.empty() ? 1 : data.domain.size();
+            dimension = 1;
             data.dimension = dimension;
         }
 
@@ -61,14 +64,17 @@ private:
         shift_vectors.resize(1);
         shift_vectors[0].dimension = dimension;
 
-        if (!data.domain.empty()) {
+        // Only calculate shift if centered mode is enabled
+        if (centered && !data.domain.empty()) {
             for (int i = 0; i < dimension; i++) {
                 // Calculate shift to center the domain
-                float shift = 0.0;
-                for (int j = 0; j < dimension; j++) {
-                    shift += data.domain[i][j] * 0.5;
-                }
-                shift_vectors[0](i) = shift;
+                // Use only the diagonal element (i-th component of i-th basis vector)
+                shift_vectors[0](i) = data.domain[i][i] * 0.5;
+            }
+        } else {
+            // No centering - zero shift
+            for (int i = 0; i < dimension; i++) {
+                shift_vectors[0](i) = 0.0;
             }
         }
 
@@ -85,7 +91,8 @@ public:
           const vector<int>& mesh = {},
           const vector<vector<float>>& domain = {},
           const vector<float>& w_points = {},
-          const vector<int>& inds = {})
+          const vector<int>& inds = {},
+          bool centered_coords = true)
     {
         data.data = data_variant;
         data.is_complex = is_complex;
@@ -95,6 +102,7 @@ public:
         data.domain = domain;
         data.w_points = w_points;
         data.inds = inds;
+        centered = centered_coords;
 
         // Infer with_w based on w_points
         data.with_w = !w_points.empty();
@@ -109,8 +117,9 @@ public:
     }
 
     // Constructor from file
-    FieldImpl(const string& filename) {
+    FieldImpl(const string& filename, bool centered_coords = true) {
         data = load_data_from_hdf5(filename);
+        centered = centered_coords;
         initialize();
     }
 

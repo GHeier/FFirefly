@@ -832,10 +832,10 @@ complex<Vec> interpolate_2D(float x_val, float y_val, float x_min, float x_max,
     if (y_rel < 0 || y_rel > 1)
         throw out_of_range("y_rel out of bounds");
 
-    complex<Vec> result = (1 - x_rel) * (1 - y_rel) * f[i * nx + j] +
-                          x_rel * (1 - y_rel) * f[(i + 1) * nx + j] +
-                          (1 - x_rel) * y_rel * f[i * nx + j + 1] +
-                          x_rel * y_rel * f[(i + 1) * nx + j + 1];
+    complex<Vec> result = (1 - x_rel) * (1 - y_rel) * f[i * ny + j] +
+                          x_rel * (1 - y_rel) * f[(i + 1) * ny + j] +
+                          (1 - x_rel) * y_rel * f[i * ny + j + 1] +
+                          x_rel * y_rel * f[(i + 1) * ny + j + 1];
 
     return result;
 }

@@ -23,13 +23,14 @@ Field_C::Field_C()
 Field_C::Field_C(const BaseData::DataVariant& data,
                  const vector<int>& mesh,
                  const vector<vector<float>>& domain,
-                 const vector<float>& w_points)
-    : cmf(data, true, false, false, mesh, domain, w_points) {}
+                 const vector<float>& w_points,
+                 bool centered)
+    : cmf(data, true, false, false, mesh, domain, w_points, {}, centered) {}
 
 Field_C::Field_C(FieldImpl f) : cmf(f) {}
 
-Field_C::Field_C(const string& filename)
-    : cmf((validate_file_exists(filename), filename)) {
+Field_C::Field_C(const string& filename, bool centered)
+    : cmf((validate_file_exists(filename), filename), centered) {
 }
 
 complex<float> Field_C::operator()(float w) {
@@ -89,13 +90,14 @@ Field_R::Field_R()
 Field_R::Field_R(const BaseData::DataVariant& data,
                  const vector<int>& mesh,
                  const vector<vector<float>>& domain,
-                 const vector<float>& w_points)
-    : cmf(data, false, false, false, mesh, domain, w_points) {}
+                 const vector<float>& w_points,
+                 bool centered)
+    : cmf(data, false, false, false, mesh, domain, w_points, {}, centered) {}
 
 Field_R::Field_R(FieldImpl f) : cmf(f) {}
 
-Field_R::Field_R(const string& filename)
-    : cmf((validate_file_exists(filename), filename)) {
+Field_R::Field_R(const string& filename, bool centered)
+    : cmf((validate_file_exists(filename), filename), centered) {
 }
 
 float Field_R::operator()(float w) {
@@ -155,13 +157,14 @@ Field_CM::Field_CM(const BaseData::DataVariant& data,
                    const vector<int>& inds,
                    const vector<int>& mesh,
                    const vector<vector<float>>& domain,
-                   const vector<float>& w_points)
-    : cmf(data, true, false, true, mesh, domain, w_points, inds) {}
+                   const vector<float>& w_points,
+                   bool centered)
+    : cmf(data, true, false, true, mesh, domain, w_points, inds, centered) {}
 
 Field_CM::Field_CM(FieldImpl f) : cmf(f) {}
 
-Field_CM::Field_CM(const string& filename)
-    : cmf((validate_file_exists(filename), filename)) {
+Field_CM::Field_CM(const string& filename, bool centered)
+    : cmf((validate_file_exists(filename), filename), centered) {
 }
 Field_CM& Field_CM::operator=(const Field_CM& other) {
     if (this != &other) {
@@ -412,13 +415,14 @@ Field_RM::Field_RM(const BaseData::DataVariant& data,
                    const vector<int>& inds,
                    const vector<int>& mesh,
                    const vector<vector<float>>& domain,
-                   const vector<float>& w_points)
-    : cmf(data, false, false, true, mesh, domain, w_points, inds) {}
+                   const vector<float>& w_points,
+                   bool centered)
+    : cmf(data, false, false, true, mesh, domain, w_points, inds, centered) {}
 
 Field_RM::Field_RM(FieldImpl f) : cmf(f) {}
 
-Field_RM::Field_RM(const string& filename)
-    : cmf((validate_file_exists(filename), filename)) {
+Field_RM::Field_RM(const string& filename, bool centered)
+    : cmf((validate_file_exists(filename), filename), centered) {
 }
 
 Field_RM& Field_RM::operator=(const Field_RM& other) {
@@ -753,7 +757,7 @@ void Field::generate_plot_labels(const string& filename) {
     }
 }
 
-Field::Field(const string& filename) {
+Field::Field(const string& filename, bool centered) {
     // Load metadata from file to determine type
     BaseData base = load_data_from_hdf5(filename);
     is_complex = base.is_complex;
@@ -767,13 +771,13 @@ Field::Field(const string& filename) {
 
     // Create appropriate field type
     if (is_matrix && is_complex) {
-        field_cm = new Field_CM(filename);
+        field_cm = new Field_CM(filename, centered);
     } else if (is_matrix && !is_complex) {
-        field_rm = new Field_RM(filename);
+        field_rm = new Field_RM(filename, centered);
     } else if (!is_matrix && is_complex) {
-        field_c = new Field_C(filename);
+        field_c = new Field_C(filename, centered);
     } else {
-        field_r = new Field_R(filename);
+        field_r = new Field_R(filename, centered);
     }
 
     // Generate plot labels from filename
