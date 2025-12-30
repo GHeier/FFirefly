@@ -1,38 +1,17 @@
 #include "node.hpp"
 #include "../config/load/cpp_config.hpp"
-#include "superconductor.hpp"
 #include <iostream>
+#include <string>
 
 using namespace std;
 
-/**
- * Example wrapper function below
- * This is how to connect your code to main.c
- * main.c will import {categoryname}_wrapper and run it
- * Make sure to handle incorrect input values
- */
 extern "C" void superconductor_wrapper() {
     printv("Running superconductor_wrapper\n");
-    if (calculation == "bcs") {
-        if (method == "power_iteration")
-            bcs_power_iteration();
-        else if (method == "lanczos")
-            bcs_lanczos();
-        else
-            bcs();
+    if (calculation == "bcs" && method == "lanczos") run_cpp_method("lanczos");
+    else if (calculation == "bcs" && method == "power_iteration") run_cpp_method("power_iteration");
+    else if (calculation == "eliashberg" && method == "lanczos") run_python_method("lanczos");
+    else if (calculation == "eliashberg" && method == "power_iteration") run_julia_method("power_iteration");
+    else {
+        printf("In superconductor category, calculation `%s` with method `%s` not recognized\n", calculation.c_str(), method.c_str());
     }
-    else if (calculation == "eliashberg") {
-        if (method == "power_iteration")
-            eliashberg_power_iteration();
-        else if (method == "lanczos")
-            eliashberg_lanczos();
-        else
-            cout << "method " << method << " not recognized" << endl;
-    }
-    else if (calculation == "linearized_eliashberg")
-        linearized_eliashberg();
-    else if (calculation == "debug")
-        debug();
-    else
-        cout << "calculation " << calculation << " not recognized" << endl;
 }

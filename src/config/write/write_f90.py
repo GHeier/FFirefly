@@ -56,12 +56,12 @@ def format_load_line(key, value, section):
     elif (type(value) == list and type(value[0]) == str):
         # For list of strings, we need to load each string from the C array
         if section == 'BASIS':
-            return f"        do i = 1, nstates\n            {key}(i) = get_string_from_array(get_{key}(), i-1)\n        end do"
+            return f"        do i = 1, nbnd\n            {key}(i) = get_string_from_array(get_{key}(), i-1)\n        end do"
         return f"        {key} = get_string(get_{key}())"
     elif (type(value) == list and type(value[0]) == list):
         # For 2D arrays
         if section == 'BASIS' and key == 'positions':
-            return f"        do i = 1, nstates\n            do j = 1, 3\n                {key}(i,j) = c_{key}(i,j)\n            end do\n        end do"
+            return f"        do i = 1, nbnd\n            do j = 1, 3\n                {key}(i,j) = c_{key}(i,j)\n            end do\n        end do"
         return f"        {key} = c_{key}"
     else:
         return f"        {key} = c_{key}"

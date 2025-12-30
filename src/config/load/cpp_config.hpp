@@ -24,19 +24,19 @@ extern string interaction;
 extern int dimension;
 extern string celltype;
 extern int nbnd;
-extern int nstates;
 extern float fermi_energy;
 extern float num_electrons;
 extern float Temperature;
-extern float onsite_U;
 extern float cutoff_energy;
 extern float smearing;
 extern float mixing;
 extern int max_iters;
-extern int num_solutions;
 
 //[HAMILTONIAN]
 extern string hamiltonian;
+
+//[HUBBARD]
+extern float onsite_U;
 
 //[MESH]
 extern vector<int> k_mesh;
@@ -122,3 +122,7 @@ void printv(const std::string& format, Args... args) {
 }
 void read_c_config_wrapper(string path);
 bool isDirectoryExisting(const std::string& path);
+
+// Run executable with config file piped to stdin
+int run_with_config(const std::string& executable, const std::string& config_file);
+int run_cpp_method(const std::string& method_name);

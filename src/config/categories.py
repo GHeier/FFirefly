@@ -1,108 +1,60 @@
-#!/usr/bin/env python3
-"""
-Category definitions for FFirefly
-This file defines all categories, their calculations, methods, and implementation files.
+# Setup as:
+# CATEGORIES = {
+#   category1 = {
+#       calculation1 = {
+#           method1: "python",
+#           method2: "julia",
+#           method3: "c++"
+#       },
+#       calculation2 = ...
+#   },
+#   category2 = ...
 
-Structure:
 CATEGORIES = {
-    "category_name": {
-        "calculation_name": {
-            "method_name": "filename.ext",  # .py, .jl, or .cpp
-            # OR if no methods needed:
-            None: "filename.ext",  # Direct calculation without method dispatch
+    "hamiltonian": { # CATEGORY NAME
+        "DOS": { # CALCULATION NAME
+            "gaussian": "python", # METHOD NAME: IMPLEMENTATION LANGUAGE
+            "tetrahedra": "c++"
+        },
+        "FS": {
+            "tetrahedra": "c++"
+        },
+        "generate": {
+            "hk_from_hr": "python"
         }
-    }
-}
-
-File extensions determine how calculations are called:
-- .py  -> call_python_func()
-- .jl  -> call_julia_func()
-- .cpp -> direct function call
-"""
-
-CATEGORIES = {
-    "hamiltonian": {
-        "fs": {
-            None: "fs.cpp",  # No method needed, direct call
-        },
-        "dos": {
-            "libtetrabz": "dos_tetrabz.cpp",
-            "python": "dos_python.py",
-        },
-        "bands": {
-            None: "band_structure.cpp",
-        },
     },
     "many_body": {
-        "vertex": {
-            "FLEX": "vertex.cpp",
+        "many_body": {
+            "triqs": "python",
+            "sparse_ir": "julia"
         },
         "self_energy": {
-            "sparse_ir": "self_energy.cpp",
+            "sparse_ir": "julia"
         },
-        "renormalization": {
-            None: "renormalization.cpp",  # Has internal method dispatch
+        "vertex": {
+            "from_susceptibility": "c++"
         },
         "response": {
-            "libtetrabz": "response_tetrabz.cpp",
-            "sparse_ir": "response_ir.jl",
-        },
-        "loop": {
-            None: "many_body_loop.jl",
-        },
-        "triqs": {
-            None: "many_body_triqs.py",
-        },
+            "bz_integral": "julia",
+            "sparse_ir": "julia"
+        }
     },
     "superconductor": {
         "bcs": {
-            None: "superconductor.cpp",  # bcs() function
+            "lanczos": "c++",  
+            "power_iteration": "c++",  
         },
         "eliashberg": {
-            None: "superconductor.cpp",  # eliashberg() function
-        },
-        "linearized_eliashberg": {
-            None: "superconductor.cpp",  # linearized_eliashberg() function
-        },
-        "debug": {
-            None: "superconductor.cpp",  # debug() function
-        },
-    },
+            "lanczos": "python",  
+            "power_iteration": "julia",  
+            }
+    }
 }
-
-# List of categories that have test suites
-CATEGORIES_WITH_TESTS = [
-    "hamiltonian",
-    "objects",
-    "algorithms",
-    "config/load",
-    "module",
-]
 
 if __name__ == "__main__":
     # Run code generators when this file is executed
     import os
     import sys
     import importlib.util
-
-    # Load generator modules directly from file paths
-    generators_dir = os.path.join(os.path.dirname(__file__), "categories")
-
-    # Load write_main
-    spec = importlib.util.spec_from_file_location("write_main",
-                                                    os.path.join(generators_dir, "write_main.py"))
-    write_main = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(write_main)
-
-    # Load write_nodes
-    spec = importlib.util.spec_from_file_location("write_nodes",
-                                                    os.path.join(generators_dir, "write_nodes.py"))
-    write_nodes = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(write_nodes)
-
-    print("Generating category code...")
-    write_main.generate_main_sections()
-    write_nodes.generate_all_nodes()
-    print("\nCreating stub implementation files...")
-    write_nodes.create_implementation_files()
-    print("\nDone! Category code generated successfully.")
+    from categories.write import write
+    write(CATEGORIES)

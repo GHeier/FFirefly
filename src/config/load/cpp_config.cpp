@@ -4,6 +4,8 @@
 #include <math.h>
 #include <string>
 #include <vector>
+#include <cstdlib>
+#include <sys/wait.h>
 #include "cpp_config.hpp"
 #include "c_config.h"
 
@@ -28,19 +30,19 @@ string interaction;
 int dimension;
 string celltype;
 int nbnd;
-int nstates;
 float fermi_energy;
 float num_electrons;
 float Temperature;
-float onsite_U;
 float cutoff_energy;
 float smearing;
 float mixing;
 int max_iters;
-int num_solutions;
 
 //[HAMILTONIAN]
 string hamiltonian;
+
+//[HUBBARD]
+float onsite_U;
 
 //[MESH]
 vector<int> k_mesh(3);
@@ -109,19 +111,19 @@ extern "C" void load_cpp_config() {
     dimension = c_dimension;
     celltype = c_celltype;
     nbnd = c_nbnd;
-    nstates = c_nstates;
     fermi_energy = c_fermi_energy;
     num_electrons = c_num_electrons;
     Temperature = c_Temperature;
-    onsite_U = c_onsite_U;
     cutoff_energy = c_cutoff_energy;
     smearing = c_smearing;
     mixing = c_mixing;
     max_iters = c_max_iters;
-    num_solutions = c_num_solutions;
 
 //[HAMILTONIAN]
     hamiltonian = c_hamiltonian;
+
+//[HUBBARD]
+    onsite_U = c_onsite_U;
 
 //[MESH]
     for (int i = 0; i < 3; i++) k_mesh[i] = c_k_mesh[i];
@@ -135,8 +137,8 @@ extern "C" void load_cpp_config() {
     for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) brillouin_zone[i][j] = c_brillouin_zone[i][j];
 
 //[BASIS]
-    for (int i = 0; i < nstates; i++) states.push_back(c_states[i]);
-    for (int i = 0; i < nstates; i++) for (int j = 0; j < 3; j++) positions[i][j] = c_positions[i][j];
+    for (int i = 0; i < nbnd; i++) states.push_back(c_states[i]);
+    for (int i = 0; i < nbnd; i++) for (int j = 0; j < 3; j++) positions[i][j] = c_positions[i][j];
 
 //[BANDS]
     band = c_band;
@@ -224,4 +226,64 @@ void ensure_cpp_config_loaded() {
         read_c_config("/home/g/Research/FFirefly/build/bin/input.cfg");
         load_cpp_config();
     }
+}
+
+int run_with_config(const std::string& executable, const std::string& config_file) {
+    // Verify the executable exists
+    if (!fs::exists(executable)) {
+        std::cerr << "Error: Executable '" << executable << "' not found.\n";
+        return -1;
+    }
+
+    // Verify the config file exists
+    if (!fs::exists(config_file)) {
+        std::cerr << "Error: Config file '" << config_file << "' not found.\n";
+        return -1;
+    }
+
+    // Build the command: executable < config_file
+    std::string command = executable + " < " + config_file;
+
+    if (verbosity == "high") {
+        std::cout << "Running: " << command << std::endl;
+    }
+
+    // Execute the command and return the exit code
+    int result = std::system(command.c_str());
+
+    if (result == -1) {
+        std::cerr << "Error: Failed to execute command.\n";
+        return -1;
+    }
+
+    // Extract the actual exit status
+    if (WIFEXITED(result)) {
+        return WEXITSTATUS(result);
+    } else {
+        std::cerr << "Error: Process did not terminate normally.\n";
+        return -1;
+    }
+}
+
+string get_loc() {
+    char path[PATH_MAX]; // Buffer to hold the executable path
+
+    // Read the symbolic link for the executable
+    ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+    path[len - 5] = '\0';      // Remove the executable name
+    return path;
+}
+
+int run_cpp_method() {
+    string loc = get_loc();
+    string exe = path + "run_" + category + "_" + calculation + "_" + method_name + ".exe";
+    return run_with_config(exe, "input.cfg");
+}
+
+int run_python_method() {
+    string loc = get_loc();
+    loc[len - 10] = '\0';      // Remove the executable name
+    loc += category + "/" + calculation + "/" + method_name + "/";
+    string exe = "python3 " + loc + "run.py";
+    return run_with_config(exe, "input.cfg");
 }

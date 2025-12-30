@@ -49,16 +49,12 @@ module ffirefly
     character(len=50) :: celltype
     integer(c_int), bind(C, name="c_nbnd") :: c_nbnd
     integer :: nbnd
-    integer(c_int), bind(C, name="c_nstates") :: c_nstates
-    integer :: nstates
     real(c_float), bind(C, name="c_fermi_energy") :: c_fermi_energy
     real :: fermi_energy
     real(c_float), bind(C, name="c_num_electrons") :: c_num_electrons
     real :: num_electrons
     real(c_float), bind(C, name="c_Temperature") :: c_Temperature
     real :: Temperature
-    real(c_float), bind(C, name="c_onsite_U") :: c_onsite_U
-    real :: onsite_U
     real(c_float), bind(C, name="c_cutoff_energy") :: c_cutoff_energy
     real :: cutoff_energy
     real(c_float), bind(C, name="c_smearing") :: c_smearing
@@ -67,11 +63,13 @@ module ffirefly
     real :: mixing
     integer(c_int), bind(C, name="c_max_iters") :: c_max_iters
     integer :: max_iters
-    integer(c_int), bind(C, name="c_num_solutions") :: c_num_solutions
-    integer :: num_solutions
 
 ![HAMILTONIAN]
     character(len=50) :: hamiltonian
+
+![HUBBARD]
+    real(c_float), bind(C, name="c_onsite_U") :: c_onsite_U
+    real :: onsite_U
 
 ![MESH]
     integer(c_int), bind(C, name="c_k_mesh") :: c_k_mesh(3)
@@ -197,14 +195,14 @@ module ffirefly
 
 
 
-
-
-
 ![HAMILTONIAN]
         function get_hamiltonian() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_hamiltonian
     end function get_hamiltonian
+
+![HUBBARD]
+
 
 ![MESH]
 
@@ -328,19 +326,19 @@ contains
         dimension = c_dimension
         celltype = get_string(get_celltype())
         nbnd = c_nbnd
-        nstates = c_nstates
         fermi_energy = c_fermi_energy
         num_electrons = c_num_electrons
         Temperature = c_Temperature
-        onsite_U = c_onsite_U
         cutoff_energy = c_cutoff_energy
         smearing = c_smearing
         mixing = c_mixing
         max_iters = c_max_iters
-        num_solutions = c_num_solutions
 
 ![HAMILTONIAN]
         hamiltonian = get_string(get_hamiltonian())
+
+![HUBBARD]
+        onsite_U = c_onsite_U
 
 ![MESH]
         k_mesh = c_k_mesh
@@ -354,10 +352,10 @@ contains
         brillouin_zone = c_brillouin_zone
 
 ![BASIS]
-        do i = 1, nstates
+        do i = 1, nbnd
             states(i) = get_string_from_array(get_states(), i-1)
         end do
-        do i = 1, nstates
+        do i = 1, nbnd
             do j = 1, 3
                 positions(i,j) = c_positions(i,j)
             end do

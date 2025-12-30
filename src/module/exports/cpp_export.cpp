@@ -22,13 +22,13 @@ void vector_to_ptr(vector<float> r, float *a, int *b) {
     }
 }
 
-//extern "C" float epsilon_export0(int n, float *k, int size) {
-//    Vec kvec;
-//    for (int i = 0; i < size; i++) {
-//        kvec(i) = k[i];
-//    }
-//    return epsilon(n, kvec);
-//}
+extern "C" float epsilon_export0(int n, float *k, int size) {
+    Vec kvec;
+    for (int i = 0; i < size; i++) {
+        kvec(i) = k[i];
+    }
+    return epsilon(n, kvec);
+}
 
 extern "C" void load_config_export0(const char *filename) {
     read_c_config(filename);

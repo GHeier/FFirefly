@@ -24,19 +24,19 @@ extern char* c_interaction; char* get_interaction();
 extern int c_dimension;
 extern char* c_celltype; char* get_celltype();
 extern int c_nbnd;
-extern int c_nstates;
 extern float c_fermi_energy;
 extern float c_num_electrons;
 extern float c_Temperature;
-extern float c_onsite_U;
 extern float c_cutoff_energy;
 extern float c_smearing;
 extern float c_mixing;
 extern int c_max_iters;
-extern int c_num_solutions;
 
 //[HAMILTONIAN]
 extern char* c_hamiltonian; char* get_hamiltonian();
+
+//[HUBBARD]
+extern float c_onsite_U;
 
 //[MESH]
 extern int c_k_mesh[3];

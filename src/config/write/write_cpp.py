@@ -129,12 +129,12 @@ def format_header_line(key, value, section):
 
 def format_func_line(key, value, section):
     if section == "BASIS" and key != "positions":
-        return f"    for (int i = 0; i < nstates; i++) {key}.push_back(c_{key}[i]);"
+        return f"    for (int i = 0; i < nbnd; i++) {key}.push_back(c_{key}[i]);"
     elif type(value) == list:
         if type(value[0]) == list:
             vsize = "3"
             if key == "positions":
-                vsize = "nstates"
+                vsize = "nbnd"
             return f"    for (int i = 0; i < {vsize}; i++) for (int j = 0; j < 3; j++) {key}[i][j] = c_{key}[i][j];"
         return f"    for (int i = 0; i < 3; i++) {key}[i] = c_{key}[i];"
     return f"    {key} = c_{key};"

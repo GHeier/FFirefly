@@ -1,45 +1,38 @@
 from .write_c import add_lines
 from .write_py import replace_comments
 def format_var_line(key, value, section):
-    # Format value for Julia, using default values instead of PyCall
-    # to avoid Python/Julia interpreter conflicts
     makevec = False
     if (type(value) == str):
         if makevec:
-            return f'{key}::Vector{{String}} = ["{value}"]'
-        return f'{key}::String = "{value}"'
+            return f"{key}::Vector{{String}} = cfg.{key}"
+        return f"{key}::String = cfg.{key}"
     elif (type(value) == int):
         if makevec:
-            return f"{key}::Vector{{Int}} = [{value}]"
-        return f"{key}::Int = {value}"
+            return f"{key}::Vector{{Int}} = cfg.{key}"
+        return f"{key}::Int = cfg.{key}"
     elif (type(value) == float):
         if makevec:
-            return f"{key}::Vector{{Float64}} = [{value}]"
-        return f"{key}::Float64 = {value}"
+            return f"{key}::Vector{{Float64}} = cfg.{key}"
+        return f"{key}::Float64 = cfg.{key}"
     elif (type(value) == bool):
-        val_str = "true" if value else "false"
         if makevec:
-            return f"{key}::Vector{{Bool}} = [{val_str}]"
-        return f"{key}::Bool = {val_str}"
+            return f"{key}::Vector{{Bool}} = cfg.{key}"
+        return f"{key}::Bool = cfg.{key}"
     elif (type(value) == list):
-        if (type(value[0]) == str):
-            vals = ', '.join([f'"{v}"' for v in value])
-            return f"{key}::Vector{{String}} = [{vals}]"
-        elif (type(value[0]) == int):
-            vals = ', '.join([str(v) for v in value])
-            return f"{key}::Array{{Int}} = [{vals}]"
+        if (type(value[0]) == int):
+            return f"{key}::Array{{Int}} = cfg.{key}"
         elif (type(value[0]) == float):
-            vals = ', '.join([str(v) for v in value])
-            return f"{key}::Array{{Float64}} = [{vals}]"
+            return f"{key}::Array{{Float64}} = cfg.{key}"
+        elif (type(value[0]) == str):
+            return f"{key}::Array{{String}} = cfg.{key}"
         elif (type(value[0]) == list):
             if (type(value[0][0]) == int):
-                vals = ', '.join(['[' + ', '.join([str(x) for x in row]) + ']' for row in value])
-                return f"{key}::Vector{{Vector{{Int}}}} = [{vals}]"
+                return f"{key}::Array{{Int}} = cfg.{key}"
             elif (type(value[0][0]) == float):
-                vals = ', '.join(['[' + ', '.join([str(x) for x in row]) + ']' for row in value])
-                return f"{key}::Vector{{Vector{{Float64}}}} = [{vals}]"
+                return f"{key}::Array{{Float64}} = cfg.{key}"
         else:
-            print("Error: Unsupported type in config file ")
+            print("Error: Unsupported type in config file:")
+            print(type(value), key, value)
             exit(1)
 
 def format_config_line(key, value, section):
@@ -65,13 +58,16 @@ def format_config_line(key, value, section):
             return f"    vector<int> {key};"
         elif (type(value[0]) == float):
             return f"    vector<float> {key};"
+        elif (type(value[0]) == str):
+            return f"vector<string> {key};"
         elif (type(value[0]) == list):
             if (type(value[0][0]) == int):
                 return f"    vector<vector<int>> {key};"
             elif (type(value[0][0]) == float):
                 return f"    vector<vector<float>> {key};"
         else:
-            print("Error: Unsupported type in config file ")
+            print("Error: Unsupported type in config file:")
+            print(type(value), key, value)
             exit(1)
 
 def format_header_line(key, value, section):
@@ -103,7 +99,8 @@ def format_header_line(key, value, section):
             elif (type(value[0][0]) == float):
                 return f"extern vector<vector<float>> {key};"
         else:
-            print("Error: Unsupported type in config file (list section)")
+            print("Error: Unsupported type in config file (list section):")
+            print(type(value), key, value)
             exit(1)
 
 def format_func_line(key, value, section):
@@ -128,4 +125,3 @@ def write_julia(ALL):
     #add_lines(ALL, file_path, start_func_phrase, end_func_phrase, format_func_line)
     replace_comments(file_path)
     print(f"Successfully updated the file '{file_path}'.")
-

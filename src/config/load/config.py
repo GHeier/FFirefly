@@ -18,19 +18,19 @@ interaction = 'none'
 dimension = 3
 celltype = ''
 nbnd = 0
-nstates = 0
 fermi_energy = 0.0
 num_electrons = 0.0
 Temperature = 0.0
-onsite_U = 0.0
 cutoff_energy = 0.05
 smearing = 0.02
 mixing = 0.02
 max_iters = 100
-num_solutions = 5
 
 #[HAMILTONIAN]
 hamiltonian = 'tight_binding'
+
+#[HUBBARD]
+onsite_U = 0.0
 
 #[MESH]
 k_mesh = [10, 10, 10]
@@ -157,9 +157,6 @@ def load_config():
             if "nbnd" in key:
                 global nbnd
                 nbnd = int(value)
-            if "nstates" in key:
-                global nstates
-                nstates = int(value)
             if "fermi_energy" in key:
                 global fermi_energy
                 fermi_energy = float(value)
@@ -169,9 +166,6 @@ def load_config():
             if "Temperature" in key:
                 global Temperature
                 Temperature = float(value)
-            if "onsite_U" in key:
-                global onsite_U
-                onsite_U = float(value)
             if "cutoff_energy" in key:
                 global cutoff_energy
                 cutoff_energy = float(value)
@@ -184,14 +178,16 @@ def load_config():
             if "max_iters" in key:
                 global max_iters
                 max_iters = int(value)
-            if "num_solutions" in key:
-                global num_solutions
-                num_solutions = int(value)
 
 #[HAMILTONIAN]
             if "hamiltonian" in key:
                 global hamiltonian
                 hamiltonian = value
+
+#[HUBBARD]
+            if "onsite_U" in key:
+                global onsite_U
+                onsite_U = float(value)
 
 #[MESH]
             if "k_mesh" in key:

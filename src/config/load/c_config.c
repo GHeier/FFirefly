@@ -39,20 +39,20 @@ int c_dimension = 3;
 char* c_celltype = "";
 char* get_celltype() {return c_celltype;}
 int c_nbnd = 0;
-int c_nstates = 0;
 float c_fermi_energy = 0.0;
 float c_num_electrons = 0.0;
 float c_Temperature = 0.0;
-float c_onsite_U = 0.0;
 float c_cutoff_energy = 0.05;
 float c_smearing = 0.02;
 float c_mixing = 0.02;
 int c_max_iters = 100;
-int c_num_solutions = 5;
 
 //[HAMILTONIAN]
 char* c_hamiltonian = "tight_binding";
 char* get_hamiltonian() {return c_hamiltonian;}
+
+//[HUBBARD]
+float c_onsite_U = 0.0;
 
 //[MESH]
 int c_k_mesh[3] = {10, 10, 10};
@@ -215,7 +215,7 @@ void read_c_config(const char *path) {
     bool got_dimension = false;
     bool got_bz = false;
     bool got_nbnd = false;
-    int nstates = 0;
+    int nbnd = 0;
     FILE *file = fopen(path, "r");
     if (file == NULL) {
         printf("Error opening file!\n");
@@ -254,12 +254,12 @@ void read_c_config(const char *path) {
         }
         if (strstr(section, "BASIS") != NULL && strlen(line) > 1) {
             char state_name[256];
-            if (sscanf(line, "%s %f %f %f", state_name, &c_positions[nstates][0],
-                   &c_positions[nstates][1], &c_positions[nstates][2]) == 4) {
-                set_string(&c_states[nstates], state_name);
-                nstates++;
+            if (sscanf(line, "%s %f %f %f", state_name, &c_positions[nbnd][0],
+                   &c_positions[nbnd][1], &c_positions[nbnd][2]) == 4) {
+                set_string(&c_states[nbnd], state_name);
+                nbnd++;
                 // Stop reading after filling 50 states
-                if (nstates >= 50) {
+                if (nbnd >= 50) {
                     section[0] = '\0';
                     continue;
                 }
@@ -327,9 +327,6 @@ void read_c_config(const char *path) {
                 c_nbnd = atoi(value);
                  got_nbnd = true;
             }
-            else if (strstr(key, "nstates") != NULL) {
-                c_nstates = atoi(value);
-            }
             else if (strstr(key, "fermi_energy") != NULL) {
                 c_fermi_energy = atof(value);
             }
@@ -338,9 +335,6 @@ void read_c_config(const char *path) {
             }
             else if (strstr(key, "Temperature") != NULL) {
                 c_Temperature = atof(value);
-            }
-            else if (strstr(key, "onsite_U") != NULL) {
-                c_onsite_U = atof(value);
             }
             else if (strstr(key, "cutoff_energy") != NULL) {
                 c_cutoff_energy = atof(value);
@@ -354,13 +348,15 @@ void read_c_config(const char *path) {
             else if (strstr(key, "max_iters") != NULL) {
                 c_max_iters = atoi(value);
             }
-            else if (strstr(key, "num_solutions") != NULL) {
-                c_num_solutions = atoi(value);
-            }
 
 //[HAMILTONIAN]
             else if (strstr(key, "hamiltonian") != NULL) {
                 set_string(&c_hamiltonian, value);
+            }
+
+//[HUBBARD]
+            else if (strstr(key, "onsite_U") != NULL) {
+                c_onsite_U = atof(value);
             }
 
 //[MESH]
