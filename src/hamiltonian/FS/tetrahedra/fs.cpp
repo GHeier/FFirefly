@@ -1,6 +1,6 @@
 #include <fstream>
-#include "src/hamiltonian/FS/config/load/cpp_config.hpp"
-#include "band_structure.hpp"
+#include "src/config/load/cpp_config.hpp"
+#include "../../models/band_structure.hpp"
 
 void save_FS() {
     float E = fermi_energy;

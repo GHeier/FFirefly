@@ -89,7 +89,3 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("Code generation complete!")
     print("=" * 60)
-    print("\nNext steps:")
-    print("  1. Run: ./scripts/fly-build.sh")
-    print("  2. Test: build/bin/fly.x < input.cfg")
-    print("  3. Test C++ methods: build/bin/category_calculation_method.exe < input.cfg")

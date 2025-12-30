@@ -21,6 +21,17 @@ include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/external/h2pack/include)
 include_directories(/home/g/Research/H2Lib/Library)
 
+# Include conda environment headers if CONDA_PREFIX is set
+if(DEFINED ENV{CONDA_PREFIX})
+    include_directories($ENV{CONDA_PREFIX}/include)
+    link_directories($ENV{CONDA_PREFIX}/lib)
+    message(STATUS "Using conda environment includes: $ENV{CONDA_PREFIX}/include")
+endif()
+
+# Also include system headers for packages installed via pacman
+include_directories(/usr/include)
+link_directories(/usr/lib)
+
 # Compiler flags
 set(CMAKE_CXX_FLAGS "-O3 -fopenmp -fPIC -march=native -ffast-math")
 set(CMAKE_C_FLAGS "-fopenmp -fPIC")
@@ -144,10 +155,11 @@ endforeach()
 # This removes src/{category}/{calculation}/{method}/*.cpp for C++ methods
 foreach(file IN LISTS ALL_SOURCES)
     # Skip files that are in method directories (3+ levels deep in category dirs)
-    # This is a heuristic - we'll refine if needed
-    if(file MATCHES "src/(hamiltonian|superconductor|many_body)/[^/]+/[^/]+/[^/]+\\.(cpp|c)$")
-        # Check if it's not a node.cpp file
-        if(NOT file MATCHES "node\\.cpp$")
+    # This pattern matches: src/{category}/{calculation}/{method}/file.cpp
+    # and also: src/{category}/{calculation}/{method}/tests/file.cpp
+    if(file MATCHES "src/(hamiltonian|superconductor|many_body)/[^/]+/[^/]+/")
+        # Check if it's not a node.cpp file at the category level
+        if(NOT file MATCHES "src/(hamiltonian|superconductor|many_body)/node\\.cpp$")
             list(REMOVE_ITEM ALL_SOURCES ${file})
         endif()
     endif()
@@ -298,7 +310,6 @@ add_executable(superconductor_bcs_power_iteration
     src/superconductor/bcs/power_iteration/run.cpp
     src/superconductor/bcs/power_iteration/utilities.cpp
     src/superconductor/bcs/power_iteration/cfg.cpp
-    src/superconductor/bcs/power_iteration/node.cpp
     src/superconductor/bcs/power_iteration/matrix_creation.cpp
 )
 target_link_libraries(superconductor_bcs_power_iteration PRIVATE base)

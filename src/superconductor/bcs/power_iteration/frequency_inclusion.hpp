@@ -2,10 +2,10 @@
 
 #include <fstream>
 #include <complex>
-#include "src/superconductor/bcs/objects/matrix.hpp"
-#include "src/superconductor/bcs/algorithms/interpolate.hpp"
-#include "src/superconductor/bcs/objects/vec.hpp"
-#include "src/superconductor/bcs/many_body/susceptibility.hpp"
+#include <unordered_map>
+#include "src/objects/matrix.hpp"
+#include "src/algorithms/interpolate.hpp"
+#include "src/objects/vec.hpp"
 
 struct MatCube {
     vector<vector<vector<vector<complex<float>>>>> cube;
@@ -38,8 +38,8 @@ struct MatCube {
 
     // Accessor
     complex<float> operator()(Vec q, complex<float> w) {
-        q = to_IBZ(q);
-        return interpolate_4D_complex(q(0), q(1), q(2), w.imag(), 
+        // q = to_IBZ(q);  // FIXME: to_IBZ function not implemented
+        return interpolate_4D_complex(q(0), q(1), q(2), w.imag(),
                 x_min, x_max, y_min, y_max, z_min, z_max, w_min, w_max, cube);
     }
 

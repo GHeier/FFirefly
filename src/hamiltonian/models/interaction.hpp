@@ -3,7 +3,6 @@
 #include <vector>
 #include <string>
 #include "src/objects/vec.hpp"
-#include "src/many_body/susceptibility.hpp"
 
 using namespace std;
 

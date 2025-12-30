@@ -1,11 +1,18 @@
 #include <Python.h>
 #include <linux/limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
 
 void start_python() {
+    // Check if Python is already initialized (e.g., by PyCall)
+    if (Py_IsInitialized()) {
+        // Python already initialized, just return
+        return;
+    }
+
     // Ensure embedded Python uses the conda environment's site-packages
     // by setting PYTHONPATH before initialization
     const char* conda_prefix = getenv("CONDA_PREFIX");

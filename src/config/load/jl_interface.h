@@ -1,5 +1,6 @@
 #pragma once
 #include <stdbool.h>
+#include "py_interface.h"
 
 #ifdef __cplusplus
 extern "C" {

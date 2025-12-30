@@ -10,7 +10,7 @@
 #include <iomanip>
 
 #include "cfg.hpp"
-#include "src/superconductor/bcs/config/load/cpp_config.hpp"
+#include "src/config/load/cpp_config.hpp"
 
 using namespace std;
 

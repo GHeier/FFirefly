@@ -1,10 +1,9 @@
 #include <complex>
 #include <vector>
 
-#include "src/many_body/config/load/cpp_config.hpp"
-//#include "src/many_body/objects/CMField/cmfield.hpp"
-#include "src/many_body/objects/CMField/fields.hpp"
-#include "src/many_body/objects/vec.hpp"
+#include "src/config/load/cpp_config.hpp"
+#include "src/objects/CMField/fields.hpp"
+#include "src/objects/vec.hpp"
 #include "vertex.hpp"
 
 using namespace std;

@@ -103,7 +103,18 @@ extern "C" void {category}_wrapper() {{
         f.write(contents)
 
     node_hpp_path = Path(category_dir) / "node.hpp"
-    contents = f"#pragma once\n\nextern \"C\" void {category}_wrapper();\n"
+    contents = f"""#pragma once
+
+    #ifdef __cplusplus
+    extern "C" {{
+    #endif
+    
+    void {category}_wrapper();
+    
+    #ifdef __cplusplus
+    }}
+    #endif
+    """
     with open(node_hpp_path, "w") as f:
         f.write(contents)
 
@@ -123,7 +134,7 @@ def make_folders(categories, base_dir=None):
         base_dir = script_dir / "../../"
 
     base_dir = Path(base_dir).resolve()
-    template_dir = Path(__file__).parent  # Where the template .txt files are
+    template_dir = Path(__file__).parent / "templates/" # Where the template .txt files are
 
     records = []
     for category, calculations in categories.items():

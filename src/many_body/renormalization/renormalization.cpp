@@ -1,9 +1,9 @@
 #include "src/config/load/cpp_config.hpp"
-#include "src/many_body/hamiltonian/band_structure.hpp"
+#include "src/hamiltonian/models/band_structure.hpp"
 #include "renormalization.hpp"
-#include "src/many_body/objects/CMField/fields.hpp"
+#include "src/objects/CMField/fields.hpp"
 
-Vec get_kvec(int i, int j, int k) {
+static Vec get_kvec(int i, int j, int k) {
     Vec v(
         1.0 * i / k_mesh[0] - 0.5, 
         1.0 *j / k_mesh[1] - 0.5, 

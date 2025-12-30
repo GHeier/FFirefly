@@ -31,10 +31,9 @@ elif [ "$1" == "-vv" ]; then
 elif [ -z "$1" ]; then
     cmake -S "$folder" -B "$folder/build" -G Ninja 1>/dev/null \
     && {
-        output=$(cmake --build "$folder/build" 2>&1)
+        output=$(cmake --build "$folder/build")
         build_status=$?
-        # Show errors and warnings, suppress progress messages
-        echo "$output" | grep -v -E "^\[.*\].*Building.*object"
+        echo "$output" | grep -v -E "Building|Generating|Linking"
         exit $build_status
     } \
     && status=0

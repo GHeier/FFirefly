@@ -3,8 +3,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "src/superconductor/bcs/objects/matrix.hpp"
-#include "src/superconductor/bcs/objects/vec.hpp"
+#include "src/objects/matrix.hpp"
+#include "src/objects/vec.hpp"
 
 void create_P(Matrix &P, vector<Vec> &k);
 void create_P_freq(Matrix &P, vector<vector<Vec>> &k, double T);

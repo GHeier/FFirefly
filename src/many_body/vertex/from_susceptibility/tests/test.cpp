@@ -1,9 +1,10 @@
+#include "../run.hpp"
+#include <cstdio>
+#include <iostream> 
 #include <cmath>
 #include <vector>
 
 using namespace std;
-
-#include "src/many_body/vertex/from_susceptibility/run.hpp"
 
 // Set configuration variables for test run
 vector<int> k_mesh = {4, 4, 4}; // Example k-mesh values

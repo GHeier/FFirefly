@@ -74,6 +74,12 @@ int main() {
     print_banner_top();
 
     load_c_config();           // Read input to load global c variables
+
+    // Initialize Julia FIRST (before Python) so PyCall can set up its own Python
+    load_julia();
+
+    // Now initialize Python - it's already initialized by PyCall, but we need
+    // to set up the C-side Python interface to use the same instance
     start_python();
 
     // Handling '+' separated categories for sequential runs
@@ -121,7 +127,8 @@ int main() {
         printf("Number of threads used in CPU parallelization: %d\n",
                num_procs - 1);
 
-    load_julia();
+    // NOTE: Julia initialization is now lazy - happens on first Julia call
+    // This avoids PyCall conflicts with Python initialization
     for (int i = 0; i < count; i++) {
         char *category = tokens[i];
         int ind = i;
@@ -155,7 +162,8 @@ int main() {
     for (int i = 0; i < count; i++) {
         free(tokens[i]);
     }
-    end_python();
+    // Python is managed by PyCall/Julia - don't finalize
+    // end_python();
 
     time_t end_time = time(NULL);
     int runtime_secs = (int)difftime(end_time, start);

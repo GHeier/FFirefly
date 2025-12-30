@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "py_interface.h"
 
 // Helper function to check if a Julia module is already loaded
 static bool is_module_loaded(const char *module_name) {
@@ -28,6 +29,10 @@ static bool is_module_loaded(const char *module_name) {
 }
 
 void load_julia() {
+  // Set PYTHON environment variable to use the same Python that C initialized
+  // This prevents PyCall from trying to initialize its own Python instance
+  setenv("PYTHON", "", 1);  // Empty string tells PyCall to use already-initialized Python
+
   jl_init();
 
   char path[PATH_MAX];
@@ -92,7 +97,9 @@ bool call_julia_func(const char *folder, const char *filename,
     return false;
   }
 
-  if (ret == jl_nothing) return true;
+  if (ret == jl_nothing) {
+    return true;
+  }
 
   jl_datatype_t *ret_type = (jl_datatype_t*)jl_typeof(ret);
   bool result = false;
@@ -102,6 +109,7 @@ bool call_julia_func(const char *folder, const char *filename,
     printf("Wrong type returned\n");
     exit(1);
   }
+
   return result;
 }
 
@@ -112,6 +120,8 @@ bool call_julia_func_bool(const char *folder, const char *filename,
 
 int call_julia_func_int(const char *folder, const char *filename,
                         const char *module, const char *func_name) {
+
+  // Julia should already be initialized by load_julia() in main.c
   if (!jl_is_initialized()) {
     printf("Error: Julia not initialized\n");
     return 0;
@@ -174,9 +184,11 @@ int call_julia_func_int(const char *folder, const char *filename,
 
 float call_julia_func_float(const char *folder, const char *filename,
                             const char *module, const char *func_name) {
+
+  // Julia should already be initialized by load_julia() in main.c
   if (!jl_is_initialized()) {
     printf("Error: Julia not initialized\n");
-    return 0.0f;
+    return 0;
   }
 
   char path[PATH_MAX];
@@ -238,9 +250,11 @@ float call_julia_func_float(const char *folder, const char *filename,
 
 double call_julia_func_double(const char *folder, const char *filename,
                               const char *module, const char *func_name) {
+
+  // Julia should already be initialized by load_julia() in main.c
   if (!jl_is_initialized()) {
     printf("Error: Julia not initialized\n");
-    return 0.0;
+    return 0;
   }
 
   char path[PATH_MAX];
@@ -302,9 +316,11 @@ double call_julia_func_double(const char *folder, const char *filename,
 
 const char* call_julia_func_string(const char *folder, const char *filename,
                                    const char *module, const char *func_name) {
+
+  // Julia should already be initialized by load_julia() in main.c
   if (!jl_is_initialized()) {
     printf("Error: Julia not initialized\n");
-    return strdup("");
+    return 0;
   }
 
   char path[PATH_MAX];

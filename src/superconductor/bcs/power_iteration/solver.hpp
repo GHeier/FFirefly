@@ -3,8 +3,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "src/superconductor/bcs/objects/vec.hpp"
-#include "src/superconductor/bcs/objects/matrix.hpp"
+#include "src/objects/vec.hpp"
+#include "src/objects/matrix.hpp"
 
 float f_singlet(float x, float T);
 float f_singlet_integral(float T);

@@ -1,55 +1,51 @@
-#include "src/hamiltonian/DOS/config/load/cpp_config.hpp"
-#include "src/hamiltonian/DOS/hamiltonian/band_structure.hpp"
-#include "src/hamiltonian/DOS/objects/CMField/base_data.hpp"
-#include "src/hamiltonian/DOS/objects/CMField/bands.hpp"
-#include <fstream>
+#include "run.hpp"
+#include "../../../config/load/cpp_config.hpp"
+#include "../../../config/load/c_config.h"
+#include "../../../objects/CMField/fields.hpp"
+#include <iostream>
+#include <cstdio>
+#include <cstdlib>
 
-void get_band_min_max(float &emin, float &emax) {
-    Bands band;
-    int nx = k_mesh[0]; int ny = k_mesh[1]; int nz = k_mesh[2];
-    if (dimension == 2) nz = 1;
-    emin = 1000;
-    emax = -1000;
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            for (int k = 0; k < nz; k++) {
-                Vec kvec(1.0 * i / nx - 0.5, 1.0 * j / ny - 0.5,
-                         1.0 * k / nz - 0.5);
-                kvec = brillouin_zone * kvec;
-                for (int n = 1; n <= nbnd; n++) {
-                    float e = band(n, kvec);
-                    if (emin > e)
-                        emin = e;
-                    if (emax < e)
-                        emax = e;
-                }
-            }
-        }
-    }
+
+
+float run() {
+    // Main function call goes here
+    printf("Hello, World! This is a Firefly run with k-mesh: [%d %d %d]\n", k_mesh[0], k_mesh[1], k_mesh[2]);
+
+    return 3.14; // Return something of any type that can be tested in the test suite.
 }
 
-void run() {
-    printf("Custom DOS Calculation\n");
-    float emin = 0;
-    float emax = 0;
-    get_band_min_max(emin, emax);
-    float dx = (emax - emin) / w_pts;
-    vector<float> w_points;
-    printf("Calculating DOS from %.5f to %.5f with %d points\n", emin, emax,
-           w_pts);
-    printf("Spacing is %.5f\n", dx);
-    string filename = outdir + prefix + "_DOS." + filetype;
-    vector<cfloat> dos_vals;
-    for (float x = emin; x <= emax; x += dx) {
-        int index = (x - emin) / dx;
-        cout << "\rDOS Calculations: " << index + 1 << "/" << w_pts;
-        vector<Vec> FS = get_FS(x);
-        float DOS = get_DOS(FS);
-        dos_vals.push_back(cfloat(DOS, 0));
-        w_points.push_back(x);
+int main() {
+    // Read configuration from stdin (supports: executable < input.cfg)
+    // First, save stdin to a temporary file since read_c_config expects a file path
+    const char* tmp_config = "/tmp/firefly_method_config.cfg";
+
+    FILE* tmp_file = fopen(tmp_config, "w");
+    if (!tmp_file) {
+        std::cerr << "Error: Could not create temporary config file\n";
+        return 1;
     }
 
-    BaseData::DataVariant data = dos_vals;
-    save_data(filename, data, false, {}, {{}}, w_points);
-    printf("\nSaved DOS to %s\n", filename.c_str());
+    // Copy stdin to temporary file
+    char buffer[4096];
+    while (fgets(buffer, sizeof(buffer), stdin)) {
+        fputs(buffer, tmp_file);
+    }
+    fclose(tmp_file);
+
+    // Load configuration using existing infrastructure
+    read_c_config(tmp_config);
+    load_cpp_config();
+
+    // Remove temporary file
+    remove(tmp_config);
+
+    // Run the method
+    float result = run();
+
+    // Success
+    return 0;
 }
+
+
+
