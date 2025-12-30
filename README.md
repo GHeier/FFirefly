@@ -47,7 +47,7 @@ The Ffirefly project grants access to a wide variety of extremely powerful algor
  1) Go to the "scripts" folder and run "./fly-build.sh -vv" to build the code. -v indicates a verbose output, -vv indicates a very verbose output, and a -v option exists for regular verbosity. However, for the first time building, using -vv is recommended in the event of an error. If you are a dev, I recommend setting fly-build.sh to a custom terminal command, so recompilation can be done from outside folders. This may be useful while running tests and material calculations.
  2) To ensure Ffirefly has been properly installed, simply run "fly.x". The default tests will run, and if all pass, then you have downloaded the packages correctly. If not, the package that failed will be listed.
  3) For categories that use julia, precompile packages with "julia --project=~/Research/FFirefly/jlpkg/Firefly -e 'using Pkg; Pkg.Registry.update(); Pkg.instantiate(); Pkg.precompile()'"
- 4) In julia, run `using Pkg` and then `Pkg.develop(path="/home/g/Research/FFirefly/jlpkg/Firefly")` to install Firefly as a julia package
+ 4) In julia, run `using Pkg` and then `Pkg.develop(path="/home/g/Research/FFirefly/jlpkg/Firefly")` to install Firefly as a julia package. Also when making PyCall, run `julia -e 'ENV["PYTHON"]="/usr/bin/python3"; using Pkg; Pkg.build("PyCall")'` so it is compatible with python
 
 
 ---
