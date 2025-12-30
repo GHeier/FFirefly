@@ -27,9 +27,19 @@ void start_python() {
     Py_Initialize();
 }
 
-void end_python() { Py_Finalize(); }
+void end_python() {
+    if (Py_IsInitialized()) {
+        Py_Finalize();
+    }
+}
+
 void call_python_func(const char *folder, const char *filename,
                       const char *function) {
+  // Lazy initialization - initialize Python on first call
+  if (!Py_IsInitialized()) {
+    start_python();
+  }
+
   char path[PATH_MAX]; // Buffer to hold the executable path
   ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
   path[len - 16] = '\0';
@@ -69,6 +79,11 @@ void call_python_func(const char *folder, const char *filename,
 
 bool call_python_func_bool(const char *folder, const char *filename,
                            const char *function) {
+  // Lazy initialization - initialize Python on first call
+  if (!Py_IsInitialized()) {
+    start_python();
+  }
+
   char path[PATH_MAX]; // Buffer to hold the executable path
   ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
   path[len - 16] = '\0';
@@ -125,6 +140,11 @@ bool call_python_func_bool(const char *folder, const char *filename,
 
 int call_python_func_int(const char *folder, const char *filename,
                          const char *function) {
+  // Lazy initialization - initialize Python on first call
+  if (!Py_IsInitialized()) {
+    start_python();
+  }
+
   char path[PATH_MAX];
   ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
   path[len - 16] = '\0';
@@ -171,6 +191,11 @@ int call_python_func_int(const char *folder, const char *filename,
 
 float call_python_func_float(const char *folder, const char *filename,
                              const char *function) {
+  // Lazy initialization - initialize Python on first call
+  if (!Py_IsInitialized()) {
+    start_python();
+  }
+
   char path[PATH_MAX];
   ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
   path[len - 16] = '\0';
@@ -219,6 +244,11 @@ float call_python_func_float(const char *folder, const char *filename,
 
 double call_python_func_double(const char *folder, const char *filename,
                                const char *function) {
+  // Lazy initialization - initialize Python on first call
+  if (!Py_IsInitialized()) {
+    start_python();
+  }
+
   char path[PATH_MAX];
   ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
   path[len - 16] = '\0';
@@ -268,6 +298,11 @@ double call_python_func_double(const char *folder, const char *filename,
 // Note: Caller must free the returned string
 const char* call_python_func_string(const char *folder, const char *filename,
                                     const char *function) {
+  // Lazy initialization - initialize Python on first call
+  if (!Py_IsInitialized()) {
+    start_python();
+  }
+
   char path[PATH_MAX];
   ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
   path[len - 16] = '\0';

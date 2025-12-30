@@ -47,10 +47,9 @@ void load_julia() {
 
 bool call_julia_func(const char *folder, const char *filename,
                      const char *module, const char *func_name) {
-  // Julia should already be initialized by load_julia() in main.c
+  // Lazy Julia initialization - initialize on first call
   if (!jl_is_initialized()) {
-    printf("Error: Julia not initialized\n");
-    return false;
+    load_julia();
   }
 
   char path[PATH_MAX];
@@ -121,10 +120,9 @@ bool call_julia_func_bool(const char *folder, const char *filename,
 int call_julia_func_int(const char *folder, const char *filename,
                         const char *module, const char *func_name) {
 
-  // Julia should already be initialized by load_julia() in main.c
+  // Lazy Julia initialization - initialize on first call
   if (!jl_is_initialized()) {
-    printf("Error: Julia not initialized\n");
-    return 0;
+    load_julia();
   }
 
   char path[PATH_MAX];
@@ -185,10 +183,9 @@ int call_julia_func_int(const char *folder, const char *filename,
 float call_julia_func_float(const char *folder, const char *filename,
                             const char *module, const char *func_name) {
 
-  // Julia should already be initialized by load_julia() in main.c
+  // Lazy Julia initialization - initialize on first call
   if (!jl_is_initialized()) {
-    printf("Error: Julia not initialized\n");
-    return 0;
+    load_julia();
   }
 
   char path[PATH_MAX];
@@ -251,10 +248,9 @@ float call_julia_func_float(const char *folder, const char *filename,
 double call_julia_func_double(const char *folder, const char *filename,
                               const char *module, const char *func_name) {
 
-  // Julia should already be initialized by load_julia() in main.c
+  // Lazy Julia initialization - initialize on first call
   if (!jl_is_initialized()) {
-    printf("Error: Julia not initialized\n");
-    return 0;
+    load_julia();
   }
 
   char path[PATH_MAX];
@@ -317,10 +313,9 @@ double call_julia_func_double(const char *folder, const char *filename,
 const char* call_julia_func_string(const char *folder, const char *filename,
                                    const char *module, const char *func_name) {
 
-  // Julia should already be initialized by load_julia() in main.c
+  // Lazy Julia initialization - initialize on first call
   if (!jl_is_initialized()) {
-    printf("Error: Julia not initialized\n");
-    return 0;
+    load_julia();
   }
 
   char path[PATH_MAX];

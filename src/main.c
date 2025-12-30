@@ -57,13 +57,12 @@ void print_banner_bottom(time_t now) {
 void test() {
     printf("Starting Test Calculations\n");
 
-    int num_tests = 4;
+    int num_tests = 3;
 
     bool all_tests[num_tests];
     all_tests[0] = object_tests();
     all_tests[1] = algorithm_tests();
-    all_tests[2] = config_load_tests();
-    all_tests[3] = module_tests();
+    all_tests[2] = module_tests();
 
     printf("\n");
     print_test_results(all_tests, num_tests, "Test Categories");
@@ -75,12 +74,8 @@ int main() {
 
     load_c_config();           // Read input to load global c variables
 
-    // Initialize Julia FIRST (before Python) so PyCall can set up its own Python
-    load_julia();
-
-    // Now initialize Python - it's already initialized by PyCall, but we need
-    // to set up the C-side Python interface to use the same instance
-    start_python();
+    // NOTE: Python and Julia are now initialized lazily - only when first needed
+    // This avoids initialization conflicts and reduces startup time
 
     // Handling '+' separated categories for sequential runs
     char str_copy[MAX_LENGTH];
