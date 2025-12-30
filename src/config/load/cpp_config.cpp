@@ -317,3 +317,70 @@ int run_julia_method(const string& method_name) {
     }
     return -1;  // Error: couldn't find src directory
 }
+
+// Method2 implementations - pure shell-based execution
+int run_python_method2(const string& method_name) {
+    string loc = get_loc();
+    // Go up from bin/ to src/
+    size_t bin_pos = loc.find("/bin/");
+    if (bin_pos != string::npos) {
+        string src_dir = loc.substr(0, bin_pos) + "/src/";
+        string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.py";
+
+        // Build command: python3 script.py < input.cfg
+        string command = "python3 " + script_path + " < input.cfg";
+
+        if (verbosity == "high") {
+            std::cout << "Running (method2): " << command << std::endl;
+        }
+
+        // Execute and return exit code
+        int result = std::system(command.c_str());
+
+        if (result == -1) {
+            std::cerr << "Error: Failed to execute Python script (method2).\n";
+            return -1;
+        }
+
+        if (WIFEXITED(result)) {
+            return WEXITSTATUS(result);
+        } else {
+            std::cerr << "Error: Python process did not terminate normally (method2).\n";
+            return -1;
+        }
+    }
+    return -1;  // Error: couldn't find src directory
+}
+
+int run_julia_method2(const string& method_name) {
+    string loc = get_loc();
+    // Go up from bin/ to src/
+    size_t bin_pos = loc.find("/bin/");
+    if (bin_pos != string::npos) {
+        string src_dir = loc.substr(0, bin_pos) + "/src/";
+        string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.jl";
+
+        // Build command: julia script.jl < input.cfg
+        string command = "julia " + script_path + " < input.cfg";
+
+        if (verbosity == "high") {
+            std::cout << "Running (method2): " << command << std::endl;
+        }
+
+        // Execute and return exit code
+        int result = std::system(command.c_str());
+
+        if (result == -1) {
+            std::cerr << "Error: Failed to execute Julia script (method2).\n";
+            return -1;
+        }
+
+        if (WIFEXITED(result)) {
+            return WEXITSTATUS(result);
+        } else {
+            std::cerr << "Error: Julia process did not terminate normally (method2).\n";
+            return -1;
+        }
+    }
+    return -1;  // Error: couldn't find src directory
+}

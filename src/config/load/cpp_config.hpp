@@ -133,3 +133,7 @@ std::string get_loc();
 int run_cpp_method(const std::string& method_name);
 int run_python_method(const std::string& method_name);
 int run_julia_method(const std::string& method_name);
+
+// Alternative shell-based execution methods (method2)
+int run_python_method2(const std::string& method_name);
+int run_julia_method2(const std::string& method_name);
