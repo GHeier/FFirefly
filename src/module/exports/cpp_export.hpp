@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../objects/CMField/fields.hpp" // Include field class
-#include "../../objects/CMField/bands.hpp"
+#include "src/objects/CMField/fields.hpp" // Include field class
+#include "src/objects/CMField/bands.hpp"
 #include <complex>
 
 float epsilon_export(int n, float kx, float ky = 0, float kz = 0);
@@ -144,7 +144,7 @@ void save_data_matrix_export0(const char *filename, const float *data_interleave
                                const float *w_points, int w_size);
 
 // BaseData exports
-#include "../../objects/CMField/base_data.hpp"
+#include "src/objects/CMField/base_data.hpp"
 
 BaseData* BaseData_load(const char *filename);
 BaseData* BaseData_load_with_ordering(const char *filename, const char *ordering);

@@ -11,7 +11,7 @@
 #include <iostream>
 #include <memory>
 
-#include "../config/load/cpp_config.hpp"
+#include "src/config/load/cpp_config.hpp"
 #include "eigenvec.hpp"
 
 using namespace std;

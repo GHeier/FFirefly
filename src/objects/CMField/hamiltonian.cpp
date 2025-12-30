@@ -1,6 +1,6 @@
 #include "hamiltonian.hpp"
-#include "../../hamiltonian/preloaded_hamiltonians.hpp"
-#include "../../config/load/cpp_config.hpp"
+#include "src/hamiltonian/models/preloaded_hamiltonians.hpp"
+#include "src/config/load/cpp_config.hpp"
 #include "fields.hpp"
 #include <complex>
 #include <fstream>

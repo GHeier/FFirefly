@@ -24,13 +24,13 @@
 #include <boost/math/quadrature/gauss.hpp>
 
 #include "cfg.hpp"
-#include "../config/load/cpp_config.hpp"
-#include "../algorithms/integration.hpp"
-#include "../objects/vec.hpp"
+#include "src/superconductor/bcs/config/load/cpp_config.hpp"
+#include "src/superconductor/bcs/algorithms/integration.hpp"
+#include "src/superconductor/bcs/objects/vec.hpp"
 #include "utilities.hpp"
 #include "frequency_inclusion.hpp"
-#include "../many_body/susceptibility.hpp"
-#include "../hamiltonian/band_structure.hpp"
+#include "src/superconductor/bcs/many_body/susceptibility.hpp"
+#include "src/superconductor/bcs/hamiltonian/band_structure.hpp"
 
 using std::cout;
 using std::endl;

@@ -9,8 +9,8 @@
 #include <stdexcept>
 #include <vector>
 
-#include "../../algorithms/interpolate.hpp"
-#include "../vec.hpp"
+#include "src/algorithms/interpolate.hpp"
+#include "src/objects/vec.hpp"
 #include "field_funcs.hpp"
 
 using namespace std;

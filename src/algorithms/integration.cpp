@@ -1,9 +1,9 @@
 #include <vector>
 #include <functional>
 
-#include "../objects/vec.hpp"
-#include "../objects/surfaces.hpp"
-#include "../config/load/cpp_config.hpp"
+#include "src/objects/vec.hpp"
+#include "src/objects/surfaces.hpp"
+#include "src/config/load/cpp_config.hpp"
 
 int s_div = (dimension == 3) ? 40 : 300; // Number of integral surface divisions
 int s_pts = (dimension == 3) ? 50 : 1000; // Number of integral surfaces

@@ -12,11 +12,11 @@
 #include <memory>
 
 #include "cfg.hpp"
-#include "../objects/vec.hpp"
-#include "../config/load/cpp_config.hpp"
-#include "../hamiltonian/band_structure.hpp"
-#include "../objects/matrix.hpp"
-#include "../objects/eigenvec.hpp"
+#include "src/superconductor/bcs/objects/vec.hpp"
+#include "src/superconductor/bcs/config/load/cpp_config.hpp"
+#include "src/superconductor/bcs/hamiltonian/band_structure.hpp"
+#include "src/superconductor/bcs/objects/matrix.hpp"
+#include "src/superconductor/bcs/objects/eigenvec.hpp"
 #include "frequency_inclusion.hpp"
 
 using namespace std;

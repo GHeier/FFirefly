@@ -1,9 +1,9 @@
 #include "bands.hpp"
-#include "../../config/load/cpp_config.hpp"
-#include "../../hamiltonian/band_structure.hpp"
+#include "src/config/load/cpp_config.hpp"
+#include "src/hamiltonian/models/band_structure.hpp"
 #include "fields.hpp"
-#include "../vec.hpp"
-#include "../eigenvec.hpp"
+#include "src/objects/vec.hpp"
+#include "src/objects/eigenvec.hpp"
 
 #include <fstream>
 #include <iostream>

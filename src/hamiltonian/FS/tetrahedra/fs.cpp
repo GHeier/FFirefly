@@ -1,5 +1,5 @@
 #include <fstream>
-#include "../config/load/cpp_config.hpp"
+#include "src/hamiltonian/FS/config/load/cpp_config.hpp"
 #include "band_structure.hpp"
 
 void save_FS() {

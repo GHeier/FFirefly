@@ -1,8 +1,8 @@
-#include "../cmdata.hpp"
-#include "../../vec.hpp"
+#include "src/objects/CMData/cmdata.hpp"
+#include "src/objects/vec.hpp"
 #include "all.hpp"
 
-#include "../../../config/load/c_config.h"
+#include "src/config/load/c_config.h"
 
 using namespace std;
 

@@ -1,5 +1,5 @@
 #include "node.hpp"
-#include "../config/load/cpp_config.hpp"
+#include "src/config/load/cpp_config.hpp"
 #include "superconductor.hpp"
 #include <iostream>
 

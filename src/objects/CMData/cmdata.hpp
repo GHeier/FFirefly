@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "../vec.hpp"
+#include "src/objects/vec.hpp"
 
 using namespace std;
 

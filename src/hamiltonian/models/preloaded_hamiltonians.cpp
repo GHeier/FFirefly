@@ -1,7 +1,7 @@
 #include "preloaded_hamiltonians.hpp"
 #include "band_structure.hpp"
-#include "../objects/vec.hpp"
-#include "../config/load/cpp_config.hpp"
+#include "src/objects/vec.hpp"
+#include "src/config/load/cpp_config.hpp"
 #include <cmath>
 #include <string>
 #include <iostream>

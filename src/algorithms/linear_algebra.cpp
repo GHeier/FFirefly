@@ -10,10 +10,10 @@
 #include <boost/math/quadrature/gauss.hpp>
 #include <boost/math/tools/roots.hpp>
 
-#include "../config/load/cpp_config.hpp"
-#include "../objects/vec.hpp"
-#include "../objects/eigenvec.hpp"
-#include "../objects/matrix.hpp"
+#include "src/config/load/cpp_config.hpp"
+#include "src/objects/vec.hpp"
+#include "src/objects/eigenvec.hpp"
+#include "src/objects/matrix.hpp"
 
 using namespace std;
 

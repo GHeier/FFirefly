@@ -4,9 +4,9 @@
 #include <complex>
 
 #include "frequency_inclusion.hpp"
-#include "../objects/vec.hpp"
-#include "../objects/matrix.hpp"
-#include "../config/load/cpp_config.hpp"
+#include "src/superconductor/bcs/objects/vec.hpp"
+#include "src/superconductor/bcs/objects/matrix.hpp"
+#include "src/superconductor/bcs/config/load/cpp_config.hpp"
 
 using std::endl;
 using std::cout;

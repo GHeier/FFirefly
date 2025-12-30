@@ -2,7 +2,7 @@
 
 #include "base_data.hpp"
 #include "data_evaluator.hpp"
-#include "../vec.hpp"
+#include "src/objects/vec.hpp"
 #include <vector>
 #include <complex>
 #include <cmath>

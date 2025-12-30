@@ -2,10 +2,10 @@
 #include <fstream>
 #include <math.h>
 
-#include "../config/load/c_config.h"
-#include "../config/load/cpp_config.hpp"
-#include "../objects/surfaces.hpp"
-#include "../objects/vec.hpp"
+#include "src/config/load/c_config.h"
+#include "src/config/load/cpp_config.hpp"
+#include "src/objects/surfaces.hpp"
+#include "src/objects/vec.hpp"
 #include "band_structure.hpp"
 
 using namespace std;

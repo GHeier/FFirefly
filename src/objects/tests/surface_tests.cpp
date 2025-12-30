@@ -1,8 +1,8 @@
 #include "surface_tests.hpp"
-#include "../../config/load/cpp_config.hpp"
-#include "../../hamiltonian/band_structure.hpp"
-#include "../../objects/vec.hpp"
-#include "../surfaces.hpp"
+#include "src/config/load/cpp_config.hpp"
+#include "src/hamiltonian/models/band_structure.hpp"
+#include "src/objects/vec.hpp"
+#include "src/objects/surfaces.hpp"
 
 using namespace std;
 

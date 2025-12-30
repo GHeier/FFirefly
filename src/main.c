@@ -10,7 +10,6 @@
 
 // Category nodes below
 #include "algorithms/electron_number.hpp"
-#include "hamiltonian/fs.hpp"
 #include "hamiltonian/node.hpp"
 #include "many_body/node.hpp"
 #include "superconductor/node.hpp"

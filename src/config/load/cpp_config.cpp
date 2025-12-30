@@ -6,6 +6,8 @@
 #include <vector>
 #include <cstdlib>
 #include <sys/wait.h>
+#include <linux/limits.h>
+#include <unistd.h>
 #include "cpp_config.hpp"
 #include "c_config.h"
 
@@ -270,20 +272,48 @@ string get_loc() {
 
     // Read the symbolic link for the executable
     ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
-    path[len - 5] = '\0';      // Remove the executable name
-    return path;
+    if (len == -1) {
+        return "./build/bin/";  // Fallback
+    }
+    path[len] = '\0';
+
+    // Find the last '/' to get directory
+    string exe_path(path);
+    size_t last_slash = exe_path.find_last_of('/');
+    if (last_slash != string::npos) {
+        return exe_path.substr(0, last_slash + 1);  // Include the trailing slash
+    }
+    return "./";
 }
 
-int run_cpp_method() {
+int run_cpp_method(const string& method_name) {
     string loc = get_loc();
-    string exe = path + "run_" + category + "_" + calculation + "_" + method_name + ".exe";
+    string exe = loc + category + "_" + calculation + "_" + method_name + ".exe";
     return run_with_config(exe, "input.cfg");
 }
 
-int run_python_method() {
+int run_python_method(const string& method_name) {
     string loc = get_loc();
-    loc[len - 10] = '\0';      // Remove the executable name
-    loc += category + "/" + calculation + "/" + method_name + "/";
-    string exe = "python3 " + loc + "run.py";
-    return run_with_config(exe, "input.cfg");
+    // Go up from bin/ to src/
+    size_t bin_pos = loc.find("/bin/");
+    if (bin_pos != string::npos) {
+        string src_dir = loc.substr(0, bin_pos) + "/src/";
+        string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.py";
+        string exe = "python3 " + script_path;
+        return run_with_config(exe, "input.cfg");
+    }
+    return -1;  // Error: couldn't find src directory
+}
+
+int run_julia_method(const string& method_name) {
+    string loc = get_loc();
+    // Go up from bin/ to src/
+    size_t bin_pos = loc.find("/bin/");
+    if (bin_pos != string::npos) {
+        string src_dir = loc.substr(0, bin_pos) + "/src/";
+        string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.jl";
+        string exe = "julia " + script_path;
+        return run_with_config(exe, "input.cfg");
+    }
+    return -1;  // Error: couldn't find src directory
 }

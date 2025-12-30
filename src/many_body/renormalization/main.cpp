@@ -1,7 +1,7 @@
-#include "../config/load/cpp_config.hpp"
-#include "../hamiltonian/band_structure.hpp"
+#include "src/config/load/cpp_config.hpp"
+#include "src/hamiltonian/models/band_structure.hpp"
 #include "renormalization.hpp"
-#include "../objects/CMField/fields.hpp"
+#include "src/many_body/objects/CMField/fields.hpp"
 
 Vec get_kvec(int i, int j, int k) {
     Vec v(

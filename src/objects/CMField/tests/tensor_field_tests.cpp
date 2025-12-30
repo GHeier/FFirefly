@@ -1,8 +1,8 @@
-#include "../fields.hpp"
+#include "src/objects/CMField/fields.hpp"
 #include <filesystem>
 #include <iostream>
 
-#include "../../../config/load/c_config.h"
+#include "src/config/load/c_config.h"
 
 using namespace std;
 

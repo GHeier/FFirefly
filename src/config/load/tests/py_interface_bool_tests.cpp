@@ -1,6 +1,6 @@
-#include "../c_config.h"
+#include "src/config/load/c_config.h"
 #include "py_interface_bool_tests.hpp"
-#include "../py_interface.h"
+#include "src/config/load/py_interface.h"
 #include <iostream>
 #include <cassert>
 

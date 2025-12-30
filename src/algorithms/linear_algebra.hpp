@@ -2,8 +2,8 @@
 
 #include <vector>
 
-#include "../objects/eigenvec.hpp"
-#include "../objects/matrix.hpp"
+#include "src/objects/eigenvec.hpp"
+#include "src/objects/matrix.hpp"
 
 using namespace std;
 

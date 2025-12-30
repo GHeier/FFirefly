@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../cmdata.hpp"
+#include "src/objects/CMData/cmdata.hpp"
 
 bool CMData_tests();
 complex<Vec> func_d(Vec x, int dim = 3);

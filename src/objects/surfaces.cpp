@@ -11,7 +11,7 @@
 #include <functional>
 #include <math.h>
 
-#include "../config/load/cpp_config.hpp"
+#include "src/config/load/cpp_config.hpp"
 #include "surfaces.hpp"
 #include "vec.hpp"
 

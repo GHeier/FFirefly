@@ -5,7 +5,7 @@
  */
 
 #include "array.hpp"
-#include "../config/load/cpp_config.hpp"
+#include "src/config/load/cpp_config.hpp"
 #include <cmath>
 #include <iostream>
 #include <stdexcept>

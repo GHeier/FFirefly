@@ -2,8 +2,8 @@
 
 #include <vector>
 #include <string>
-#include "../objects/vec.hpp"
-#include "../many_body/susceptibility.hpp"
+#include "src/objects/vec.hpp"
+#include "src/many_body/susceptibility.hpp"
 
 using namespace std;
 

@@ -1,5 +1,5 @@
-#include "../field.hpp"
-#include "../../../config/load/c_config.h"
+#include "src/objects/CMField/field.hpp"
+#include "src/config/load/c_config.h"
 #include <iostream>
 #include <cmath>
 

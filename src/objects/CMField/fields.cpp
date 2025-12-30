@@ -1,6 +1,6 @@
 #include "fields.hpp"
 #include "field.hpp"
-#include "../vec.hpp"
+#include "src/objects/vec.hpp"
 #include <openblas/lapacke.h>
 #include <filesystem>
 #include <cstdlib>

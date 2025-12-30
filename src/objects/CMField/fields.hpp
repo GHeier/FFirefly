@@ -2,8 +2,8 @@
 
 #include <complex>
 
-#include "../vec.hpp"
-#include "../eigenvec.hpp"
+#include "src/objects/vec.hpp"
+#include "src/objects/eigenvec.hpp"
 #include "field.hpp"
 
 using namespace std;

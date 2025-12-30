@@ -1,7 +1,7 @@
-#include "../config/load/cpp_config.hpp"
-#include "../hamiltonian/band_structure.hpp"
-#include "../objects/CMField/base_data.hpp"
-#include "../objects/CMField/bands.hpp"
+#include "src/hamiltonian/DOS/config/load/cpp_config.hpp"
+#include "src/hamiltonian/DOS/hamiltonian/band_structure.hpp"
+#include "src/hamiltonian/DOS/objects/CMField/base_data.hpp"
+#include "src/hamiltonian/DOS/objects/CMField/bands.hpp"
 #include <fstream>
 
 void get_band_min_max(float &emin, float &emax) {

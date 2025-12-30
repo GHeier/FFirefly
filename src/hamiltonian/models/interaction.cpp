@@ -7,11 +7,11 @@
 #include <omp.h>
 #include <unordered_map>
 
-#include "../config/load/cpp_config.hpp"
-#include "../hamiltonian/band_structure.hpp"
-#include "../objects/vec.hpp"
+#include "src/config/load/cpp_config.hpp"
+#include "src/hamiltonian/models/band_structure.hpp"
+#include "src/objects/vec.hpp"
 #include "interaction.hpp"
-// #include "../response/susceptibility.hpp"
+// #include "src/hamiltonian/response/susceptibility.hpp"
 
 using namespace std;
 

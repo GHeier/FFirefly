@@ -1,4 +1,4 @@
-#include "../../config/load/c_config.h"
+#include "src/config/load/c_config.h"
 #include "linalg_tests.hpp"
 #include "fft_tests.hpp"
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../algorithms/fft.hpp"
+#include "src/algorithms/fft.hpp"
 #include <vector>
 #include <complex>
 #include <iostream>

@@ -1,6 +1,6 @@
 #include "run.hpp"
-#include "../../../config/load/cpp_config.hpp"
-#include "../../../objects/CMField/fields.hpp"
+#include "src/config/load/cpp_config.hpp"
+#include "src/objects/CMField/fields.hpp"
 
 
 

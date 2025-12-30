@@ -1,7 +1,7 @@
-#include "../config/load/cpp_config.hpp"
-#include "../config/load/jl_interface.h"
+#include "src/config/load/cpp_config.hpp"
+#include "src/config/load/jl_interface.h"
 #include "self_energy.hpp"
-#include "../objects/CMField/fields.hpp"
+#include "src/objects/CMField/fields.hpp"
 
 void call_self_energy() {
     string folder = "hamiltonian/";

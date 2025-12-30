@@ -1,12 +1,12 @@
 #include "band_tests.hpp"
-#include "../bands.hpp"
-#include "../../vec.hpp"
-#include "../../../hamiltonian/band_structure.hpp"
+#include "src/objects/CMField/bands.hpp"
+#include "src/objects/vec.hpp"
+#include "src/hamiltonian/models/band_structure.hpp"
 #include <filesystem>
 #include <iostream>
 
-#include "../../../config/load/c_config.h"
-#include "../../../config/load/cpp_config.hpp"
+#include "src/config/load/c_config.h"
+#include "src/config/load/cpp_config.hpp"
 
 using namespace std;
 

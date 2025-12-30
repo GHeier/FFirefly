@@ -1,10 +1,10 @@
-#include "../fields.hpp"
+#include "src/objects/CMField/fields.hpp"
 #include <filesystem>
 #include <iostream>
 
-#include "../../../hamiltonian/band_structure.hpp"
-#include "../hamiltonian.hpp"
-#include "../../../config/load/c_config.h"
+#include "src/hamiltonian/models/band_structure.hpp"
+#include "src/objects/CMField/hamiltonian.hpp"
+#include "src/config/load/c_config.h"
 
 using namespace std;
 

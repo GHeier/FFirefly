@@ -1,6 +1,6 @@
-#include "../../config/load/c_config.h"
-#include "../../config/load/py_interface.h"
-#include "../../config/load/jl_interface.h"
+#include "src/config/load/c_config.h"
+#include "src/config/load/py_interface.h"
+#include "src/config/load/jl_interface.h"
 #include "module_interface_tests.hpp"
 #include <iostream>
 #include <cstring>

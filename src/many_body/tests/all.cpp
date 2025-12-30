@@ -1,9 +1,9 @@
 #include <string>
-#include "../../config/load/c_config.h"
-#include "../../config/load/cpp_config.hpp"
-#include "../../config/load/jl_interface.h"
-#include "../../objects/CMField/fields.hpp"
-#include "../../objects/vec.hpp"
+#include "src/config/load/c_config.h"
+#include "src/config/load/cpp_config.hpp"
+#include "src/config/load/jl_interface.h"
+#include "src/objects/CMField/fields.hpp"
+#include "src/objects/vec.hpp"
 #include "all.hpp"
 
 using namespace std;

@@ -1,7 +1,7 @@
 #include "self_energy.hpp"
-#include "../../config/load/cpp_config.hpp"
-#include "../../hamiltonian/interaction.hpp"
-#include "../vec.hpp"
+#include "src/config/load/cpp_config.hpp"
+#include "src/hamiltonian/models/interaction.hpp"
+#include "src/objects/vec.hpp"
 #include "fields.hpp"
 #include <filesystem>
 

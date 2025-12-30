@@ -1,4 +1,4 @@
-#include "../config/load/cpp_config.hpp"
+#include "src/superconductor/bcs/config/load/cpp_config.hpp"
 #include <math.h>
 #include <vector>
 

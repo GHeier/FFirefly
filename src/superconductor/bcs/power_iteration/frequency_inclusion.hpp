@@ -2,10 +2,10 @@
 
 #include <fstream>
 #include <complex>
-#include "../objects/matrix.hpp"
-#include "../algorithms/interpolate.hpp"
-#include "../objects/vec.hpp"
-#include "../many_body/susceptibility.hpp"
+#include "src/superconductor/bcs/objects/matrix.hpp"
+#include "src/superconductor/bcs/algorithms/interpolate.hpp"
+#include "src/superconductor/bcs/objects/vec.hpp"
+#include "src/superconductor/bcs/many_body/susceptibility.hpp"
 
 struct MatCube {
     vector<vector<vector<vector<complex<float>>>>> cube;

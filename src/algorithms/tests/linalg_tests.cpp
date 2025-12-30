@@ -1,7 +1,7 @@
-#include "../../objects/matrix.hpp"
-#include "../../objects/eigenvec.hpp"
-#include "../../config/load/c_config.h"
-#include "../linear_algebra.hpp"
+#include "src/objects/matrix.hpp"
+#include "src/objects/eigenvec.hpp"
+#include "src/config/load/c_config.h"
+#include "src/algorithms/linear_algebra.hpp"
 #include <vector>
 
 #include "linalg_tests.hpp"

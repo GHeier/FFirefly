@@ -13,9 +13,9 @@
  * - Edge cases
  */
 
-#include "../../../config/load/c_config.h"
+#include "src/config/load/c_config.h"
 #include "inds_field_tests.hpp"
-#include "../fields.hpp"
+#include "src/objects/CMField/fields.hpp"
 #include <cassert>
 #include <cmath>
 #include <iostream>

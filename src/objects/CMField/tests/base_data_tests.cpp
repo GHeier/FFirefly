@@ -1,9 +1,9 @@
-#include "../base_data.hpp"
-#include "../data_evaluator.hpp"
+#include "src/objects/CMField/base_data.hpp"
+#include "src/objects/CMField/data_evaluator.hpp"
 #include <filesystem>
 #include <iostream>
 
-#include "../../../config/load/c_config.h"
+#include "src/config/load/c_config.h"
 
 using namespace std;
 

@@ -5,7 +5,7 @@
  */
 
 #include "matrix.hpp"
-#include "../config/load/cpp_config.hpp"
+#include "src/config/load/cpp_config.hpp"
 #include "eigenvec.hpp"
 #include <cmath>
 #include <iostream>

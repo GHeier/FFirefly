@@ -125,4 +125,11 @@ bool isDirectoryExisting(const std::string& path);
 
 // Run executable with config file piped to stdin
 int run_with_config(const std::string& executable, const std::string& config_file);
+
+// Helper to get executable location
+std::string get_loc();
+
+// Run method executables (used by category node.cpp files)
 int run_cpp_method(const std::string& method_name);
+int run_python_method(const std::string& method_name);
+int run_julia_method(const std::string& method_name);

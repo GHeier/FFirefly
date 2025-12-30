@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../objects/vec.hpp"
+#include "src/objects/vec.hpp"
 
 using namespace std;
 

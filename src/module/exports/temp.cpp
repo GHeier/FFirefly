@@ -1,6 +1,6 @@
 #include <iostream>
 #include <cstddef>
-#include "../../objects/vec.hpp"
+#include "src/objects/vec.hpp"
 
 extern "C" void print_vec_layout() {
     std::cout << "sizeof(Vec): " << sizeof(Vec) << "\n";

@@ -1,6 +1,6 @@
-#include "../c_config.h"
+#include "src/config/load/c_config.h"
 #include "jl_interface_typed_tests.hpp"
-#include "../jl_interface.h"
+#include "src/config/load/jl_interface.h"
 #include <iostream>
 #include <cstring>
 #include <cmath>

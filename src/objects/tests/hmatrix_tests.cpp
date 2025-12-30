@@ -1,7 +1,7 @@
 #include "hmatrix_tests.hpp"
-#include "../hmatrix.hpp"
+#include "src/objects/hmatrix.hpp"
 #include "all.hpp"
-#include "../../config/load/c_config.h"
+#include "src/config/load/c_config.h"
 #include <cmath>
 #include <iostream>
 #include <vector>

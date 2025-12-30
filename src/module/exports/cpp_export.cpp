@@ -1,18 +1,18 @@
 #include <string>
 
-#include "../../config/load/c_config.h"
-#include "../../config/load/cpp_config.hpp"
-#include "../../objects/CMField/fields.hpp"
-#include "../../objects/CMField/vertex.hpp"
-#include "../../objects/CMField/self_energy.hpp"
-#include "../../objects/CMField/hamiltonian.hpp"
-#include "../../objects/CMField/base_data.hpp"
-#include "../../objects/CMData/cmdata.hpp"
-#include "../../objects/CMField/bands.hpp"
-#include "../../objects/surfaces.hpp"
-#include "../../hamiltonian/band_structure.hpp"
+#include "src/config/load/c_config.h"
+#include "src/config/load/cpp_config.hpp"
+#include "src/objects/CMField/fields.hpp"
+#include "src/objects/CMField/vertex.hpp"
+#include "src/objects/CMField/self_energy.hpp"
+#include "src/objects/CMField/hamiltonian.hpp"
+#include "src/objects/CMField/base_data.hpp"
+#include "src/objects/CMData/cmdata.hpp"
+#include "src/objects/CMField/bands.hpp"
+#include "src/objects/surfaces.hpp"
+#include "src/hamiltonian/models/band_structure.hpp"
 // Begin include
-#include "../../objects/vec.hpp"
+#include "src/objects/vec.hpp"
 // End include
 
 void vector_to_ptr(vector<float> r, float *a, int *b) {

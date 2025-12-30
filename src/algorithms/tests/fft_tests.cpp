@@ -1,5 +1,5 @@
-#include "../fft.hpp"
-#include "../../config/load/c_config.h"
+#include "src/algorithms/fft.hpp"
+#include "src/config/load/c_config.h"
 #include "fft_tests.hpp"
 #include <cmath>
 #include <iostream>

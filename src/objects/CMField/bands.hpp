@@ -4,8 +4,8 @@
 #include <string>
 
 #include "fields.hpp"
-#include "../vec.hpp"
-#include "../eigenvec.hpp"
+#include "src/objects/vec.hpp"
+#include "src/objects/eigenvec.hpp"
 
 using namespace std;
 

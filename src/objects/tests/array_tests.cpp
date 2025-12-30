@@ -1,5 +1,5 @@
-#include "../../config/load/c_config.h"
-#include "../array.hpp"
+#include "src/config/load/c_config.h"
+#include "src/objects/array.hpp"
 #include "array_tests.hpp"
 #include <cmath>
 #include <iostream>

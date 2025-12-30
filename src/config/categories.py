@@ -53,8 +53,43 @@ CATEGORIES = {
 
 if __name__ == "__main__":
     # Run code generators when this file is executed
-    import os
+    print("=" * 60)
+    print("FFirefly Category Code Generator")
+    print("=" * 60)
+
+    # Import code generation modules
     import sys
-    import importlib.util
-    from categories.write import write
+    from pathlib import Path
+
+    # Add categories directory to path for imports
+    categories_dir = Path(__file__).parent / "categories"
+    sys.path.insert(0, str(categories_dir))
+
+    # Import generators
+    from write import write
+    from write_cmake import update_cmakelists
+    # import write_main  # Skip for now - requires CATEGORIES_WITH_TESTS
+    # import write_nodes  # Skip for now - not needed for build refactoring
+
+    print("\n1. Generating directory structure and templates...")
     write(CATEGORIES)
+
+    print("\n2. Generating CMakeLists.txt sections...")
+    update_cmakelists(CATEGORIES)
+
+    # print("\n3. Generating category node files...")
+    # for category in CATEGORIES:
+    #     write_nodes.write_node_files(category, CATEGORIES[category])
+    # print("   ✓ Generated node.cpp and node.hpp for all categories")
+
+    # print("\n4. Generating main.c sections...")
+    # write_main.generate_main_sections(CATEGORIES)
+    # print("   ✓ Generated main.c integration code")
+
+    print("\n" + "=" * 60)
+    print("Code generation complete!")
+    print("=" * 60)
+    print("\nNext steps:")
+    print("  1. Run: ./scripts/fly-build.sh")
+    print("  2. Test: build/bin/fly.x < input.cfg")
+    print("  3. Test C++ methods: build/bin/category_calculation_method.exe < input.cfg")

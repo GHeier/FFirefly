@@ -3,8 +3,8 @@
 
 #include "base_data.hpp"
 //#include "cmfield.hpp"
-#include "../vec.hpp"
-#include "../../algorithms/spline.h"  // from tk::spline
+#include "src/objects/vec.hpp"
+#include "src/algorithms/spline.h"  // from tk::spline
 
 #include <variant>
 #include <stdexcept>

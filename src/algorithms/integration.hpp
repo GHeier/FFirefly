@@ -4,7 +4,7 @@
 #include <complex>
 #include <functional>
 
-#include "../objects/vec.hpp"
+#include "src/objects/vec.hpp"
 
 extern int s_div;
 extern int s_pts;

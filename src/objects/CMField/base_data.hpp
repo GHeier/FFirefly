@@ -5,7 +5,7 @@
 #include <variant>
 #include <cmath>
 #include <stdexcept>
-#include "../vec.hpp"
+#include "src/objects/vec.hpp"
 
 using cfloat = std::complex<float>;
 using namespace std;

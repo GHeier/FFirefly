@@ -3,13 +3,13 @@
 #include <math.h>
 #include <vector>
 
-#include "../algorithms/integration.hpp"
-#include "../config/load/cpp_config.hpp"
-#include "../hamiltonian/band_structure.hpp"
-#include "../hamiltonian/interaction.hpp"
-#include "../objects/CMField/vertex.hpp"
-#include "../objects/matrix.hpp"
-#include "../objects/vec.hpp"
+#include "src/superconductor/bcs/algorithms/integration.hpp"
+#include "src/superconductor/bcs/config/load/cpp_config.hpp"
+#include "src/superconductor/bcs/hamiltonian/band_structure.hpp"
+#include "src/superconductor/bcs/hamiltonian/interaction.hpp"
+#include "src/superconductor/bcs/objects/CMField/vertex.hpp"
+#include "src/superconductor/bcs/objects/matrix.hpp"
+#include "src/superconductor/bcs/objects/vec.hpp"
 #include "cfg.hpp"
 #include "matrix_creation.hpp"
 #include "solver.hpp"

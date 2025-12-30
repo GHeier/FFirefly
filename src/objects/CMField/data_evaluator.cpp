@@ -1,6 +1,6 @@
 #include "data_evaluator.hpp"
 #include "field_funcs.hpp"
-#include "../../algorithms/interpolate.hpp"
+#include "src/algorithms/interpolate.hpp"
 #include <vector>
 #include <complex>
 #include <stdexcept>
