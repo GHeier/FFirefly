@@ -41,29 +41,19 @@ set(CMAKE_Fortran_FLAGS "-O3 -fopenmp -fPIC")
 link_directories(${CMAKE_SOURCE_DIR}/external/h2pack/lib)
 link_directories(/home/g/Research/H2Lib)
 
-# Libraries to link
-set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -lopenblas -ljulia -lhdf5_cpp -lhdf5 -lfftw3 -lfftw3f -lh2)
+# Libraries to link (removed -ljulia, Python linking handled separately below)
+set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -lopenblas -lhdf5_cpp -lhdf5 -lfftw3 -lfftw3f -lh2)
 
-# Find Python3 headers and libraries
-# Use conda environment's Python if CONDA_PREFIX is set
+# Python and Julia are NO LONGER linked as libraries
+# Python/Julia scripts are executed via shell (run_python_method2/run_julia_method2)
+# Find Python3 executable for running scripts
 if(DEFINED ENV{CONDA_PREFIX})
     set(Python3_ROOT_DIR $ENV{CONDA_PREFIX})
     message(STATUS "Using Python from conda environment: $ENV{CONDA_PREFIX}")
 endif()
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 message(STATUS "Python3 executable: ${Python3_EXECUTABLE}")
-message(STATUS "Python3 include dirs: ${Python3_INCLUDE_DIRS}")
-message(STATUS "Python3 libraries: ${Python3_LIBRARIES}")
-include_directories(${Python3_INCLUDE_DIRS})
-link_directories(${Python3_LIBRARY_DIRS})
-
-# Set Julia include and lib paths
-# Updated to use Julia 1.12
-set(JULIA_INCLUDE_DIR "/usr/include/julia")
-set(JULIA_LIB_DIR "/usr/lib")
-
-include_directories(${JULIA_INCLUDE_DIR})
-link_directories(${JULIA_LIB_DIR})
+message(STATUS "Python/Julia NOT linked as libraries - using shell execution instead")
 
 # ---------------------------
 # BASE LIBRARY SOURCES
@@ -82,8 +72,8 @@ set(BASE_SOURCES
     src/algorithms/tests/fft_tests.cpp
     src/algorithms/tests/all.cpp
     src/config/load/c_config.c
-    src/config/load/jl_interface.c
-    src/config/load/py_interface.c
+    src/config/load/jl_interface_stub.c
+    src/config/load/py_interface_stub.c
     src/config/load/cpp_config.cpp
     src/config/load/tests/py_interface_bool_tests.cpp
     src/config/load/tests/py_interface_typed_tests.cpp
@@ -200,7 +190,7 @@ endif()
 
 # Create base.so shared library from core components
 add_library(base SHARED ${BASE_SOURCES})
-target_link_libraries(base PRIVATE ${LIBS} ${Python3_LIBRARIES})
+target_link_libraries(base PRIVATE ${LIBS})
 
 # Set SONAME and RPATH for runtime linking
 set_target_properties(base PROPERTIES
@@ -221,9 +211,9 @@ add_executable(fly.x ${FLY_C_SOURCES} ${FLY_CPP_SOURCES})
 
 # Link fly.x against base.so and fortran_config.so
 if(FORTRAN_SOURCES)
-    target_link_libraries(fly.x PRIVATE base fortran_config ${LIBS} ${Python3_LIBRARIES})
+    target_link_libraries(fly.x PRIVATE base fortran_config ${LIBS})
 else()
-    target_link_libraries(fly.x PRIVATE base ${LIBS} ${Python3_LIBRARIES})
+    target_link_libraries(fly.x PRIVATE base ${LIBS})
 endif()
 
 # Set RPATH so fly.x can find base.so at runtime
@@ -240,9 +230,9 @@ set_target_properties(fly.x PROPERTIES
 # Keep fly shared library for backward compatibility with Python/Julia
 add_library(fly SHARED ${FLY_C_SOURCES} ${FLY_CPP_SOURCES})
 if(FORTRAN_SOURCES)
-    target_link_libraries(fly PRIVATE base fortran_config ${LIBS} ${Python3_LIBRARIES})
+    target_link_libraries(fly PRIVATE base fortran_config ${LIBS})
 else()
-    target_link_libraries(fly PRIVATE base ${LIBS} ${Python3_LIBRARIES})
+    target_link_libraries(fly PRIVATE base ${LIBS})
 endif()
 
 # ---------------------------

@@ -1,4 +1,4 @@
-#include <Python.h>
+// Python.h removed - no longer using embedded interpreter
 
 void scf_FLEX() {
 //    Py_Initialize();
