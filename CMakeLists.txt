@@ -21,13 +21,6 @@ include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/external/h2pack/include)
 include_directories(/home/g/Research/H2Lib/Library)
 
-# Include conda environment headers if CONDA_PREFIX is set
-if(DEFINED ENV{CONDA_PREFIX})
-    include_directories($ENV{CONDA_PREFIX}/include)
-    link_directories($ENV{CONDA_PREFIX}/lib)
-    message(STATUS "Using conda environment includes: $ENV{CONDA_PREFIX}/include")
-endif()
-
 # Also include system headers for packages installed via pacman
 include_directories(/usr/include)
 link_directories(/usr/lib)
@@ -43,17 +36,6 @@ link_directories(/home/g/Research/H2Lib)
 
 # Libraries to link (removed -ljulia, Python linking handled separately below)
 set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -lopenblas -lhdf5_cpp -lhdf5 -lfftw3 -lfftw3f -lh2)
-
-# Python and Julia are NO LONGER linked as libraries
-# Python/Julia scripts are executed via shell (run_python_method2/run_julia_method2)
-# Find Python3 executable for running scripts
-if(DEFINED ENV{CONDA_PREFIX})
-    set(Python3_ROOT_DIR $ENV{CONDA_PREFIX})
-    message(STATUS "Using Python from conda environment: $ENV{CONDA_PREFIX}")
-endif()
-find_package(Python3 REQUIRED COMPONENTS Interpreter)
-message(STATUS "Python3 executable: ${Python3_EXECUTABLE}")
-message(STATUS "Python/Julia NOT linked as libraries - using shell execution instead")
 
 # ---------------------------
 # BASE LIBRARY SOURCES
