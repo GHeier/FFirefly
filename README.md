@@ -1,7 +1,7 @@
 # Ffirefly
 ## **🚀 Welcome**  
 Welcome to **The Ffirefly Project**, a Condensed Matter Computational Physics Workspace designed to be easy to both use and extend. Users can run calculations via either a simple input file or intuitive python wrappers. Developers are able to cleanly extend the codebase by adding new models and solvers in whichever language they prefer due to Ffirefly's modular structure.
-
+.
 
 ### Why use Ffirefly?
 Let's say an individual wants to run some calculations on the ground state of a material, and lacks an algorithm ready-to-run. They could both learn and code the entire thing from scratch, which is cumbersome. They could also search for a package that performs the relevant computation, but it may be difficult to integrate into their code. Using Ffirefly, all of those issues are alleviated at once. Ffirefly's prewritten algorithms are efficient, can be accessed using multiple languages, and output results in a simple and easy to read manner.
