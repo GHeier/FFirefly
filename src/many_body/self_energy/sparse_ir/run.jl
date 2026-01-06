@@ -196,7 +196,7 @@ function save(iw_arr, sigma)
     println("Saved to ", filepath)
 end
 
-function run():
+function run()
     # Main function call goes here
     get_self_energy()
 

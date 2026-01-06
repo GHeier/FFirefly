@@ -6,8 +6,9 @@ using KrylovKit
 using LinearAlgebra
 using Printf
 using StaticArrays
+
 # Load relevant variables from the configuration
-kmesh = cfg.k_mesh
+mu = cfg.fermi_energy
 
 
 function load_surface()
@@ -43,7 +44,16 @@ function build_hmatrix(kpoints, kernel_func; atol=1e-6, rank=20)
     n = length(kpoints)
 
     # Convert kpoints to vector of SVectors for HMatrices
-    X = [SVector{3}(kp) for kp in kpoints]
+    # Handle both 2D and 3D k-points
+    dim = length(kpoints[1])
+    if dim == 2
+        # Pad 2D points with zero z-coordinate
+        X = [SVector{3}(kp[1], kp[2], 0.0) for kp in kpoints]
+    elseif dim == 3
+        X = [SVector{3}(kp) for kp in kpoints]
+    else
+        error("K-points must be 2D or 3D, got dimension $dim")
+    end
 
     # Create an indexable kernel matrix wrapper
     K = KernelMatrixWrapper(kernel_func, kpoints)
@@ -63,10 +73,10 @@ function build_hmatrix(kpoints, kernel_func; atol=1e-6, rank=20)
     return H
 end
 
-function run():
+function run()
     # Main function call goes here
     println("="^60)
-    println("HMatrix + Lanczos Eigenvalue Solver Test")
+    println("Initializing HMatrix + Lanczos Eigenvalue Solver")
     println("="^60)
 
     # Parameters
@@ -78,9 +88,14 @@ function run():
         println("  ε($(ktest)) = $ε")
     end
 
-    kpoints = generate_kpoints_from_surface(mu)
+    kpoints = load_surface()
     n = length(kpoints)
     println("Total k-points: $n")
+
+    # Load Vertex
+    println("Loading Vertex...")
+    V = Firefly.Vertex()
+    println("Vertex loaded.")
 
     # Build HMatrix
     println("\n" * "="^60)

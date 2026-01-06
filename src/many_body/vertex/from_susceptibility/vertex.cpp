@@ -86,6 +86,7 @@ void call_flex() {
     printf("Computing vertex\n");
 
     if (!chi.cmf.data.as_mesh) {
+        printf("Using stored point data\n");
         // Loop over stored points
         for (const auto& point : chi.cmf.data.points) {
             Vec q(point.data(), chidim);
@@ -104,6 +105,7 @@ void call_flex() {
             }
         }
     } else {
+        printf("Using mesh data\n");
         // Loop over mesh
         float nx = q_mesh[0], ny = q_mesh[1], nz = q_mesh[2];
         if (chidim == 2) nz = 1;
@@ -129,6 +131,15 @@ void call_flex() {
             }
         }
     }
+
+    float max_val = 0.0f;
+    for (const auto& v : vals) {
+        if (abs(v) > max_val) {
+            max_val = abs(v);
+        }
+    }
+    printf("Computed %zu vertex values\n", vals.size());
+    printf("Max vertex magnitude: %f\n", max_val);
 
     printf("Saving Vertex\n");
     string file = outdir + prefix + "_vertex." + filetype;

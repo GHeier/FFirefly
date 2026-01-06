@@ -600,7 +600,7 @@ end
 
 
 
-function run():
+function run()
     # Main function call goes here
     max_chi = main()
     return max_chi

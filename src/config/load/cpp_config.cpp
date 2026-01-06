@@ -252,9 +252,9 @@ int run_with_config(const std::string& executable, const std::string& config_fil
     // Build the command: executable < config_file
     std::string command = executable + " < " + config_file;
 
-    if (verbosity == "high") {
-        std::cout << "Running: " << command << std::endl;
-    }
+    //if (verbosity == "high") {
+    //    std::cout << "Running: " << command << std::endl;
+    //}
 
     // Execute the command and return the exit code
     int result = std::system(command.c_str());
@@ -295,11 +295,13 @@ string get_loc() {
 int run_cpp_method(const string& method_name) {
     string loc = get_loc();
     string exe = loc + category + "_" + calculation + "_" + method_name + ".exe";
-    return run_with_config(exe, "input.cfg");
+    string config_path = loc + "input.cfg";
+    return run_with_config(exe, config_path);
 }
 
 int run_python_method(const string& method_name) {
     string loc = get_loc();
+    string config_path = loc + "input.cfg";
     // Go up from build/bin/ to project root, then to src/
     size_t build_pos = loc.find("/build/bin/");
     if (build_pos != string::npos) {
@@ -307,7 +309,9 @@ int run_python_method(const string& method_name) {
         string src_dir = loc.substr(0, build_pos) + "/src/";
         string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.py";
         string exe = "python3 " + script_path;
-        return run_with_config(exe, "input.cfg");
+        int result = std::system(exe.c_str());
+        return result;
+        //return run_with_config(exe, config_path);
     }
     // Fallback: try simple /bin/ pattern (for non-build locations)
     size_t bin_pos = loc.find("/bin/");
@@ -315,13 +319,16 @@ int run_python_method(const string& method_name) {
         string src_dir = loc.substr(0, bin_pos) + "/src/";
         string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.py";
         string exe = "python3 " + script_path;
-        return run_with_config(exe, "input.cfg");
+        int result = std::system(exe.c_str());
+        return result;
+        //return run_with_config(exe, config_path);
     }
     return -1;  // Error: couldn't find src directory
 }
 
 int run_julia_method(const string& method_name) {
     string loc = get_loc();
+    string config_path = loc + "input.cfg";
     // Go up from build/bin/ to project root, then to src/
     size_t build_pos = loc.find("/build/bin/");
     if (build_pos != string::npos) {
@@ -329,7 +336,9 @@ int run_julia_method(const string& method_name) {
         string src_dir = loc.substr(0, build_pos) + "/src/";
         string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.jl";
         string exe = "julia " + script_path;
-        return run_with_config(exe, "input.cfg");
+        int result = std::system(exe.c_str());
+        return result;
+        //return run_with_config(exe, config_path);
     }
     // Fallback: try simple /bin/ pattern (for non-build locations)
     size_t bin_pos = loc.find("/bin/");
@@ -337,7 +346,9 @@ int run_julia_method(const string& method_name) {
         string src_dir = loc.substr(0, bin_pos) + "/src/";
         string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.jl";
         string exe = "julia " + script_path;
-        return run_with_config(exe, "input.cfg");
+        int result = std::system(exe.c_str());
+        return result;
+        //return run_with_config(exe, config_path);
     }
     return -1;  // Error: couldn't find src directory
 }
