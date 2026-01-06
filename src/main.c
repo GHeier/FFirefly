@@ -9,7 +9,6 @@
 #include "config/load/jl_interface.h"
 
 // Category nodes below
-#include "algorithms/electron_number.hpp"
 #include "hamiltonian/node.hpp"
 #include "many_body/node.hpp"
 #include "superconductor/node.hpp"
@@ -26,17 +25,17 @@
 // Global category calls
 
 void hamiltonian() {
-    printf("Starting Hamiltonian Calculation\n\n");
+    printf("Starting hamiltonian Calculation\n\n");
     hamiltonian_wrapper();
 }
 
 void many_body() {
-    printf("Starting Many-Body Calculation\n\n");
+    printf("Starting many_body Calculation\n\n");
     many_body_wrapper();
 }
 
 void superconductor() {
-    printf("Starting Superconductor Calculation\n\n");
+    printf("Starting superconductor Calculation\n\n");
     superconductor_wrapper();
 }
 
@@ -73,9 +72,6 @@ int main() {
     print_banner_top();
 
     load_c_config();           // Read input to load global c variables
-
-    // NOTE: Python and Julia are now initialized lazily - only when first needed
-    // This avoids initialization conflicts and reduces startup time
 
     // Handling '+' separated categories for sequential runs
     char str_copy[MAX_LENGTH];
@@ -122,8 +118,6 @@ int main() {
         printf("Number of threads used in CPU parallelization: %d\n",
                num_procs - 1);
 
-    // NOTE: Julia initialization is now lazy - happens on first Julia call
-    // This avoids PyCall conflicts with Python initialization
     for (int i = 0; i < count; i++) {
         char *category = tokens[i];
         int ind = i;
@@ -136,17 +130,17 @@ int main() {
             ind = ccount - 1;
         if (c_calculation[0] != '\0')
             c_calculation = calc_tokens[ind];
-        load_cpp_config(); 
+        load_cpp_config();
     /*
         * ADDING A CATEGORY OCCURS BELOW
         * FOLLOW THE PATTERN
     */
         if (!strcmp(category, "hamiltonian"))
             hamiltonian();
-        else if (!strcmp(category, "superconductor"))
-            superconductor();
         else if (!strcmp(category, "many_body"))
             many_body();
+        else if (!strcmp(category, "superconductor"))
+            superconductor();
         else if (!strcmp(category, "test"))
             test();
         else

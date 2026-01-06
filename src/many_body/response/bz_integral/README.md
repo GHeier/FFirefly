@@ -2,64 +2,66 @@
 
 ## Overview
 
-Brief overview of what this calculation does and its purpose in the FFirefly framework.
+Calculates chi0(w,q) using recursive tetrahedron method for BZ integration. Takes cutoff_energy and w_pts to determine frequency grid, and q_mesh to determine momentum grid.
 
 ## Quick Description
 
-One sentence description of the method/algorithm used. Example: "This solves the superconducting gap equation, and returns the leading eigenvalue/eigenvector"
+Calculates non-interacting response function chi0(w,q) using recursive tetrahedron method for BZ integration.
 
 ## Dependencies
-- List required dependencies (e.g., LAPACK, HDF5, etc.)
-- Python/Julia packages if applicable
+- BZIntegral
+- LinearAlgebra
+- Printf
+- Interpolations
+- Base.Threads
 
 ## Install Instructions
 
 ```bash
-# Any special installation steps
-# If none needed, say "No special installation required - built automatically by fly-build.sh"
+Install all in Julia REPL
 ```
 
 ### Parameters
 
-Configuration parameters from `input.cfg`:
+kmesh - input for e(k) creation
+qmesh - grid of q-points for chi0(q,w) calculation
+cutoff_energy - energy cutoff for frequency grid
+w_pts - number of frequency points
+dim - system dimension (2 or 3)
+nbnds - number of bands to consider
+prefix - prefix for output files
+outdir - output directory
+fermi_energy - Fermi energy
+brillouin_zone - BZ matrix
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `param1` | float | 0.0 | Description |
-| `param2` | int | 100 | Description |
 
 ## Results Saved
 
 Output files created by this calculation (using `prefix` from config):
 
-- `{prefix}_output1.{ext}` - Description of what this file contains
-- `{prefix}_output2.{ext}` - Description of what this file contains
-
-File format details:
-- Specify HDF5 structure, column formats, etc.
+- `{outdir}_{prefix}_chi.h5` - chi0(w,q) on w-k grid. 
 
 ## Testing
 
-Expected test behavior:
-- What the test validates
-- Expected return value or output
+For 3D TB, mu=0.0, t'=0.0, T=0.25, max_chi~=0.4
 
 ## Calculation Details
 
 ### Algorithm
 
 Description of the algorithm:
-1. Step 1
-2. Step 2
-3. etc.
+1. Tetrahedrizes the Brillouin Zone
+2. Recursively subdivides each tetrahedra
+3. Integrates over recursive weights and maps back to k-grid
+4. Sums over weights to get value at w,q point
+4. Repeats for every w-q
 
 ### Implementation Notes
 
-- Any important implementation details
-- Performance considerations
-- Known limitations
+- k and q meshes have to be odd to avoid the Gamma point divergence, so the code enforces this, adding 1 if even values are given.
+- Parallelized over q-points using Julia's `Threads.@threads`
+- Uses `Interpolations.jl` for fast H(k) interpolation used in tetrahedron integration
 
 ## References
 
-1. Author et al., "Paper Title", Journal Volume, Pages (Year). DOI/arXiv
-2. Additional references as needed
+1. https://github.com/SelimLin/BZIntegral.jl

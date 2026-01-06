@@ -2,64 +2,47 @@
 
 ## Overview
 
-Brief overview of what this calculation does and its purpose in the FFirefly framework.
+Analytically calculates FLEX vertex from chi(q,w) using U and the w-q points in chi(w,q)
 
 ## Quick Description
 
-One sentence description of the method/algorithm used. Example: "This solves the superconducting gap equation, and returns the leading eigenvalue/eigenvector"
+Analytically calculates FLEX vertex from chi(q,w)
 
 ## Dependencies
-- List required dependencies (e.g., LAPACK, HDF5, etc.)
-- Python/Julia packages if applicable
+- None
 
 ## Install Instructions
 
 ```bash
-# Any special installation steps
-# If none needed, say "No special installation required - built automatically by fly-build.sh"
+No special installation required - built automatically by fly-build.sh
 ```
 
 ### Parameters
 
-Configuration parameters from `input.cfg`:
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `param1` | float | 0.0 | Description |
-| `param2` | int | 100 | Description |
+outdir
+prefix
+filetype
+onsite_U - U strength
 
 ## Results Saved
 
 Output files created by this calculation (using `prefix` from config):
 
-- `{prefix}_output1.{ext}` - Description of what this file contains
-- `{prefix}_output2.{ext}` - Description of what this file contains
-
-File format details:
-- Specify HDF5 structure, column formats, etc.
+- `{outdir}_{prefix}_vertex.{ext}` - Saved vertex file in same w-k format as chi file
 
 ## Testing
 
-Expected test behavior:
-- What the test validates
-- Expected return value or output
+None
 
 ## Calculation Details
 
 ### Algorithm
 
-Description of the algorithm:
-1. Step 1
-2. Step 2
-3. etc.
 
 ### Implementation Notes
 
-- Any important implementation details
-- Performance considerations
-- Known limitations
+- Only saves as hdf5 file at the moment
 
 ## References
 
-1. Author et al., "Paper Title", Journal Volume, Pages (Year). DOI/arXiv
-2. Additional references as needed
+1. Scalapino et al., "d-wave pairing near a spin-density-wave instability", Phys. Rev. B. 34, (1986). 

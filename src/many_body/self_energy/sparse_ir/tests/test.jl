@@ -11,3 +11,9 @@ function test():
     return abs(result - 3.14) < 1e-6  # Example test condition
 
 
+if abspath(PROGRAM_FILE) == @__FILE__ # Runs on file execution
+    run()
+end
+
+
+

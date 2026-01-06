@@ -1,6 +1,6 @@
 #include "src/config/load/cpp_config.hpp"
 #include "src/hamiltonian/models/band_structure.hpp"
-#include "renormalization.hpp"
+#include "main.hpp"
 #include "src/objects/CMField/fields.hpp"
 
 static Vec get_kvec(int i, int j, int k) {
@@ -14,7 +14,7 @@ static Vec get_kvec(int i, int j, int k) {
     return newv;
 }
 
-void self_energy_renormalization() {
+float self_energy_renormalization() {
     string filename = outdir + prefix + "_sigma." + filetype;
     printf("Reading self_energy from %s\n", filename.c_str());
     Field_C sigma(filename);
@@ -82,7 +82,9 @@ void self_energy_renormalization() {
         ave += -imag(sigma(k, 1e-4) - sigma(k, -1e-4)) / (2e-4) * dk;
         norm += dk;
     }
-    printf("Average m* on Fermi Surface is: %lf\n", 1 + ave / norm);
+    float m_star = 1 + ave / norm;
+    printf("Average m* on Fermi Surface is: %lf\n", m_star);
+    return m_star;
 }
 
 

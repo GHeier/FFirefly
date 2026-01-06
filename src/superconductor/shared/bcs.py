@@ -183,6 +183,7 @@ def run_lanczos():
     fly.save_data(gap_file, gap, mesh=[nx, ny, nz], domain=BZ[:2,:2])
     print(f"Saved gap function to {gap_file}")
     plot_gap(gap.reshape(nx, ny))
+    return eigs[i]
 
 
 # Main function 2

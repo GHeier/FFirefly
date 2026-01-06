@@ -1,3 +1,3 @@
 #pragma once
 
-float bcs();
+int test();

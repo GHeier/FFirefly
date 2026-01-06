@@ -2,64 +2,63 @@
 
 ## Overview
 
-Brief overview of what this calculation does and its purpose in the FFirefly framework.
+Calculates Self-Energy from Vertex and non-interacting green's function. Takes the Vertex as input, all calculations are on imaginary axis
 
 ## Quick Description
 
-One sentence description of the method/algorithm used. Example: "This solves the superconducting gap equation, and returns the leading eigenvalue/eigenvector"
+Calculates Self-Energy from Vertex and non-interacting green's function. Takes the Vertex as input
 
 ## Dependencies
-- List required dependencies (e.g., LAPACK, HDF5, etc.)
-- Python/Julia packages if applicable
+- sparse_ir
+- FFTW
+- PyCall
+- Printf
+- Interpolations
 
 ## Install Instructions
 
 ```bash
-# Any special installation steps
-# If none needed, say "No special installation required - built automatically by fly-build.sh"
 ```
+Install relevant packages using julia repl
 
 ### Parameters
 
 Configuration parameters from `input.cfg`:
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `param1` | float | 0.0 | Description |
-| `param2` | int | 100 | Description |
+- `prefix` : Prefix for input/output files
+- `outdir` : Directory for input/output files
+- `T` : Temperature
+- `dim` : Dimensionality of the system (1, 2, or 3)
+- `q_mesh` : Number of q-points in each dimension
+- `k_mesh` : Number of k-points in each dimension
+- `nbnd` : Number of bands
+- `fermi_energy` : Fermi energy
+- `brillouin_zone` : BZ matrix
+
 
 ## Results Saved
 
-Output files created by this calculation (using `prefix` from config):
-
-- `{prefix}_output1.{ext}` - Description of what this file contains
-- `{prefix}_output2.{ext}` - Description of what this file contains
-
-File format details:
-- Specify HDF5 structure, column formats, etc.
+- `{outdir}_{prefix}_.self_energy.{filetype}` - self-energy on iw-k grid
 
 ## Testing
 
-Expected test behavior:
-- What the test validates
-- Expected return value or output
+None
 
 ## Calculation Details
 
+Performs FFTs to compute self-energy from vertex function and non-interacting Green's function on imaginary frequency axis. Matsubara frequencies are handled using sparse IR basis for efficiency, where imaginary frequencies are transformed to Discrete Lehman Representation and then to imaginary time for computing fourier transforms.
+
 ### Algorithm
 
-Description of the algorithm:
-1. Step 1
-2. Step 2
-3. etc.
+1. Find G from non-interacting Hamiltonian, V from input
+2. Compute G(r, tau) and V(r, tau) using sparse IR basis and FFTs
+3. Calculate self-energy in (r, tau) space
+4. Transform self-energy back to (k, iw) space using inverse FFTs and sparse IR basis
 
 ### Implementation Notes
 
-- Any important implementation details
-- Performance considerations
-- Known limitations
+- Single band 
 
 ## References
 
-1. Author et al., "Paper Title", Journal Volume, Pages (Year). DOI/arXiv
-2. Additional references as needed
+1. https://spm-lab.github.io/sparse-ir-tutorial/src/FLEX_jl.html

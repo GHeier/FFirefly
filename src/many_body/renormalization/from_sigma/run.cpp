@@ -6,13 +6,13 @@
 #include <cstdio>
 #include <cstdlib>
 
-
+#include "main.hpp"
 
 float run() {
     // Main function call goes here
-    printf("Hello, World! This is a Firefly run with k-mesh: [%d %d %d]\n", k_mesh[0], k_mesh[1], k_mesh[2]);
+    float m_star = self_energy_renormalization();
 
-    return 3.14; // Return something of any type that can be tested in the test suite.
+    return m_star; // Return something of any type that can be tested in the test suite.
 }
 
 int main() {

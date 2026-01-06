@@ -33,7 +33,7 @@
 
 using namespace std;
 
-void bcs() {
+float bcs() {
     cout << "Calculating Fermi Surface..." << endl;
     load_cpp_cfg();
 
@@ -100,7 +100,7 @@ void bcs() {
     //    initial_guess.eigenvector[i] = proj;
     //}
     Eigenvector *solutions = new Eigenvector[num_eigenvalues_to_save];
-    if (method == "power_iteration") {
+    //if (method == "power_iteration") {
         printf("Performing Power Iteration\n");
         Eigenvector top_gap = power_iteration(P);
         printf("Max Power Iteration eigenvalue: %f\n", top_gap.eigenvalue);
@@ -108,27 +108,27 @@ void bcs() {
         printf("Max Power Iteration Eigenvalue with T included: %f\n", top_gap.eigenvalue / (1 + renorm) * f);
         printf("Max Effective Eigenvalue with T included: %f\n", top_gap.eigenvalue / (1 + renorm) * f);
         solutions[0] = top_gap;
-    }
-    else if (method == "diagonalization") {
-        cout << "Finding Eigenspace..." << endl;
-        vector<Eigenvector> temp_solutions = lapack_hermitian_diagonalization(P);
-        for (int i = 0; i < num_eigenvalues_to_save; i++) {
-            solutions[i] = temp_solutions[i];
-        }
-        temp_solutions.clear();
+    //}
+    //else if (method == "diagonalization") {
+    //    cout << "Finding Eigenspace..." << endl;
+    //    vector<Eigenvector> temp_solutions = lapack_hermitian_diagonalization(P);
+    //    for (int i = 0; i < num_eigenvalues_to_save; i++) {
+    //        solutions[i] = temp_solutions[i];
+    //    }
+    //    temp_solutions.clear();
 
-        // Sort solutions with highest eigenvalue/eigenvector pair first
-        cout << "Sorting Eigenvectors..." << endl;
-        sort(solutions, solutions + num_eigenvalues_to_save,
-            descending_eigenvalues);
+    //    // Sort solutions with highest eigenvalue/eigenvector pair first
+    //    cout << "Sorting Eigenvectors..." << endl;
+    //    sort(solutions, solutions + num_eigenvalues_to_save,
+    //        descending_eigenvalues);
 
-        printf("Max Diagonalized eigenvalue: %f\n", solutions[0].eigenvalue / (1 + renorm));
-        printf("Eigenvalue with T included: %f\n", solutions[0].eigenvalue / (1 + renorm) * f);
-    }
-    else {
-        printf("No method provided. Exiting\n");
-        exit(0);
-    }
+    //    printf("Max Diagonalized eigenvalue: %f\n", solutions[0].eigenvalue / (1 + renorm));
+    //    printf("Eigenvalue with T included: %f\n", solutions[0].eigenvalue / (1 + renorm) * f);
+    //}
+    //else {
+    //    printf("No method provided. Exiting\n");
+    //    exit(0);
+    //}
     printf("\n");
     if (FS_only) {
         double calc_Tc = get_Tc_FS_only(solutions[0].eigenvalue);
@@ -153,52 +153,6 @@ void bcs() {
         save_with_freq(file_name, T, freq_FS, solutions);
     cout << "Eigenvectors Saved\n";
     delete[] solutions;
+    return top_gap.eigenvalue;
 }
 
-void bcs_power_iteration() {
-    string folder = "superconductor/";
-    string filename = "bcs";
-    string function = "run_power_iteration";
-    call_python_func(folder.c_str(), filename.c_str(), function.c_str());
-}
-
-void bcs_lanczos() {
-    string folder = "superconductor/";
-    string filename = "bcs";
-    string function = "run_lanczos";
-    call_python_func(folder.c_str(), filename.c_str(), function.c_str());
-}
-
-void eliashberg_power_iteration() {
-    string folder = "superconductor/";
-    string filename = "eliashberg";
-    string function = "run_power_iteration";
-    call_python_func(folder.c_str(), filename.c_str(), function.c_str());
-}
-
-void eliashberg_lanczos() {
-    string folder = "superconductor/";
-    string filename = "eliashberg";
-    string function = "run_lanczos";
-    call_python_func(folder.c_str(), filename.c_str(), function.c_str());
-}
-
-void linearized_eliashberg() {
-    string folder = "superconductor/";
-    string filename = "linearized_eliashberg";
-    string module = "Linearized_Eliashberg";
-    string function = "eigenvalue_computation";
-    // call_python_func(folder.c_str(), filename.c_str(), function.c_str());
-    call_julia_func(folder.c_str(), filename.c_str(), module.c_str(),
-                    function.c_str());
-}
-
-void debug() {
-    string folder = "superconductor/";
-    string filename = "lin_eliashberg_surface";
-    string module = "Linearized_Eliashberg_Surface";
-    string function = "eigenvalue_computation";
-    // call_python_func(folder.c_str(), filename.c_str(), function.c_str());
-    call_julia_func(folder.c_str(), filename.c_str(), module.c_str(),
-                    function.c_str());
-}

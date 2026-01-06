@@ -2,64 +2,61 @@
 
 ## Overview
 
-Brief overview of what this calculation does and its purpose in the FFirefly framework.
+Calculates FLEX or FLEX+DMFT, taking the electron density as a conserved quantity, calculating the new chemical potential, vertex, response, green's function, and self-energies at every iteration in the self-consistent loop. FLEX+DMFT substitutes the local part of the FLEX self-energy with the DMFT self-energy calculated using the IPT solver.
 
 ## Quick Description
 
-One sentence description of the method/algorithm used. Example: "This solves the superconducting gap equation, and returns the leading eigenvalue/eigenvector"
+Solves FLEX or FLEX+DMFT self-consistently with DLR calculations using matsubara frequencies at finite Temperature
 
 ## Dependencies
-- List required dependencies (e.g., LAPACK, HDF5, etc.)
-- Python/Julia packages if applicable
+- triqs
+- triqs_tprf
 
 ## Install Instructions
 
 ```bash
-# Any special installation steps
-# If none needed, say "No special installation required - built automatically by fly-build.sh"
+Check TRIQS install instructions at https://triqs.github.io/triqs/latest/install.html#
+Check TRIQS/TPRF install instructions at https://triqs.github.io/tprf/latest/install.html#
 ```
 
 ### Parameters
 
-Configuration parameters from `input.cfg`:
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `param1` | float | 0.0 | Description |
-| `param2` | int | 100 | Description |
+interaction - vertex type, options are "FLEX" or "FLEX+DMFT"
+num_electrons - used as a conserved quantity to determine the chemical potential
+fermi_level - initial guess for the chemical potential
+Temperature - chosen temperature for calculations
+mixing - mixing parameter for self-consistency
+max_iters 
+outdir
+prefix
+onsite_U 
 
 ## Results Saved
 
-Output files created by this calculation (using `prefix` from config):
-
-- `{prefix}_output1.{ext}` - Description of what this file contains
-- `{prefix}_output2.{ext}` - Description of what this file contains
-
-File format details:
-- Specify HDF5 structure, column formats, etc.
+- `{outdir}_{prefix}_vertex.{ext}` - Vertex on w-k grid
+- `{outdir}_{prefix}_chi.{ext}` - Susceptibility on w-k grid
+- `{outdir}_{prefix}_sigma.{ext}` - Self-energy on w-k grid
+- `{outdir}_{prefix}_G.{ext}` - Green's function on w-k grid
+- `{outdir}_{prefix}_G0.{ext}` - Non-interacting Green's function on w-k grid
 
 ## Testing
 
-Expected test behavior:
-- What the test validates
-- Expected return value or output
+Returns maximum chi value, for 3D TB, t'=0, mu=0, T=0.25, max_chi~0.4
 
 ## Calculation Details
 
 ### Algorithm
 
-Description of the algorithm:
-1. Step 1
-2. Step 2
-3. etc.
+1. Calculate X(w,k) as integral over G(w,k) * G(-w,-k)
+2. Calculate V(w,k) using FLEX formula
+3. Calculate Sigma(w,k) as integral over G(w,k) * V(w,k)
+4. Calculate new G(w,k) using Dyson equation
+5. Loop back to step 1 until consistency
 
 ### Implementation Notes
 
-- Any important implementation details
-- Performance considerations
-- Known limitations
+- Error is determined by difference in G(w,k) between iterations
 
 ## References
 
-1. Author et al., "Paper Title", Journal Volume, Pages (Year). DOI/arXiv
-2. Additional references as needed
+1. https://spm-lab.github.io/sparse-ir-tutorial/src/FLEX_jl.html

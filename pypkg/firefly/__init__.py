@@ -7,9 +7,6 @@ def __getattr__(name):
     if name == "diagram":
         from .src.objects import diagram
         return diagram
-    elif name == "interface_triqs":
-        from .src.many_body import interface_triqs
-        return interface_triqs
     elif name == "load_triqs_H":
         from .src.many_body import load_triqs_H
         return load_triqs_H

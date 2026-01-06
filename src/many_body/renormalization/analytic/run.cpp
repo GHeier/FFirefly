@@ -6,11 +6,19 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "renormalization.hpp"
+
 
 
 float run() {
     // Main function call goes here
-    printf("Hello, World! This is a Firefly run with k-mesh: [%d %d %d]\n", k_mesh[0], k_mesh[1], k_mesh[2]);
+    if (interaction == "FLEX") {
+        FLEX_renormalization();
+    }
+    else {
+        std::cerr << "Error: Unsupported interaction type: " << interaction << "\n";
+        exit(1);
+    }
 
     return 3.14; // Return something of any type that can be tested in the test suite.
 }

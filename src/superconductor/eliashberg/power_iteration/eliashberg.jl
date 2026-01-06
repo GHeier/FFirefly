@@ -252,7 +252,7 @@ function eliashberg_convsum()
 
     println("Max phi: ", max_phi)
     println("Max Z: ", max_Z)
-    return
+    return max_phi
 end
 
 

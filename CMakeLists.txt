@@ -53,8 +53,8 @@ set(BASE_SOURCES
     src/algorithms/tests/linalg_tests.cpp
     src/algorithms/tests/fft_tests.cpp
     src/algorithms/tests/all.cpp
-    src/config/load/c_config.c
     src/config/load/jl_interface_stub.c
+    src/config/load/c_config.c
     src/config/load/py_interface_stub.c
     src/config/load/cpp_config.cpp
     src/config/load/tests/py_interface_bool_tests.cpp
@@ -252,6 +252,7 @@ set_target_properties(hamiltonian_FS_tetrahedra PROPERTIES
 # many_body/vertex/from_susceptibility
 add_executable(many_body_vertex_from_susceptibility
     src/many_body/vertex/from_susceptibility/run.cpp
+    src/many_body/vertex/from_susceptibility/vertex.cpp
 )
 target_link_libraries(many_body_vertex_from_susceptibility PRIVATE base)
 set_target_properties(many_body_vertex_from_susceptibility PROPERTIES
@@ -261,13 +262,27 @@ set_target_properties(many_body_vertex_from_susceptibility PROPERTIES
     INSTALL_RPATH "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
 )
 
-# superconductor/bcs/lanczos
-add_executable(superconductor_bcs_lanczos
-    src/superconductor/bcs/lanczos/run.cpp
+# many_body/renormalization/analytic
+add_executable(many_body_renormalization_analytic
+    src/many_body/renormalization/analytic/renormalization.cpp
+    src/many_body/renormalization/analytic/run.cpp
 )
-target_link_libraries(superconductor_bcs_lanczos PRIVATE base)
-set_target_properties(superconductor_bcs_lanczos PROPERTIES
-    OUTPUT_NAME "superconductor_bcs_lanczos.exe"
+target_link_libraries(many_body_renormalization_analytic PRIVATE base)
+set_target_properties(many_body_renormalization_analytic PROPERTIES
+    OUTPUT_NAME "many_body_renormalization_analytic.exe"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    BUILD_RPATH "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
+    INSTALL_RPATH "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
+)
+
+# many_body/renormalization/from_sigma
+add_executable(many_body_renormalization_from_sigma
+    src/many_body/renormalization/from_sigma/main.cpp
+    src/many_body/renormalization/from_sigma/run.cpp
+)
+target_link_libraries(many_body_renormalization_from_sigma PRIVATE base)
+set_target_properties(many_body_renormalization_from_sigma PROPERTIES
+    OUTPUT_NAME "many_body_renormalization_from_sigma.exe"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     BUILD_RPATH "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
     INSTALL_RPATH "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"

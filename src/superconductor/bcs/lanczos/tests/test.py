@@ -1,4 +1,4 @@
-import src.hamiltonian.DOS.gaussian.run as base
+import src.superconductor.bcs.lanczos.run as base
 # Set configuration variables for test run
 base.kmesh = [4, 4, 4]  # Example k-mesh values
 

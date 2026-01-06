@@ -62,6 +62,7 @@ def run_lanczos():
     i = np.where(eigs > 0, eigs, -np.inf).argmax() 
     print(f"Max Eig: {eigs[i]:.6f}")
     Deltas[i].save(outdir + prefix + '_gap.h5')
+    return eigs[i]
 
 # Main function 2
 def run_power_iteration():

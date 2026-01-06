@@ -2,64 +2,62 @@
 
 ## Overview
 
-Brief overview of what this calculation does and its purpose in the FFirefly framework.
+Performs FLEX calculations using DLR sparse_ir code, with the option of self-consistency
 
 ## Quick Description
 
-One sentence description of the method/algorithm used. Example: "This solves the superconducting gap equation, and returns the leading eigenvalue/eigenvector"
+Performs FLEX calculations using DLR sparse_ir code, with the option of self-consistency
 
 ## Dependencies
-- List required dependencies (e.g., LAPACK, HDF5, etc.)
-- Python/Julia packages if applicable
+- SparseIR julia library
 
 ## Install Instructions
 
 ```bash
-# Any special installation steps
-# If none needed, say "No special installation required - built automatically by fly-build.sh"
+Install SparseIR for julia
 ```
 
 ### Parameters
 
-Configuration parameters from `input.cfg`:
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `param1` | float | 0.0 | Description |
-| `param2` | int | 100 | Description |
+k_mesh - handles input mesh for H(k). Output is the same
+dimension - 2 and 3D calculations allowed
+Temperature - Temperature calculations are performed at (matsubara frequencies)
+max_iters - upper limit for self-consistent loop
+outdir
+prefix
+filetype
+self_consistent
+nbnd
+fermi_energy
+onsite_U
+brillouin_zone
 
 ## Results Saved
 
 Output files created by this calculation (using `prefix` from config):
 
-- `{prefix}_output1.{ext}` - Description of what this file contains
-- `{prefix}_output2.{ext}` - Description of what this file contains
-
-File format details:
-- Specify HDF5 structure, column formats, etc.
+- `{outdir}_{prefix}_self_energy.{ext}` - self-energy on w-k grid
+- `{outdir}_{prefix}_chi.{ext}` - response on w-k grid
+- `{outdir}_{prefix}_vertex.{ext}` - vertex on w-k grid
 
 ## Testing
 
-Expected test behavior:
-- What the test validates
-- Expected return value or output
+Returns maximum value of chi. For 3D TB t'=0 at mu=0 T=0.25, max_chi~0.4
 
 ## Calculation Details
 
 ### Algorithm
 
-Description of the algorithm:
-1. Step 1
-2. Step 2
-3. etc.
+1. Calculate X(w,k) as integral over G(w,k) * G(-w,-k)
+2. Calculate V(w,k) using FLEX formula
+3. Calculate Sigma(w,k) as integral over G(w,k) * V(w,k)
+4. Calculate new G(w,k) using Dyson equation
+5. Loop back to step 1 until consistency
 
 ### Implementation Notes
 
-- Any important implementation details
-- Performance considerations
-- Known limitations
+- Error is determined by difference in Sigma(w,k) between iterations
 
 ## References
 
-1. Author et al., "Paper Title", Journal Volume, Pages (Year). DOI/arXiv
-2. Additional references as needed
+1. https://spm-lab.github.io/sparse-ir-tutorial/src/FLEX_jl.html

@@ -29,7 +29,8 @@ CATEGORIES = {
             "sparse_ir": "julia"
         },
         "self_energy": {
-            "sparse_ir": "julia"
+            "sparse_ir": "julia",
+            "triqs": "python",
         },
         "vertex": {
             "from_susceptibility": "c++"
@@ -37,11 +38,15 @@ CATEGORIES = {
         "response": {
             "bz_integral": "julia",
             "sparse_ir": "julia"
+        },
+        "renormalization": {
+            "analytic": "c++",
+            "from_sigma": "c++"
         }
     },
     "superconductor": {
         "bcs": {
-            "lanczos": "c++",  
+            "lanczos": "python",  
             "power_iteration": "c++",  
         },
         "eliashberg": {
@@ -52,30 +57,21 @@ CATEGORIES = {
 }
 
 if __name__ == "__main__":
+    from write import write_cmake, write_categories
     # Run code generators when this file is executed
     print("=" * 60)
     print("FFirefly Category Code Generator")
     print("=" * 60)
 
-    # Import code generation modules
-    import sys
-    from pathlib import Path
-
-    # Add categories directory to path for imports
-    categories_dir = Path(__file__).parent / "categories"
-    sys.path.insert(0, str(categories_dir))
-
     # Import generators
-    from write import write
-    from write_cmake import update_cmakelists
     # import write_main  # Skip for now - requires CATEGORIES_WITH_TESTS
     # import write_nodes  # Skip for now - not needed for build refactoring
 
     print("\n1. Generating directory structure and templates...")
-    write(CATEGORIES)
+    write_categories.write(CATEGORIES)
 
     print("\n2. Generating CMakeLists.txt sections...")
-    update_cmakelists(CATEGORIES)
+    write_cmake.update_cmakelists(CATEGORIES)
 
     # print("\n3. Generating category node files...")
     # for category in CATEGORIES:
