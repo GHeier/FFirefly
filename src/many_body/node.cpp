@@ -12,7 +12,7 @@ extern "C" void many_body_wrapper() {
     else if (calculation == "self_energy" && method == "sparse_ir") run_julia_method("sparse_ir");
     else if (calculation == "self_energy" && method == "triqs") run_python_method("triqs");
     else if (calculation == "vertex" && method == "from_susceptibility") run_cpp_method("from_susceptibility");
-    else if (calculation == "response" && method == "bz_integral") run_julia_method("bz_integral");
+    else if (calculation == "response" && method == "tetrahedra") run_julia_method("tetrahedra");
     else if (calculation == "response" && method == "sparse_ir") run_julia_method("sparse_ir");
     else if (calculation == "renormalization" && method == "analytic") run_cpp_method("analytic");
     else if (calculation == "renormalization" && method == "from_sigma") run_cpp_method("from_sigma");
