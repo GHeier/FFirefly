@@ -7,7 +7,7 @@ int m = q_mesh[0];
 int l = 5;
 float wc = cutoff_energy;
 float mu = fermi_energy;
-float U = onsite_U;
+float U = U0;
 
 // Constants
 float t = 1.0;
@@ -22,7 +22,7 @@ void load_cpp_cfg() {
     l = 5;
     wc = cutoff_energy;
     mu = fermi_energy;
-    U = onsite_U;
+    U = U0;
 
     // Constants
     t = 1.0;

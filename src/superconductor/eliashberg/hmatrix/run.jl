@@ -1,5 +1,5 @@
 using Firefly
-cfg = Firefly.config
+cfg = Firefly.Config
 
 using HMatrices
 using KrylovKit

@@ -29,7 +29,7 @@ mixing - mixing parameter for self-consistency
 max_iters 
 outdir
 prefix
-onsite_U 
+U0 
 
 ## Results Saved
 

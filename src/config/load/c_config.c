@@ -52,7 +52,10 @@ char* c_hamiltonian = "tight_binding";
 char* get_hamiltonian() {return c_hamiltonian;}
 
 //[HUBBARD]
-float c_onsite_U = 0.0;
+float c_U0 = 0.0;
+float c_U1 = 0.0;
+float c_J0 = 0.0;
+float c_J1 = 0.0;
 
 //[MESH]
 int c_k_mesh[3] = {10, 10, 10};
@@ -355,8 +358,17 @@ void read_c_config(const char *path) {
             }
 
 //[HUBBARD]
-            else if (strstr(key, "onsite_U") != NULL) {
-                c_onsite_U = atof(value);
+            else if (strstr(key, "U0") != NULL) {
+                c_U0 = atof(value);
+            }
+            else if (strstr(key, "U1") != NULL) {
+                c_U1 = atof(value);
+            }
+            else if (strstr(key, "J0") != NULL) {
+                c_J0 = atof(value);
+            }
+            else if (strstr(key, "J1") != NULL) {
+                c_J1 = atof(value);
             }
 
 //[MESH]
@@ -544,7 +556,7 @@ void unload_c_config() {
     //        free(c_Temperature[i]);
     //    }
     //    for (int i = 0; i < 50; i++) {
-    //        free(c_onsite_U[i]);
+    //        free(c_U0[i]);
     //    }
     //
     ////[MESH]

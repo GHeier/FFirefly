@@ -22,7 +22,7 @@ No special installation required - built automatically by fly-build.sh
 outdir
 prefix
 filetype
-onsite_U - U strength
+U0 - U strength
 
 ## Results Saved
 

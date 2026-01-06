@@ -18,7 +18,7 @@ mu = cfg.fermi_energy
 beta = 1.0 / cfg.Temperature
 w_pts = cfg.w_pts
 mixing = cfg.mixing
-U = cfg.onsite_U
+U = cfg.U0
 max_iters = cfg.max_iters
 
 

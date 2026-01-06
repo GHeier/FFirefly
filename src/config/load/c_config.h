@@ -36,7 +36,10 @@ extern int c_max_iters;
 extern char* c_hamiltonian; char* get_hamiltonian();
 
 //[HUBBARD]
-extern float c_onsite_U;
+extern float c_U0;
+extern float c_U1;
+extern float c_J0;
+extern float c_J1;
 
 //[MESH]
 extern int c_k_mesh[3];

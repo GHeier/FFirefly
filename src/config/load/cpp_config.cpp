@@ -44,7 +44,10 @@ int max_iters;
 string hamiltonian;
 
 //[HUBBARD]
-float onsite_U;
+float U0;
+float U1;
+float J0;
+float J1;
 
 //[MESH]
 vector<int> k_mesh(3);
@@ -125,7 +128,10 @@ extern "C" void load_cpp_config() {
     hamiltonian = c_hamiltonian;
 
 //[HUBBARD]
-    onsite_U = c_onsite_U;
+    U0 = c_U0;
+    U1 = c_U1;
+    J0 = c_J0;
+    J1 = c_J1;
 
 //[MESH]
     for (int i = 0; i < 3; i++) k_mesh[i] = c_k_mesh[i];
@@ -356,7 +362,7 @@ int run_python_method2(const string& method_name) {
     }
 
     string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.py";
-    string command = "python3 " + script_path + " < input.cfg";
+    string command = "python3 " + script_path;
 
     if (verbosity == "high") {
         std::cout << "Running (method2): " << command << std::endl;
@@ -395,7 +401,7 @@ int run_julia_method2(const string& method_name) {
     }
 
     string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.jl";
-    string command = "julia " + script_path + " < input.cfg";
+    string command = "julia " + script_path;
 
     if (verbosity == "high") {
         std::cout << "Running (method2): " << command << std::endl;

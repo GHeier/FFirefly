@@ -29,7 +29,7 @@ filetype
 self_consistent
 nbnd
 fermi_energy
-onsite_U
+U0
 brillouin_zone
 
 ## Results Saved

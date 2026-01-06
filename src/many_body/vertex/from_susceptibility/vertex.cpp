@@ -13,7 +13,7 @@ using namespace std;
 //    string filename = outdir + prefix + "_chi." + filetype;
 //    printf("Reading chi from %s\n", filename.c_str());
 //    Field_C chi(filename);
-//    float U = onsite_U;
+//    float U = U0;
 //    float nx = q_mesh[0], ny = q_mesh[1], nz = q_mesh[2];
 //    int chidim = chi.cmf.data.dimension;
 //    if (chidim == 2) nz = 1;
@@ -74,7 +74,7 @@ void call_flex() {
     string filename = outdir + prefix + "_chi." + filetype;
     printf("Reading chi from %s\n", filename.c_str());
     Field_C chi(filename);
-    float U = onsite_U;
+    float U = U0;
     int chidim = chi.cmf.data.dimension;
 
     vector<float> wpts = chi.cmf.data.w_points;

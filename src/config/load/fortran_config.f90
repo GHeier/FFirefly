@@ -68,8 +68,14 @@ module ffirefly
     character(len=50) :: hamiltonian
 
 ![HUBBARD]
-    real(c_float), bind(C, name="c_onsite_U") :: c_onsite_U
-    real :: onsite_U
+    real(c_float), bind(C, name="c_U0") :: c_U0
+    real :: U0
+    real(c_float), bind(C, name="c_U1") :: c_U1
+    real :: U1
+    real(c_float), bind(C, name="c_J0") :: c_J0
+    real :: J0
+    real(c_float), bind(C, name="c_J1") :: c_J1
+    real :: J1
 
 ![MESH]
     integer(c_int), bind(C, name="c_k_mesh") :: c_k_mesh(3)
@@ -202,6 +208,9 @@ module ffirefly
     end function get_hamiltonian
 
 ![HUBBARD]
+
+
+
 
 
 ![MESH]
@@ -338,7 +347,10 @@ contains
         hamiltonian = get_string(get_hamiltonian())
 
 ![HUBBARD]
-        onsite_U = c_onsite_U
+        U0 = c_U0
+        U1 = c_U1
+        J0 = c_J0
+        J1 = c_J1
 
 ![MESH]
         k_mesh = c_k_mesh

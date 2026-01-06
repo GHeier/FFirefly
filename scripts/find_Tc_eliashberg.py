@@ -13,7 +13,7 @@ config = {
         "dimension": 2,
         "fermi_energy": -0.3,
         "Temperature": 0.0001,
-        "onsite_U": 3.0,
+        "U0": 3.0,
         "nbnd": 1,
         "ibrav": 1,
     },
@@ -99,7 +99,7 @@ config = {
             'dimension': 2,
             'fermi_energy': -1.0,
             'Temperature': 0.01,
-            'onsite_U': 4.0,
+            'U0': 4.0,
             },
         'MESH': {
             'k_mesh': [34, 34, 34],

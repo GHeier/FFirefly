@@ -30,7 +30,10 @@ max_iters = 100
 hamiltonian = 'tight_binding'
 
 #[HUBBARD]
-onsite_U = 0.0
+U0 = 0.0
+U1 = 0.0
+J0 = 0.0
+J1 = 0.0
 
 #[MESH]
 k_mesh = [10, 10, 10]
@@ -185,9 +188,18 @@ def load_config():
                 hamiltonian = value
 
 #[HUBBARD]
-            if "onsite_U" in key:
-                global onsite_U
-                onsite_U = float(value)
+            if "U0" in key:
+                global U0
+                U0 = float(value)
+            if "U1" in key:
+                global U1
+                U1 = float(value)
+            if "J0" in key:
+                global J0
+                J0 = float(value)
+            if "J1" in key:
+                global J1
+                J1 = float(value)
 
 #[MESH]
             if "k_mesh" in key:

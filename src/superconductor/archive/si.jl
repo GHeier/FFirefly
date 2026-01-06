@@ -17,7 +17,7 @@ T    = cfg.Temperature
 beta = 1/T    # inverse temperature
 mu   = cfg.fermi_energy
 n    = 0.85   # electron filling, here per spin per lattice site (n=1: half filling)
-U    = cfg.onsite_U
+U    = cfg.U0
 
 ### Numerical parameters
 nk1, nk2, nk3  = cfg.k_mesh

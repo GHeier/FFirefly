@@ -6,7 +6,7 @@ import numpy as np
 import sparse_ir
 
 BZ = np.array(cfg.brillouin_zone)
-U = cfg.onsite_U
+U = cfg.U0
 
 T = cfg.Temperature
 beta = 1 / T

@@ -18,7 +18,7 @@ n = cfg.num_electrons / 2
 mu = cfg.fermi_energy
 beta = 1.0 / cfg.Temperature
 mixing = cfg.mixing
-U = cfg.onsite_U
+U = cfg.U0
 max_iters = cfg.max_iters
 
 

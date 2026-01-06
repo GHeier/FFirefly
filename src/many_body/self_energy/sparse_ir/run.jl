@@ -1,5 +1,5 @@
 using Firefly
-cfg = Firefly.config
+cfg = Firefly.Config
 
 # Load relevant variables from the configuration
 include("../../../objects/mesh.jl")

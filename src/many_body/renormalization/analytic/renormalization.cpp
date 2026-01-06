@@ -18,7 +18,7 @@ void FLEX_renormalization() {
     string filename = outdir + prefix + "_chi." + filetype;
     printf("Reading chi from %s\n", filename.c_str());
     Field_C chi(filename);
-    float U = onsite_U;
+    float U = U0;
     int chidim = chi.cmf.data.dimension;
 
     vector<cfloat> vals;

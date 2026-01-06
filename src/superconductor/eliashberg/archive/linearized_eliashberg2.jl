@@ -15,7 +15,7 @@ cfg = Firefly.Config
 ### System parameters
 T    = cfg.Temperature
 beta = 1/T    # inverse temperature
-U    = cfg.onsite_U
+U    = cfg.U0
 mu   = cfg.fermi_energy
 BZ   = cfg.brillouin_zone
 wc   = cfg.cutoff_energy

@@ -1,5 +1,5 @@
 using Firefly
-cfg = Firefly.config
+cfg = Firefly.Config
 
 # Load relevant variables from the configuration
 
@@ -33,6 +33,7 @@ end
 wpts = cfg.w_pts
 nbnd = cfg.nbnd
 mu = cfg.fermi_energy
+U = cfg.U0
 BZ = cfg.brillouin_zone
 
 
@@ -312,10 +313,11 @@ function response_bz_integral()
 end
 
 
-function run():
+function run()
     # Main function call goes here
     chi_max = response_bz_integral()
     return chi_max
+end
 
 if abspath(PROGRAM_FILE) == @__FILE__ # Runs on file execution
     run()

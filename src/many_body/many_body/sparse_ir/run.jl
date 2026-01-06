@@ -34,7 +34,7 @@ nk = nx * ny * nz
 nbnd = cfg.nbnd
 nstates = cfg.nstates
 mu = cfg.fermi_energy
-U = cfg.onsite_U
+U = cfg.U0
 BZ = cfg.brillouin_zone
 beta = 1 / cfg.Temperature
 

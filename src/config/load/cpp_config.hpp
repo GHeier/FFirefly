@@ -36,7 +36,10 @@ extern int max_iters;
 extern string hamiltonian;
 
 //[HUBBARD]
-extern float onsite_U;
+extern float U0;
+extern float U1;
+extern float J0;
+extern float J1;
 
 //[MESH]
 extern vector<int> k_mesh;

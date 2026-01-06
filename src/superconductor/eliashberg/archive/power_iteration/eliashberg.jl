@@ -21,7 +21,7 @@ const nk = nx * ny * nz
 const nw = cfg.w_pts
 const nbnd = cfg.nbnd
 
-const U = cfg.onsite_U
+const U = cfg.U0
 const BZ = cfg.brillouin_zone
 const mu = cfg.fermi_energy
 const wc = cfg.cutoff_energy

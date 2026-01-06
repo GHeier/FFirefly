@@ -40,7 +40,7 @@ if dim == 2
 end
 nk = nx * ny * nz
 nw = cfg.w_pts
-U = cfg.onsite_U
+U = cfg.U0
 BZ = cfg.brillouin_zone
 mu = cfg.fermi_energy
 t4 = time()

@@ -77,7 +77,7 @@ Configuration parameters from `input.cfg`:
 | `Temperature` | float | 0.01 | Temperature in energy units (β = 1/T) |
 | `fermi_energy` | float | 0.0 | Chemical potential μ |
 | `cutoff_energy` | float | 1.0 | Energy cutoff ωc for Fermi surface integration |
-| `onsite_U` | float | 1.0 | Interaction strength (if using model vertex) |
+| `U0` | float | 1.0 | Interaction strength (if using model vertex) |
 | `brillouin_zone` | matrix | I | BZ matrix for coordinate transformation |
 | `prefix` | string | "sample" | Prefix for output files |
 | `outdir` | string | "./" | Output directory |

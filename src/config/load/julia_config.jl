@@ -36,7 +36,10 @@ max_iters::Int = cfg.max_iters
 hamiltonian::String = cfg.hamiltonian
 
 #[HUBBARD]
-onsite_U::Float64 = cfg.onsite_U
+U0::Float64 = cfg.U0
+U1::Float64 = cfg.U1
+J0::Float64 = cfg.J0
+J1::Float64 = cfg.J1
 
 #[MESH]
 k_mesh::Array{Int} = cfg.k_mesh

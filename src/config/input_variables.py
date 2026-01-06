@@ -36,7 +36,7 @@ ALL = {
         "max_iters": 100,
     },
     "HAMILTONIAN": {"hamiltonian": "tight_binding"},
-    "HUBBARD": {"onsite_U": 0.0},
+    "HUBBARD": {"U0": 0.0, "U1": 0.0, "J0": 0.0, "J1": 0.0},
     "MESH": {"k_mesh": [10, 10, 10], "q_mesh": [10, 10, 10], "w_pts": 100},
     "CELL": {"cell": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]},
     "BRILLOUIN_ZONE": {

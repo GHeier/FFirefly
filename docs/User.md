@@ -13,7 +13,7 @@
     interaction - vertex function. Options: (FLEX, EPC)
     Temperature - units of eV
     cell_type - Simple Cubic, Body Centered Cubic, Face Centered Cubic, Orthorhombic, Tetragonal, Hexagonal
-    onsite_U - Hubbard Repulsion value
+    U0 - Hubbard Repulsion value
     nbnd - Number of bands
     dimension - Dimension of system
 
