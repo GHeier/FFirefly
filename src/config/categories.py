@@ -36,7 +36,7 @@ CATEGORIES = {
             "from_susceptibility": "c++"
         },
         "response": {
-            "bz_integral": "julia",
+            "tetrahedra": "julia",
             "sparse_ir": "julia"
         },
         "renormalization": {
@@ -46,12 +46,12 @@ CATEGORIES = {
     },
     "superconductor": {
         "bcs": {
-            "lanczos": "python",  
-            "power_iteration": "c++",  
+            "convolution": "python",  
+            "matrix": "c++",  
         },
         "eliashberg": {
-            "lanczos": "python",  
-            "power_iteration": "julia",  
+            "convolution": "python",  
+            "hmatrix": "julia",  
             }
     }
 }

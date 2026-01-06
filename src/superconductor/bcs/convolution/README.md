@@ -1,4 +1,4 @@
-# superconductor / bcs / power_iteration
+# superconductor / bcs / convolution
 
 ## Overview
 

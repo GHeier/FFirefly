@@ -1,4 +1,4 @@
-# superconductor / eliashberg / lanczos
+# superconductor / eliashberg / convolution
 
 ## Overview
 

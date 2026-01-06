@@ -1,4 +1,4 @@
-# superconductor / bcs / lanczos
+# superconductor / bcs / matrix
 
 ## Overview
 

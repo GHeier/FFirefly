@@ -1,4 +1,4 @@
-# many_body / response / bz_integral
+# many_body / response / tetrahedra
 
 ## Overview
 

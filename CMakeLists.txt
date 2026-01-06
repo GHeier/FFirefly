@@ -288,20 +288,20 @@ set_target_properties(many_body_renormalization_from_sigma PROPERTIES
     INSTALL_RPATH "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
 )
 
-# superconductor/bcs/power_iteration
-add_executable(superconductor_bcs_power_iteration
-    src/superconductor/bcs/power_iteration/save_data.cpp
-    src/superconductor/bcs/power_iteration/frequency_inclusion.cpp
-    src/superconductor/bcs/power_iteration/superconductor.cpp
-    src/superconductor/bcs/power_iteration/solver.cpp
-    src/superconductor/bcs/power_iteration/run.cpp
-    src/superconductor/bcs/power_iteration/utilities.cpp
-    src/superconductor/bcs/power_iteration/cfg.cpp
-    src/superconductor/bcs/power_iteration/matrix_creation.cpp
+# superconductor/bcs/matrix
+add_executable(superconductor_bcs_matrix
+    src/superconductor/bcs/matrix/save_data.cpp
+    src/superconductor/bcs/matrix/frequency_inclusion.cpp
+    src/superconductor/bcs/matrix/superconductor.cpp
+    src/superconductor/bcs/matrix/solver.cpp
+    src/superconductor/bcs/matrix/run.cpp
+    src/superconductor/bcs/matrix/utilities.cpp
+    src/superconductor/bcs/matrix/cfg.cpp
+    src/superconductor/bcs/matrix/matrix_creation.cpp
 )
-target_link_libraries(superconductor_bcs_power_iteration PRIVATE base)
-set_target_properties(superconductor_bcs_power_iteration PROPERTIES
-    OUTPUT_NAME "superconductor_bcs_power_iteration.exe"
+target_link_libraries(superconductor_bcs_matrix PRIVATE base)
+set_target_properties(superconductor_bcs_matrix PROPERTIES
+    OUTPUT_NAME "superconductor_bcs_matrix.exe"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     BUILD_RPATH "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
     INSTALL_RPATH "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
