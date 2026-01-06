@@ -22,12 +22,16 @@ function load_surface()
     return faces
 end
 
-function kernel(k1, k2)
-    dk = k1 .- k2
-    q = LinearAlgebra.norm(dk)
-    # Regularized Coulomb: 1/(q^2 + λ^2)
-    λ = 0.1
-    return 1.0 / (q^2 + λ^2)
+function make_vertex_kernel(V::Firefly.Vertex)
+    # Return a kernel function that uses V(k1-k2)
+    return function(k1, k2)
+        dk = k1 .- k2
+        # Convert to Float64 for Vertex call
+        dk_f64 = Float64.(dk)
+        # Get vertex value at momentum transfer q = k1 - k2
+        # V returns ComplexF32, take real part for kernel matrix
+        return real(V(dk_f64, 0.0))
+    end
 end
 
 struct KernelMatrixWrapper{F, T} <: AbstractMatrix{Float64}
@@ -96,6 +100,9 @@ function run()
     println("Loading Vertex...")
     V = Firefly.Vertex()
     println("Vertex loaded.")
+
+    # Create kernel function using Vertex
+    kernel = make_vertex_kernel(V)
 
     # Build HMatrix
     println("\n" * "="^60)
