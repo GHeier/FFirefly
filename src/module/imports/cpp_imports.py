@@ -2633,3 +2633,76 @@ class Field:
         get_data_func.restype = c_void_p
         ptr = get_data_func(self.ptr)
         return BaseData(ptr, owns_ptr=False)
+
+
+def get_reduced_grid(grid, lattice="SC"):
+    """
+    Get reduced k-point grid using symmetry equivalence classes.
+
+    Parameters:
+    -----------
+    grid : list of int
+        Grid dimensions, e.g., [5, 5] for 2D or [5, 5, 5] for 3D
+    lattice : str
+        Lattice type, e.g., "SC" (simple cubic), "BCC", "FCC"
+
+    Returns:
+    --------
+    list of list of list of int
+        Nested list structure: reduced_grid[group][point][coordinate]
+        Each group contains symmetry-equivalent k-points
+    """
+    grid_size = len(grid)
+    grid_arr = (c_int * grid_size)(*grid)
+    lattice_cstr = lattice.encode('utf-8')
+
+    # Allocate output buffers (maximum possible size)
+    prod = 1
+    for g in grid:
+        prod *= g
+
+    indices_out = (c_int * (prod * 3))()  # max 3 dimensions per point
+    group_sizes = (c_int * prod)()  # max prod groups (worst case: no symmetry)
+    point_dims = (c_int * prod)()  # dimension for each point
+    num_groups = c_int()
+    total_points = c_int()
+
+    # Set up function
+    lib.get_reduced_grid_export0.argtypes = [
+        POINTER(c_int), c_int,  # grid, grid_size
+        c_char_p,  # lattice
+        POINTER(c_int),  # indices_out
+        POINTER(c_int),  # group_sizes
+        POINTER(c_int),  # point_dims
+        POINTER(c_int),  # num_groups
+        POINTER(c_int)   # total_points
+    ]
+    lib.get_reduced_grid_export0.restype = None
+
+    # Call C++ function
+    lib.get_reduced_grid_export0(
+        grid_arr, grid_size,
+        lattice_cstr,
+        indices_out, group_sizes, point_dims,
+        byref(num_groups), byref(total_points)
+    )
+
+    # Reconstruct nested structure
+    result = []
+    offset = 0
+    group_start = 0
+
+    for i in range(num_groups.value):
+        group = []
+        n_points = group_sizes[i]
+
+        for j in range(n_points):
+            point_idx = group_start + j
+            dim = point_dims[point_idx]
+            point = [indices_out[point_idx * 3 + k] for k in range(dim)]
+            group.append(point)
+
+        result.append(group)
+        group_start += n_points
+
+    return result

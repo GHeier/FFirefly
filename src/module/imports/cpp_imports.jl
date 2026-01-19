@@ -4,7 +4,7 @@ module Imports
 # Get the project root directory (FFirefly/)
 const libfly = split(abspath(@__FILE__), "FFirefly")[1] * "FFirefly/build/lib/libfly.so"
 #const libfly = joinpath(dirname(dirname(dirname(dirname(abspath(@__FILE__))))), "build", "lib", "libfly.so")
-export load_config!, Vec, Surface, get_faces, get_faces_and_areas
+export load_config!, Vec, Surface, get_faces, get_faces_and_areas, get_reduced_grid
 export epsilon,
        norm,
        Bands,
@@ -2039,6 +2039,71 @@ function Base.setproperty!(obj::BaseData, sym::Symbol, value)
     else
         setfield!(obj, sym, value)
     end
+end
+
+"""
+    get_reduced_grid(grid::Vector{Int}, lattice::String="SC")
+
+Get reduced k-point grid using symmetry equivalence classes.
+
+# Arguments
+- `grid::Vector{Int}`: Grid dimensions, e.g., [5, 5] for 2D or [5, 5, 5] for 3D
+- `lattice::String`: Lattice type, e.g., "SC" (simple cubic), "BCC", "FCC"
+
+# Returns
+- `Vector{Vector{Vector{Int}}}`: Nested list structure where reduced_grid[group][point][coordinate]
+  Each group contains symmetry-equivalent k-points
+
+# Example
+```julia
+reduced = get_reduced_grid([5, 5], "SC")
+println("Number of symmetry groups: ", length(reduced))
+for (i, group) in enumerate(reduced)
+    println("Group \$i: \$(length(group)) points")
+end
+```
+"""
+function get_reduced_grid(grid::Vector{Int}, lattice::String="SC")
+    grid_size = length(grid)
+    grid_arr = Int32.(grid)  # Convert to Int32
+
+    # Allocate output buffers (maximum possible size)
+    prod = reduce(*, grid)
+
+    indices_out = Vector{Int32}(undef, prod * 3)  # max 3 dimensions per point
+    group_sizes = Vector{Int32}(undef, prod)  # max prod groups
+    point_dims = Vector{Int32}(undef, prod)  # dimension for each point
+    num_groups = Ref{Int32}(0)
+    total_points = Ref{Int32}(0)
+
+    # Call C++ function
+    ccall(
+        (:get_reduced_grid_export0, libfly),
+        Cvoid,
+        (Ptr{Int32}, Int32, Cstring, Ptr{Int32}, Ptr{Int32}, Ptr{Int32}, Ref{Int32}, Ref{Int32}),
+        grid_arr, grid_size, lattice, indices_out, group_sizes, point_dims, num_groups, total_points
+    )
+
+    # Reconstruct nested structure
+    result = Vector{Vector{Vector{Int}}}()
+    group_start = 1
+
+    for i in 1:num_groups[]
+        group = Vector{Vector{Int}}()
+        n_points = group_sizes[i]
+
+        for j in 1:n_points
+            point_idx = group_start + j - 1
+            dim = point_dims[point_idx]
+            point = [Int(indices_out[(point_idx - 1) * 3 + k]) for k in 1:dim]
+            push!(group, point)
+        end
+
+        push!(result, group)
+        group_start += n_points
+    end
+
+    return result
 end
 
 end # module Imports

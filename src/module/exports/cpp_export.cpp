@@ -13,6 +13,7 @@
 #include "src/hamiltonian/models/band_structure.hpp"
 // Begin include
 #include "src/objects/vec.hpp"
+#include "src/algorithms/symmetry.hpp"
 // End include
 
 void vector_to_ptr(vector<float> r, float *a, int *b) {
@@ -1534,6 +1535,48 @@ extern "C" void Hamiltonian_get_fermi_velocity_export_list(Hamiltonian *obj, con
             velocities_out[idx + 0] = results[p][i].x;
             velocities_out[idx + 1] = results[p][i].y;
             velocities_out[idx + 2] = results[p][i].z;
+        }
+    }
+}
+
+// Export get_reduced_grid function
+// Returns flattened array of indices grouped by symmetry equivalence
+// grid: k-point grid dimensions (e.g., [5, 5] for 2D)
+// lattice: lattice type string (e.g., "SC" for simple cubic)
+// indices_out: flattened output array of all indices (preallocate to grid_size * max_dim)
+// group_sizes: number of points in each symmetry group
+// point_dims: dimension of each point (typically 2 or 3)
+// num_groups: output - number of symmetry equivalence groups
+// total_points: output - total number of points across all groups
+extern "C" void get_reduced_grid_export0(const int *grid, int grid_size,
+                                          const char *lattice,
+                                          int *indices_out, int *group_sizes,
+                                          int *point_dims, int *num_groups,
+                                          int *total_points) {
+    // Convert to C++ types
+    vector<int> grid_vec(grid, grid + grid_size);
+    string lattice_str(lattice);
+
+    // Call C++ function
+    vector<vector<vector<int>>> reduced = get_reduced_grid(grid_vec, lattice_str);
+
+    // Output number of groups
+    *num_groups = reduced.size();
+    *total_points = 0;
+
+    // Flatten the 3D structure
+    int offset = 0;
+    for (int i = 0; i < reduced.size(); i++) {
+        group_sizes[i] = reduced[i].size();
+        *total_points += reduced[i].size();
+
+        for (int j = 0; j < reduced[i].size(); j++) {
+            point_dims[offset] = reduced[i][j].size();
+
+            for (int k = 0; k < reduced[i][j].size(); k++) {
+                indices_out[offset * 3 + k] = reduced[i][j][k];
+            }
+            offset++;
         }
     }
 }

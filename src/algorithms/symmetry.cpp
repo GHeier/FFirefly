@@ -80,8 +80,9 @@ vector<float> action_from_sym(string& sym, vector<float> v0) {
     }
     int seed = rand();
     if (sym == "C4") { // 2D only for now
-        float rot = seed % 4 + 1;
-        vector<vector<float>> R = rot_matrix(rot * M_PI);
+        // C4 symmetry: 0°, 90°, 180°, 270° rotations
+        float rot = seed % 4;
+        vector<vector<float>> R = rot_matrix(rot * M_PI / 2);
         return mul(R, v0);
     }
     else if (sym == "R") {
@@ -100,21 +101,27 @@ vector<float> action_from_sym(string& sym, vector<float> v0) {
 }
 
 // Scaled to be from -0.5 to 0.5, not -pi to pi
-// k = -0.5 + (i - 1) / (nx - 1)
+// k = -0.5 + i / (nx - 1) for 0-based indexing
 vector<float> ind_to_vec(vector<int> inds, vector<int> &grid) {
-    vector<float> v(inds.size());
-    for (int i = 0; i < inds.size(); i++) {
-        v[i] = -0.5 + (float)(inds[i] - 1) / (grid[i] - 1);
+    int dim = grid.size();
+    vector<float> v(dim);
+    for (int i = 0; i < dim; i++) {
+        v[i] = -0.5 + (float)inds[i] / (grid[i] - 1);
     }
     return v;
 }
 
 // Scaled to be from -0.5 to 0.5, not -pi to pi
-// i = 1 + (k + 0.5) * (nx - 1)
+// i = (k + 0.5) * (nx - 1) for 0-based indexing
 vector<int> vec_to_ind(vector<float> &v, vector<int> &grid) {
-    vector<int> inds(v.size());
-    for (int i = 0; i < v.size(); i++) {
-        inds[i] = 1 + (v[i] + 0.5) * (grid[i] - 1);
+    int dim = grid.size();
+    vector<int> inds(dim);
+    for (int i = 0; i < dim; i++) {
+        int idx = (int)round((v[i] + 0.5) * (grid[i] - 1));
+        // Clamp to valid range [0, grid[i]-1]
+        if (idx < 0) idx = 0;
+        if (idx >= grid[i]) idx = grid[i] - 1;
+        inds[i] = idx;
     }
     return inds;
 }
@@ -141,8 +148,19 @@ void update_inds(int &nx, int &ny, int &nz, vector<int> &grid) {
 }
 
 vector<int> get_inds_from_global(int idx, vector<int> &grid) {
+    int dim = grid.size();
     int i = idx % grid[0];
+
+    if (dim == 1) {
+        return {i};
+    }
+
     int j = (int)round(idx / grid[0]) % grid[1];
+
+    if (dim == 2) {
+        return {i, j};
+    }
+
     int k = idx / (grid[0] * grid[1]);
     return {i, j, k};
 }
@@ -159,38 +177,57 @@ int get_global_ind(int &nx, int &ny, int &nz, vector<int> &grid) {
 
 // Grid mapping, constructs a list of equivalent points in index space
 vector<int> sym_grid_map(vector<int> &grid, string& lattice) {
-    int iter = 0;
-    int max_iters = 10;
     vector<string> syms = get_point_group_symmetries_from_lattice(lattice);
     int prod = 1;
     for (int x : grid) prod *= x;
     vector<int> mem_list(prod);
-    printf("Size of mem_list: %d\n", mem_list.size());
     int nx = 0, ny = 0, nz = 0;
     int mem_ind = 1;
+    int dim = grid.size();
+
     for (int i = 0; i < mem_list.size(); i++) {
-        update_inds(nx, ny, nz, grid);
-        vector<int> ind_set = {nx, ny, nz};
+        vector<int> ind_set(dim);
+        if (dim >= 1) ind_set[0] = nx;
+        if (dim >= 2) ind_set[1] = ny;
+        if (dim >= 3) ind_set[2] = nz;
         vector<float> v0 = ind_to_vec(ind_set, grid);
 
-        while (iter < max_iters) {
-            int seed = rand() % syms.size();
-            vector<float> v1 = action_from_sym(syms[seed], v0);
+        // Apply all symmetries systematically
+        for (int sym_idx = 0; sym_idx < syms.size(); sym_idx++) {
+            vector<float> v1 = action_from_sym(syms[sym_idx], v0);
             vector<int> new_ind = vec_to_ind(v1, grid);
-            int idx = get_global_ind(new_ind[0], new_ind[1], new_ind[2], grid);
+            int idx_nx = (dim >= 1) ? new_ind[0] : 0;
+            int idx_ny = (dim >= 2) ? new_ind[1] : 0;
+            int idx_nz = (dim >= 3) ? new_ind[2] : 0;
+            int idx = get_global_ind(idx_nx, idx_ny, idx_nz, grid);
+
+            // Bounds check
+            if (idx < 0 || idx >= mem_list.size()) {
+                printf("ERROR: Global index %d out of bounds [0, %d)\n", idx, (int)mem_list.size());
+                continue;
+            }
 
             if (mem_list[idx] == 0) {
                 if (mem_list[i] == 0) {
                     mem_list[i] = mem_ind;
+                    mem_ind++;
                 }
                 mem_list[idx] = mem_list[i];
             }
             else {
-                mem_list[i] = mem_list[idx];
+                if (mem_list[i] == 0) {
+                    mem_list[i] = mem_list[idx];
+                }
             }
-            iter++;
         }
-        mem_ind++;
+
+        // If this point wasn't mapped by any symmetry, create a new equivalence class
+        if (mem_list[i] == 0) {
+            mem_list[i] = mem_ind;
+            mem_ind++;
+        }
+
+        update_inds(nx, ny, nz, grid);
     }
     return mem_list;
 }
@@ -208,7 +245,6 @@ vector<int> find(vector<int> &points, int p) {
 vector<vector<vector<int>>> get_reduced_grid(vector<int> &grid, string& lattice) {
     vector<vector<vector<int>>> reduced_grid;
     vector<int> equivalent_points = sym_grid_map(grid, lattice);
-    printf("equivalent points size: %d\n", equivalent_points.size());
     vector<int> used_values;
     for (int i = equivalent_points.size() - 1; i >= 0; i--) {
         // Skip points mapped already

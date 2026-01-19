@@ -5,11 +5,12 @@ cfg = Firefly.Config
 
 using LinearAlgebra
 using Printf
-using BZIntegral
-using BZIntegral.BZInt2D
 using Interpolations
 using Interpolations: extrapolate, Periodic
 using Base.Threads
+
+# Import utility functions
+include("response_utils.jl")
 
 outdir = cfg.outdir
 prefix = cfg.prefix
@@ -40,266 +41,273 @@ if cfg.mu_from_n
 end
 U = cfg.U0
 BZ = cfg.brillouin_zone
+celltype = cfg.celltype
 
+"""
+    setup_symmetry_reduction(qmesh, celltype, dim)
 
-function get_fractional_mesh(n; centered=true)
-    nx, ny, nz = n
+Set up symmetry reduction for q-point grid.
 
-    if centered
-        xs = (0:nx-1) ./ nx .- 0.5
-        ys = (0:ny-1) ./ ny .- 0.5
-        zs = (0:nz-1) ./ nz .- 0.5
-    else
-        xs = (0:nx-1) ./ nx
-        ys = (0:ny-1) ./ ny
-        zs = (0:nz-1) ./ nz
+# Arguments
+- `qmesh`: Q-mesh dimensions (nqx, nqy, nqz)
+- `celltype`: Cell/lattice type (e.g., "SC", "BCC", "FCC")
+- `dim`: Spatial dimension (2 or 3)
+
+# Returns
+- `unique_to_qindices`: Vector mapping group index → list of equivalent q-point indices
+- `nqpts_unique`: Number of unique q-point groups
+- `nqpts`: Total number of q-points
+"""
+function setup_symmetry_reduction(qmesh, celltype, dim)
+    nqpts = prod(qmesh)
+
+    println("\nApplying symmetry reduction to q-grid...")
+    reduced_qgrid = get_reduced_grid(collect(qmesh), celltype)
+    nqpts_unique = length(reduced_qgrid)
+    reduction_pct = round(100 * (1 - nqpts_unique / nqpts), digits=1)
+
+    println("  Cell type: $(celltype)")
+    println("  Unique q-points: $nqpts_unique / $nqpts ($reduction_pct% reduction)")
+
+    # Create mapping: q-index → unique group index
+    q_to_group = zeros(Int, nqpts)
+    unique_to_qindices = Vector{Vector{Int}}(undef, nqpts_unique)
+
+    for (igroup, group) in enumerate(reduced_qgrid)
+        unique_to_qindices[igroup] = []
+        for point in group
+            # Convert [ix, iy, iz] indices to linear index (0-based to 1-based)
+            iq = 1 + point[1] + point[2] * qmesh[1]
+            if dim == 3
+                iq += point[3] * qmesh[1] * qmesh[2]
+            end
+            q_to_group[iq] = igroup
+            push!(unique_to_qindices[igroup], iq)
+        end
     end
 
-    # fractional k-points: 3 × Nk
-    frac = hcat(vec(repeat(xs, inner=(ny*nz))),
-                vec(repeat(ys, inner=(nz,), outer=(nx))),
-                vec(repeat(zs, outer=(nx*ny))))'
-    # Return as Nk × 3 matrix (transpose from 3 × Nk)
-    return Matrix{Float64}(frac')
-end
-
-function get_kmesh(BZ::AbstractMatrix{<:Real}, n; centered=true)
-    nx, ny, nz = n
-
-    if centered
-        xs = (0:nx-1) ./ nx .- 0.5
-        ys = (0:ny-1) ./ ny .- 0.5
-        zs = (0:nz-1) ./ nz .- 0.5
-    else
-        xs = (0:nx-1) ./ nx
-        ys = (0:ny-1) ./ ny
-        zs = (0:nz-1) ./ nz
+    # Verify mapping
+    if length(unique(q_to_group)) != nqpts_unique
+        error("Symmetry mapping error: not all unique groups represented")
     end
+    println("  ✓ Symmetry mapping verified")
 
-    # fractional k-points: 3 × Nk
-    frac = hcat(vec(repeat(xs, inner=(ny*nz))),
-                vec(repeat(ys, inner=(nz,), outer=(nx))),
-                vec(repeat(zs, outer=(nx*ny))))'
-    # Cartesian k-points: 3 × Nk
-    kpts = BZ * frac
-    # Return as Nk × 3 matrix (transpose from 3 × Nk)
-    return Matrix{Float64}(kpts')
+    return unique_to_qindices, nqpts_unique, nqpts
 end
 
-function evaluate_Ekq_on_grid(itp_Ek, kmesh, q_frac, dim=3)
-    """
-    Evaluate E(k+q) for all k on the grid with periodic boundary conditions.
+"""
+    evaluate_grid_for_dimension(ipt, kmesh, dim)
 
-    Args:
-        itp_Ek: Interpolation object from Interpolations.jl
-        kmesh: (nkx, nky, nkz) grid dimensions
-        q_frac: [qx, qy, qz] momentum transfer in fractional coordinates
-        dim: spatial dimension (2 or 3)
+Evaluate interpolation object on grid for given dimension.
 
-    Returns:
-        Array of E(k+q) values on the k-grid with shape (nkx, nky, nkz) or (nkx, nky)
-    """
+# Arguments
+- `ipt`: Interpolation object
+- `kmesh`: K-mesh dimensions (nkx, nky, nkz)
+- `dim`: Spatial dimension (2 or 3)
+
+# Returns
+- Grid evaluation result
+"""
+function evaluate_grid_for_dimension(ipt, kmesh, dim)
     nkx, nky, nkz = kmesh
-
-    # Original k-grid in fractional coordinates (centered: -0.5 to 0.5)
-    kx_frac = (0:nkx-1) ./ nkx .- 0.5
-    ky_frac = (0:nky-1) ./ nky .- 0.5
-    kz_frac = (0:nkz-1) ./ nkz .- 0.5
-
-    # Add q shift and apply periodic boundary conditions: wrap to [-0.5, 0.5)
-    kxq_frac = mod.(kx_frac .+ q_frac[1] .+ 0.5, 1.0) .- 0.5
-    kyq_frac = mod.(ky_frac .+ q_frac[2] .+ 0.5, 1.0) .- 0.5
-    kzq_frac = mod.(kz_frac .+ q_frac[3] .+ 0.5, 1.0) .- 0.5
-
-    # Convert to interpolation indices (1-based)
-    Ikxq = (kxq_frac .+ 0.5) .* nkx .+ 1
-    Ikyq = (kyq_frac .+ 0.5) .* nky .+ 1
-    Ikzq = (kzq_frac .+ 0.5) .* nkz .+ 1
-
-    # Evaluate interpolation with broadcasting
     if dim == 2
-        Ix = repeat(reshape(Ikxq, :, 1), 1, nky)
-        Iy = repeat(reshape(Ikyq, 1, :), nkx, 1)
-        return itp_Ek.(Ix, Iy)
+        return ipt(1:nkx, 1:nky)
     else
-        Ix = repeat(reshape(Ikxq, :, 1, 1), 1, nky, nkz)
-        Iy = repeat(reshape(Ikyq, 1, :, 1), nkx, 1, nkz)
-        Iz = repeat(reshape(Ikzq, 1, 1, :), nkx, nky, 1)
-        return itp_Ek.(Ix, Iy, Iz)
+        return ipt(1:nkx, 1:nky, 1:nkz)
     end
 end
 
-function calculate_dos(E, Ek_mesh, iter=2)
-    if dim == 2
-        Wmesh = Quad2DRuleδ(Ek_mesh, E, iter)
-    elseif dim == 3
-        Wmesh = Quad3DRuleδ(Ek_mesh, E, iter)
-    else
-        error("Dimension must be 2 or 3")
+"""
+    calculate_qw_response(igroup, unique_to_qindices, qpts, w_pts, Ek_grid, Ek_grids,
+                         k, l, dos, mu, kmesh, dim, iter)
+
+Calculate response for all ω at a single q-group.
+
+# Returns
+- Dictionary mapping (iw, iq) → response value
+"""
+function calculate_qw_response(igroup, unique_to_qindices, qpts, w_pts,
+                               Ek_grid, Ek_grids, k, l, dos, mu, kmesh, dim, iter)
+    results = Dict{Tuple{Int,Int}, ComplexF64}()
+
+    # Get representative q-point
+    iq_rep = unique_to_qindices[igroup][1]
+    q = qpts[iq_rep, :]
+
+    # Evaluate E(k+q) once for this q-group
+    Ekq_grid = evaluate_Ekq_on_grid(Ek_grids[k, l], kmesh, q, dim)
+
+    for (iw, w) in enumerate(w_pts)
+        # Special case: q=0, w=0 → static susceptibility = DOS
+        if w == 0.0
+            q_norm = q[1]^2 + q[2]^2 + (dim == 3 ? q[3]^2 : 0)
+            if q_norm < 1e-6
+                for iq in unique_to_qindices[igroup]
+                    results[(iw, iq)] = dos
+                end
+                continue
+            end
+        end
+
+        # Calculate response for representative q-point
+        result = calculate_response_bzintegral_2(w, Ek_grid, Ekq_grid, mu, iter)
+
+        # Store for all symmetry-equivalent q-points
+        for iq in unique_to_qindices[igroup]
+            results[(iw, iq)] = result
+        end
     end
-    DOS = sum(Wmesh)
 
-    return DOS
+    return results
 end
 
 """
-    calculate_response_bzintegral_2(qx, qy, w, Ek_mesh, Ekq_mesh, kmesh, beta, eta, vol)
+    calculate_band_pair_response(i, j, k, l, Ek_grids, w_pts, unique_to_qindices,
+                                 qpts, nqpts_unique, dos, mu, kmesh, dim, iter,
+                                 progress_counter, progress_lock, total_iterations, start_time)
 
-Calculate response function using BZIntegral tetrahedron method.
+Calculate response for one band pair combination.
 
-χ₀(q,ω) = -2 ∫dk [f(ε(k+q)) - f(ε(k))] / [ω + ε(k) - ε(k+q) + iη]
-
-For the integrand F(k) = 1/[ω + ε(k) - ε(k+q) + iη], we compute:
-  ∫ Θ(-ε(k+q)) * F(k) dk  -  ∫ Θ(-ε(k)) * F(k) dk
+# Returns
+- 4D array chi[iw, iq] for the given band indices
 """
-function calculate_response_bzintegral_2(w, Ek_mesh, Ekq_mesh, mu, iter=2)
-    # Denominator: ω + ε(k) - ε(k+q) + small eta to avoid division by zero
-    # Using real eta since Quad2DRuleΘ𝔇 doesn't support complex denominators
-    eta = 1e-4  # Small broadening parameter
-    denom = w .+ Ek_mesh .- Ekq_mesh .+ eta
+function calculate_band_pair_response(i, j, k, l, Ek_grids, w_pts, unique_to_qindices,
+                                     qpts, nqpts_unique, nw, nqpts, dos, mu, kmesh, dim, iter,
+                                     progress_counter, progress_lock, total_iterations, start_time)
+    # Evaluate E_ij(k) once
+    Ek_grid = evaluate_grid_for_dimension(Ek_grids[i, j], kmesh, dim)
 
-    Wmesh = Quad2DRuleΘ𝔇(Ek_mesh, mu , denom, iter)-Quad2DRuleΘ𝔇(Ekq_mesh, mu, denom, iter)
-    out = -1.0 * sum(Wmesh)  # Don't include -2 spin factor
-    return out
+    # Allocate result array for this band pair
+    chi_band = zeros(ComplexF64, nw, nqpts)
+
+    # Parallelize over unique q-groups
+    Threads.@threads for igroup in 1:nqpts_unique
+        results = calculate_qw_response(igroup, unique_to_qindices, qpts, w_pts,
+                                       Ek_grid, Ek_grids, k, l, dos, mu, kmesh, dim, iter)
+
+        # Store results
+        for ((iw, iq), value) in results
+            chi_band[iw, iq] = value
+        end
+
+        # Thread-safe progress update
+        current = atomic_add!(progress_counter, length(w_pts))
+        if current % 10 == 0
+            lock(progress_lock) do
+                print_progress(current, total_iterations, start_time)
+            end
+        end
+    end
+
+    return chi_band
 end
 
-function print_progress(current, total, start_time)
-    elapsed = time() - start_time
-    rate = current / elapsed
-    remaining = (total - current) / rate
-    @printf("  Progress: %d/%d | Rate: %.1f/s | ETA: %.1f s\r", current, total, rate, remaining)
-    flush(stdout)
-end
-
 """
-    calculate_response_grid(kmesh, qmesh, w_pts, iter=2)
+    calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, dos, iter=2)
 
-Efficiently calculate response function on a q-ω grid.
-Pre-computes Ek_mesh, then loops over q-points and ω-points.
+Calculate response function on q-ω grid with symmetry reduction.
 
-Returns: 3D array chi[iw, iqx, iqy]
+# Returns
+- 8D array chi[iw, iqx, iqy, iqz, i, j, k, l] with response function
 """
-function calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, BZ, dos, iter=2)
+function calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, dos, iter=2)
     nw = length(w_pts)
     nkx, nky, nkz = kmesh
     nqx, nqy, nqz = qmesh
-    nqpts = prod(qmesh)
     qpts = get_fractional_mesh(qmesh; centered=true)
 
-    # Get nbnd from Ek_grids
     nbnd = Int(sqrt(length(Ek_grids)))
     println("nbnd: ", nbnd)
 
+    # Setup symmetry reduction
+    unique_to_qindices, nqpts_unique, nqpts = setup_symmetry_reduction(qmesh, celltype, dim)
+
     # Initialize susceptibility
     chi = zeros(ComplexF64, nw, nqpts, nbnd, nbnd, nbnd, nbnd)
-    println("Starting band and q-ω loops...")
-    start_time = time()
 
-    function eval(ipt)
-        if dim == 2
-            return ipt(1:nkx, 1:nky)
-        else
-            return ipt(1:nkx, 1:nky, 1:nkz)
-        end
-    end
-
-    # Total iterations for progress tracking
-    total_iterations = nbnd^4 * nqpts * nw
+    # Setup progress tracking
+    total_iterations = nbnd^4 * nqpts_unique * nw
     progress_counter = Atomic{Int}(0)
     progress_lock = ReentrantLock()
 
+    println("\nStarting band and q-ω loops...")
     println("Using ", nthreads(), " threads for parallel computation")
+    println("Total iterations: $total_iterations (reduced from $(nbnd^4 * nqpts * nw))")
+    start_time = time()
 
-    for i in 1:nbnd, j in 1:nbnd
-        Ek_grid = eval(Ek_grids[i, j])
-        for k in 1:nbnd, l in 1:nbnd
-            # Parallelize over q-points
-            Threads.@threads for iq in 1:nqpts
-            #for iq in 1:nqpts
-                q = qpts[iq, :]
-                Ekq_grid = evaluate_Ekq_on_grid(Ek_grids[k, l], (nkx, nky, nkz), q, dim)
-                for (iw, w) in enumerate(w_pts)
-                    if w == 0.0
-                        norm = q[1]^2 + q[2]^2 + (dim == 3 ? q[3]^2 : 0)
-                        if norm < 1e-6
-                            chi[iw, iq, i, j, k, l] = dos
-                            continue
-                        end
-                    end
+    # Loop over all band combinations
+    for i in 1:nbnd, j in 1:nbnd, k in 1:nbnd, l in 1:nbnd
+        chi_band = calculate_band_pair_response(i, j, k, l, Ek_grids, w_pts,
+                                                unique_to_qindices, qpts, nqpts_unique,
+                                                nw, nqpts, dos, mu, kmesh, dim, iter,
+                                                progress_counter, progress_lock,
+                                                total_iterations, start_time)
 
-                    result = calculate_response_bzintegral_2(w, Ek_grid, Ekq_grid, mu, iter)
-                    chi[iw, iq, i, j, k, l] = result
+        # Store in full chi array
+        chi[:, :, i, j, k, l] = chi_band
 
-                    # Thread-safe progress update
-                    current = atomic_add!(progress_counter, 1)
-
-                    # Only print progress from one thread occasionally
-                    if current % 10 == 0
-                        lock(progress_lock) do
-                            print_progress(current, total_iterations, start_time)
-                        end
-                    end
-                end
-            end
-            println("\nCompleted bands (", i, ", ", j, ", ", k, ", ", l, ")")
-        end
+        println("\nCompleted bands (", i, ", ", j, ", ", k, ", ", l, ")")
     end
 
+    # Print summary
     println("\n✓ Grid calculation complete!")
     elapsed_total = time() - start_time
+    speedup = (nbnd^4 * nqpts * nw) / total_iterations
     println("Total computation time: $(round(elapsed_total, digits=3)) s")
+    println("Effective speedup from symmetry: $(round(speedup, digits=2))x")
     println()
-    chi = reshape(chi, (nw, nqx, nqy, nqz, nbnd, nbnd, nbnd, nbnd))
 
+    # Reshape to 8D
+    chi = reshape(chi, (nw, nqx, nqy, nqz, nbnd, nbnd, nbnd, nbnd))
     return chi
 end
 
-function response_bz_integral()
-    print("Calculating response function using BZIntegral (Tetrahedron Method)...\n")
-    print("  nbnd: $(nbnd)\n")
-    print("  μ: $(mu)\n")
-    print("  U: $(U)\n")
-    print("  Dimension: $(dim)D\n")
-    print("  w-pts: $(wpts)\n")
-    w_max = cfg.cutoff_energy
-    if wpts == 1
-        w_list = [0.0]
-    else
-        w_list = collect(range(-w_max, w_max, length=wpts))
-    end
-    #w_list = range(-w_max, w_max, length=wpts)
-    print("  Taking ω ∈ [0, $(w_max)] and projecting for -ω\n")
+"""
+    setup_hamiltonian_eigenvalues(kmesh, BZ, dim)
 
-    println("Setting up grid calculation:")
-    print("  k-mesh: $(kmesh)\n")
-    print("  q-mesh: $(qmesh)\n")
-    println()
+Load Hamiltonian and compute eigenvalues/wavefunctions on k-mesh.
 
-    # Create k-mesh and evaluate Hamiltonian once
+# Returns
+- `Ek_array`: Eigenvalues array [nkpts, norb, norb]
+- `psis`: Wavefunctions array [nkpts, norb, norb]
+- `dos`: Density of states at Fermi level
+- `norb`: Number of orbitals/bands
+"""
+function setup_hamiltonian_eigenvalues(kmesh, BZ, dim)
     println("Loading Hamiltonian...")
     kpts = get_kmesh(BZ, kmesh; centered=true)
     H = Firefly.Hamiltonian()
+
     println("Computing eigenvalues and wavefunctions on k-mesh...")
     Ek_array, psis = get_wavefunctions(H, kpts)
+
+    # Calculate DOS at Fermi level
     Ek_mesh = reshape(real(Ek_array[:, 1, 1]), kmesh...)
     if dim == 2
-        Ek_mesh = dropdims(Ek_mesh, dims=3)  # Remove z-dimension for 2D
+        Ek_mesh = dropdims(Ek_mesh, dims=3)
     end
     dos = calculate_dos(mu, Ek_mesh, 0)
-    println("  DOS at μ = $(mu): $(dos) states/unit cell/eV")
-    #kpts = get_fractional_mesh(kmesh; centered=true)
-    #qpts = get_fractional_mesh(qmesh; centered=true)
-    qpts = get_kmesh(BZ, qmesh; centered=true)
 
-    println("Eig shape = ", size(Ek_array))
-    println("Psi shape = ", size(psis))
-    nkpts = size(Ek_array, 1)
     norb = size(Ek_array, 2)
-    if nbnd != norb
-        println("  Warning: nbnd from config ($(nbnd)) does not match Hamiltonian output ($(norb)). Using $(norb).")
-    end
-    nkx, nky, nkz = kmesh
+    nkpts = size(Ek_array, 1)
+
+    println("  DOS at μ = $(mu): $(dos) states/unit cell/eV")
     println("  nbnd: $(norb), nkpts: $(nkpts)")
+
+    return Ek_array, psis, dos, norb
+end
+
+"""
+    create_interpolation_grids(Ek_array, psis, kmesh, dim, norb)
+
+Create periodic interpolation grids for eigenvalues and wavefunctions.
+
+# Returns
+- `Ek_grids`: Matrix of interpolation objects for E(k)
+- `Uk_grids`: Matrix of interpolation objects for wavefunctions
+"""
+function create_interpolation_grids(Ek_array, psis, kmesh, dim, norb)
+    nkx, nky, nkz = kmesh
 
     Ek_grids = Matrix{Interpolations.AbstractInterpolation}(undef, norb, norb)
     Uk_grids = Matrix{Interpolations.AbstractInterpolation}(undef, norb, norb)
@@ -307,15 +315,15 @@ function response_bz_integral()
     for i in 1:norb, j in 1:norb
         Ek_band = reshape(real(Ek_array[:, i, j]), nkx, nky, nkz)
         Uk = reshape(psis[:, i, j], nkx, nky, nkz)
+
         if dim == 2
-            Ek_band = dropdims(Ek_band, dims=3)  # Remove z-dimension for 2D
+            Ek_band = dropdims(Ek_band, dims=3)
             Uk = dropdims(Uk, dims=3)
         end
 
+        # Create interpolation with periodic boundary conditions
         itp_Ek = interpolate(Ek_band, BSpline(Linear()))
         itp_Uk = interpolate(Uk, BSpline(Linear()))
-
-        # Wrap with periodic boundary conditions
         itp_Ek_periodic = extrapolate(itp_Ek, Periodic())
         itp_Uk_periodic = extrapolate(itp_Uk, Periodic())
 
@@ -325,34 +333,106 @@ function response_bz_integral()
         Uk_grids[i, j] = itp_Uk_periodic
     end
 
-    println("\nStarting response grid calculation...")
-    # Call calculate_response_grid with energy grids
-    chi = calculate_response_grid(Ek_grids, Uk_grids, w_list, kmesh, qmesh, BZ, dos, 0)
-    #print(chi)
-    println("Max chi real part: ", maximum(x -> isfinite(x) ? x : -Inf, real(chi)))
-    println("Min chi real part: ", minimum(x -> isfinite(x) ? x : -Inf, real(chi)))
-    println("Max chi(w_max) = ", maximum(real(chi[end, :, :, :, 1, 1, 1, 1])))
-    println("Min chi(w_max) = ", minimum(real(chi[end, :, :, :, 1, 1, 1, 1])))
-    chi_neg = conj.(chi)
-    #chi = vcat(reverse(chi_neg[2:end, :], dims=1), chi)  # Combine -ω and +ω
-    println("w_points = ", w_list)
-    BZ_save = BZ[1:dim, 1:dim]  # Adjust BZ for dimension
-    qmesh_save = qmesh[1:dim]  # Adjust qmesh for dimension
-    save_data!(outdir*prefix*"_chi."*filetype, chi[:,:,:,:,1,1,1,1], qmesh_save, BZ_save, w_points=w_list)
-    println("Saved response function to "*outdir*prefix*"_chi."*filetype)
+    return Ek_grids, Uk_grids
+end
+
+"""
+    setup_frequency_grid(wpts, w_max)
+
+Create frequency grid for response calculation.
+
+# Returns
+- Array of frequency points
+"""
+function setup_frequency_grid(wpts, w_max)
+    if wpts == 1
+        return [0.0]
+    else
+        return collect(range(-w_max, w_max, length=wpts))
+    end
+end
+
+"""
+    save_response_results(chi, w_list, qmesh, BZ, dim)
+
+Save response function results to file.
+"""
+function save_response_results(chi, w_list, qmesh, BZ, dim)
+    println("\nResponse function statistics:")
+    println("  Max real part: ", maximum(x -> isfinite(x) ? x : -Inf, real(chi)))
+    println("  Min real part: ", minimum(x -> isfinite(x) ? x : Inf, real(chi)))
+    println("  Max chi(w_max): ", maximum(real(chi[end, :, :, :, 1, 1, 1, 1])))
+    println("  Min chi(w_max): ", minimum(real(chi[end, :, :, :, 1, 1, 1, 1])))
+
+    BZ_save = BZ[1:dim, 1:dim]
+    qmesh_save = qmesh[1:dim]
+
+    filename = outdir*prefix*"_chi."*filetype
+    save_data!(filename, chi[:,:,:,:,1,1,1,1], qmesh_save, BZ_save, w_points=w_list)
+    println("Saved response function to ", filename)
+end
+
+"""
+    response_bz_integral()
+
+Main driver function for response function calculation.
+
+Orchestrates the entire calculation:
+1. Sets up frequency grid
+2. Loads Hamiltonian and computes eigenvalues
+3. Creates interpolation grids
+4. Calculates response with symmetry reduction
+5. Saves results
+
+# Returns
+- Maximum finite real part of susceptibility
+"""
+function response_bz_integral()
+    println("="^60)
+    println("Calculating response function using BZIntegral")
+    println("="^60)
+    println("  nbnd: $(nbnd)")
+    println("  μ: $(mu)")
+    println("  U: $(U)")
+    println("  Dimension: $(dim)D")
+    println("  w-pts: $(wpts)")
+    println("  k-mesh: $(kmesh)")
+    println("  q-mesh: $(qmesh)")
+
+    # Setup frequency grid
+    w_max = cfg.cutoff_energy
+    w_list = setup_frequency_grid(wpts, w_max)
+    println("  ω range: [-$(w_max), $(w_max)]")
+
+    # Load Hamiltonian and compute eigenvalues
+    Ek_array, psis, dos, norb = setup_hamiltonian_eigenvalues(kmesh, BZ, dim)
+
+    # Create interpolation grids
+    println("\nCreating interpolation grids...")
+    Ek_grids, Uk_grids = create_interpolation_grids(Ek_array, psis, kmesh, dim, norb)
+
+    # Calculate response with symmetry reduction
+    println("\n" * "="^60)
+    println("Starting response grid calculation")
+    println("="^60)
+    chi = calculate_response_grid(Ek_grids, Uk_grids, w_list, kmesh, qmesh, dos, 0)
+
+    # Save results
+    save_response_results(chi, w_list, qmesh, BZ, dim)
+
     return maximum(x -> isfinite(x) ? x : -Inf, real(chi))
 end
 
+"""
+    run()
 
+Entry point for response function calculation.
+"""
 function run()
-    # Main function call goes here
     chi_max = response_bz_integral()
     return chi_max
 end
 
-if abspath(PROGRAM_FILE) == @__FILE__ # Runs on file execution
+if abspath(PROGRAM_FILE) == @__FILE__
     run()
 end
-
-
-
