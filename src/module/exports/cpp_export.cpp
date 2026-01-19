@@ -71,6 +71,18 @@ extern "C" void Surface_var_faces_export1(Surface *a, Vec *b) {
         b[i] = a->faces[i];
     }
 }
+
+extern "C" void Surface_faces_and_areas_export0(Surface *a, float *kpoints,
+                                                  int *dims, float *areas, int *n) {
+    *n = a->faces.size();
+    for (int i = 0; i < *n; i++) {
+        dims[i] = a->faces[i].dimension;
+        areas[i] = a->faces[i].area;
+        for (int j = 0; j < dims[i]; j++) {
+            kpoints[i * dims[i] + j] = a->faces[i](j);
+        }
+    }
+}
 // Begin Class gets
 extern "C" float Vec_x_export0(Vec* a) {
     return a->x;
@@ -1478,6 +1490,50 @@ void Hamiltonian_get_wavefunctions_export_list(Hamiltonian *obj, const float *po
                 eigvecs_real[idx] = results[p][i].eigenvector[j].real();
                 eigvecs_imag[idx] = results[p][i].eigenvector[j].imag();
             }
+        }
+    }
+}
+
+extern "C" void Hamiltonian_get_fermi_velocity_export0(Hamiltonian *obj, const float *point, int len,
+                                                        float *velocities_out, int *num_bands) {
+    Vec v(point, len);
+    vector<Vec> vels = obj->get_fermi_velocity(v);
+
+    *num_bands = vels.size();
+    for (size_t i = 0; i < vels.size(); i++) {
+        velocities_out[i * 3 + 0] = vels[i].x;
+        velocities_out[i * 3 + 1] = vels[i].y;
+        velocities_out[i * 3 + 2] = vels[i].z;
+    }
+}
+
+extern "C" void Hamiltonian_get_fermi_velocity_export_list(Hamiltonian *obj, const float *points,
+                                                             int num_points, int len,
+                                                             float *velocities_out, int *num_bands) {
+    vector<Vec> vec_points;
+    vec_points.reserve(num_points);
+    for (int i = 0; i < num_points; ++i) {
+        const float* point_row = points + i * len;
+        vec_points.emplace_back(point_row, len);
+    }
+
+    vector<vector<Vec>> results = obj->get_fermi_velocity(vec_points);
+
+    if (results.empty() || results[0].empty()) {
+        *num_bands = 0;
+        return;
+    }
+
+    int n = results[0].size();
+    *num_bands = n;
+
+    // Flatten all velocity vectors to output
+    for (int p = 0; p < num_points; ++p) {
+        for (int i = 0; i < n; i++) {
+            int idx = (p * n + i) * 3;
+            velocities_out[idx + 0] = results[p][i].x;
+            velocities_out[idx + 1] = results[p][i].y;
+            velocities_out[idx + 2] = results[p][i].z;
         }
     }
 }

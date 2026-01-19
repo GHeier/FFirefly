@@ -101,10 +101,10 @@ Vec fermi_velocity_fermi_gas(int n, Vec k) {
 float epsilon_SC(int n, Vec k) {
     float val = 0.0;
     for (int i = 0; i < dimension; i++) {
-        val += -2 * t0 * cos(k(i));
-        val += -2 * t2 * cos(k(i));
+        val += -2 * t0 * cos(k(i));        // NN hopping
+        val += -2 * t2 * cos(2 * k(i));    // NNNN hopping (fixed: was cos(k(i)))
     }
-    val += -4 * t1 * cos(k(0)) * cos(k(1));
+    val += -4 * t1 * cos(k(0)) * cos(k(1));  // NNN hopping (diagonal)
     return val;
 }
 

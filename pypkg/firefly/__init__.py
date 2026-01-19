@@ -1,6 +1,7 @@
 from . import plot as plot
 from .src.config.load import config as config
 from .src.module.imports.cpp_imports import *
+from .plot import *
 
 # Lazy load diagram, interface_triqs, and load_triqs_H to avoid importing heavy dependencies at startup
 def __getattr__(name):
@@ -24,6 +25,7 @@ else:
 
 current_file = os.path.abspath(__file__)
 folder = current_file[:-25] + "build/bin/"
+
 
 
 def run(cfg_file):

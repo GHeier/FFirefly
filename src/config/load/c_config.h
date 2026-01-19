@@ -26,6 +26,7 @@ extern char* c_celltype; char* get_celltype();
 extern int c_nbnd;
 extern float c_fermi_energy;
 extern float c_num_electrons;
+extern bool c_mu_from_n;
 extern float c_Temperature;
 extern float c_cutoff_energy;
 extern float c_smearing;
@@ -87,6 +88,7 @@ extern bool c_self_consistent;
 void get_dimensions();
 
 void cell_to_BZ(float ucell[3][3], float (*bz_matrix)[3]);
+void make_lowercase(char *str);
 void set_string(char **dest, const char *src);
 void set_section(char *dest, const char *src);
 void load_default_band_values();

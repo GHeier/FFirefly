@@ -4,7 +4,7 @@ module Imports
 # Get the project root directory (FFirefly/)
 const libfly = split(abspath(@__FILE__), "FFirefly")[1] * "FFirefly/build/lib/libfly.so"
 #const libfly = joinpath(dirname(dirname(dirname(dirname(abspath(@__FILE__))))), "build", "lib", "libfly.so")
-export load_config!, Vec, Surface, get_faces
+export load_config!, Vec, Surface, get_faces, get_faces_and_areas
 export epsilon,
        norm,
        Bands,
@@ -179,6 +179,39 @@ function get_faces(surf::Surface)::Vector{Vector{Float32}}
     end
 
     return result
+end
+
+function get_faces_and_areas(surf::Surface)::Tuple{Vector{Vector{Float32}}, Vector{Float32}}
+    # Step 1: Get number of faces
+    n_faces = ccall((:Surface_num_faces_export0, libfly), Cint,
+                    (Ptr{Cvoid},), surf.handle)
+
+    if n_faces <= 0
+        return (Vector{Vector{Float32}}(), Vector{Float32}())
+    end
+
+    # Step 2: Prepare buffers
+    dims = Vector{Cint}(undef, n_faces)
+    areas = Vector{Cfloat}(undef, n_faces)
+    total_len = 3 * n_faces  # Maximum possible size
+    kpoints_buf = Vector{Cfloat}(undef, total_len)
+    n_faces_ref = Ref{Cint}(n_faces)
+
+    # Step 3: Call C++ function
+    ccall((:Surface_faces_and_areas_export0, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Cfloat}, Ptr{Cint}, Ptr{Cfloat}, Ptr{Cint}),
+          surf.handle, kpoints_buf, dims, areas, n_faces_ref)
+
+    # Step 4: Reconstruct nested vector for k-points
+    kpoints = Vector{Vector{Float32}}()
+    offset = 0
+    for i in 1:n_faces
+        dim = dims[i]
+        push!(kpoints, kpoints_buf[offset+1 : offset+dim])
+        offset += dim
+    end
+
+    return (kpoints, Vector{Float32}(areas))
 end
 
 function get_faces1(handle::Ptr{Cvoid})::Vector{Vec}
@@ -1190,6 +1223,83 @@ function get_wavefunctions(self::Hamiltonian, k_points::Matrix{Float64})::Tuple{
     # Convert matrix to vector of vectors and call the other method
     k_vec = [k_points[i, :] for i in 1:size(k_points, 1)]
     return get_wavefunctions(self, k_vec)
+end
+
+# get_fermi_velocity for single k-point
+function get_fermi_velocity(self::Hamiltonian, k::Vector{Float64})::Matrix{Float32}
+    k_arr = Float32.(k)
+    k_len = Cint(length(k))
+
+    # Allocate space for velocities (nbands × 3)
+    max_bands = 100
+    velocities_out = zeros(Float32, max_bands * 3)
+    num_bands = Ref{Cint}(0)
+
+    ccall((:Hamiltonian_get_fermi_velocity_export0, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Float32}, Cint, Ptr{Float32}, Ptr{Cint}),
+          self.ptr, k_arr, k_len, velocities_out, num_bands)
+
+    n = num_bands[]
+    if n == 0
+        return Matrix{Float32}(undef, 0, 3)
+    end
+
+    # Reshape to (n, 3): each row is velocity for one band
+    result = reshape(velocities_out[1:n*3], 3, n)'
+    return result
+end
+
+# get_fermi_velocity for list of k-points
+function get_fermi_velocity(self::Hamiltonian, k_points::Vector{Vector{Float64}})::Array{Float32, 3}
+    num_points = length(k_points)
+    if num_points == 0
+        return Array{Float32, 3}(undef, 0, 0, 3)
+    end
+
+    point_len = length(k_points[1])
+
+    # Flatten k-points to 1D array
+    points_flat = zeros(Float32, num_points * point_len)
+    for (i, k) in enumerate(k_points)
+        for (j, val) in enumerate(k)
+            points_flat[(i-1)*point_len + j] = Float32(val)
+        end
+    end
+
+    # Allocate space for velocities
+    max_bands = 100
+    velocities_out = zeros(Float32, num_points * max_bands * 3)
+    num_bands = Ref{Cint}(0)
+
+    ccall((:Hamiltonian_get_fermi_velocity_export_list, libfly), Cvoid,
+          (Ptr{Cvoid}, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Ptr{Cint}),
+          self.ptr, points_flat, Cint(num_points), Cint(point_len),
+          velocities_out, num_bands)
+
+    n = num_bands[]
+    if n == 0
+        return zeros(Float32, num_points, 0, 3)
+    end
+
+    # Reshape to (num_points, n, 3): for each k-point and band, get 3D velocity
+    result = Array{Float32, 3}(undef, num_points, n, 3)
+    for p in 1:num_points
+        for i in 1:n
+            idx = ((p-1) * n + (i-1)) * 3
+            result[p, i, 1] = velocities_out[idx + 1]
+            result[p, i, 2] = velocities_out[idx + 2]
+            result[p, i, 3] = velocities_out[idx + 3]
+        end
+    end
+
+    return result
+end
+
+# get_fermi_velocity for matrix of k-points (Nk × 3 format)
+function get_fermi_velocity(self::Hamiltonian, k_points::Matrix{Float64})::Array{Float32, 3}
+    # Convert matrix to vector of vectors and call the other method
+    k_vec = [k_points[i, :] for i in 1:size(k_points, 1)]
+    return get_fermi_velocity(self, k_vec)
 end
 
 # End Functions

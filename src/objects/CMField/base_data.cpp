@@ -72,6 +72,16 @@ BaseData load_data_from_hdf5(const std::string& filename) {
         }
         space_domain.close();
         ds_domain.close();
+
+        // Validate domain matrix immediately after loading
+        for (size_t i = 0; i < field.domain.size(); i++) {
+            for (size_t j = 0; j < field.domain[i].size(); j++) {
+                if (std::isnan(field.domain[i][j]) || std::isinf(field.domain[i][j])) {
+                    throw std::runtime_error("Domain matrix contains NaN or Inf values at position ["
+                                           + std::to_string(i) + "][" + std::to_string(j) + "]");
+                }
+            }
+        }
     }
 
     // -- Mesh (optional) --
@@ -141,8 +151,19 @@ BaseData load_data_from_hdf5(const std::string& filename) {
     hsize_t dims[1];
     real_space.getSimpleExtentDims(dims);
 
+    //std::cerr << "[DEBUG] Loading " << dims[0] << " real values ("
+    //          << (dims[0] * sizeof(float) / (1024.0 * 1024.0)) << " MB)" << std::endl;
+
     std::vector<float> real_flat(dims[0]);
     real_ds.read(real_flat.data(), H5::PredType::NATIVE_FLOAT);
+
+    // Verify allocation succeeded
+    if (real_flat.size() != dims[0]) {
+        throw std::runtime_error("Memory allocation failed for real values: expected "
+                               + std::to_string(dims[0]) + " elements, got "
+                               + std::to_string(real_flat.size()));
+    }
+
     real_space.close();
     real_ds.close();
 
@@ -154,8 +175,19 @@ BaseData load_data_from_hdf5(const std::string& filename) {
         hsize_t dims_imag[1];
         imag_space.getSimpleExtentDims(dims_imag);
 
+        //std::cerr << "[DEBUG] Loading " << dims_imag[0] << " imag values ("
+        //          << (dims_imag[0] * sizeof(float) / (1024.0 * 1024.0)) << " MB)" << std::endl;
+
         imag_flat.resize(dims_imag[0]);
         imag_ds.read(imag_flat.data(), H5::PredType::NATIVE_FLOAT);
+
+        // Verify allocation succeeded
+        if (imag_flat.size() != dims_imag[0]) {
+            throw std::runtime_error("Memory allocation failed for imag values: expected "
+                                   + std::to_string(dims_imag[0]) + " elements, got "
+                                   + std::to_string(imag_flat.size()));
+        }
+
         imag_space.close();
         imag_ds.close();
     }
@@ -245,6 +277,22 @@ BaseData load_data_from_hdf5(const std::string& filename) {
             scalars[i] = cfloat(real_flat[i], field.is_complex ? imag_flat[i] : 0.0f);
         }
         field.data = scalars;
+    }
+
+    // Validate domain matrix again after loading large data to detect memory corruption
+    if (field.with_k && !field.domain.empty()) {
+        bool corrupted = false;
+        for (size_t i = 0; i < field.domain.size(); i++) {
+            for (size_t j = 0; j < field.domain[i].size(); j++) {
+                if (std::isnan(field.domain[i][j]) || std::isinf(field.domain[i][j])) {
+                    corrupted = true;
+                }
+            }
+        }
+        if (corrupted) {
+            throw std::runtime_error("Domain matrix was corrupted during data loading (contains NaN/Inf). "
+                                   "This indicates memory corruption from large allocation.");
+        }
     }
 
     // Explicitly close the file to release locks immediately

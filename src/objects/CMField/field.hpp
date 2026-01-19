@@ -6,6 +6,7 @@
 #include <vector>
 #include <complex>
 #include <cmath>
+#include <iostream>
 
 using namespace std;
 using cfloat = complex<float>;
@@ -46,15 +47,22 @@ private:
 
     // Helper to initialize shift vectors and evaluator
     void initialize() {
-        // Infer dimension from mesh or domain if provided, otherwise use data.dimension
-        if (!data.mesh.empty()) {
-            dimension = data.mesh.size();
-            data.dimension = dimension;
+        // Prioritize stored dimension, then infer from domain or mesh
+        if (data.dimension > 0) {
+            // Use stored dimension (e.g., from HDF5 file)
+            dimension = data.dimension;
         } else if (!data.domain.empty()) {
+            // Infer from domain matrix size
             dimension = data.domain.size();
             data.dimension = dimension;
-        } else if (data.dimension > 0) {
-            dimension = data.dimension;
+        } else if (!data.mesh.empty()) {
+            // Infer from mesh, counting only dimensions > 1
+            dimension = 0;
+            for (int m : data.mesh) {
+                if (m > 1) dimension++;
+            }
+            if (dimension == 0) dimension = 1;  // At least 1D
+            data.dimension = dimension;
         } else {
             dimension = 1;
             data.dimension = dimension;

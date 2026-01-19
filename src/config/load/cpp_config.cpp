@@ -34,6 +34,7 @@ string celltype;
 int nbnd;
 float fermi_energy;
 float num_electrons;
+bool mu_from_n;
 float Temperature;
 float cutoff_energy;
 float smearing;
@@ -118,6 +119,7 @@ extern "C" void load_cpp_config() {
     nbnd = c_nbnd;
     fermi_energy = c_fermi_energy;
     num_electrons = c_num_electrons;
+    mu_from_n = c_mu_from_n;
     Temperature = c_Temperature;
     cutoff_energy = c_cutoff_energy;
     smearing = c_smearing;

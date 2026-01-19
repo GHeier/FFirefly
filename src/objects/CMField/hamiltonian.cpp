@@ -66,3 +66,57 @@ vector<vector<eigvec>> Hamiltonian::get_wavefunctions(vector<Vec> kpoints) {
     }
     return wavefunctions;
 }
+
+vector<Vec> Hamiltonian::get_fermi_velocity(Vec k) {
+    // Compute Fermi velocity v_n(k) = ∇_k E_n(k) using finite differences
+    // Returns a vector of Vec, one for each band
+
+    float dk = 0.001;  // Small step for numerical derivative
+    int dim = k.dimension;
+
+    // Get bands at current k
+    vector<float> E0 = get_bands(k);
+    int nbands = E0.size();
+
+    vector<Vec> velocities(nbands);
+
+    // Compute gradient for each band
+    for (int n = 0; n < nbands; n++) {
+        Vec v;
+        v.dimension = dim;
+
+        // dx derivative
+        Vec kx_plus = k;
+        kx_plus.x += dk;
+        vector<float> Ex_plus = get_bands(kx_plus);
+        v.x = (Ex_plus[n] - E0[n]) / dk;
+
+        // dy derivative
+        Vec ky_plus = k;
+        ky_plus.y += dk;
+        vector<float> Ey_plus = get_bands(ky_plus);
+        v.y = (Ey_plus[n] - E0[n]) / dk;
+
+        // dz derivative (only for 3D)
+        if (dim == 3) {
+            Vec kz_plus = k;
+            kz_plus.z += dk;
+            vector<float> Ez_plus = get_bands(kz_plus);
+            v.z = (Ez_plus[n] - E0[n]) / dk;
+        } else {
+            v.z = 0.0;
+        }
+
+        velocities[n] = v;
+    }
+
+    return velocities;
+}
+
+vector<vector<Vec>> Hamiltonian::get_fermi_velocity(vector<Vec> kpoints) {
+    vector<vector<Vec>> velocities;
+    for (auto k : kpoints) {
+        velocities.push_back(get_fermi_velocity(k));
+    }
+    return velocities;
+}

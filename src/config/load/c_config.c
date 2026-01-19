@@ -41,6 +41,7 @@ char* get_celltype() {return c_celltype;}
 int c_nbnd = 0;
 float c_fermi_energy = 0.0;
 float c_num_electrons = 0.0;
+bool c_mu_from_n = false;
 float c_Temperature = 0.0;
 float c_cutoff_energy = 0.05;
 float c_smearing = 0.02;
@@ -164,6 +165,18 @@ void strip_single_quotes(char *str) {
     }
     str[j] = '\0'; // Null-terminate the modified string
 }
+
+void make_lowercase(char *str) {
+    if (str == NULL) {
+        return;
+    }
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (str[i] >= 'A' && str[i] <= 'Z') {
+            str[i] = str[i] + 32; // Convert uppercase to lowercase
+        }
+    }
+}
+
 void set_string(char **dest, const char *src) {
     int size = 80;
     *dest = (char *)malloc(size * sizeof(char)); // Allocate memory for dest
@@ -335,6 +348,14 @@ void read_c_config(const char *path) {
             }
             else if (strstr(key, "num_electrons") != NULL) {
                 c_num_electrons = atof(value);
+            }
+            else if (strstr(key, "mu_from_n") != NULL) {
+                strip_single_quotes(value);
+                if (strcmp(value, "true") == 0) {
+                    c_mu_from_n = true;
+                } else {
+                    c_mu_from_n = false;
+                }
             }
             else if (strstr(key, "Temperature") != NULL) {
                 c_Temperature = atof(value);

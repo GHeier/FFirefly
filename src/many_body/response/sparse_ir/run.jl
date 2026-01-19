@@ -2,7 +2,7 @@ using SparseIR
 import SparseIR: Statistics, value, valueim
 using FFTW
 using LinearAlgebra
-include("../../objects/mesh.jl")
+include("../../../objects/mesh.jl")
 using .IRMesh
 using Firefly
 cfg = Firefly.Config
@@ -18,6 +18,11 @@ if dim == 2
 end
 nk = nx * ny * nz
 mu = cfg.fermi_energy
+if cfg.mu_from_n
+    n_field = Field_R(outdir*prefix*"_E_vs_n."*filetype)
+    mu = n_field(cfg.num_electrons)
+    println("Shifting mu to $(mu) based on electron number $(cfg.num_electrons)")
+end
 BZ = cfg.brillouin_zone
 beta = 1 / cfg.Temperature
 
@@ -70,8 +75,8 @@ function main()
     println("Transforming to real space and imaginary time")
     Grt = kw_to_rtau(Gkw, 'F', mesh)
 
-    # Convolution in (r,τ): χ(r,τ) = G(r,τ) * G(r,-τ)
-    println("Computing convolution χ(r,τ) = G(r,τ) * G(r,-τ)")
+    # Original convolution formula (testing with fixed Hamiltonian)
+    println("Computing convolution χ(r,τ) = G(r,τ) × G(r,-τ)")
     chi_rt = Grt .* reverse(Grt, dims=1)
 
     # Transform back to (k,ν)
@@ -97,7 +102,7 @@ function main()
 
     output_file = outdir * prefix * "_chi." * filetype
     println("Saving χ(iν,k) to $output_file")
-    save_data!(output_file, chi_kw, kmesh, BZ_in, imag.(iv))
+    save_data!(output_file, chi_kw, kmesh, BZ_in, w_points = imag.(iv))
 
     return maximum(abs.(chi_kw))
 end

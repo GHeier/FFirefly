@@ -53,6 +53,8 @@ module ffirefly
     real :: fermi_energy
     real(c_float), bind(C, name="c_num_electrons") :: c_num_electrons
     real :: num_electrons
+    logical(c_bool), bind(C, name="c_mu_from_n") :: c_mu_from_n
+    logical :: mu_from_n
     real(c_float), bind(C, name="c_Temperature") :: c_Temperature
     real :: Temperature
     real(c_float), bind(C, name="c_cutoff_energy") :: c_cutoff_energy
@@ -201,6 +203,7 @@ module ffirefly
 
 
 
+
 ![HAMILTONIAN]
         function get_hamiltonian() bind(C)
             use iso_c_binding
@@ -337,6 +340,7 @@ contains
         nbnd = c_nbnd
         fermi_energy = c_fermi_energy
         num_electrons = c_num_electrons
+        mu_from_n = c_mu_from_n
         Temperature = c_Temperature
         cutoff_energy = c_cutoff_energy
         smearing = c_smearing

@@ -110,19 +110,20 @@ void call_flex() {
         float nx = q_mesh[0], ny = q_mesh[1], nz = q_mesh[2];
         if (chidim == 2) nz = 1;
 
-        for (int i = 0; i < nx; i++) {
-            for (int j = 0; j < ny; j++) {
-                for (int k = 0; k < nz; k++) {
-                    Vec q = brillouin_zone * Vec(i / nx - 0.5, j / ny - 0.5, k / nz - 0.5);
-                    q.dimension = chidim;
-                    for (int l = 0; l < wpts.size(); l++) {
-                        float w = wpts[l];
+        // w loop outermost to generate data in w-k order (matching CMF_search expectations)
+        for (int l = 0; l < wpts.size(); l++) {
+            float w = wpts[l];
+            for (int i = 0; i < nx; i++) {
+                for (int j = 0; j < ny; j++) {
+                    for (int k = 0; k < nz; k++) {
+                        Vec q = brillouin_zone * Vec(i / nx - 0.5, j / ny - 0.5, k / nz - 0.5);
+                        q.dimension = chidim;
 
                         cfloat X = chi(q, w);
                         cfloat val = (U * U * X) / cfloat(1.0f - U * X) + (U * U * U * X * X) / cfloat(1.0f - U * U * X * X);
                         vals.push_back(val);
 
-                        if (abs(U * X) >= 1) {
+                        if (real(U * X) >= 1.0) {
                             printf("Geometric series not convergent: U*X = %f\n", U * X.real());
                             exit(1);
                         }
@@ -145,7 +146,23 @@ void call_flex() {
     string file = outdir + prefix + "_vertex." + filetype;
     if (filetype == "hdf5" || filetype == "h5") {
         chi.cmf.data.data = vals;
+        // Update mesh to match the q_mesh used for vertex calculation
+        if (chi.cmf.data.as_mesh) {
+            chi.cmf.data.mesh = vector<int>(q_mesh.begin(), q_mesh.begin() + chidim);
+        }
         chi.save(file);
     }
     cout << "Saved to " << outdir + prefix + "_vertex." + filetype << endl;
+    Field_C chi2(outdir + prefix + "_chi.h5");
+    Field_C vertex2(outdir + prefix + "_vertex.h5");
+    Vec q(0.6, 0.8, -0.2);
+    float val_chi = real(chi2(q));
+    float val_vertex = real(vertex2(q));
+
+    float expected_vertex = (U * U * val_chi) / (1.0f - U * val_chi) + (U * U * U * val_chi * val_chi) / (1.0f - U * U * val_chi * val_chi);
+
+    printf("At Vec q = (0.6, 0.8, -0.2):\n");
+    printf("Chi(q) = %f\n", val_chi);
+    printf("Vertex(q) = %f\n", val_vertex);
+    printf("Expected Vertex(q) = %f\n", expected_vertex);
 }

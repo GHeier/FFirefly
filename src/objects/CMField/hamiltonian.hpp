@@ -21,5 +21,8 @@ class Hamiltonian {
 
     vector<eigvec> get_wavefunctions(Vec k);
     vector<vector<eigvec>> get_wavefunctions(vector<Vec> kpoints);
+
+    vector<Vec> get_fermi_velocity(Vec k);
+    vector<vector<Vec>> get_fermi_velocity(vector<Vec> kpoints);
 };
 

@@ -1,21 +1,48 @@
 import mimetypes
 import firefly as fly
+import matplotlib.pyplot as plt
+from cycler import cycler
+from matplotlib.ticker import MaxNLocator
 
-plt.rcParams["axes.prop_cycle"] = cycler(color=["#9a05fc", # Purple
-                                                "#f00524", # Red
-                                                "#f80af1", # Pink
-                                                "#0a68f8", # Blue
-                                                "#1c841f", # Green
-                                                "#fc9303", # Orange
-                                                "#865522", # Brown
-                                                "#00c7a9",  # Teal (adds cool contrast)
-                                                "#C9C22A",  # Yellow (bright mid tone)
-                                                "#7f7f7f",  # Gray (neutral)
-                                                "black"])
-plt.rcParams["lines.linewidth"] = 1.0
+def load_theme():
+    plt.rcParams["axes.prop_cycle"] = cycler(color=[
+        "blue", # Blue
+        "red", # Red
+        "#8b00e6", # Purple
+        "green", # Green
+        "#ff7700", # Orange
+        "#00c7a9", # Teal (adds cool contrast)
+        "#7f7f7f", # Gray (neutral)
+        "#f80af1", # Pink
+        "#865522", # Brown
+        "#C9C22A", # Yellow (bright mid tone)
+        "black"
+    ])
+    plt.rcParams["lines.linewidth"] = 1.0
 
-plt.rcParams['lines.markersize'] = 5.0
-plt.rcParams["scatter.marker"] = '.'
+    plt.rcParams['lines.markersize'] = 5.0
+    plt.rcParams["scatter.marker"] = '.'
+
+    plt.rcParams["axes.grid"] = True
+    plt.rcParams["grid.color"] = "0.85"
+    plt.rcParams["grid.linewidth"] = 0.8
+
+    plt.rcParams.update({
+        "axes.titlesize": 18,
+        "axes.labelsize": 16,
+        "xtick.labelsize": 14,
+        "ytick.labelsize": 14,
+    })
+
+    _old_axes_init = plt.Axes.__init__
+
+    def _axes_init_with_sparse_grid(self, *args, **kwargs):
+        _old_axes_init(self, *args, **kwargs)
+        self.xaxis.set_major_locator(MaxNLocator(nbins=5))
+        self.yaxis.set_major_locator(MaxNLocator(nbins=5))
+        self.minorticks_off()
+
+    plt.Axes.__init__ = _axes_init_with_sparse_grid
 
 
 def get_file_type(file_path):

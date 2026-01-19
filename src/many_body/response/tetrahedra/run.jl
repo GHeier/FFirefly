@@ -33,6 +33,11 @@ end
 wpts = cfg.w_pts
 nbnd = cfg.nbnd
 mu = cfg.fermi_energy
+if cfg.mu_from_n
+    n_field = Field_R(outdir*prefix*"_E_vs_n."*filetype)
+    mu = n_field(cfg.num_electrons)
+    println("Shifting mu to $(mu) based on electron number $(cfg.num_electrons)")
+end
 U = cfg.U0
 BZ = cfg.brillouin_zone
 
@@ -124,6 +129,19 @@ function evaluate_Ekq_on_grid(itp_Ek, kmesh, q_frac, dim=3)
     end
 end
 
+function calculate_dos(E, Ek_mesh, iter=2)
+    if dim == 2
+        Wmesh = Quad2DRuleδ(Ek_mesh, E, iter)
+    elseif dim == 3
+        Wmesh = Quad3DRuleδ(Ek_mesh, E, iter)
+    else
+        error("Dimension must be 2 or 3")
+    end
+    DOS = sum(Wmesh)
+
+    return DOS
+end
+
 """
     calculate_response_bzintegral_2(qx, qy, w, Ek_mesh, Ekq_mesh, kmesh, beta, eta, vol)
 
@@ -141,7 +159,7 @@ function calculate_response_bzintegral_2(w, Ek_mesh, Ekq_mesh, mu, iter=2)
     denom = w .+ Ek_mesh .- Ekq_mesh .+ eta
 
     Wmesh = Quad2DRuleΘ𝔇(Ek_mesh, mu , denom, iter)-Quad2DRuleΘ𝔇(Ekq_mesh, mu, denom, iter)
-    out = -2.0 * sum(Wmesh)  # Include -2 spin factor
+    out = -1.0 * sum(Wmesh)  # Don't include -2 spin factor
     return out
 end
 
@@ -161,7 +179,7 @@ Pre-computes Ek_mesh, then loops over q-points and ω-points.
 
 Returns: 3D array chi[iw, iqx, iqy]
 """
-function calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, BZ, iter=2)
+function calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, BZ, dos, iter=2)
     nw = length(w_pts)
     nkx, nky, nkz = kmesh
     nqx, nqy, nqz = qmesh
@@ -199,9 +217,16 @@ function calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, BZ, it
             Threads.@threads for iq in 1:nqpts
             #for iq in 1:nqpts
                 q = qpts[iq, :]
-                #println("q = ", q)
                 Ekq_grid = evaluate_Ekq_on_grid(Ek_grids[k, l], (nkx, nky, nkz), q, dim)
                 for (iw, w) in enumerate(w_pts)
+                    if w == 0.0
+                        norm = q[1]^2 + q[2]^2 + (dim == 3 ? q[3]^2 : 0)
+                        if norm < 1e-6
+                            chi[iw, iq, i, j, k, l] = dos
+                            continue
+                        end
+                    end
+
                     result = calculate_response_bzintegral_2(w, Ek_grid, Ekq_grid, mu, iter)
                     chi[iw, iq, i, j, k, l] = result
 
@@ -256,6 +281,12 @@ function response_bz_integral()
     H = Firefly.Hamiltonian()
     println("Computing eigenvalues and wavefunctions on k-mesh...")
     Ek_array, psis = get_wavefunctions(H, kpts)
+    Ek_mesh = reshape(real(Ek_array[:, 1, 1]), kmesh...)
+    if dim == 2
+        Ek_mesh = dropdims(Ek_mesh, dims=3)  # Remove z-dimension for 2D
+    end
+    dos = calculate_dos(mu, Ek_mesh, 0)
+    println("  DOS at μ = $(mu): $(dos) states/unit cell/eV")
     #kpts = get_fractional_mesh(kmesh; centered=true)
     #qpts = get_fractional_mesh(qmesh; centered=true)
     qpts = get_kmesh(BZ, qmesh; centered=true)
@@ -296,7 +327,7 @@ function response_bz_integral()
 
     println("\nStarting response grid calculation...")
     # Call calculate_response_grid with energy grids
-    chi = calculate_response_grid(Ek_grids, Uk_grids, w_list, kmesh, qmesh, BZ, 2)
+    chi = calculate_response_grid(Ek_grids, Uk_grids, w_list, kmesh, qmesh, BZ, dos, 0)
     #print(chi)
     println("Max chi real part: ", maximum(x -> isfinite(x) ? x : -Inf, real(chi)))
     println("Min chi real part: ", minimum(x -> isfinite(x) ? x : -Inf, real(chi)))

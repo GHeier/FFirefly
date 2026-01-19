@@ -29,7 +29,7 @@ public:
     vector<int> inds;
 
     vector<int> mesh;      // Spatial mesh dimensions (k-points): e.g. {60, 60} for 60x60 grid
-    int dimension = 1;     // Spatial dimension (1D, 2D, or 3D)
+    int dimension = 0;     // Spatial dimension (1D, 2D, or 3D); 0 = needs inference
     vector<vector<float>> domain;  // Real-space domain (lattice vectors)
 
     vector<float> w_points;  // Frequency points (if with_w==true)

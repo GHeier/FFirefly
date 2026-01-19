@@ -29,6 +29,7 @@ ALL = {
         "nbnd": 0,
         "fermi_energy": 0.0,
         "num_electrons": 0.0,
+        "mu_from_n": False,
         "Temperature": 0.0,
         "cutoff_energy": 0.05,
         "smearing": 0.02,

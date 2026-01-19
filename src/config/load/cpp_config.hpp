@@ -26,6 +26,7 @@ extern string celltype;
 extern int nbnd;
 extern float fermi_energy;
 extern float num_electrons;
+extern bool mu_from_n;
 extern float Temperature;
 extern float cutoff_energy;
 extern float smearing;

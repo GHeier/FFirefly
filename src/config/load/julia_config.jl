@@ -26,6 +26,7 @@ celltype::String = cfg.celltype
 nbnd::Int = cfg.nbnd
 fermi_energy::Float64 = cfg.fermi_energy
 num_electrons::Float64 = cfg.num_electrons
+mu_from_n::Bool = cfg.mu_from_n
 Temperature::Float64 = cfg.Temperature
 cutoff_energy::Float64 = cfg.cutoff_energy
 smearing::Float64 = cfg.smearing

@@ -20,6 +20,17 @@ DataEvaluator::DataEvaluator(BaseData& f) {
     inds = f.inds;
 
     if (!f.domain.empty()) {
+        // Validate domain before conversion and inversion
+        for (size_t i = 0; i < f.domain.size(); i++) {
+            for (size_t j = 0; j < f.domain[i].size(); j++) {
+                if (std::isnan(f.domain[i][j]) || std::isinf(f.domain[i][j])) {
+                    throw std::runtime_error("Domain matrix contains NaN or Inf in DataEvaluator constructor at ["
+                                           + std::to_string(i) + "][" + std::to_string(j) + "]. "
+                                           "This indicates memory corruption before DataEvaluator initialization.");
+                }
+            }
+        }
+
         domain = float_matrix_to_vec(f.domain);
         inv_domain = invertMatrix2(domain, f.dimension);
     } else {
@@ -158,8 +169,19 @@ vector<Vec> invertMatrix2(vector<Vec> &matrix, int n) {
 
         // Check for singular matrix
         if (std::fabs(augmented[i][i]) < 1e-6) {
-            throw std::runtime_error(
-                "vector<vector<float>> is singular and cannot be inverted.");
+            std::string error_msg = "Matrix is singular and cannot be inverted.\n";
+            error_msg += "Matrix after partial pivoting at step " + std::to_string(i) + ":\n";
+            for (size_t row = 0; row < n; ++row) {
+                error_msg += "  [";
+                for (size_t col = 0; col < n; ++col) {
+                    error_msg += std::to_string(augmented[row][col]);
+                    if (col < n - 1) error_msg += ", ";
+                }
+                error_msg += "]\n";
+            }
+            error_msg += "Pivot element [" + std::to_string(i) + "][" + std::to_string(i) + "] = "
+                       + std::to_string(augmented[i][i]) + " (too small, threshold = 1e-6)";
+            throw std::runtime_error(error_msg);
         }
 
         // Normalize the pivot row

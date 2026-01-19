@@ -68,6 +68,41 @@ class Surface:
             offset += lens[i]
         self.faces = result
 
+    def get_faces_and_areas(self):
+        """Returns tuple of (kpoints, areas) where kpoints is list of k-point vectors and areas is list of floats."""
+        lib.Surface_num_faces_export0.argtypes = [ctypes.c_void_p]
+        lib.Surface_num_faces_export0.restype = ctypes.c_int
+        n = lib.Surface_num_faces_export0(self.ptr)
+
+        if n <= 0:
+            return ([], [])
+
+        dims = (ctypes.c_int * n)()
+        areas = (ctypes.c_float * n)()
+        total_len = 3 * n  # Maximum possible size
+        kpoints_buf = (ctypes.c_float * total_len)()
+
+        lib.Surface_faces_and_areas_export0.argtypes = [
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_float),
+            ctypes.POINTER(ctypes.c_int),
+            ctypes.POINTER(ctypes.c_float),
+            ctypes.POINTER(ctypes.c_int),
+        ]
+        lib.Surface_faces_and_areas_export0.restype = None
+        lib.Surface_faces_and_areas_export0(self.ptr, kpoints_buf, dims, areas, ctypes.c_int(n))
+
+        # Reconstruct k-points list
+        kpoints = []
+        offset = 0
+        for i in range(n):
+            dim = dims[i]
+            kpoints.append([kpoints_buf[offset + j] for j in range(dim)])
+            offset += dim
+
+        areas_list = [areas[i] for i in range(n)]
+        return (kpoints, areas_list)
+
     def __call__(self, *args):
         raise TypeError("Invalid arguments to __call__")
 
@@ -825,6 +860,106 @@ class Hamiltonian:
         vecs = real_part + 1j * imag_part
 
         return eigs, vecs
+
+    def get_fermi_velocity(self, k):
+        """
+        Calculate Fermi velocity v_n(k) = ∇_k E_n(k) for all bands at k-point(s).
+
+        Args:
+            k: momentum point (list/array of length 2 or 3) or list of momentum points
+
+        Returns:
+            For single k-point:
+                numpy array of shape (n, 3) where n is number of bands
+                Each row is the velocity vector [vx, vy, vz] for that band
+            For multiple k-points:
+                numpy array of shape (num_points, n, 3)
+        """
+        # Check if k is a list of points
+        if isinstance(k, (list, tuple, np.ndarray)) and len(k) > 0:
+            if isinstance(k[0], (list, tuple, np.ndarray)):
+                # List of k-points
+                points = k
+                num_points = len(points)
+                if num_points == 0:
+                    return np.zeros((0, 0, 3), dtype=np.float32)
+
+                point_len = len(points[0])
+                points_flat = (c_float * (num_points * point_len))()
+                for i, p in enumerate(points):
+                    for j, val in enumerate(p):
+                        points_flat[i * point_len + j] = float(val)
+
+                # Allocate space for velocities (num_points × max_bands × 3)
+                max_bands = 100
+                velocities_out = (c_float * (num_points * max_bands * 3))()
+                num_bands = c_int(0)
+
+                lib.Hamiltonian_get_fermi_velocity_export_list.argtypes = [
+                    ctypes.c_void_p,
+                    ctypes.POINTER(ctypes.c_float),
+                    ctypes.c_int,
+                    ctypes.c_int,
+                    ctypes.POINTER(ctypes.c_float),
+                    ctypes.POINTER(ctypes.c_int),
+                ]
+                lib.Hamiltonian_get_fermi_velocity_export_list.restype = None
+
+                lib.Hamiltonian_get_fermi_velocity_export_list(
+                    self.ptr, points_flat, c_int(num_points), c_int(point_len),
+                    velocities_out, ctypes.byref(num_bands)
+                )
+
+                n = num_bands.value
+                if n == 0:
+                    return np.zeros((num_points, 0, 3), dtype=np.float32)
+
+                # Reshape to (num_points, n, 3)
+                result = np.zeros((num_points, n, 3), dtype=np.float32)
+                for p in range(num_points):
+                    for i in range(n):
+                        idx = (p * n + i) * 3
+                        result[p, i, 0] = velocities_out[idx + 0]
+                        result[p, i, 1] = velocities_out[idx + 1]
+                        result[p, i, 2] = velocities_out[idx + 2]
+
+                return result
+
+        # Single k-point
+        k_array = (c_float * len(k))(*[float(x) for x in k])
+        k_len = c_int(len(k))
+
+        # Allocate space for velocities (max_bands × 3)
+        max_bands = 100
+        velocities_out = (c_float * (max_bands * 3))()
+        num_bands = c_int(0)
+
+        lib.Hamiltonian_get_fermi_velocity_export0.argtypes = [
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_float),
+            ctypes.c_int,
+            ctypes.POINTER(ctypes.c_float),
+            ctypes.POINTER(ctypes.c_int),
+        ]
+        lib.Hamiltonian_get_fermi_velocity_export0.restype = None
+
+        lib.Hamiltonian_get_fermi_velocity_export0(
+            self.ptr, k_array, k_len,
+            velocities_out, ctypes.byref(num_bands)
+        )
+
+        n = num_bands.value
+        if n == 0:
+            return np.zeros((0, 3), dtype=np.float32)
+
+        # Reshape to (n, 3)
+        result = np.zeros((n, 3), dtype=np.float32)
+        for i in range(n):
+            result[i, 0] = velocities_out[i * 3 + 0]
+            result[i, 1] = velocities_out[i * 3 + 1]
+            result[i, 2] = velocities_out[i * 3 + 2]
+
+        return result
 
     def __del__(self):
         try:
