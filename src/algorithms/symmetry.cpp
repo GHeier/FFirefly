@@ -25,34 +25,6 @@ vector<string> get_point_group_symmetries_from_lattice(string& lattice) {
     return {}; // Default return
 }
 
-// Helper function for rotations
-int get_quadrant(vector<float>& v0) {
-    float x = v0[0];
-    float y = v0[1];
-
-    if (v0.size() == 2) {
-        if (x >= 0 && y >= 0) return 1;
-        if (x <= 0 && y >= 0) return 2;
-        if (x <= 0 && y <= 0) return 3;
-        if (x >= 0 && y <= 0) return 4;
-    }
-    // Dim = 3
-    if (v0.size() > 3) {
-        printf("Wrong vec size\n");
-        exit(1);
-    }
-    float z = v0[2];
-    if (x >= 0 && y >= 0 && z >= 0) return 1;
-    if (x <= 0 && y >= 0 && z >= 0) return 2;
-    if (x <= 0 && y <= 0 && z >= 0) return 3;
-    if (x >= 0 && y <= 0 && z >= 0) return 4;
-    if (x >= 0 && y >= 0 && z <= 0) return 5;
-    if (x <= 0 && y >= 0 && z <= 0) return 6;
-    if (x <= 0 && y <= 0 && z <= 0) return 7;
-    if (x >= 0 && y <= 0 && z <= 0) return 8;
-    return 0; // Default return
-}
-
 // Rotation matrix around z axis
 vector<vector<float>> rot_matrix(float theta) {
     return {
@@ -72,32 +44,78 @@ vector<float> mul(vector<vector<float>> &A, vector<float> &x) {
     return result;
 }
 
-vector<float> action_from_sym(string& sym, vector<float> v0) {
+// Apply periodic boundary conditions to wrap point into [-0.5, 0.5)
+vector<float> apply_periodic_bc(vector<float> v) {
+    for (int i = 0; i < v.size(); i++) {
+        // Wrap to [-0.5, 0.5) using modulo arithmetic
+        v[i] = fmod(v[i] + 0.5, 1.0) - 0.5;
+        if (v[i] < -0.5) v[i] += 1.0;
+        if (v[i] >= 0.5) v[i] -= 1.0;
+    }
+    return v;
+}
+
+// Generate ALL symmetry-equivalent points for a given symmetry operation
+vector<vector<float>> generate_equivalent_points(string& sym, vector<float> v0) {
     if (v0.size() > 3) {
         printf("Vector greater than 3D cannot have symmetries applied to it\n. Vec = ");
         for (float &x : v0) printf("%f ", x);
         exit(1);
     }
-    int seed = rand();
-    if (sym == "C4") { // 2D only for now
-        // C4 symmetry: 0°, 90°, 180°, 270° rotations
-        float rot = seed % 4;
-        vector<vector<float>> R = rot_matrix(rot * M_PI / 2);
-        return mul(R, v0);
+
+    vector<vector<float>> equivalent_points;
+
+    if (sym == "C4") {
+        // C4 symmetry: 0°, 90°, 180°, 270° rotations around z-axis
+        for (int i = 0; i < 4; i++) {
+            vector<vector<float>> R = rot_matrix(i * M_PI / 2);
+            vector<float> rotated = mul(R, v0);
+            equivalent_points.push_back(apply_periodic_bc(rotated));
+        }
     }
     else if (sym == "R") {
-        int flip = seed % v0.size() + 1;
-        if (flip == 1) v0[0] = -v0[0];
-        if (flip == 2) v0[1] = -v0[1];
-        if (flip == 3) v0[2] = -v0[2];
-        return v0;
+        // Mirror reflections across planes
+        int dim = v0.size();
+
+        // Mirror across x=0 plane
+        vector<float> v1 = v0;
+        v1[0] = -v1[0];
+        equivalent_points.push_back(apply_periodic_bc(v1));
+
+        // Mirror across y=0 plane
+        if (dim >= 2) {
+            vector<float> v2 = v0;
+            v2[1] = -v2[1];
+            equivalent_points.push_back(apply_periodic_bc(v2));
+        }
+
+        // Mirror across z=0 plane (for 3D)
+        if (dim >= 3) {
+            vector<float> v3 = v0;
+            v3[2] = -v3[2];
+            equivalent_points.push_back(apply_periodic_bc(v3));
+        }
+
+        // For SC lattice, also include diagonal mirrors (x=y, x=-y)
+        if (dim >= 2) {
+            vector<float> v4 = {v0[1], v0[0]};
+            if (dim == 3) v4.push_back(v0[2]);
+            equivalent_points.push_back(apply_periodic_bc(v4));
+
+            vector<float> v5 = {-v0[1], -v0[0]};
+            if (dim == 3) v5.push_back(v0[2]);
+            equivalent_points.push_back(apply_periodic_bc(v5));
+        }
     }
     else if (sym == "I") {
+        // Inversion: (x, y, z) → (-x, -y, -z)
+        vector<float> inverted = v0;
         for (int i = 0; i < v0.size(); i++)
-            v0[i] = -v0[i];
-        return v0;
+            inverted[i] = -inverted[i];
+        equivalent_points.push_back(apply_periodic_bc(inverted));
     }
-    return v0; // Default return
+
+    return equivalent_points;
 }
 
 // Scaled to be from -0.5 to 0.5, not -pi to pi
@@ -175,60 +193,92 @@ int get_global_ind(int &nx, int &ny, int &nz, vector<int> &grid) {
     return 0; // Default return
 }
 
+// Check if two points are equal within numerical tolerance
+bool points_equal(vector<float>& v1, vector<float>& v2, float tol = 1e-6) {
+    if (v1.size() != v2.size()) return false;
+    for (int i = 0; i < v1.size(); i++) {
+        if (fabs(v1[i] - v2[i]) > tol) return false;
+    }
+    return true;
+}
+
 // Grid mapping, constructs a list of equivalent points in index space
 vector<int> sym_grid_map(vector<int> &grid, string& lattice) {
     vector<string> syms = get_point_group_symmetries_from_lattice(lattice);
     int prod = 1;
     for (int x : grid) prod *= x;
-    vector<int> mem_list(prod);
-    int nx = 0, ny = 0, nz = 0;
+    vector<int> mem_list(prod, 0);  // Initialize all to 0 (unassigned)
     int mem_ind = 1;
     int dim = grid.size();
 
-    for (int i = 0; i < mem_list.size(); i++) {
-        vector<int> ind_set(dim);
-        if (dim >= 1) ind_set[0] = nx;
-        if (dim >= 2) ind_set[1] = ny;
-        if (dim >= 3) ind_set[2] = nz;
-        vector<float> v0 = ind_to_vec(ind_set, grid);
+    // Process each point in the grid
+    for (int i = 0; i < prod; i++) {
+        // Skip if already assigned to an equivalence class
+        if (mem_list[i] != 0) continue;
 
-        // Apply all symmetries systematically
+        // Get the current point's indices and coordinates
+        vector<int> current_inds = get_inds_from_global(i, grid);
+        vector<float> current_vec = ind_to_vec(current_inds, grid);
+
+        // Start a new equivalence class
+        mem_list[i] = mem_ind;
+
+        // Collect all equivalent points by applying all symmetries
+        vector<vector<float>> all_equivalent_points;
+        all_equivalent_points.push_back(current_vec);  // Include the original point
+
+        // Generate equivalent points from all symmetry operations
         for (int sym_idx = 0; sym_idx < syms.size(); sym_idx++) {
-            vector<float> v1 = action_from_sym(syms[sym_idx], v0);
-            vector<int> new_ind = vec_to_ind(v1, grid);
-            int idx_nx = (dim >= 1) ? new_ind[0] : 0;
-            int idx_ny = (dim >= 2) ? new_ind[1] : 0;
-            int idx_nz = (dim >= 3) ? new_ind[2] : 0;
+            vector<vector<float>> sym_points = generate_equivalent_points(syms[sym_idx], current_vec);
+
+            for (auto& equiv_vec : sym_points) {
+                // Check if this point is already in our list
+                bool already_added = false;
+                for (auto& existing : all_equivalent_points) {
+                    if (points_equal(equiv_vec, existing)) {
+                        already_added = true;
+                        break;
+                    }
+                }
+                if (!already_added) {
+                    all_equivalent_points.push_back(equiv_vec);
+                }
+            }
+        }
+
+        // Assign all equivalent points to the same equivalence class
+        for (auto& equiv_vec : all_equivalent_points) {
+            vector<int> equiv_inds = vec_to_ind(equiv_vec, grid);
+
+            // Validate indices are in bounds
+            bool valid = true;
+            for (int d = 0; d < dim; d++) {
+                if (equiv_inds[d] < 0 || equiv_inds[d] >= grid[d]) {
+                    valid = false;
+                    break;
+                }
+            }
+            if (!valid) continue;
+
+            int idx_nx = (dim >= 1) ? equiv_inds[0] : 0;
+            int idx_ny = (dim >= 2) ? equiv_inds[1] : 0;
+            int idx_nz = (dim >= 3) ? equiv_inds[2] : 0;
             int idx = get_global_ind(idx_nx, idx_ny, idx_nz, grid);
 
             // Bounds check
-            if (idx < 0 || idx >= mem_list.size()) {
-                printf("ERROR: Global index %d out of bounds [0, %d)\n", idx, (int)mem_list.size());
+            if (idx < 0 || idx >= prod) {
                 continue;
             }
 
+            // Assign to equivalence class if not already assigned
             if (mem_list[idx] == 0) {
-                if (mem_list[i] == 0) {
-                    mem_list[i] = mem_ind;
-                    mem_ind++;
-                }
-                mem_list[idx] = mem_list[i];
-            }
-            else {
-                if (mem_list[i] == 0) {
-                    mem_list[i] = mem_list[idx];
-                }
+                mem_list[idx] = mem_ind;
             }
         }
 
-        // If this point wasn't mapped by any symmetry, create a new equivalence class
-        if (mem_list[i] == 0) {
-            mem_list[i] = mem_ind;
-            mem_ind++;
-        }
-
-        update_inds(nx, ny, nz, grid);
+        mem_ind++;
     }
+
     return mem_list;
 }
 

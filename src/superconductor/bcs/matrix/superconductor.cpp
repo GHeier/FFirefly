@@ -60,15 +60,15 @@ float bcs() {
     printf("Temperature: %.5f \n", T);
 
     float renorm = 0.0;
-    if (FS_only)
-        renorm = get_renormalization(FS);
-    else
-        renorm = get_renormalization_off_FS(freq_FS);
-    double onesum = 0.0;
-    Field_C der_sigma(outdir + prefix + "_renormalization.h5");
-    for (Vec x : FS) {
-        onesum += (x.area / vp(x.n, x) * real(der_sigma(x, 0.0)));
-    }
+    //if (FS_only)
+    //    renorm = get_renormalization(FS);
+    //else
+    //    renorm = get_renormalization_off_FS(freq_FS);
+    double onesum = 1.0;
+    //Field_C der_sigma(outdir + prefix + "_renormalization.h5");
+    //for (Vec x : FS) {
+    //    onesum += (x.area / vp(x.n, x) * real(der_sigma(x, 0.0)));
+    //}
     printf("Average analytic dSigma/dw on FS: %f\n", onesum / (pow(2 * M_PI, dim)));
     printf("lambda_z = %f\n", renorm);
 
@@ -99,6 +99,7 @@ float bcs() {
     //    float proj = cos(k(0)) - cos(k(1));
     //    initial_guess.eigenvector[i] = proj;
     //}
+    printf("Number of Eigenvalues to Save: %d\n", num_eigenvalues_to_save);
     Eigenvector *solutions = new Eigenvector[num_eigenvalues_to_save];
     //if (method == "power_iteration") {
         printf("Performing Power Iteration\n");

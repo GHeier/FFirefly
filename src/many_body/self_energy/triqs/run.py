@@ -20,8 +20,7 @@ max_iters = cfg.max_iters
 def run():
     print("mixing = ", mixing)
     # IPT solver works with any DOS-based approach
-    # The interaction type (DMFT, FLEX, etc.) is primarily used in other parts of the many_body code
-    if interaction not in ["DMFT", "FLEX"]:
+    if interaction not in ["DMFT"]:
         print(f"Warning: interaction = '{interaction}' may not be fully supported.")
         print("IPT solver will proceed using DOS-based local approximation.")
 
@@ -66,7 +65,7 @@ def run():
         S = IPTSolver(beta, H=H, mix=mixing, mu=mu, n_loops=max_iters)
 
         # Run DMFT loop
-        S.loop(U)
+        S.loop(U, bethe_lattice=False)
 
         # Print results
         print(f"Final Sigma max: {np.max(np.abs(S.Sigma_loc.obj_w.data)):.4f}")

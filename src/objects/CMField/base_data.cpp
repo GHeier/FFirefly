@@ -53,34 +53,40 @@ BaseData load_data_from_hdf5(const std::string& filename) {
     field.as_mesh = temp_as_mesh;
 
     // -- Domain (optional) --
-    if (field.with_k) {
-        DataSet ds_domain = file.openDataSet("/domain");
-        DataSpace space_domain = ds_domain.getSpace();
-        int rank = space_domain.getSimpleExtentNdims();
-        if (rank == 2) {
-            hsize_t dims[2];
-            space_domain.getSimpleExtentDims(dims);
-            // Read into flat buffer first, then populate 2D structure
-            std::vector<float> domain_flat(dims[0] * dims[1]);
-            ds_domain.read(domain_flat.data(), PredType::NATIVE_FLOAT);
-            field.domain.assign(dims[0], std::vector<float>(dims[1]));
-            for (size_t i = 0; i < dims[0]; i++) {
-                for (size_t j = 0; j < dims[1]; j++) {
-                    field.domain[i][j] = domain_flat[i * dims[1] + j];
+    if (field.with_k && field.as_mesh) {
+        try {
+            DataSet ds_domain = file.openDataSet("/domain");
+            DataSpace space_domain = ds_domain.getSpace();
+            int rank = space_domain.getSimpleExtentNdims();
+            if (rank == 2) {
+                hsize_t dims[2];
+                space_domain.getSimpleExtentDims(dims);
+                // Read into flat buffer first, then populate 2D structure
+                std::vector<float> domain_flat(dims[0] * dims[1]);
+                ds_domain.read(domain_flat.data(), PredType::NATIVE_FLOAT);
+                field.domain.assign(dims[0], std::vector<float>(dims[1]));
+                for (size_t i = 0; i < dims[0]; i++) {
+                    for (size_t j = 0; j < dims[1]; j++) {
+                        field.domain[i][j] = domain_flat[i * dims[1] + j];
+                    }
                 }
             }
-        }
-        space_domain.close();
-        ds_domain.close();
+            space_domain.close();
+            ds_domain.close();
 
-        // Validate domain matrix immediately after loading
-        for (size_t i = 0; i < field.domain.size(); i++) {
-            for (size_t j = 0; j < field.domain[i].size(); j++) {
-                if (std::isnan(field.domain[i][j]) || std::isinf(field.domain[i][j])) {
-                    throw std::runtime_error("Domain matrix contains NaN or Inf values at position ["
-                                           + std::to_string(i) + "][" + std::to_string(j) + "]");
+            // Validate domain matrix immediately after loading
+            for (size_t i = 0; i < field.domain.size(); i++) {
+                for (size_t j = 0; j < field.domain[i].size(); j++) {
+                    if (std::isnan(field.domain[i][j]) || std::isinf(field.domain[i][j])) {
+                        throw std::runtime_error("Domain matrix contains NaN or Inf values at position ["
+                                               + std::to_string(i) + "][" + std::to_string(j) + "]");
+                    }
                 }
             }
+        } catch (const H5::Exception&) {
+            // Domain is optional - ignore HDF5 errors if missing
+        } catch (...) {
+            // Domain is optional - ignore other errors if missing
         }
     }
 
@@ -476,6 +482,29 @@ void save_data(string filename, BaseData::DataVariant& data, bool is_complex, ve
 
     bool is_matrix = inds.size() == 2;  // Matrix if rank = 2
     vector<vector<float>> points = {}; // Empty for this wrapper function
+    save_data_to_hdf5(filename, is_complex, is_vector, is_matrix, with_k, with_w, as_mesh, inds, mesh, domain, dim, w_points, points, data);
+}
+
+void save_data_with_points(string filename, BaseData::DataVariant& data, bool is_complex, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<int>& inds, vector<vector<float>>& points) {
+    bool is_vector = false;
+    bool with_k = mesh.size() > 0 || points.size() > 0;
+    bool with_w = w_points.size() > 0;
+    bool as_mesh = points.empty();  // KEY: as_mesh = false if points provided
+
+    // Determine dimension
+    int dim = 0;
+    if (!points.empty()) {
+        // From points if provided
+        dim = points[0].size();
+    } else {
+        // From mesh: count non-trivial dimensions (mesh[i] > 1)
+        for (size_t i = 0; i < mesh.size(); i++) {
+            if (mesh[i] > 1) dim++;
+        }
+        if (dim == 0) dim = domain.empty() ? 3 : domain.size();
+    }
+
+    bool is_matrix = inds.size() == 2;
     save_data_to_hdf5(filename, is_complex, is_vector, is_matrix, with_k, with_w, as_mesh, inds, mesh, domain, dim, w_points, points, data);
 }
 

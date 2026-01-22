@@ -129,19 +129,36 @@ void save_data_scalar_export0(const char *filename, const float *data_interleave
                                int total_size, bool is_complex,
                                const int *mesh, int mesh_size,
                                const float *domain_flat, int domain_rows, int domain_cols,
-                               const float *w_points, int w_size);
+                               const float *w_points, int w_size,
+                               const float *points_flat, int n_points, int point_dim);
 
 void save_data_vector_export0(const char *filename, const float *data_interleaved,
                                int nk, int vec_len, bool is_complex,
                                const int *mesh, int mesh_size,
                                const float *domain_flat, int domain_rows, int domain_cols,
-                               const float *w_points, int w_size);
+                               const float *w_points, int w_size,
+                               const float *points_flat, int n_points, int point_dim);
 
 void save_data_matrix_export0(const char *filename, const float *data_interleaved,
                                int num_matrices, int mat_dim, bool is_complex,
                                const int *mesh, int mesh_size,
                                const float *domain_flat, int domain_rows, int domain_cols,
-                               const float *w_points, int w_size);
+                               const float *w_points, int w_size,
+                               const float *points_flat, int n_points, int point_dim);
+
+void save_data_tensor3_export0(const char *filename, const float *data_interleaved,
+                               int nk, int dim1, int dim2, int dim3, bool is_complex,
+                               const int *mesh, int mesh_size,
+                               const float *domain_flat, int domain_rows, int domain_cols,
+                               const float *w_points, int w_size,
+                               const float *points_flat, int n_points, int point_dim);
+
+void save_data_tensor4_export0(const char *filename, const float *data_interleaved,
+                               int nk, int dim1, int dim2, int dim3, int dim4, bool is_complex,
+                               const int *mesh, int mesh_size,
+                               const float *domain_flat, int domain_rows, int domain_cols,
+                               const float *w_points, int w_size,
+                               const float *points_flat, int n_points, int point_dim);
 
 // BaseData exports
 #include "src/objects/CMField/base_data.hpp"
@@ -174,6 +191,9 @@ int BaseData_get_domain_cols(BaseData *data);
 void BaseData_get_domain(BaseData *data, float *domain_out);
 int BaseData_get_w_points_size(BaseData *data);
 void BaseData_get_w_points(BaseData *data, float *w_points_out);
+int BaseData_get_points_rows(BaseData *data);
+int BaseData_get_points_cols(BaseData *data);
+void BaseData_get_points(BaseData *data, float *points_out);
 
 // BaseData data extraction (returns flattened arrays)
 void BaseData_get_data_scalar(BaseData *data, float *real_out, float *imag_out);

@@ -101,5 +101,6 @@ BaseData load_data_from_hdf5(const std::string& filename, const std::string& ord
 void save_data_to_hdf5(BaseData& data, const std::string& filename);
 void save_data_to_hdf5(BaseData& data, const std::string& filename, const std::string& ordering);  // ordering: "k-w" or "w-k"
 void save_data(string filename, BaseData::DataVariant& data, bool is_complex = false, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<int>& inds = {});
+void save_data_with_points(string filename, BaseData::DataVariant& data, bool is_complex, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<int>& inds, vector<vector<float>>& points);
 
 void save_data_to_hdf5(const std::string& filename, bool is_complex, bool is_vector, bool is_matrix, bool with_k, bool with_w, bool as_mesh, const vector<int>& inds, vector<int> &mesh, vector<vector<float>> &domain, int dimension, vector<float> &w_points, vector<vector<float>> &points, const BaseData::DataVariant& data);

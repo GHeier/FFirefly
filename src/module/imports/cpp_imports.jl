@@ -1319,6 +1319,7 @@ function save_data!(
     inds::Union{AbstractVector{<:Integer}, Nothing} = nothing,
     n_indices::Union{Integer, Nothing} = nothing,
     dim_indices::Union{Integer, Nothing} = nothing,
+    points = nothing,
 )
     # Handle positional vs keyword arguments
     # Positional args take precedence over keyword args
@@ -1361,33 +1362,66 @@ function save_data!(
 
     rank = length(inds)
 
+    # Handle points conversion to standard format (nk × dim matrix)
+    if points !== nothing
+        if typeof(points) <: AbstractMatrix
+            # Check if it's (nk × dim) or (dim × nk)
+            # Assume the smaller dimension is dim (spatial dimension typically 3 or 4)
+            # and the larger is nk (number of k-points, typically much larger)
+            nrows, ncols = size(points)
+            if nrows > ncols
+                # Already (nk × dim), keep as is
+                points = points
+            else
+                # (dim × nk), transpose to (nk × dim)
+                points = permutedims(points, (2, 1))
+            end
+        elseif typeof(points) <: AbstractVector
+            # Check if it's a vector of vectors
+            if !isempty(points) && typeof(points[1]) <: AbstractVector
+                # Vector of vectors: [[x1,y1,z1], [x2,y2,z2], ...]
+                nk = length(points)
+                dim = length(points[1])
+                # Convert to (nk × dim) matrix
+                points_mat = zeros(Float64, nk, dim)
+                for (i, pt) in enumerate(points)
+                    points_mat[i, :] = pt
+                end
+                points = points_mat
+            # else: already a flat vector, keep as is (handled by downstream functions)
+            end
+        end
+    end
+
     # Determine data type based on rank
     if rank == 4
         # 4D tensor data
-        save_data_tensor4(path, data, is_complex, mesh, domain, w_points, inds)
+        save_data_tensor4(path, data, is_complex, mesh, domain, w_points, inds, points)
     elseif rank == 3
         # 3D tensor data
-        save_data_tensor3(path, data, is_complex, mesh, domain, w_points, inds)
+        save_data_tensor3(path, data, is_complex, mesh, domain, w_points, inds, points)
     elseif rank == 2
         # Matrix data
-        save_data_matrix(path, data, is_complex, mesh, domain, w_points, inds)
+        save_data_matrix(path, data, is_complex, mesh, domain, w_points, inds, points)
     elseif rank == 1
         # Vector data
-        save_data_vector(path, data, is_complex, mesh, domain, w_points, inds)
+        save_data_vector(path, data, is_complex, mesh, domain, w_points, inds, points)
     else
         # Scalar data (rank == 0)
-        save_data_scalar(path, data, is_complex, mesh, domain, w_points)
+        save_data_scalar(path, data, is_complex, mesh, domain, w_points, points)
     end
 end
 
 function data_save!(path::String, points, data, dimension, with_w, is_complex, is_vector)
-    println("type of points: ", typeof(points))
-    println("type of data: ", typeof(data))
-    println("type of dimension: ", typeof(dimension))
-    numpts = length(points)
-    jpoints = points
-    jdata = data
-    ccall((:data_save_export0, libfly), Cvoid, (Cstring, Ptr{Float64}, Ptr{Float64}, Cint, Cint, Cint, Cint, Cint), path, jpoints, jdata, numpts, dimension, with_w, is_complex, is_vector)
+    # Calculate actual number of points (not flattened length)
+    # dimension is the SPATIAL dimension
+    # If with_w = true, each point has dimension + 1 coordinates (spatial + frequency)
+    point_size = dimension + (with_w ? 1 : 0)
+    numpts = div(length(points), point_size)
+    # Convert to Float32 arrays as expected by C++ function
+    jpoints = Float32.(points)
+    jdata = Float32.(data)
+    ccall((:data_save_export0, libfly), Cvoid, (Cstring, Ptr{Float32}, Ptr{Float32}, Cint, Cint, Cint, Cint, Cint), path, jpoints, jdata, numpts, dimension, with_w, is_complex, is_vector)
 end
 
 function interleave_complex(A::AbstractArray)
@@ -1451,7 +1485,8 @@ end
 # Save data functions
 function save_data_scalar(filename::String, data::AbstractArray,
                           is_complex::Bool, mesh::Vector{<:Integer}, domain::Matrix{<:Real},
-                          w_points::Vector{<:Real}=Float32[])
+                          w_points::Vector{<:Real}=Float32[],
+                          points::Union{AbstractMatrix{<:AbstractFloat}, Nothing}=nothing)
     # Flatten and interleave data
     if is_complex
         data_interleaved = interleave_complex(data)
@@ -1470,21 +1505,39 @@ function save_data_scalar(filename::String, data::AbstractArray,
     # Flatten domain
     domain_flat = reshape(domain_f32', :)
 
+    # Process points (row-major: flatten across columns, then rows)
+    # C++ expects: [x1, y1, z1, x2, y2, z2, ...] for points[i][j] = points_flat[i * point_dim + j]
+    if points !== nothing
+        points_f32 = Float32.(points)
+        n_points = size(points_f32, 1)
+        point_dim = size(points_f32, 2)
+        # Julia is column-major, so we need to reorder to get row-major interleaving
+        # Transpose makes it (point_dim × n_points), then vec() gives column-major which is row-major of original
+        points_flat = vec(permutedims(points_f32, (2, 1)))
+    else
+        points_flat = Float32[]
+        n_points = 0
+        point_dim = 0
+    end
+
     ccall((:save_data_scalar_export0, libfly), Cvoid,
           (Cstring, Ptr{Float32}, Cint, Bool,
-           Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint),
+           Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint,
+           Ptr{Float32}, Cint, Cint),
           filename, data_interleaved, total_size, is_complex,
-          mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size)
+          mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size,
+          points_flat, n_points, point_dim)
 end
 
 function save_data_vector(filename::String, data::AbstractArray,
                           nk_or_is_complex = nothing, vec_len_or_mesh = nothing,
                           is_complex_or_domain = nothing, mesh_or_w_points = nothing,
-                          domain_or_inds = nothing, w_points = nothing, inds = nothing)
+                          domain_or_inds = nothing, w_points = nothing, inds = nothing,
+                          points::Union{AbstractMatrix{<:AbstractFloat}, Nothing} = nothing)
     # Detect which API is being used based on parameter types
     # NOTE: Check Bool FIRST since Bool <: Integer in Julia!
     if isa(nk_or_is_complex, Bool)
-        # New API: (filename, data, is_complex, mesh, domain, w_points, inds)
+        # New API: (filename, data, is_complex, mesh, domain, w_points, inds, points)
         is_complex = nk_or_is_complex
         mesh = vec_len_or_mesh
         domain = is_complex_or_domain
@@ -1528,21 +1581,39 @@ function save_data_vector(filename::String, data::AbstractArray,
     # Flatten domain
     domain_flat = reshape(domain_f32', :)
 
+    # Process points (row-major: flatten across columns, then rows)
+    # C++ expects: [x1, y1, z1, x2, y2, z2, ...] for points[i][j] = points_flat[i * point_dim + j]
+    if points !== nothing
+        points_f32 = Float32.(points)
+        n_points = size(points_f32, 1)
+        point_dim = size(points_f32, 2)
+        # Julia is column-major, so we need to reorder to get row-major interleaving
+        # Transpose makes it (point_dim × n_points), then vec() gives column-major which is row-major of original
+        points_flat = vec(permutedims(points_f32, (2, 1)))
+    else
+        points_flat = Float32[]
+        n_points = 0
+        point_dim = 0
+    end
+
     ccall((:save_data_vector_export0, libfly), Cvoid,
           (Cstring, Ptr{Float32}, Cint, Cint, Bool,
-           Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint),
+           Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint,
+           Ptr{Float32}, Cint, Cint),
           filename, data_interleaved, nk_i32, vec_len_i32, is_complex,
-          mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size)
+          mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size,
+          points_flat, n_points, point_dim)
 end
 
 function save_data_matrix(filename::String, data::AbstractArray,
                           num_matrices_or_is_complex = nothing, mat_dim_or_mesh = nothing,
                           is_complex_or_domain = nothing, mesh_or_w_points = nothing,
-                          domain_or_inds = nothing, w_points = nothing, inds = nothing)
+                          domain_or_inds = nothing, w_points = nothing, inds = nothing,
+                          points::Union{AbstractMatrix{<:AbstractFloat}, Nothing} = nothing)
     # Detect which API is being used based on parameter types
     # NOTE: Check Bool FIRST since Bool <: Integer in Julia!
     if isa(num_matrices_or_is_complex, Bool)
-        # New API: (filename, data, is_complex, mesh, domain, w_points, inds)
+        # New API: (filename, data, is_complex, mesh, domain, w_points, inds, points)
         is_complex = num_matrices_or_is_complex
         mesh = mat_dim_or_mesh
         domain = is_complex_or_domain
@@ -1593,16 +1664,34 @@ function save_data_matrix(filename::String, data::AbstractArray,
     # Flatten domain
     domain_flat = reshape(domain_f32', :)
 
+    # Process points (row-major: flatten across columns, then rows)
+    # C++ expects: [x1, y1, z1, x2, y2, z2, ...] for points[i][j] = points_flat[i * point_dim + j]
+    if points !== nothing
+        points_f32 = Float32.(points)
+        n_points = size(points_f32, 1)
+        point_dim = size(points_f32, 2)
+        # Julia is column-major, so we need to reorder to get row-major interleaving
+        # Transpose makes it (point_dim × n_points), then vec() gives column-major which is row-major of original
+        points_flat = vec(permutedims(points_f32, (2, 1)))
+    else
+        points_flat = Float32[]
+        n_points = 0
+        point_dim = 0
+    end
+
     ccall((:save_data_matrix_export0, libfly), Cvoid,
           (Cstring, Ptr{Float32}, Cint, Cint, Bool,
-           Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint),
+           Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint,
+           Ptr{Float32}, Cint, Cint),
           filename, data_interleaved, num_matrices_i32, mat_dim_i32, is_complex,
-          mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size)
+          mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size,
+          points_flat, n_points, point_dim)
 end
 
 function save_data_tensor3(filename::String, data::AbstractArray,
                           is_complex::Bool, mesh::Vector{<:Integer}, domain::Matrix{<:Real},
-                          w_points::Vector{<:Real}=Float32[], inds::Vector{<:Integer}=Int[])
+                          w_points::Vector{<:Real}=Float32[], inds::Vector{<:Integer}=Int[],
+                          points::Union{AbstractMatrix{<:AbstractFloat}, Nothing}=nothing)
     # Extract dimensions from inds
     if length(inds) != 3
         error("save_data_tensor3 requires inds with 3 dimensions")
@@ -1637,16 +1726,34 @@ function save_data_tensor3(filename::String, data::AbstractArray,
     # Flatten domain
     domain_flat = reshape(domain_f32', :)
 
+    # Process points (row-major: flatten across columns, then rows)
+    # C++ expects: [x1, y1, z1, x2, y2, z2, ...] for points[i][j] = points_flat[i * point_dim + j]
+    if points !== nothing
+        points_f32 = Float32.(points)
+        n_points = size(points_f32, 1)
+        point_dim = size(points_f32, 2)
+        # Julia is column-major, so we need to reorder to get row-major interleaving
+        # Transpose makes it (point_dim × n_points), then vec() gives column-major which is row-major of original
+        points_flat = vec(permutedims(points_f32, (2, 1)))
+    else
+        points_flat = Float32[]
+        n_points = 0
+        point_dim = 0
+    end
+
     ccall((:save_data_tensor3_export0, libfly), Cvoid,
           (Cstring, Ptr{Float32}, Cint, Cint, Bool,
-           Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint),
+           Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint,
+           Ptr{Float32}, Cint, Cint),
           filename, data_interleaved, num_tensors_i32, ten_dim_i32, is_complex,
-          mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size)
+          mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size,
+          points_flat, n_points, point_dim)
 end
 
 function save_data_tensor4(filename::String, data::AbstractArray,
                           is_complex::Bool, mesh::Vector{<:Integer}, domain::Matrix{<:Real},
-                          w_points::Vector{<:Real}=Float32[], inds::Vector{<:Integer}=Int[])
+                          w_points::Vector{<:Real}=Float32[], inds::Vector{<:Integer}=Int[],
+                          points::Union{AbstractMatrix{<:AbstractFloat}, Nothing}=nothing)
     # Extract dimensions from inds
     if length(inds) != 4
         error("save_data_tensor4 requires inds with 4 dimensions")
@@ -1681,11 +1788,28 @@ function save_data_tensor4(filename::String, data::AbstractArray,
     # Flatten domain
     domain_flat = reshape(domain_f32', :)
 
+    # Process points (row-major: flatten across columns, then rows)
+    # C++ expects: [x1, y1, z1, x2, y2, z2, ...] for points[i][j] = points_flat[i * point_dim + j]
+    if points !== nothing
+        points_f32 = Float32.(points)
+        n_points = size(points_f32, 1)
+        point_dim = size(points_f32, 2)
+        # Julia is column-major, so we need to reorder to get row-major interleaving
+        # Transpose makes it (point_dim × n_points), then vec() gives column-major which is row-major of original
+        points_flat = vec(permutedims(points_f32, (2, 1)))
+    else
+        points_flat = Float32[]
+        n_points = 0
+        point_dim = 0
+    end
+
     ccall((:save_data_tensor4_export0, libfly), Cvoid,
           (Cstring, Ptr{Float32}, Cint, Cint, Bool,
-           Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint),
+           Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint,
+           Ptr{Float32}, Cint, Cint),
           filename, data_interleaved, num_tensors_i32, ten_dim_i32, is_complex,
-          mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size)
+          mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size,
+          points_flat, n_points, point_dim)
 end
 
 # BaseData exports

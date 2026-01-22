@@ -149,21 +149,34 @@ extern "C" float norm_export0(Vec* a) {
 extern "C" {
 
 
-void data_save_export0(string filename, const float *points, const float *values, int num_points, int dimension,
+void data_save_export0(const char* filename_c, const float *points, const float *values, int num_points, int dimension,
                bool with_w, bool with_n, bool is_complex, bool is_vector) {
+    string filename(filename_c);
     vector<Vec> cpoints(num_points);
     vector<complex<Vec>> cvalues(num_points);
-    int a = 0;
     int c = is_complex;
     int v = is_vector;
-    for (int i = 0; i < num_points; i+=dimension) {
-        cpoints[i] = Vec(vector<float>(points + i, points + i + dimension));
-        Vec rv(vector<float>(values + a, values + a + 1 + 3*v));
+    // Size of each value entry: (1 + 3*v) components for real part, same for imaginary if complex
+    int value_size = (1 + 3*v) * (1 + c);
+
+    // Point size: dimension is the SPATIAL dimension
+    // If with_w = true, points also include frequency → dimension + 1 coords per point
+    int point_size = dimension + (with_w ? 1 : 0);
+
+    for (int i = 0; i < num_points; i++) {
+        // Extract point coordinates with frequency if with_w = true
+        // For 2D with frequency: [kx, ky, w] → Vec with x=kx, y=ky, z=w
+        int point_offset = i * point_size;
+        cpoints[i] = Vec(vector<float>(points + point_offset, points + point_offset + point_size));
+
+        // Extract value at this point
+        int value_offset = i * value_size;
+        Vec rv(vector<float>(values + value_offset, values + value_offset + 1 + 3*v));
         Vec cv;
-        if (is_complex) 
-            cv = Vec(vector<float>(values + a, values + a + 1 + 3*v));
+        if (is_complex)
+            cv = Vec(vector<float>(values + value_offset + 1 + 3*v, values + value_offset + value_size));
         complex<Vec> val = complex<Vec>(rv, cv);
-        cvalues[a] = val;
+        cvalues[i] = val;
     }
     CMData data(cpoints, cvalues, dimension, with_w, with_n, is_complex, is_vector);
     data.save_hdf5(filename);
@@ -815,7 +828,8 @@ void save_data_scalar_export0(const char *filename, const float *data_interleave
                                int total_size, bool is_complex,
                                const int *mesh, int mesh_size,
                                const float *domain_flat, int domain_rows, int domain_cols,
-                               const float *w_points, int w_size) {
+                               const float *w_points, int w_size,
+                               const float *points_flat, int n_points, int point_dim) {
     // Convert flat arrays to C++ types
     vector<int> mesh_vec(mesh, mesh + mesh_size);
     vector<vector<float>> domain_vec(domain_rows, vector<float>(domain_cols));
@@ -825,6 +839,18 @@ void save_data_scalar_export0(const char *filename, const float *data_interleave
         }
     }
     vector<float> w_vec(w_points, w_points + w_size);
+
+    // Parse points array
+    vector<vector<float>> points_vec;
+    if (n_points > 0 && point_dim > 0) {
+        points_vec.resize(n_points);
+        for (int i = 0; i < n_points; i++) {
+            points_vec[i].resize(point_dim);
+            for (int j = 0; j < point_dim; j++) {
+                points_vec[i][j] = points_flat[i * point_dim + j];
+            }
+        }
+    }
 
     // Convert interleaved data to complex vector (DataVariant type 0)
     vector<cfloat> data_vec(total_size);
@@ -838,10 +864,10 @@ void save_data_scalar_export0(const char *filename, const float *data_interleave
         }
     }
 
-    // Create DataVariant and call save_data
+    // Create DataVariant and call save_data_with_points
     BaseData::DataVariant data = data_vec;
     vector<int> inds = {};  // Scalar field has empty inds
-    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds);
+    save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec);
 }
 
 // For vector fields (rank = 0, but is_vector = true, inds = {})
@@ -849,7 +875,8 @@ void save_data_vector_export0(const char *filename, const float *data_interleave
                                int nk, int vec_len, bool is_complex,
                                const int *mesh, int mesh_size,
                                const float *domain_flat, int domain_rows, int domain_cols,
-                               const float *w_points, int w_size) {
+                               const float *w_points, int w_size,
+                               const float *points_flat, int n_points, int point_dim) {
     // Convert flat arrays to C++ types
     vector<int> mesh_vec(mesh, mesh + mesh_size);
     vector<vector<float>> domain_vec(domain_rows, vector<float>(domain_cols));
@@ -859,6 +886,18 @@ void save_data_vector_export0(const char *filename, const float *data_interleave
         }
     }
     vector<float> w_vec(w_points, w_points + w_size);
+
+    // Parse points array
+    vector<vector<float>> points_vec;
+    if (n_points > 0 && point_dim > 0) {
+        points_vec.resize(n_points);
+        for (int i = 0; i < n_points; i++) {
+            points_vec[i].resize(point_dim);
+            for (int j = 0; j < point_dim; j++) {
+                points_vec[i][j] = points_flat[i * point_dim + j];
+            }
+        }
+    }
 
     // Convert interleaved data to 2D complex vector (DataVariant type 1)
     vector<vector<cfloat>> data_vec(nk, vector<cfloat>(vec_len));
@@ -879,10 +918,10 @@ void save_data_vector_export0(const char *filename, const float *data_interleave
         }
     }
 
-    // Create DataVariant and call save_data
+    // Create DataVariant and call save_data_with_points
     BaseData::DataVariant data = data_vec;
     vector<int> inds = {};  // Vector field has empty inds (vec_len is handled separately)
-    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds);
+    save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec);
 }
 
 // For matrix fields (rank = 2, inds = {mat_dim, mat_dim})
@@ -890,7 +929,8 @@ void save_data_matrix_export0(const char *filename, const float *data_interleave
                                int num_matrices, int mat_dim, bool is_complex,
                                const int *mesh, int mesh_size,
                                const float *domain_flat, int domain_rows, int domain_cols,
-                               const float *w_points, int w_size) {
+                               const float *w_points, int w_size,
+                               const float *points_flat, int n_points, int point_dim) {
     // Convert flat arrays to C++ types
     vector<int> mesh_vec(mesh, mesh + mesh_size);
     vector<vector<float>> domain_vec(domain_rows, vector<float>(domain_cols));
@@ -900,6 +940,18 @@ void save_data_matrix_export0(const char *filename, const float *data_interleave
         }
     }
     vector<float> w_vec(w_points, w_points + w_size);
+
+    // Parse points array
+    vector<vector<float>> points_vec;
+    if (n_points > 0 && point_dim > 0) {
+        points_vec.resize(n_points);
+        for (int i = 0; i < n_points; i++) {
+            points_vec[i].resize(point_dim);
+            for (int j = 0; j < point_dim; j++) {
+                points_vec[i][j] = points_flat[i * point_dim + j];
+            }
+        }
+    }
 
     // Convert interleaved data to 3D complex vector (DataVariant type 2)
     vector<vector<vector<cfloat>>> data_vec(num_matrices,
@@ -926,10 +978,10 @@ void save_data_matrix_export0(const char *filename, const float *data_interleave
         }
     }
 
-    // Create DataVariant and call save_data
+    // Create DataVariant and call save_data_with_points
     BaseData::DataVariant data = data_vec;
     vector<int> inds = {mat_dim, mat_dim};  // 2D matrix
-    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds);
+    save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec);
 }
 
 // For 3D tensor fields (rank = 3, inds = {ten_dim, ten_dim, ten_dim})
@@ -937,7 +989,8 @@ void save_data_tensor3_export0(const char *filename, const float *data_interleav
                                int num_tensors, int ten_dim, bool is_complex,
                                const int *mesh, int mesh_size,
                                const float *domain_flat, int domain_rows, int domain_cols,
-                               const float *w_points, int w_size) {
+                               const float *w_points, int w_size,
+                               const float *points_flat, int n_points, int point_dim) {
     // Convert flat arrays to C++ types
     vector<int> mesh_vec(mesh, mesh + mesh_size);
     vector<vector<float>> domain_vec(domain_rows, vector<float>(domain_cols));
@@ -947,6 +1000,18 @@ void save_data_tensor3_export0(const char *filename, const float *data_interleav
         }
     }
     vector<float> w_vec(w_points, w_points + w_size);
+
+    // Parse points array
+    vector<vector<float>> points_vec;
+    if (n_points > 0 && point_dim > 0) {
+        points_vec.resize(n_points);
+        for (int i = 0; i < n_points; i++) {
+            points_vec[i].resize(point_dim);
+            for (int j = 0; j < point_dim; j++) {
+                points_vec[i][j] = points_flat[i * point_dim + j];
+            }
+        }
+    }
 
     // Convert interleaved data to 4D complex vector (DataVariant type 3)
     vector<vector<vector<vector<cfloat>>>> data_vec(num_tensors,
@@ -979,10 +1044,10 @@ void save_data_tensor3_export0(const char *filename, const float *data_interleav
         }
     }
 
-    // Create DataVariant and call save_data
+    // Create DataVariant and call save_data_with_points
     BaseData::DataVariant data = data_vec;
     vector<int> inds = {ten_dim, ten_dim, ten_dim};  // 3D tensor
-    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds);
+    save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec);
 }
 
 // For 4D tensor fields (rank = 4, inds = {ten_dim, ten_dim, ten_dim, ten_dim})
@@ -990,7 +1055,8 @@ void save_data_tensor4_export0(const char *filename, const float *data_interleav
                                int num_tensors, int ten_dim, bool is_complex,
                                const int *mesh, int mesh_size,
                                const float *domain_flat, int domain_rows, int domain_cols,
-                               const float *w_points, int w_size) {
+                               const float *w_points, int w_size,
+                               const float *points_flat, int n_points, int point_dim) {
     // Convert flat arrays to C++ types
     vector<int> mesh_vec(mesh, mesh + mesh_size);
     vector<vector<float>> domain_vec(domain_rows, vector<float>(domain_cols));
@@ -1000,6 +1066,18 @@ void save_data_tensor4_export0(const char *filename, const float *data_interleav
         }
     }
     vector<float> w_vec(w_points, w_points + w_size);
+
+    // Parse points array
+    vector<vector<float>> points_vec;
+    if (n_points > 0 && point_dim > 0) {
+        points_vec.resize(n_points);
+        for (int i = 0; i < n_points; i++) {
+            points_vec[i].resize(point_dim);
+            for (int j = 0; j < point_dim; j++) {
+                points_vec[i][j] = points_flat[i * point_dim + j];
+            }
+        }
+    }
 
     // Convert interleaved data to 5D complex vector (DataVariant type 4)
     vector<vector<vector<vector<vector<cfloat>>>>> data_vec(num_tensors,
@@ -1037,10 +1115,10 @@ void save_data_tensor4_export0(const char *filename, const float *data_interleav
         }
     }
 
-    // Create DataVariant and call save_data
+    // Create DataVariant and call save_data_with_points
     BaseData::DataVariant data = data_vec;
     vector<int> inds = {ten_dim, ten_dim, ten_dim, ten_dim};  // 4D tensor
-    save_data(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds);
+    save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec);
 }
 
 // BaseData exports
@@ -1118,6 +1196,24 @@ extern "C" int BaseData_get_w_points_size(BaseData *data) {
 extern "C" void BaseData_get_w_points(BaseData *data, float *w_points_out) {
     for (size_t i = 0; i < data->w_points.size(); i++) {
         w_points_out[i] = data->w_points[i];
+    }
+}
+
+extern "C" int BaseData_get_points_rows(BaseData *data) {
+    return data->points.size();
+}
+
+extern "C" int BaseData_get_points_cols(BaseData *data) {
+    if (data->points.empty()) return 0;
+    return data->points[0].size();
+}
+
+extern "C" void BaseData_get_points(BaseData *data, float *points_out) {
+    int idx = 0;
+    for (size_t i = 0; i < data->points.size(); i++) {
+        for (size_t j = 0; j < data->points[i].size(); j++) {
+            points_out[idx++] = data->points[i][j];
+        }
     }
 }
 

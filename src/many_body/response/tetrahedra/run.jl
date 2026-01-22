@@ -340,16 +340,84 @@ end
     setup_frequency_grid(wpts, w_max)
 
 Create frequency grid for response calculation.
+Only creates non-negative frequencies (w >= 0) to exploit symmetry χ(q, -ω) = χ(q, ω).
 
 # Returns
-- Array of frequency points
+- Array of non-negative frequency points for calculation
+- Total number of frequency points including negative frequencies
 """
 function setup_frequency_grid(wpts, w_max)
     if wpts == 1
-        return [0.0]
+        return [0.0], 1
     else
-        return collect(range(-w_max, w_max, length=wpts))
+        # Calculate number of positive frequencies (including zero if wpts is odd)
+        if isodd(wpts)
+            # Odd number: include zero and positive frequencies
+            n_pos = div(wpts, 2) + 1
+            w_pos = collect(range(0.0, w_max, length=n_pos))
+        else
+            # Even number: only positive frequencies (no zero)
+            n_pos = div(wpts, 2)
+            dw = 2 * w_max / (wpts - 1)
+            w_pos = collect(range(dw, w_max, length=n_pos))
+        end
+        return w_pos, wpts
     end
+end
+
+"""
+    mirror_to_negative_frequencies(chi_pos, w_pos, wpts_total)
+
+Mirror response function from positive frequencies to negative frequencies.
+Uses symmetry: χ(q, -ω) = χ(q, ω) for real systems.
+
+# Arguments
+- `chi_pos`: Response function computed for w >= 0, shape (n_pos, nqpts, nbnd, nbnd, nbnd, nbnd)
+- `w_pos`: Positive frequency points
+- `wpts_total`: Total number of frequency points (including negative)
+
+# Returns
+- Full χ array with negative frequencies filled in, shape (wpts_total, nqpts, ...)
+- Full frequency list including negative frequencies
+"""
+function mirror_to_negative_frequencies(chi_pos, w_pos, wpts_total)
+    n_pos = length(w_pos)
+    dims = size(chi_pos)
+    nqpts = dims[2]
+    nbnd_dims = dims[3:end]
+
+    # Create full chi array
+    chi_full = zeros(ComplexF64, wpts_total, nqpts, nbnd_dims...)
+
+    # Create full frequency list
+    w_max = w_pos[end]
+    w_full = collect(range(-w_max, w_max, length=wpts_total))
+
+    if isodd(wpts_total)
+        # Odd number of points: w = [..., -dw, 0, dw, ...]
+        # Positive frequencies (including zero) go in second half
+        i_zero = div(wpts_total, 2) + 1
+        chi_full[i_zero:end, :, fill(:, length(nbnd_dims))...] = chi_pos
+
+        # Mirror to negative frequencies (skip zero)
+        for i in 1:(i_zero-1)
+            i_mirror = wpts_total - i + 1
+            chi_full[i, :, fill(:, length(nbnd_dims))...] = chi_pos[i_mirror - i_zero + 1, :, fill(:, length(nbnd_dims))...]
+        end
+    else
+        # Even number of points: w = [..., -dw, dw, ...]
+        # Positive frequencies go in second half
+        i_mid = div(wpts_total, 2)
+        chi_full[(i_mid+1):end, :, fill(:, length(nbnd_dims))...] = chi_pos
+
+        # Mirror to negative frequencies
+        for i in 1:i_mid
+            i_mirror = wpts_total - i + 1
+            chi_full[i, :, fill(:, length(nbnd_dims))...] = chi_pos[i_mirror - i_mid, :, fill(:, length(nbnd_dims))...]
+        end
+    end
+
+    return chi_full, w_full
 end
 
 """
@@ -399,10 +467,11 @@ function response_bz_integral()
     println("  k-mesh: $(kmesh)")
     println("  q-mesh: $(qmesh)")
 
-    # Setup frequency grid
+    # Setup frequency grid (only positive frequencies)
     w_max = cfg.cutoff_energy
-    w_list = setup_frequency_grid(wpts, w_max)
+    w_pos, wpts_total = setup_frequency_grid(wpts, w_max)
     println("  ω range: [-$(w_max), $(w_max)]")
+    println("  Computing for ω ≥ 0 only ($(length(w_pos)) points), will mirror to ω < 0")
 
     # Load Hamiltonian and compute eigenvalues
     Ek_array, psis, dos, norb = setup_hamiltonian_eigenvalues(kmesh, BZ, dim)
@@ -411,14 +480,21 @@ function response_bz_integral()
     println("\nCreating interpolation grids...")
     Ek_grids, Uk_grids = create_interpolation_grids(Ek_array, psis, kmesh, dim, norb)
 
-    # Calculate response with symmetry reduction
+    # Calculate response with symmetry reduction (only for w >= 0)
     println("\n" * "="^60)
-    println("Starting response grid calculation")
+    println("Starting response grid calculation (ω ≥ 0)")
     println("="^60)
-    chi = calculate_response_grid(Ek_grids, Uk_grids, w_list, kmesh, qmesh, dos, 0)
+    chi_pos = calculate_response_grid(Ek_grids, Uk_grids, w_pos, kmesh, qmesh, dos, 0)
+
+    # Mirror to negative frequencies using symmetry
+    println("\n" * "="^60)
+    println("Mirroring to negative frequencies using χ(q,-ω) = χ(q,ω)")
+    println("="^60)
+    chi, w_full = mirror_to_negative_frequencies(chi_pos, w_pos, wpts_total)
+    println("✓ Full frequency grid constructed: $(wpts_total) points")
 
     # Save results
-    save_response_results(chi, w_list, qmesh, BZ, dim)
+    save_response_results(chi, w_full, qmesh, BZ, dim)
 
     return maximum(x -> isfinite(x) ? x : -Inf, real(chi))
 end

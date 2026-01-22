@@ -2120,6 +2120,12 @@ lib.BaseData_get_w_points_size.argtypes = [c_void_p]
 lib.BaseData_get_w_points_size.restype = c_int
 lib.BaseData_get_w_points.argtypes = [c_void_p, POINTER(c_float)]
 lib.BaseData_get_w_points.restype = None
+lib.BaseData_get_points_rows.argtypes = [c_void_p]
+lib.BaseData_get_points_rows.restype = c_int
+lib.BaseData_get_points_cols.argtypes = [c_void_p]
+lib.BaseData_get_points_cols.restype = c_int
+lib.BaseData_get_points.argtypes = [c_void_p, POINTER(c_float)]
+lib.BaseData_get_points.restype = None
 
 # BaseData data extraction
 lib.BaseData_get_data_scalar.argtypes = [c_void_p, POINTER(c_float), POINTER(c_float)]
@@ -2221,6 +2227,17 @@ class BaseData:
             self.w_points = np.array([w_buf[i] for i in range(w_size)], dtype=np.float32)
         else:
             self.w_points = np.array([], dtype=np.float32)
+
+        # Load points
+        points_rows = lib.BaseData_get_points_rows(self.ptr)
+        points_cols = lib.BaseData_get_points_cols(self.ptr)
+        if points_rows > 0 and points_cols > 0:
+            points_buf = (c_float * (points_rows * points_cols))()
+            lib.BaseData_get_points(self.ptr, points_buf)
+            self.points = np.array([points_buf[i] for i in range(points_rows * points_cols)],
+                                   dtype=np.float32).reshape(points_rows, points_cols)
+        else:
+            self.points = np.array([], dtype=np.float32).reshape(0, 0)
 
     def save(self, filename, ordering="k-w"):
         """
