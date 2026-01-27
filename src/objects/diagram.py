@@ -134,6 +134,11 @@ class Diagram:
             n_indices = self.ind_dim  # Number of indices beyond (w, k)
             dim_indices = self.shape[2] if n_indices > 0 else 1  # Size of each index
 
+            # For single-band systems (dim_indices=1), save as scalar field instead of matrix
+            if dim_indices == 1 and n_indices > 0:
+                n_indices = 0
+                dim_indices = 1
+
             fly.save_data(filename, obj, mesh=spatial_mesh, domain=BZ, w_points=self.w_points,
                          n_indices=n_indices, dim_indices=dim_indices)
         else:
@@ -302,6 +307,49 @@ def dot_tr(diagram1, diagram2):
     else:
         raise ValueError("Convolution Sum only implemented for diagrams differing by 0 or 2 indices")
 
+def flip_k(diagram):
+    if diagram.varspace not in ['wk', 'tr']:
+        raise ValueError("flip_wk only works for diagrams in wk or tr space")
+
+    # Create a copy
+    G_flip = diagram.copy()
+
+    # Get mesh dimensions
+    mesh, _ = extract_mesh_and_bz(diagram.obj_wk)
+    original_shape = diagram.obj_wk.data.shape
+
+    # Reshape to mesh dimensions (nω, nkx, nky, nkz, orb1, orb2, ...)
+    data = np.reshape(diagram.obj_wk.data, mesh + original_shape[2:])
+    k_axes = tuple(range(1, len(mesh)))
+    data = np.flip(data, axis=k_axes)
+
+    # Reshape back to flat format
+    G_flip.obj_wk.data[:] = np.reshape(data, original_shape)
+
+    G_flip.wk_to_tr()
+
+    return G_flip
+
+def flip_w(diagram):
+    if diagram.varspace not in ['wk', 'tr']:
+        raise ValueError("flip_wk only works for diagrams in wk or tr space")
+
+    # Create a copy
+    G_flip = diagram.copy()
+
+    # Get mesh dimensions
+    mesh, _ = extract_mesh_and_bz(diagram.obj_wk)
+    original_shape = diagram.obj_wk.data.shape
+
+    # Reshape to mesh dimensions (nω, nkx, nky, nkz, orb1, orb2, ...)
+    data = np.reshape(diagram.obj_wk.data, mesh + original_shape[2:])
+    data = np.flip(data, axis=0)
+    # Reshape back to flat format
+    G_flip.obj_wk.data[:] = (G_flip.obj_wk.data[:] + np.reshape(data, original_shape)) / 2.0
+
+    G_flip.wk_to_tr()
+
+    return G_flip
 
 def flip_wk(diagram):
     """

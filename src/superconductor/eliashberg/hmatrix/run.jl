@@ -35,24 +35,14 @@ function f(w)
     return 1 / (exp(w / T) + 1)
 end
 
-function make_vertex_kernel(V::Firefly.Vertex, areas::Vector{Float32}, velocities::Array{Float32, 3}, frequencies::Vector{Float32}, Z)
-    s = 1 # Even variable
-    test_k = [0.1, 0.2]
-    diff = V(test_k, 0.1) - V(test_k, -0.1)
-    if abs(diff / V(test_k, 0.1)) > 1e-2
-        s = -1
-        println("Warning: Vertex function is not even in frequency!")
-        println("V(k, w) - V(k, -w) at test point = $diff")
-        println("Percent difference: $(abs(diff / V(test_k, 0.1)) * 100)%")
-    end
+function make_vertex_kernel_minus(V::Firefly.Vertex, areas::Vector{Float32}, velocities::Array{Float32, 3}, frequencies::Vector{Float32})
     # Compute DOS weights: dA/v for each k-point
     # velocities has shape (npoints, nbands, 3), we want magnitude for band 1
     v_norms = [LinearAlgebra.norm(velocities[i, 1, :]) for i in 1:length(areas)]
     dos_weights = areas ./ v_norms
 
-    # Return a frequency-dependent kernel function V(w-w', k-k')
+    # Return kernel function V(k-k', w-w')
     # Signature: kernel(k1, k2, w1, w2, i, j, iw, jw)
-    # Weighting: sqrt(dA_i/v_i * f(w1)) * sqrt(dA_j/v_j * f(w2)) * V(dk, dw)
     return function(k1, k2, w1, w2, i, j, iw, jw)
         # Convert to Float64 for Vertex call
         k1 = Float64.(k1)
@@ -60,25 +50,42 @@ function make_vertex_kernel(V::Firefly.Vertex, areas::Vector{Float32}, velocitie
         w1 = Float64(w1)
         w2 = Float64(w2)
 
-        # Projected even-momentum vertex
-        Vp = (V(k1 - k2, 0) + V(k1 + k2, 0)) / 2
-        Vm = (V(k1 - k2, 0) + V(k1 + k2, 0)) / 2
-        if abs(w2) > 1e-4
-            V_val = ( f(-w2) * Vp - f(w2) * Vm ) / (2 * w2)
-            #V_val = -(f(-w2) - f(w2)) / (2 * w2)
-        else
-            #V_val = 1 / (2 * T) * ( V(k1 - k2, 0) + V(k1 + k2, 0) )
-            V_val = 1 / (4 * T) * ( Vm )
-            V_val = -1 / (4 * T)
-        end
+        # Projected even-momentum vertex with V(k-k', w-w')
+        dk = k1 - k2
+        dw = w1 - w2
+        V_val = (V(dk, dw) + V(-dk, dw)) / 2
 
         V_val = real(V_val)
         weight = dos_weights[j]
 
         return -wc / w_pts * weight * V_val
-        #return -weight1 * weight2 * V_val
-        return - (Z * (2 * wc / w_pts ) / 2 * w2) * weight * V_val
-        #return - (Z * (2 * wc / w_pts ) / 2 * w2) * weight1 * weight2 * V_val
+    end
+end
+
+function make_vertex_kernel_plus(V::Firefly.Vertex, areas::Vector{Float32}, velocities::Array{Float32, 3}, frequencies::Vector{Float32})
+    # Compute DOS weights: dA/v for each k-point
+    # velocities has shape (npoints, nbands, 3), we want magnitude for band 1
+    v_norms = [LinearAlgebra.norm(velocities[i, 1, :]) for i in 1:length(areas)]
+    dos_weights = areas ./ v_norms
+
+    # Return kernel function V(k-k', w+w')
+    # Signature: kernel(k1, k2, w1, w2, i, j, iw, jw)
+    return function(k1, k2, w1, w2, i, j, iw, jw)
+        # Convert to Float64 for Vertex call
+        k1 = Float64.(k1)
+        k2 = Float64.(k2)
+        w1 = Float64(w1)
+        w2 = Float64(w2)
+
+        # Projected even-momentum vertex with V(k-k', w+w')
+        dk = k1 - k2
+        dw = w1 + w2
+        V_val = (V(dk, dw) + V(-dk, dw)) / 2
+
+        V_val = real(V_val)
+        weight = dos_weights[j]
+
+        return -wc / w_pts * weight * V_val
     end
 end
 
@@ -222,33 +229,27 @@ function run()
     dos_weights = areas ./ v_norms ./ (2 * π)^dim
     @printf("DOS Min, Max, Ave, Total: %.6f, %.6f, %.6f, %.6f\n", minimum(dos_weights), maximum(dos_weights), sum(dos_weights) / n, sum(dos_weights))
 
-    # Temporary integral for testing
-    ival = 0
-    for i in 1:w_pts
-        if w_points[i] == 0.0
-            ival += 1 / (4 * T) 
-        else
-            ival += tanh(w_points[i] / (2 * T)) / (2 * w_points[i])
-        end
-    end
-    println("Test integral ival over frequencies: ", ival * (wc / w_pts))
-    println("Eigenvalue estimate: ", ival * (wc / w_pts) * sum(dos_weights))
 
     # Load Vertex
     println("\nLoading Vertex...")
     V = Firefly.Vertex()
     println("Vertex loaded.")
 
-    # Create kernel function using Vertex with frequency-dependent weighting
-    # Pattern: sqrt(dA_i/v_i * f(w1)) * sqrt(dA_j/v_j * f(w2)) * V(k_i - k_j, w1 - w2)
-    kernel = make_vertex_kernel(V, areas, velocities, w_points, 1.0)
+    # Create two kernel functions: V(k-k', w-w') and V(k-k', w+w')
+    kernel_minus = make_vertex_kernel_minus(V, areas, velocities, w_points)
+    kernel_plus = make_vertex_kernel_plus(V, areas, velocities, w_points)
 
-    # Build HMatrix with frequency dependence
+    # Build two HMatrices with frequency dependence
     println("\n" * "="^60)
-    println("Building HMatrix with frequency dependence...")
-    t_hmat = @elapsed H_matrix = build_hmatrix(kpoints, w_points, kernel; atol=1e-4, rank=30)
-    @printf("HMatrix built in %.3f seconds\n", t_hmat)
-    @printf("Compression ratio: %.2f\n", compression_ratio(H_matrix))
+    println("Building HMatrix for V(k-k', w-w')...")
+    t_hmat_minus = @elapsed H_matrix_minus = build_hmatrix(kpoints, w_points, kernel_minus; atol=1e-4, rank=30)
+    @printf("HMatrix (minus) built in %.3f seconds\n", t_hmat_minus)
+    @printf("Compression ratio: %.2f\n", compression_ratio(H_matrix_minus))
+
+    println("\nBuilding HMatrix for V(k-k', w+w')...")
+    t_hmat_plus = @elapsed H_matrix_plus = build_hmatrix(kpoints, w_points, kernel_plus; atol=1e-4, rank=30)
+    @printf("HMatrix (plus) built in %.3f seconds\n", t_hmat_plus)
+    @printf("Compression ratio: %.2f\n", compression_ratio(H_matrix_plus))
 
     # Matrix dimensions: n_k k-points × n_w frequencies
     n_k = length(kpoints)
@@ -256,11 +257,39 @@ function run()
     n_total = n_k * n_w
     @printf("Matrix size: %d × %d\n", n_total, n_total)
 
-    # Create a function that applies H_matrix to a vector using mul!
-    # HMatrices.jl supports matrix-vector multiplication via mul!
+    # Create custom matrix-vector product: f(-w') * V(k-k',w-w') - f(w') * V(k-k',w+w')
+    # This applies the Eliashberg kernel with proper frequency structure
     hmv = (v) -> begin
+        Dm = similar(v)
+        Dp = similar(v)
+
+        # Apply H_matrix_minus: V(k-k', w-w')
+        mul!(Dm, H_matrix_minus, v)
+
+        # Apply H_matrix_plus: V(k-k', w+w')
+        mul!(Dp, H_matrix_plus, v)
+
+        Dm = reshape(Dm, n_k, n_w)  # [k, w]
+        Dp = reshape(Dp, n_k, n_w)  # [k, w]
+
+        Dm .= 1.0 / n_total^0.5
+        Dp .= 1.0 / n_total^0.5
+
+        # Combine with Fermi function weights: f(-w') * V_minus - f(w') * V_plus
         result = similar(v)
-        mul!(result, H_matrix, v)
+        for i_w in 1:n_w
+            w = Float64(w_points[i_w])
+            if abs(w) < 1e-8
+                # Handle w=0 case to avoid division by zero
+                Dm[:, i_w] .*= 1 / (4 * T)
+                Dp[:, i_w] .*= 1 / (4 * T)
+                continue
+            end
+            Dm[:, i_w] .*= f(-w) / (2 * -w)
+            Dp[:, i_w] .*= f(w) / (2 * -w)
+        end
+        result .= reshape(Dm - Dp, n_total)
+
         return result
     end
 
@@ -311,6 +340,15 @@ function run()
 
     @printf("\nLargest eigenvalue (by magnitude): %.10f\n", real_vals[1])
     @printf("Largest positive eigenvalue: %.10f\n", largest_positive)
+    # Temporary integral for testing
+    ival = 0
+    for i in 1:w_pts
+        if w_points[i] == 0.0
+            ival += 1 / (4 * T) 
+        else
+            ival += tanh(w_points[i] / (2 * T)) / (2 * w_points[i])
+        end
+    end
     println("Eigenvalue estimate: ", ival * (wc / w_pts) * sum(dos_weights))
 
     # Save the eigenvector corresponding to the largest positive eigenvalue

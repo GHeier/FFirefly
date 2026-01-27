@@ -7,30 +7,32 @@ from triqs.gf.mesh_product import MeshProduct
 import numpy as np
 from scipy.sparse.linalg import LinearOperator, eigsh
 
+import load_triqs_H
+
 # Load config variables on file call
 outdir = cfg.outdir
 prefix = cfg.prefix
 
-nstates = cfg.nstates
+nbnd = cfg.nbnd
 Nk = cfg.k_mesh[0]
 BZ = get_brillouin_zone()
 
 mu = cfg.fermi_energy
 beta = 1.0 / cfg.Temperature
-max_eigs_searched = cfg.num_solutions
+max_eigs_searched = cfg.num_eigenvalues_to_save
 
 def load():
-    H_r, kmesh, e_k = fly.load_triqs_H.get_energy_mesh()
+    H_r, kmesh, e_k = load_triqs_H.get_energy_mesh()
     emax = e_k.data.max().real
     emin = e_k.data.min().real
     print(f"emax: {emax}, emin: {emin}")
     # Build Discrete Lehman Representation (DLR) mesh for imaginary frequencies
-    DLRImMesh = fly.load_triqs_H.create_dlr_meshes(e_k, beta, statistic='Fermion')
+    DLRImMesh = load_triqs_H.create_dlr_meshes(e_k, beta, statistic='Fermion')
     k_mesh = MeshBrZone(BZ, n_k=Nk)   # uniform Nk x Nk x Nk (third dim is 1 if 2D)
 
     # Create TRIQS object for Green's function G(k, iw)
     wk_mesh = MeshProduct(DLRImMesh, k_mesh)
-    G = Gf(mesh=wk_mesh, target_shape=[nstates, nstates])
+    G = Gf(mesh=wk_mesh, target_shape=[nbnd, nbnd])
     G = fly.diagram.Diagram(G, 'Fermion')
 
     # Load Green's function using Firefly interface
@@ -39,9 +41,9 @@ def load():
     G_data = fly.Field_CM(G_file)
     G.load(G_data)
 
-    DLRImMesh = fly.load_triqs_H.create_dlr_meshes(e_k, beta, statistic='Boson')
+    DLRImMesh = load_triqs_H.create_dlr_meshes(e_k, beta, statistic='Boson')
     wk_mesh = MeshProduct(DLRImMesh, k_mesh)
-    V = Gf(mesh=wk_mesh, target_shape=[nstates, nstates, nstates, nstates])
+    V = Gf(mesh=wk_mesh, target_shape=[nbnd, nbnd, nbnd, nbnd])
     V = fly.diagram.Diagram(V, 'Boson')
 
     vertex = fly.Field_CM(outdir + prefix + '_vertex.h5')
@@ -62,6 +64,9 @@ def run_lanczos():
     i = np.where(eigs > 0, eigs, -np.inf).argmax() 
     print(f"Max Eig: {eigs[i]:.6f}")
     Deltas[i].save(outdir + prefix + '_gap.h5')
+    for i in range(len(eigs)):
+        print(f"Saving eig{i}: {eigs[i]:.6f}")
+        Deltas[i].save(outdir + prefix + f'_gap_eig{i}.h5')
     return eigs[i]
 
 # Main function 2
@@ -93,10 +98,10 @@ def solve_eliashberg_lanczos(G, V, Delta0):
     A = LinearOperator((n, n), matvec=mv, dtype=complex)
 
     k_check = max_eigs_searched
-    print(f"Searching for {k_check} eigenvalues at each end of spectrum...")
+    print(f"Searching for {k_check} eigenvalues...")
 
     # Find most positive eigenvalues
-    eigs, vecs = eigsh(A, k=k_check, which='LM', tol=1e-8, maxiter=1000)
+    eigs, vecs = eigsh(A, k=k_check, which='LA', tol=1e-8, maxiter=1000)
     for i, eig in enumerate(eigs):
           print(f"     eig{i}: {eig:12.6f}")
 
@@ -163,8 +168,19 @@ def solve_eliashberg_power_iteration(G, V, Delta0):
 
     return eig, Delta
 
+def project_even_odd(Delta, parity='even'):
+    flipped = flip_k(Delta)
+    if parity == 'even':
+        Delta.obj_wk.data[:] = 0.5 * (Delta.obj_wk.data + flipped.obj_wk.data)
+    elif parity == 'odd':
+        Delta.obj_wk.data[:] = 0.5 * (Delta.obj_wk.data - flipped.obj_wk.data)
+    else:
+        raise ValueError("parity must be 'even' or 'odd'")
+    return Delta
+
 def Eliashberg_step(G, G_flip, V, Delta):
     F = Delta.copy()
+    #Delta = project_even_odd(Delta, parity='even')
     # F = -G(k,iw) * G(-k,-iw) * Delta(k,iw)
     F.obj_wk.data[:] = -1.0 * G_flip.obj_wk.data * np.conj(G.obj_wk.data) * Delta.obj_wk.data
     F.wk_to_tr()

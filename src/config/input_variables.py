@@ -65,7 +65,7 @@ ALL = {
     },
     "SUPERCONDUCTOR": {
         "FS_only": True,
-        "num_eigenvalues_to_save": 0,
+        "num_eigenvalues_to_save": 5,
         "frequency_pts": 0,
         "projections": "",
     },

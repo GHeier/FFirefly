@@ -92,14 +92,20 @@ BaseData load_data_from_hdf5(const std::string& filename) {
 
     // -- Mesh (optional) --
     if (field.as_mesh) {
-        DataSet ds = file.openDataSet("/mesh");
-        DataSpace space = ds.getSpace();
-        hsize_t dims[1];
-        space.getSimpleExtentDims(dims);
-        field.mesh.resize(dims[0]);
-        ds.read(field.mesh.data(), PredType::NATIVE_INT);
-        space.close();
-        ds.close();
+        try {
+            DataSet ds = file.openDataSet("/mesh");
+            DataSpace space = ds.getSpace();
+            hsize_t dims[1];
+            space.getSimpleExtentDims(dims);
+            field.mesh.resize(dims[0]);
+            ds.read(field.mesh.data(), PredType::NATIVE_INT);
+            space.close();
+            ds.close();
+        } catch (...) {
+            // Mesh dataset is optional - if missing, leave mesh empty
+            // This handles legacy files where as_mesh=true but mesh wasn't written
+            field.mesh = {};
+        }
     }
 
     // -- Points (k-point data when as_mesh = false) --
@@ -489,7 +495,7 @@ void save_data_with_points(string filename, BaseData::DataVariant& data, bool is
     bool is_vector = false;
     bool with_k = mesh.size() > 0 || points.size() > 0;
     bool with_w = w_points.size() > 0;
-    bool as_mesh = points.empty();  // KEY: as_mesh = false if points provided
+    bool as_mesh = points.empty() && !mesh.empty();  // KEY: as_mesh = true only if no points AND mesh exists
 
     // Determine dimension
     int dim = 0;

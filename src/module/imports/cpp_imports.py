@@ -1755,7 +1755,8 @@ def save_data(filename: str, data: np.ndarray, mesh=None, domain=None,
 
 lib.save_data_scalar_export0.argtypes = [
     c_char_p, POINTER(c_float), c_int, c_bool,
-    POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int
+    POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int,
+    POINTER(c_float), c_int, c_int
 ]
 lib.save_data_scalar_export0.restype = None
 
@@ -1803,12 +1804,14 @@ def save_data_scalar(filename: str, data: np.ndarray,
         mesh.ctypes.data_as(POINTER(c_int)), c_int(mesh_size),
         domain_flat.ctypes.data_as(POINTER(c_float)),
         c_int(domain_rows), c_int(domain_cols),
-        w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size)
+        w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size),
+        None, c_int(0), c_int(0)
     )
 
 lib.save_data_vector_export0.argtypes = [
     c_char_p, POINTER(c_float), c_int, c_int, c_bool,
-    POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int
+    POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int,
+    POINTER(c_float), c_int, c_int
 ]
 lib.save_data_vector_export0.restype = None
 
@@ -1854,19 +1857,22 @@ def save_data_vector(filename: str, data: np.ndarray,
 
 lib.save_data_matrix_export0.argtypes = [
     c_char_p, POINTER(c_float), c_int, c_int, c_bool,
-    POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int
+    POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int,
+    POINTER(c_float), c_int, c_int
 ]
 lib.save_data_matrix_export0.restype = None
 
 lib.save_data_tensor3_export0.argtypes = [
     c_char_p, POINTER(c_float), c_int, c_int, c_bool,
-    POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int
+    POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int,
+    POINTER(c_float), c_int, c_int
 ]
 lib.save_data_tensor3_export0.restype = None
 
 lib.save_data_tensor4_export0.argtypes = [
     c_char_p, POINTER(c_float), c_int, c_int, c_bool,
-    POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int
+    POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int,
+    POINTER(c_float), c_int, c_int
 ]
 lib.save_data_tensor4_export0.restype = None
 
@@ -1944,7 +1950,8 @@ def save_data_matrix(filename: str, data: np.ndarray,
         mesh.ctypes.data_as(POINTER(c_int)), c_int(mesh_size),
         domain_flat.ctypes.data_as(POINTER(c_float)),
         c_int(domain_rows), c_int(domain_cols),
-        w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size)
+        w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size),
+        None, c_int(0), c_int(0)
     )
 
 def save_data_tensor3(filename: str, data: np.ndarray,
@@ -2002,7 +2009,8 @@ def save_data_tensor3(filename: str, data: np.ndarray,
         mesh.ctypes.data_as(POINTER(c_int)), c_int(mesh_size),
         domain_flat.ctypes.data_as(POINTER(c_float)),
         c_int(domain_rows), c_int(domain_cols),
-        w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size)
+        w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size),
+        None, c_int(0), c_int(0)
     )
 
 def save_data_tensor4(filename: str, data: np.ndarray,
@@ -2060,7 +2068,8 @@ def save_data_tensor4(filename: str, data: np.ndarray,
         mesh.ctypes.data_as(POINTER(c_int)), c_int(mesh_size),
         domain_flat.ctypes.data_as(POINTER(c_float)),
         c_int(domain_rows), c_int(domain_cols),
-        w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size)
+        w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size),
+        None, c_int(0), c_int(0)
     )
 
 # BaseData exports

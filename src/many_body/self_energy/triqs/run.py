@@ -1,9 +1,14 @@
 import firefly as fly
 import firefly.config as cfg
+from firefly.diagram import Diagram
 import numpy as np
 from triqs.dos import DOSFromFunction, HilbertTransform
+from triqs.gf import Gf, inverse
+from triqs_tprf.lattice import lattice_dyson_g0_wk
 from IPTSolver import IPTSolver
 from IPTSolver_real import IPTSolver_real
+from load_triqs_H import create_dlr_meshes, get_energy_mesh
+from triqs.gf.meshes import MeshDLRImFreq, MeshDLRImTime
 
 # Load relevant variables from the configuration
 outdir = cfg.outdir
@@ -12,10 +17,17 @@ prefix = cfg.prefix
 interaction = cfg.interaction
 mu = cfg.fermi_energy
 T = cfg.Temperature
+beta = 1 / T
 w_pts = cfg.w_pts
 mixing = cfg.mixing
 U = cfg.U0  # Hubbard U parameter
 max_iters = cfg.max_iters
+
+nx, ny, nz = cfg.k_mesh
+BZ = np.array(cfg.brillouin_zone)
+dim = cfg.dimension
+if dim == 2:
+    nz = 1
 
 def run():
     print("mixing = ", mixing)
@@ -62,7 +74,7 @@ def run():
         print(f"Temperature = {T}: Using Matsubara IPT solver")
         # Initialize ManyBodySolver in DMFT mode
         beta = 1.0 / cfg.Temperature
-        S = IPTSolver(beta, H=H, mix=mixing, mu=mu, n_loops=max_iters)
+        S = IPTSolver(beta, H=H, mix=mixing, mu=mu, n_loops=max_iters, w_max=1.2*eps_range)
 
         # Run DMFT loop
         S.loop(U, bethe_lattice=False)
@@ -74,15 +86,28 @@ def run():
         print(f"Quasiparticle renormalization factor: {renorm:.4f}")
 
         # Save data
-        save_DMFT(S)
+        save_DMFT(S, eps_range)
 
     return renorm # Return something of any type that can be tested in the test suite.
 
-def save_DMFT(S):
+def save_DMFT(S, eps_range = 0.0):
     pref = outdir + prefix
     S.G_loc.save(pref + '_G_iw.h5')
     S.Sigma_loc.save(pref + '_sigma_iw.h5')
     S.G_loc.save_spectral(pref + '_A_w.h5')
+    save_G(S, eps_range)
+
+def save_G(S, eps_range):
+    pref = outdir + prefix
+    H_r, kmesh, e_k = get_energy_mesh()
+    DLRImMesh = MeshDLRImFreq(beta=beta, statistic='Fermion', w_max=1.2*eps_range, eps=1e-14)
+    G = lattice_dyson_g0_wk(mu=mu, e_k=e_k, mesh=DLRImMesh)
+    G = Diagram(G, 'Fermion')
+    G.obj_wk = inverse(G.obj_wk)
+    G.obj_wk.data[:] = G.obj_wk.data[:] - S.Sigma_loc.obj_w.data[:, np.newaxis]
+    G.obj_wk = inverse(G.obj_wk)
+    print(G.obj_wk.data.shape)
+    G.save(pref + '_G.h5')
 
 
 def save_DMFT_real(S):

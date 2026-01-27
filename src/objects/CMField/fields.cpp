@@ -180,6 +180,11 @@ void Field_CM::save(const string& filename) {
 vector<vector<cfloat>> Field_CM::operator()(Vec point, float w) {
     auto result = cmf.get_array(point, w);
 
+    // Try scalar (rank=0) - wrap as 1x1 matrix
+    if (auto* scalar = std::get_if<cfloat>(&result)) {
+        return vector<vector<cfloat>>(1, vector<cfloat>(1, *scalar));
+    }
+
     // Try 1D vector (rank=1) - wrap as column matrix
     if (auto* vec = std::get_if<vector<cfloat>>(&result)) {
         vector<vector<cfloat>> mat(vec->size(), vector<cfloat>(1));
