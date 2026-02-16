@@ -14,7 +14,6 @@ DataEvaluator::DataEvaluator(BaseData& f) {
     mesh = f.mesh;
     is_complex = f.is_complex;
     is_vector = f.is_vector;
-    is_matrix = f.is_matrix;
     w_points = f.w_points;
     with_w = w_points.size() > 0;
     inds = f.inds;
@@ -50,14 +49,129 @@ DataEvaluator::DataEvaluator(BaseData& f) {
     int rank = f.rank();
     if (rank == 0) {
         // Regular scalar/vector field
-        data = transform_data(f.data, f.dimension);
+        // Check if flat arrays are populated (from HDF5 loading), otherwise use data variant
+        if (!f.real_values.empty()) {
+            data = transform_data_from_flat(f.real_values, f.imag_values, f.dimension, f.is_complex);
+        } else {
+            data = transform_data(f.data, f.dimension);
+        }
     } else {
         // Indexed field - load into indexed_data structures
-        load_indexed_data(f);
+        // Check if flat arrays are populated (from HDF5 loading), otherwise use data variant
+        if (!f.real_values.empty()) {
+            load_indexed_data(f);
+        } else {
+            load_indexed_data_from_variant(f);
+        }
     }
 }
 
 void DataEvaluator::load_indexed_data(BaseData& f) {
+    // Data layout in flat arrays (w-k ordering):
+    // Values stored as: [w0_k0_idx0, w0_k0_idx1, ..., w0_k1_idx0, ..., w1_k0_idx0, ...]
+    // Where idx iterates over all tensor indices in row-major order
+
+    // Determine spatial dimensions
+    int n_spatial = 1;
+    if (f.with_k) {
+        for (int m : f.mesh) n_spatial *= m;
+    }
+    int n_w = f.with_w ? f.w_points.size() : 1;
+    int rank = f.rank();
+
+    // Calculate total index size (product of all tensor dimensions)
+    int idx_size = f.total_index_size();
+
+    if (rank == 1) {
+        // Reshape: indexed_data_1d[w][spatial][index] (w-k ordering)
+        int d0 = f.inds[0];
+        indexed_data_1d.resize(n_w);
+        for (int w = 0; w < n_w; w++) {
+            indexed_data_1d[w].resize(n_spatial);
+            for (int s = 0; s < n_spatial; s++) {
+                indexed_data_1d[w][s].resize(d0);
+                for (int i = 0; i < d0; i++) {
+                    int flat_idx = (w * n_spatial + s) * idx_size + i;
+                    float real_val = (flat_idx < f.real_values.size()) ? f.real_values[flat_idx] : 0.0f;
+                    float imag_val = (f.is_complex && flat_idx < f.imag_values.size()) ? f.imag_values[flat_idx] : 0.0f;
+                    indexed_data_1d[w][s][i] = cfloat(real_val, imag_val);
+                }
+            }
+        }
+    } else if (rank == 2) {
+        // Reshape: indexed_data_2d[w][spatial][i][j] (w-k ordering)
+        int d0 = f.inds[0];
+        int d1 = f.inds[1];
+        indexed_data_2d.resize(n_w);
+        for (int w = 0; w < n_w; w++) {
+            indexed_data_2d[w].resize(n_spatial);
+            for (int s = 0; s < n_spatial; s++) {
+                indexed_data_2d[w][s].resize(d0, vector<cfloat>(d1));
+                for (int i = 0; i < d0; i++) {
+                    for (int j = 0; j < d1; j++) {
+                        int local_idx = i * d1 + j;
+                        int flat_idx = (w * n_spatial + s) * idx_size + local_idx;
+                        float real_val = (flat_idx < f.real_values.size()) ? f.real_values[flat_idx] : 0.0f;
+                        float imag_val = (f.is_complex && flat_idx < f.imag_values.size()) ? f.imag_values[flat_idx] : 0.0f;
+                        indexed_data_2d[w][s][i][j] = cfloat(real_val, imag_val);
+                    }
+                }
+            }
+        }
+    } else if (rank == 3) {
+        // Reshape: indexed_data_3d[w][spatial][i][j][k] (w-k ordering)
+        int d0 = f.inds[0];
+        int d1 = f.inds[1];
+        int d2 = f.inds[2];
+        indexed_data_3d.resize(n_w);
+        for (int w = 0; w < n_w; w++) {
+            indexed_data_3d[w].resize(n_spatial);
+            for (int s = 0; s < n_spatial; s++) {
+                indexed_data_3d[w][s].resize(d0, vector<vector<cfloat>>(d1, vector<cfloat>(d2)));
+                for (int i = 0; i < d0; i++) {
+                    for (int j = 0; j < d1; j++) {
+                        for (int k = 0; k < d2; k++) {
+                            int local_idx = (i * d1 + j) * d2 + k;
+                            int flat_idx = (w * n_spatial + s) * idx_size + local_idx;
+                            float real_val = (flat_idx < f.real_values.size()) ? f.real_values[flat_idx] : 0.0f;
+                            float imag_val = (f.is_complex && flat_idx < f.imag_values.size()) ? f.imag_values[flat_idx] : 0.0f;
+                            indexed_data_3d[w][s][i][j][k] = cfloat(real_val, imag_val);
+                        }
+                    }
+                }
+            }
+        }
+    } else if (rank == 4) {
+        // Reshape: indexed_data_4d[w][spatial][i][j][k][l] (w-k ordering)
+        int d0 = f.inds[0];
+        int d1 = f.inds[1];
+        int d2 = f.inds[2];
+        int d3 = f.inds[3];
+        indexed_data_4d.resize(n_w);
+        for (int w = 0; w < n_w; w++) {
+            indexed_data_4d[w].resize(n_spatial);
+            for (int s = 0; s < n_spatial; s++) {
+                indexed_data_4d[w][s].resize(d0, vector<vector<vector<cfloat>>>(d1,
+                    vector<vector<cfloat>>(d2, vector<cfloat>(d3))));
+                for (int i = 0; i < d0; i++) {
+                    for (int j = 0; j < d1; j++) {
+                        for (int k = 0; k < d2; k++) {
+                            for (int l = 0; l < d3; l++) {
+                                int local_idx = ((i * d1 + j) * d2 + k) * d3 + l;
+                                int flat_idx = (w * n_spatial + s) * idx_size + local_idx;
+                                float real_val = (flat_idx < f.real_values.size()) ? f.real_values[flat_idx] : 0.0f;
+                                float imag_val = (f.is_complex && flat_idx < f.imag_values.size()) ? f.imag_values[flat_idx] : 0.0f;
+                                indexed_data_4d[w][s][i][j][k][l] = cfloat(real_val, imag_val);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void DataEvaluator::load_indexed_data_from_variant(BaseData& f) {
     // Data layout expected in BaseData (w-k ordering):
     // For rank=1: vector<vector<cfloat>> where outer is w/spatial, inner is index dim
     // For rank=2: vector<vector<vector<cfloat>>> where [w/spatial][i][j]

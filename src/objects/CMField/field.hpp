@@ -95,7 +95,6 @@ public:
     FieldImpl(const BaseData::DataVariant& data_variant,
           bool is_complex = false,
           bool is_vector = false,
-          bool is_matrix = false,
           const vector<int>& mesh = {},
           const vector<vector<float>>& domain = {},
           const vector<float>& w_points = {},
@@ -105,7 +104,6 @@ public:
         data.data = data_variant;
         data.is_complex = is_complex;
         data.is_vector = is_vector;
-        data.is_matrix = is_matrix;
         data.mesh = mesh;
         data.domain = domain;
         data.w_points = w_points;

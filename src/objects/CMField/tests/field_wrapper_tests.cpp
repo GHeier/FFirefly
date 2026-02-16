@@ -18,7 +18,7 @@ bool field_wrapper_basic_test() {
     vector<int> mesh = {3};
     vector<vector<float>> domain = {{1.0}};
 
-    FieldImpl field(data, false, false, false, mesh, domain);
+    FieldImpl field(data, false, false, mesh, domain);
 
     // Query at x=0 in the centered coordinate system
     // This corresponds to x=0.5 in the original [0,1] system
@@ -54,7 +54,7 @@ bool field_wrapper_with_w_test() {
     vector<int> mesh = {mpts, mpts};
     vector<vector<float>> domain = {{1.0, 0.0}, {0.0, 1.0}};
 
-    FieldImpl field(data, true, false, false, mesh, domain, w_points);
+    FieldImpl field(data, true, false, mesh, domain, w_points);
 
     // Query at p=(0, 0) in centered coordinates
     // This maps to (0.5, 0.5) in the original [0,1]x[0,1] system

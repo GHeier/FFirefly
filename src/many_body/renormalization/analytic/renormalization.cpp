@@ -85,12 +85,11 @@ void FLEX_renormalization() {
     string file = outdir + prefix + "_renormalization." + filetype;
 
     // Use chi's domain and mesh to ensure consistency
-    BaseData::DataVariant dv = vals;
     vector<int> mesh_for_save = chi.cmf.data.as_mesh ?
         vector<int>{chi.cmf.data.mesh[0], chi.cmf.data.mesh[1], chi.cmf.data.mesh[2]} :
         q_mesh;
     vector<vector<float>> domain_to_use = chi.cmf.data.domain.empty() ? brillouin_zone : chi.cmf.data.domain;
-    save_data(file, dv, true, mesh_for_save, domain_to_use);
+    save_data(file, vals, chi.cmf.data.inds, mesh_for_save, domain_to_use);
     //if (filetype == "hdf5" || filetype == "h5") {
     //    chi.cmf.data.data = vals;
     //    chi.save(file);

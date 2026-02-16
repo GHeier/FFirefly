@@ -18,14 +18,14 @@ static void validate_file_exists(const string& filename) {
 
 // Field_C implementation
 Field_C::Field_C()
-    : cmf({}, true, false, false, {}, {}, {}) {}
+    : cmf({}, true, false, {}, {}, {}) {}
 
 Field_C::Field_C(const BaseData::DataVariant& data,
                  const vector<int>& mesh,
                  const vector<vector<float>>& domain,
                  const vector<float>& w_points,
                  bool centered)
-    : cmf(data, true, false, false, mesh, domain, w_points, {}, centered) {}
+    : cmf(data, true, false, mesh, domain, w_points, {}, centered) {}
 
 Field_C::Field_C(FieldImpl f) : cmf(f) {}
 
@@ -85,14 +85,14 @@ BaseData* Field_C::get_data() {
 
 // Field_R implementation
 Field_R::Field_R()
-    : cmf({}, false, false, false, {}, {}, {}) {}
+    : cmf({}, false, false, {}, {}, {}) {}
 
 Field_R::Field_R(const BaseData::DataVariant& data,
                  const vector<int>& mesh,
                  const vector<vector<float>>& domain,
                  const vector<float>& w_points,
                  bool centered)
-    : cmf(data, false, false, false, mesh, domain, w_points, {}, centered) {}
+    : cmf(data, false, false, mesh, domain, w_points, {}, centered) {}
 
 Field_R::Field_R(FieldImpl f) : cmf(f) {}
 
@@ -151,7 +151,7 @@ BaseData* Field_R::get_data() {
 
 // Field_CM implementation (Complex Matrix)
 Field_CM::Field_CM()
-    : cmf(vector<vector<vector<cfloat>>>(), true, false, true, {}, {}, {}, {3, 3}) {}
+    : cmf(vector<vector<vector<cfloat>>>(), true, false, {}, {}, {}, {3, 3}) {}
 
 Field_CM::Field_CM(const BaseData::DataVariant& data,
                    const vector<int>& inds,
@@ -159,7 +159,7 @@ Field_CM::Field_CM(const BaseData::DataVariant& data,
                    const vector<vector<float>>& domain,
                    const vector<float>& w_points,
                    bool centered)
-    : cmf(data, true, false, true, mesh, domain, w_points, inds, centered) {}
+    : cmf(data, true, false, mesh, domain, w_points, inds, centered) {}
 
 Field_CM::Field_CM(FieldImpl f) : cmf(f) {}
 
@@ -414,7 +414,7 @@ BaseData* Field_CM::get_data() {
 
 // Field_RM implementation (Real Matrix)
 Field_RM::Field_RM()
-    : cmf(vector<vector<vector<cfloat>>>(), false, false, true, {}, {}, {}, {3, 3}) {}
+    : cmf(vector<vector<vector<cfloat>>>(), false, false, {}, {}, {}, {3, 3}) {}
 
 Field_RM::Field_RM(const BaseData::DataVariant& data,
                    const vector<int>& inds,
@@ -422,7 +422,7 @@ Field_RM::Field_RM(const BaseData::DataVariant& data,
                    const vector<vector<float>>& domain,
                    const vector<float>& w_points,
                    bool centered)
-    : cmf(data, false, false, true, mesh, domain, w_points, inds, centered) {}
+    : cmf(data, false, false, mesh, domain, w_points, inds, centered) {}
 
 Field_RM::Field_RM(FieldImpl f) : cmf(f) {}
 
@@ -767,7 +767,7 @@ Field::Field(const string& filename, bool centered) {
     BaseData base = load_data_from_hdf5(filename);
     is_complex = base.is_complex;
     is_vector = base.is_vector;
-    is_matrix = base.is_matrix;
+    is_matrix = (base.rank() >= 2);  // Infer from rank: matrices have 2+ tensor indices
 
     field_c = nullptr;
     field_r = nullptr;

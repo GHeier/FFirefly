@@ -1,6 +1,9 @@
 using Firefly
 cfg = Firefly.Config
 
+include("hmatrix_helper.jl")
+using .HMatrixHelper
+
 using HMatrices
 using KrylovKit
 using LinearAlgebra
@@ -35,39 +38,8 @@ function f(w)
     return 1 / (exp(w / T) + 1)
 end
 
-function make_vertex_kernel_minus(V::Firefly.Vertex, areas::Vector{Float32}, velocities::Array{Float32, 3}, frequencies::Vector{Float32})
-    # Compute DOS weights: dA/v for each k-point
-    # velocities has shape (npoints, nbands, 3), we want magnitude for band 1
-    v_norms = [LinearAlgebra.norm(velocities[i, 1, :]) for i in 1:length(areas)]
-    dos_weights = areas ./ v_norms
-
-    # Return kernel function V(k-k', w-w')
-    # Signature: kernel(k1, k2, w1, w2, i, j, iw, jw)
-    return function(k1, k2, w1, w2, i, j, iw, jw)
-        # Convert to Float64 for Vertex call
-        k1 = Float64.(k1)
-        k2 = Float64.(k2)
-        w1 = Float64(w1)
-        w2 = Float64(w2)
-
-        # Projected even-momentum vertex with V(k-k', w-w')
-        dk = k1 - k2
-        dw = w1 - w2
-        V_val = (V(dk, dw) + V(-dk, dw)) / 2
-
-        V_val = real(V_val)
-        weight = dos_weights[j]
-
-        return -wc / w_pts * weight * V_val
-    end
-end
-
-function make_vertex_kernel_plus(V::Firefly.Vertex, areas::Vector{Float32}, velocities::Array{Float32, 3}, frequencies::Vector{Float32})
-    # Compute DOS weights: dA/v for each k-point
-    # velocities has shape (npoints, nbands, 3), we want magnitude for band 1
-    v_norms = [LinearAlgebra.norm(velocities[i, 1, :]) for i in 1:length(areas)]
-    dos_weights = areas ./ v_norms
-
+function make_vertex_kernel(V::Firefly.Vertex, weights, frequencies::Vector{Float32}; w_plus = false)
+    s = w_plus ? 1 : -1
     # Return kernel function V(k-k', w+w')
     # Signature: kernel(k1, k2, w1, w2, i, j, iw, jw)
     return function(k1, k2, w1, w2, i, j, iw, jw)
@@ -79,124 +51,20 @@ function make_vertex_kernel_plus(V::Firefly.Vertex, areas::Vector{Float32}, velo
 
         # Projected even-momentum vertex with V(k-k', w+w')
         dk = k1 - k2
-        dw = w1 + w2
+        dw = w1 + s * w2
         V_val = (V(dk, dw) + V(-dk, dw)) / 2
 
         V_val = real(V_val)
-        weight = dos_weights[j]
+        V_val = 1.0
+        weight = weights[j]
 
-        return -wc / w_pts * weight * V_val
+        return wc / w_pts * weight * V_val
     end
 end
 
-struct KernelMatrixWrapper{F, T} <: AbstractMatrix{Float64}
-    kernel::F
-    kpoints::Vector{T}
-end
 
-Base.getindex(K::KernelMatrixWrapper, i::Int, j::Int) = K.kernel(K.kpoints[i], K.kpoints[j], i, j)
-Base.size(K::KernelMatrixWrapper) = (length(K.kpoints), length(K.kpoints))
-Base.eltype(::Type{<:KernelMatrixWrapper}) = Float64
-
-# Frequency-dependent kernel matrix wrapper for (k,w) pairs
-struct FreqKernelMatrixWrapper{F, T} <: AbstractMatrix{Float64}
-    kernel::F
-    kpoints::Vector{T}
-    frequencies::Vector{Float32}
-    n_k::Int
-    n_w::Int
-end
-
-function Base.getindex(K::FreqKernelMatrixWrapper, idx1::Int, idx2::Int)
-    # Decompose composite indices into (k, w) pairs
-    # Index ordering: k varies faster, so idx = i_k + i_w * n_k
-    i_k = ((idx1 - 1) % K.n_k) + 1
-    i_w = div(idx1 - 1, K.n_k) + 1
-    j_k = ((idx2 - 1) % K.n_k) + 1
-    j_w = div(idx2 - 1, K.n_k) + 1
-
-    k1 = K.kpoints[i_k]
-    k2 = K.kpoints[j_k]
-    w1 = K.frequencies[i_w]
-    w2 = K.frequencies[j_w]
-
-    return K.kernel(k1, k2, w1, w2, i_k, j_k, i_w, j_w)
-end
-
-Base.size(K::FreqKernelMatrixWrapper) = (K.n_k * K.n_w, K.n_k * K.n_w)
-Base.eltype(::Type{<:FreqKernelMatrixWrapper}) = Float64
-
-# Build HMatrix with frequency dependence
-function build_hmatrix(kpoints, frequencies, kernel_func; atol=1e-6, rank=20)
-    n_k = length(kpoints)
-    n_w = length(frequencies)
-    n_total = n_k * n_w
-
-    @printf("Building HMatrix for %d k-points × %d frequencies = %d total points\n", n_k, n_w, n_total)
-
-    # Create frequency-dependent kernel matrix wrapper
-    K = FreqKernelMatrixWrapper(kernel_func, kpoints, frequencies, n_k, n_w)
-
-    # Build cluster tree based on whether we have frequency dependence
-    k_dim = length(kpoints[1])
-
-    if n_w == 1
-        # Single frequency: use 3D clustering (k-space only)
-        # This avoids degenerate 4D points when all frequencies are the same
-        println("Single frequency detected, using 3D k-space clustering...")
-        if k_dim == 2
-            X = [SVector{3}(Float64(kp[1]), Float64(kp[2]), 0.0) for kp in kpoints]
-        elseif k_dim == 3
-            X = [SVector{3}(Float64(kp[1]), Float64(kp[2]), Float64(kp[3])) for kp in kpoints]
-        else
-            error("K-points must be 2D or 3D, got dimension $k_dim")
-        end
-    else
-        # Multiple frequencies: use 4D clustering (k,w)-space
-        # Index ordering: k varies faster (idx = i_k + i_w * n_k)
-        X = Vector{SVector{4,Float64}}(undef, n_total)
-        idx = 1
-        for i_w in 1:n_w
-            w = Float64(frequencies[i_w])
-            for i_k in 1:n_k
-                kp = kpoints[i_k]
-                if k_dim == 2
-                    # 2D k-space: use (kx, ky, 0, w)
-                    X[idx] = SVector{4}(Float64(kp[1]), Float64(kp[2]), 0.0, w)
-                elseif k_dim == 3
-                    # 3D k-space: use (kx, ky, kz, w)
-                    X[idx] = SVector{4}(Float64(kp[1]), Float64(kp[2]), Float64(kp[3]), w)
-                else
-                    error("K-points must be 2D or 3D, got dimension $k_dim")
-                end
-                idx += 1
-            end
-        end
-    end
-
-    # Build the hierarchical matrix
-    println("Building HMatrix...")
-    splitter = HMatrices.CardinalitySplitter(; nmax=50)
-    Xclt = HMatrices.ClusterTree(X, splitter)
-    Yclt = Xclt  # Same cluster tree for row/column spaces
-
-    # Create compression method
-    comp = HMatrices.PartialACA(; atol=atol, rank=rank)
-
-    # Assemble HMatrix from matrix and cluster trees
-    H = assemble_hmatrix(K, Xclt, Yclt; comp=comp)
-
-    return H
-end
-
-function run()
-    # Main function call goes here
-    println("="^60)
-    println("Initializing HMatrix + Arnoldi Eigenvalue Solver")
-    println("="^60)
-
+function get_surface_data()
     # Parameters
-    mu = -1.0  # Fermi energy
     println("\nGenerating k-points from Fermi surface at μ = $mu")
     H = Firefly.Hamiltonian()
 
@@ -229,68 +97,71 @@ function run()
     dos_weights = areas ./ v_norms ./ (2 * π)^dim
     @printf("DOS Min, Max, Ave, Total: %.6f, %.6f, %.6f, %.6f\n", minimum(dos_weights), maximum(dos_weights), sum(dos_weights) / n, sum(dos_weights))
 
+    return kpoints, dos_weights, w_points
+end
 
-    # Load Vertex
-    println("\nLoading Vertex...")
-    V = Firefly.Vertex()
-    println("Vertex loaded.")
-
+function create_hmatrices(V, dos_weights, kpoints, w_points)
     # Create two kernel functions: V(k-k', w-w') and V(k-k', w+w')
-    kernel_minus = make_vertex_kernel_minus(V, areas, velocities, w_points)
-    kernel_plus = make_vertex_kernel_plus(V, areas, velocities, w_points)
+    kernel_minus = make_vertex_kernel(V, dos_weights, w_points, w_plus=false)
+    kernel_plus = make_vertex_kernel(V, dos_weights, w_points, w_plus=true)
 
     # Build two HMatrices with frequency dependence
     println("\n" * "="^60)
     println("Building HMatrix for V(k-k', w-w')...")
-    t_hmat_minus = @elapsed H_matrix_minus = build_hmatrix(kpoints, w_points, kernel_minus; atol=1e-4, rank=30)
-    @printf("HMatrix (minus) built in %.3f seconds\n", t_hmat_minus)
-    @printf("Compression ratio: %.2f\n", compression_ratio(H_matrix_minus))
+    t_hmat_minus = @elapsed H_matrix_minus = HMatrixHelper.build_hmatrix(kpoints, w_points, kernel_minus; atol=1e-4, rank=30)
 
     println("\nBuilding HMatrix for V(k-k', w+w')...")
-    t_hmat_plus = @elapsed H_matrix_plus = build_hmatrix(kpoints, w_points, kernel_plus; atol=1e-4, rank=30)
-    @printf("HMatrix (plus) built in %.3f seconds\n", t_hmat_plus)
-    @printf("Compression ratio: %.2f\n", compression_ratio(H_matrix_plus))
+    t_hmat_plus = @elapsed H_matrix_plus = HMatrixHelper.build_hmatrix(kpoints, w_points, kernel_plus; atol=1e-4, rank=30)
+    @printf("HMatrices built in %.3f seconds\n", t_hmat_plus+t_hmat_minus)
+    @printf("Compression ratio: %.2f\n", (compression_ratio(H_matrix_plus)+compression_ratio(H_matrix_minus)) / 4)
 
+    return H_matrix_minus, H_matrix_plus
+end
+
+function lanczos_solve(H_matrix_minus, H_matrix_plus, kpoints, w_points)
     # Matrix dimensions: n_k k-points × n_w frequencies
     n_k = length(kpoints)
     n_w = length(w_points)
     n_total = n_k * n_w
     @printf("Matrix size: %d × %d\n", n_total, n_total)
 
-    # Create custom matrix-vector product: f(-w') * V(k-k',w-w') - f(w') * V(k-k',w+w')
-    # This applies the Eliashberg kernel with proper frequency structure
+    # Create custom matrix-vector product following the Eliashberg equation:
+    # λΔ(ω,k) = sum_{ω',k'} 1/(-2ω') [ V(ω-ω',k-k')f(-ω') - s*V(ω+ω',k-k')f(ω') ] Δ(ω',k')
+    # where s is the sign for singlet (s=1) vs triplet (s=-1) pairing
+    #
+    # This formula reduces to the standard BCS kernel tanh(ω'/(2T))/(2ω') with an overall sign:
+    # For s=1: [f(-ω') - f(ω')]/(-2ω') = -tanh(ω'/(2T))/(2ω')
+    #
+    # Note: The negative sign in (-2ω') leads to negative eigenvalues for attractive interactions.
+    # Standard convention uses positive eigenvalues, so we apply a negative sign to the result.
     hmv = (v) -> begin
-        Dm = similar(v)
-        Dp = similar(v)
+        v_reshaped = reshape(v, n_k, n_w)  # [k, w]
+        s = 1  # singlet pairing
 
-        # Apply H_matrix_minus: V(k-k', w-w')
-        mul!(Dm, H_matrix_minus, v)
-
-        # Apply H_matrix_plus: V(k-k', w+w')
-        mul!(Dp, H_matrix_plus, v)
-
-        Dm = reshape(Dm, n_k, n_w)  # [k, w]
-        Dp = reshape(Dp, n_k, n_w)  # [k, w]
-
-        Dm .= 1.0 / n_total^0.5
-        Dp .= 1.0 / n_total^0.5
-
-        # Combine with Fermi function weights: f(-w') * V_minus - f(w') * V_plus
-        result = similar(v)
+        # Weight input vector by [f(-ω') - s*f(ω')]/(-2ω')
+        v_plus = similar(v_reshaped)
+        v_minus = similar(v_reshaped)
         for i_w in 1:n_w
             w = Float64(w_points[i_w])
             if abs(w) < 1e-8
-                # Handle w=0 case to avoid division by zero
-                Dm[:, i_w] .*= 1 / (4 * T)
-                Dp[:, i_w] .*= 1 / (4 * T)
-                continue
+                # Handle w=0: lim_{w->0} [f(-w) - s*f(w)]/(-2w) = -1/(4T) for s=1
+                # (since tanh(w/(2T))/(-2w) → -1/(4T) as w→0)
+                v_plus[:, i_w] = v_reshaped[:, i_w] .* (-1 / (4 * T))
+                v_minus[:, i_w] = v_reshaped[:, i_w] .* (-1 / (4 * T))
+            else
+                v_plus[:, i_w] = v_reshaped[:, i_w] .* f(w) / (-2 * w)
+                v_minus[:, i_w] = v_reshaped[:, i_w] .* f(-w) / (-2 * w)
             end
-            Dm[:, i_w] .*= f(-w) / (2 * -w)
-            Dp[:, i_w] .*= f(w) / (2 * -w)
         end
-        result .= reshape(Dm - Dp, n_total)
 
-        return result
+        # Apply H_matrix: For V=const, use H_matrix_minus
+        result_minus = similar(v)
+        mul!(result_minus, H_matrix_minus, reshape(v_minus, n_total))
+        result_plus = similar(v)
+        mul!(result_plus, H_matrix_minus, reshape(v_plus, n_total))
+
+        # Negate result to match standard convention (positive eigenvalues for attractive V>0)
+        return -(result_minus - s * result_plus)
     end
 
     # Use the matrix-vector product function with eigsolve
@@ -304,14 +175,11 @@ function run()
                                                     tol=1e-8)
     end
 
-    # Find the largest positive eigenvalue
-    # Note: Arnoldi can return complex eigenvalues for non-Hermitian matrices
-    # Check for significant imaginary components
-    imag_vals = imag.(vals_hmat)
-    max_imag = maximum(abs.(imag_vals))
-    println("Max imaginary component of eigenvalues: ", max_imag)
+    return vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat
+end
 
-    real_vals = real.(vals_hmat) ./ (2π)^dim
+function find_top_eig(vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat)
+    real_vals = real.(vals_hmat)
     positive_vals = filter(x -> x > 0, real_vals)
 
     if isempty(positive_vals)
@@ -340,25 +208,16 @@ function run()
 
     @printf("\nLargest eigenvalue (by magnitude): %.10f\n", real_vals[1])
     @printf("Largest positive eigenvalue: %.10f\n", largest_positive)
-    # Temporary integral for testing
-    ival = 0
-    for i in 1:w_pts
-        if w_points[i] == 0.0
-            ival += 1 / (4 * T) 
-        else
-            ival += tanh(w_points[i] / (2 * T)) / (2 * w_points[i])
-        end
-    end
-    println("Eigenvalue estimate: ", ival * (wc / w_pts) * sum(dos_weights))
+    return idx_largest_positive, largest_positive
+end
 
-    # Save the eigenvector corresponding to the largest positive eigenvalue
-    if idx_largest_positive > 0
-        eigenvec = vecs_hmat[idx_largest_positive]
+# Save the eigenvector corresponding to the largest positive eigenvalue
+function save!(vals, vecs, idx, kpoints, w_points)
+    if idx > 0
+        eigenvec = vecs[idx]
+        n_k = length(kpoints)
+        n_w = length(w_points)
 
-        # Reshape eigenvector from 1D (n_total) to 2D (n_k, n_w)
-        # Index ordering: idx = i_k + i_w * n_k (k varies faster)
-        # Julia column-major: reshape fills columns first
-        # So reshape(vec, n_k, n_w) will give us [k, w] indexing
         eigenvec_2d = reshape(eigenvec, n_k, n_w)
 
         # Save gap function with k-points from Fermi surface using save_data!
@@ -367,7 +226,6 @@ function run()
 
         # Determine k-space dimension
         k_dim = length(kpoints[1])
-        has_freq = (w_pts > 1)
 
         # Prepare k-points matrix [n_k × k_dim]
         points_matrix = Matrix{Float64}(undef, n_k, k_dim)
@@ -377,28 +235,49 @@ function run()
             end
         end
 
-        # Prepare data array
-        # eigenvec_2d is already [n_k, n_w] from reshape above
-        # Convert to real and Float64
         data_array = Float64.(real.(eigenvec_2d))
-
-        # Call save_data! with points parameter
         save_data! = Firefly.Imports.save_data!
-        if has_freq
-            # With frequency: pass w_points separately
+        if w_pts > 1
             save_data!(filename, data_array, points=points_matrix, w_points=w_points)
         else
-            # No frequency: just spatial points
             save_data!(filename, data_array, points=points_matrix)
         end
 
         @printf("Eigenvector saved successfully.\n")
-        @printf("  Shape: (%d k-points, %d frequencies)\n", n_k, n_w)
-        @printf("  Total data points: %d\n", n_k * n_w)
-        @printf("  Norm: %.6f\n", LinearAlgebra.norm(eigenvec))
     else
         @printf("\nNo positive eigenvalue found - eigenvector not saved.\n")
     end
+end
+
+function run()
+    # Main function call goes here
+    println("="^60)
+    println("Initializing HMatrix + Arnoldi Eigenvalue Solver")
+    println("="^60)
+
+    kpoints, dos_weights, w_points = get_surface_data()
+
+    # Load Vertex
+    println("\nLoading Vertex...")
+    V = Firefly.Vertex()
+    println("Vertex loaded.")
+
+    H_matrix_minus, H_matrix_plus = create_hmatrices(V, dos_weights, kpoints, w_points)
+    vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat = lanczos_solve(H_matrix_minus, H_matrix_plus, kpoints, w_points)
+
+    # Temporary integral for testing
+    ival = 0
+    for i in 1:w_pts
+        if w_points[i] == 0.0
+            ival += 1 / (4 * T)
+        else
+            ival += tanh(w_points[i] / (2 * T)) / (2 * w_points[i])
+        end
+    end
+    println("Eigenvalue estimate: ", ival * (wc / w_pts) * sum(dos_weights))
+
+    idx_largest_positive, largest_positive = find_top_eig(vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat)
+    save!(vals_hmat, vecs_hmat, idx_largest_positive, kpoints, w_points)
 
     return largest_positive
 end

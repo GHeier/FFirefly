@@ -34,25 +34,22 @@ void get_energy_max_min(float& E_min, float& E_max) {
     E_max -= 0.01f;
 }
 
-void electron_number(vector<cfloat> &DOS, vector<float> &w_points) {
+void electron_number(vector<float> &DOS, vector<float> &w_points) {
     float dw = w_points[1] - w_points[0];
     vector<float> num_electrons(w_pts, 0.0);
-    vector<cfloat> E_points(w_pts);
     for (int i = 0; i < w_pts; i++) {
         float n_e = 0.0f;
         for (int j = 0; j < i; j++) {
-            n_e += 2 * real(DOS[j]) * dw;
+            n_e += 2 * DOS[j] * dw;
         }
         num_electrons[i] = n_e;
-        E_points[i] = cfloat(w_points[i], 0.0f);
     }
-    BaseData::DataVariant dv = E_points;
     printf("Saving electron number vs mu data to %s\n", (outdir + prefix + "_n_vs_E.h5").c_str());
-    save_data(outdir + prefix + "_E_vs_n.h5", dv, false, {}, {{}}, num_electrons);
+    save_data(outdir + prefix + "_E_vs_n.h5", w_points, num_electrons);
 }
 
 float run() {
-    vector<cfloat> DOS(w_pts, cfloat(0.0f, 0.0f));
+    vector<float> DOS(w_pts);
     vector<float> w_points(w_pts);
     float E_min, E_max;
     get_energy_max_min(E_min, E_max);
@@ -66,11 +63,10 @@ float run() {
         for (auto& x : FS) {
             sum += x.area / vp(x.n, x);
         }
-        DOS[i] = cfloat(sum / (pow(2 * M_PI, dimension)), 0.0f);
+        DOS[i] = sum / (pow(2 * M_PI, dimension));
     }
-    BaseData::DataVariant dv = DOS;
     printf("Saving DOS data to %s\n", (outdir + prefix + "_DOS.h5").c_str());
-    save_data(outdir + prefix + "_DOS.h5", dv, false, {}, {{}}, w_points);
+    save_data(outdir + prefix + "_DOS.h5", DOS, w_points);
     electron_number(DOS, w_points);
     return real(DOS[0]);
 }

@@ -84,6 +84,22 @@ inline vector<complex<Vec>> transform_data(DataVariant& f, int dim) {
     return result;
 }
 
+// Transform flat real_values/imag_values arrays to vector<complex<Vec>>
+inline vector<complex<Vec>> transform_data_from_flat(const vector<float>& real_vals,
+                                                      const vector<float>& imag_vals,
+                                                      int dim, bool is_complex) {
+    vector<complex<Vec>> result;
+    result.reserve(real_vals.size());
+
+    for (size_t i = 0; i < real_vals.size(); i++) {
+        Vec v1(real_vals[i]); v1.dimension = dim;
+        Vec v2(is_complex && i < imag_vals.size() ? imag_vals[i] : 0.0f); v2.dimension = dim;
+        result.emplace_back(complex<Vec>(v1, v2));
+    }
+
+    return result;
+}
+
 vector<Vec> invertMatrix2(vector<Vec> &matrix, int n);
 
 inline vector<Vec> float_matrix_to_vec(vector<vector<float>> a) {
@@ -133,6 +149,7 @@ struct DataEvaluator {
     ResultVariant get_array(Vec point, float w = 0);
 
 private:
-    void load_indexed_data(BaseData& f);
+    void load_indexed_data(BaseData& f);           // From flat arrays (after HDF5 load)
+    void load_indexed_data_from_variant(BaseData& f);  // From data variant (programmatic creation)
 };
 

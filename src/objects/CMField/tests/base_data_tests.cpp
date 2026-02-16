@@ -479,14 +479,20 @@ bool create_destroy() {
     // 3. Reload
     BaseData loaded = load_data_from_hdf5(fname);
 
-    // 4. Verify contents
-    auto& mat = loaded.get<vector<vector<cfloat>>>();
-    if (mat.size() != vecs.size()) return false;
-    if (mat[0].size() != vecs[0].size()) return false;
+    // 4. Verify contents via flat arrays (real_values/imag_values)
+    // Expected size: 2 k-points * 3 vector components = 6 values
+    size_t expected_size = vecs.size() * vecs[0].size();  // 2 * 3 = 6
+    if (loaded.real_values.size() != expected_size) return false;
 
-    for (size_t i = 0; i < mat.size(); ++i) {
-        for (size_t j = 0; j < mat[i].size(); ++j) {
-            if (abs(mat[i][j] - vecs[i][j]) > 1e-6f) return false;
+    // Verify values match (data stored as flat array)
+    int idx = 0;
+    for (size_t i = 0; i < vecs.size(); ++i) {
+        for (size_t j = 0; j < vecs[i].size(); ++j) {
+            float expected_real = vecs[i][j].real();
+            float expected_imag = vecs[i][j].imag();
+            if (fabs(loaded.real_values[idx] - expected_real) > 1e-6f) return false;
+            if (loaded.is_complex && fabs(loaded.imag_values[idx] - expected_imag) > 1e-6f) return false;
+            idx++;
         }
     }
 
@@ -547,11 +553,11 @@ bool point_storage_scalar() {
         }
     }
 
-    // Verify data
-    auto& loaded_vals = loaded.get<vector<cfloat>>();
-    if (loaded_vals.size() != values.size()) return false;
-    for (size_t i = 0; i < loaded_vals.size(); ++i) {
-        if (abs(loaded_vals[i] - values[i]) > 1e-6f) return false;
+    // Verify data via flat arrays
+    if (loaded.real_values.size() != values.size()) return false;
+    for (size_t i = 0; i < loaded.real_values.size(); ++i) {
+        if (fabs(loaded.real_values[i] - values[i].real()) > 1e-6f) return false;
+        if (loaded.is_complex && fabs(loaded.imag_values[i] - values[i].imag()) > 1e-6f) return false;
     }
 
     filesystem::remove(fname);
@@ -623,11 +629,11 @@ bool point_storage_with_frequency() {
         if (fabs(loaded.w_points[i] - data.w_points[i]) > 1e-6) return false;
     }
 
-    // Verify data
-    auto& loaded_vals = loaded.get<vector<cfloat>>();
-    if (loaded_vals.size() != values.size()) return false;
-    for (size_t i = 0; i < loaded_vals.size(); ++i) {
-        if (abs(loaded_vals[i] - values[i]) > 1e-6f) return false;
+    // Verify data via flat arrays
+    if (loaded.real_values.size() != values.size()) return false;
+    for (size_t i = 0; i < loaded.real_values.size(); ++i) {
+        if (fabs(loaded.real_values[i] - values[i].real()) > 1e-6f) return false;
+        if (loaded.is_complex && fabs(loaded.imag_values[i] - values[i].imag()) > 1e-6f) return false;
     }
 
     filesystem::remove(fname);

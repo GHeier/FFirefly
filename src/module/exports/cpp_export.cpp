@@ -821,6 +821,25 @@ void destroy_Surface(Surface *a) { delete a; }
 void destroy_Vec(Vec *a) { delete a; }
 
 
+// Helper function to construct BaseData and save to HDF5
+void save_data_with_points(const char* filename, BaseData::DataVariant& data_var,
+                           bool is_complex, vector<int>& mesh, vector<vector<float>>& domain,
+                           vector<float>& w_points, vector<int>& inds, vector<vector<float>>& points) {
+    BaseData bd;
+    bd.data = data_var;
+    bd.is_complex = is_complex;
+    bd.mesh = mesh;
+    bd.domain = domain;
+    bd.w_points = w_points;
+    bd.inds = inds;
+    bd.points = points;
+    bd.with_k = !mesh.empty() || !points.empty();
+    bd.with_w = !w_points.empty();
+    bd.as_mesh = !mesh.empty();
+    bd.dimension = mesh.size();
+    save_data_to_hdf5(bd, string(filename));
+}
+
 // Save data exports - handles BaseData::DataVariant conversion
 // For scalar fields (rank = 0, inds = {})
 // data_interleaved format: [real0, imag0, real1, imag1, ...]
@@ -1134,10 +1153,6 @@ extern "C" void BaseData_save(BaseData *data, const char *filename) {
     save_data_to_hdf5(*data, filename);
 }
 
-extern "C" void BaseData_save_with_ordering(BaseData *data, const char *filename, const char *ordering) {
-    save_data_to_hdf5(*data, filename, ordering);
-}
-
 extern "C" void destroy_BaseData(BaseData *data) {
     delete data;
 }
@@ -1145,7 +1160,7 @@ extern "C" void destroy_BaseData(BaseData *data) {
 // BaseData metadata getters
 extern "C" int BaseData_get_is_complex(BaseData *data) { return data->is_complex; }
 extern "C" int BaseData_get_is_vector(BaseData *data) { return data->is_vector; }
-extern "C" int BaseData_get_is_matrix(BaseData *data) { return data->is_matrix; }
+extern "C" int BaseData_get_is_matrix(BaseData *data) { return data->rank() >= 2; }  // Infer from rank
 extern "C" int BaseData_get_with_k(BaseData *data) { return data->with_k; }
 extern "C" int BaseData_get_with_w(BaseData *data) { return data->with_w; }
 extern "C" int BaseData_get_as_mesh(BaseData *data) { return data->as_mesh; }
@@ -1217,67 +1232,47 @@ extern "C" void BaseData_get_points(BaseData *data, float *points_out) {
     }
 }
 
-// BaseData data extraction
+// BaseData data extraction - use flat real_values/imag_values arrays directly
 extern "C" void BaseData_get_data_scalar(BaseData *data, float *real_out, float *imag_out) {
-    auto& flat = data->get<std::vector<cfloat>>();
-    for (size_t i = 0; i < flat.size(); i++) {
-        real_out[i] = flat[i].real();
-        if (data->is_complex) {
-            imag_out[i] = flat[i].imag();
+    for (size_t i = 0; i < data->real_values.size(); i++) {
+        real_out[i] = data->real_values[i];
+    }
+    if (data->is_complex) {
+        for (size_t i = 0; i < data->imag_values.size(); i++) {
+            imag_out[i] = data->imag_values[i];
         }
     }
 }
 
 extern "C" void BaseData_get_data_matrix(BaseData *data, float *real_out, float *imag_out) {
-    auto& matrices = data->get<std::vector<std::vector<std::vector<cfloat>>>>();
-    int idx = 0;
-    for (const auto& mat : matrices) {
-        for (const auto& row : mat) {
-            for (const auto& val : row) {
-                real_out[idx] = val.real();
-                if (data->is_complex) {
-                    imag_out[idx] = val.imag();
-                }
-                idx++;
-            }
+    for (size_t i = 0; i < data->real_values.size(); i++) {
+        real_out[i] = data->real_values[i];
+    }
+    if (data->is_complex) {
+        for (size_t i = 0; i < data->imag_values.size(); i++) {
+            imag_out[i] = data->imag_values[i];
         }
     }
 }
 
 extern "C" void BaseData_get_data_tensor3(BaseData *data, float *real_out, float *imag_out) {
-    auto& tensors = data->get<std::vector<std::vector<std::vector<std::vector<cfloat>>>>>();
-    int idx = 0;
-    for (const auto& tensor : tensors) {
-        for (const auto& slice : tensor) {
-            for (const auto& row : slice) {
-                for (const auto& val : row) {
-                    real_out[idx] = val.real();
-                    if (data->is_complex) {
-                        imag_out[idx] = val.imag();
-                    }
-                    idx++;
-                }
-            }
+    for (size_t i = 0; i < data->real_values.size(); i++) {
+        real_out[i] = data->real_values[i];
+    }
+    if (data->is_complex) {
+        for (size_t i = 0; i < data->imag_values.size(); i++) {
+            imag_out[i] = data->imag_values[i];
         }
     }
 }
 
 extern "C" void BaseData_get_data_tensor4(BaseData *data, float *real_out, float *imag_out) {
-    auto& tensors = data->get<std::vector<std::vector<std::vector<std::vector<std::vector<cfloat>>>>>>();
-    int idx = 0;
-    for (const auto& tensor : tensors) {
-        for (const auto& cube : tensor) {
-            for (const auto& slice : cube) {
-                for (const auto& row : slice) {
-                    for (const auto& val : row) {
-                        real_out[idx] = val.real();
-                        if (data->is_complex) {
-                            imag_out[idx] = val.imag();
-                        }
-                        idx++;
-                    }
-                }
-            }
+    for (size_t i = 0; i < data->real_values.size(); i++) {
+        real_out[i] = data->real_values[i];
+    }
+    if (data->is_complex) {
+        for (size_t i = 0; i < data->imag_values.size(); i++) {
+            imag_out[i] = data->imag_values[i];
         }
     }
 }

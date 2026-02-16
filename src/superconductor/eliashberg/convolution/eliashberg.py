@@ -64,9 +64,9 @@ def run_lanczos():
     i = np.where(eigs > 0, eigs, -np.inf).argmax() 
     print(f"Max Eig: {eigs[i]:.6f}")
     Deltas[i].save(outdir + prefix + '_gap.h5')
-    for i in range(len(eigs)):
-        print(f"Saving eig{i}: {eigs[i]:.6f}")
-        Deltas[i].save(outdir + prefix + f'_gap_eig{i}.h5')
+    #for i in range(len(eigs)):
+    #    print(f"Saving eig{i}: {eigs[i]:.6f}")
+    #    Deltas[i].save(outdir + prefix + f'_gap_eig{i}.h5')
     return eigs[i]
 
 # Main function 2

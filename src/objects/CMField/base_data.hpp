@@ -12,19 +12,22 @@ using namespace std;
 
 struct BaseData {
 public:
+    // Data variant type for storing structured data (used for saving)
+    using DataVariant = std::variant<
+        vector<cfloat>,
+        vector<vector<cfloat>>,
+        vector<vector<vector<cfloat>>>,
+        vector<vector<vector<vector<cfloat>>>>,
+        vector<vector<vector<vector<vector<cfloat>>>>>
+    >;
+
     bool is_complex = false;
     bool is_vector = false;
-    bool is_matrix = false;
     bool with_k = false;
     bool with_w = false;
     bool as_mesh = false;
 
     // Tensor indices: inds[i] = size of i-th tensor dimension
-    // Examples:
-    //   Scalar: inds = {}
-    //   3-vector: inds = {3}
-    //   3x3 matrix: inds = {3, 3}
-    //   2x3 matrix: inds = {2, 3}
     //   Single-band 4-vertex: inds = {1, 1, 1, 1}
     vector<int> inds;
 
@@ -35,14 +38,11 @@ public:
     vector<float> w_points;  // Frequency points (if with_w==true)
     vector<vector<float>> points;  // k-point data storage when as_mesh = false
 
-    using DataVariant = variant<
-        vector<cfloat>,                                // rank=0: scalars (inds={})
-        vector<vector<cfloat>>,                        // rank=1: vectors (inds={n})
-        vector<vector<vector<cfloat>>>,                // rank=2: matrices (inds={m,n})
-        vector<vector<vector<vector<cfloat>>>>,        // rank=3: 3D tensors (inds={l,m,n})
-        vector<vector<vector<vector<vector<cfloat>>>>> // rank=4: 4D tensors (inds={i,j,k,l})
-    >;
+    // Flat value arrays (populated when loading from HDF5)
+    vector<float> real_values;
+    vector<float> imag_values;
 
+    // Structured data variant (used for saving, may be empty after loading)
     DataVariant data;
 
     // Calculate total number of tensor elements
@@ -93,14 +93,31 @@ public:
     }
 };
 
+//void load_metadata(BaseData &field, H5File &file);
+
+//void read_vector(vector<int> &vec, DataSet &ds);
+//void read_vector(vector<float> &vec, DataSet &ds);
+
+//void store_domain(DataSet& ds_domain, BaseData& field);
+//void load_k_points(DataSet& ds_points, BaseData& field);
 // Load
 BaseData load_data_from_hdf5(const std::string& filename);
 BaseData load_data_from_hdf5(const std::string& filename, const std::string& ordering);  // ordering: "k-w" or "w-k"
-
+inline const std::vector<std::vector<float>>& ep() {
+    static const std::vector<std::vector<float>> e;
+    return e;
+}
 // Save overloads
 void save_data_to_hdf5(BaseData& data, const std::string& filename);
-void save_data_to_hdf5(BaseData& data, const std::string& filename, const std::string& ordering);  // ordering: "k-w" or "w-k"
-void save_data(string filename, BaseData::DataVariant& data, bool is_complex = false, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<int>& inds = {});
-void save_data_with_points(string filename, BaseData::DataVariant& data, bool is_complex, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<int>& inds, vector<vector<float>>& points);
+void save_data(string filename, vector<vector<vector<vector<cfloat>>>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
+void save_data(string filename, vector<vector<vector<cfloat>>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
+void save_data(string filename, vector<vector<cfloat>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
+void save_data(string filename, vector<cfloat>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
 
-void save_data_to_hdf5(const std::string& filename, bool is_complex, bool is_vector, bool is_matrix, bool with_k, bool with_w, bool as_mesh, const vector<int>& inds, vector<int> &mesh, vector<vector<float>> &domain, int dimension, vector<float> &w_points, vector<vector<float>> &points, const BaseData::DataVariant& data);
+void save_data(string filename, vector<vector<vector<vector<float>>>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
+void save_data(string filename, vector<vector<vector<float>>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
+void save_data(string filename, vector<vector<float>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
+void save_data(string filename, vector<float>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
+void save_data(string filename, vector<float>& data, vector<float> w_points);
+
+//void save_data_to_hdf5(std::string& filename, bool is_complex, bool is_vector, bool with_k, bool with_w, bool as_mesh, const vector<int>& inds, vector<int> &mesh, vector<vector<float>> &domain, int dimension, vector<float> &w_points, vector<vector<float>> &points, const BaseData::DataVariant& data);
