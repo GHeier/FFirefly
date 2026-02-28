@@ -1,5 +1,5 @@
 #pragma once
 
-void FLEX_renormalization();
+float FLEX_renormalization();
 
 

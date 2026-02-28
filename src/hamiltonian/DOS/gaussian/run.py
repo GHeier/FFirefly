@@ -33,7 +33,7 @@ def get_electron_number(dos, w_pts):
     for i in range(len(w_pts)):
         n_list[i] = 2*np.sum(dos[:i]) * dw
     fly.save_data(outdir + prefix + '_E_vs_n.h5', w_pts, [], [[]], n_list)
-    print("Saved to ", outdir + prefix + "_n_vs_E.h5")
+    print("Saved to ", outdir + prefix + "_E_vs_n.h5")
 
 
 def run():

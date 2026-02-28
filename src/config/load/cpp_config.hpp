@@ -12,7 +12,7 @@ extern string category;
 extern string calculation;
 extern string method;
 extern string outdir;
-extern string indir;
+extern bool debug;
 extern string prefix;
 extern string verbosity;
 extern bool automatic_file_read;
@@ -32,6 +32,7 @@ extern float cutoff_energy;
 extern float smearing;
 extern float mixing;
 extern int max_iters;
+extern float qp_weight;
 
 //[HAMILTONIAN]
 extern string hamiltonian;
@@ -137,6 +138,10 @@ std::string get_loc();
 int run_cpp_method(const std::string& method_name);
 int run_python_method(const std::string& method_name);
 int run_julia_method(const std::string& method_name);
+
+int run_cpp_test(const std::string& test_name);
+int run_python_test(const std::string& test_name);
+int run_julia_test(const std::string& test_name);
 
 // Alternative shell-based execution methods (method2)
 int run_python_method2(const std::string& method_name);

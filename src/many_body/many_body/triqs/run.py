@@ -108,6 +108,10 @@ def FLEX_DMFT():
     print(f"Final U*max(Chi): {S.FLEX.UX:.4f}")
     print(f"Final U: {S.U:.4f}")
 
+    loc_sigma = make_local(S.Sigma_k.obj_wk.data)
+    renorm = get_renorm(loc_sigma, S.Sigma_k.w_points)
+    print(f"Quasiparticle renormalization factor: {renorm:.4f}")
+
     save_FLEX_DMFT(S)
     max_chi = np.max(np.abs(S.FLEX.X.obj_wk.data))
     return max_chi
@@ -119,7 +123,7 @@ def save_FLEX(S):
     S.G.save(pref + '_G.h5')
     S.X.save(pref + '_chi.h5')
     S.V.save(pref + '_vertex.h5')
-    S.Sigma.save(pref + '_sigma.h5')
+    S.Sigma.save(pref + '_self_energy.h5')
     #S.Sigma.save_as_w(pref + '_sigma_w.h5')
 
     # Compute and save singlet pairing vertex for superconductivity
@@ -132,7 +136,7 @@ def save_FLEX_DMFT(S):
     S.FLEX.G.save(pref + '_G.h5')
     S.FLEX.X.save(pref + '_chi.h5')
     S.FLEX.V.save(pref + '_vertex.h5')
-    S.Sigma_k.save(pref + '_sigma.h5')
+    S.Sigma_k.save(pref + '_self_energy.h5')
     S.Sigma_k.save_as_w(pref + '_sigma_w.h5')
     S.Sigma_loc.save(pref + '_sigma_loc.h5')
     S.Sigma_nonloc.save_as_w(pref + '_sigma_nonloc.h5')

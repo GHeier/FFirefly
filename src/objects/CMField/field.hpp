@@ -136,6 +136,7 @@ public:
 
     // Operator for spatial evaluation with optional frequency
     ResultVariant operator()(Vec point, float w = 0) {
+        if (!data.with_k) return evaluator(w);
         // Apply periodic boundary conditions
         Vec periodic_point = apply_periodic_bc(point);
 
@@ -150,6 +151,7 @@ public:
 
     // Operator for indexed spatial evaluation (e.g., matrix elements H_ab(k))
     ResultVariant operator()(Vec point, vector<int> indices, float w = 0) {
+        if (!data.with_k) return evaluator(w);
         // Apply periodic boundary conditions
         Vec periodic_point = apply_periodic_bc(point);
 

@@ -20,7 +20,7 @@ string category;
 string calculation;
 string method;
 string outdir;
-string indir;
+bool debug;
 string prefix;
 string verbosity;
 bool automatic_file_read;
@@ -40,6 +40,7 @@ float cutoff_energy;
 float smearing;
 float mixing;
 int max_iters;
+float qp_weight;
 
 //[HAMILTONIAN]
 string hamiltonian;
@@ -105,7 +106,7 @@ extern "C" void load_cpp_config() {
     calculation = c_calculation;
     method = c_method;
     outdir = c_outdir;
-    indir = c_indir;
+    debug = c_debug;
     prefix = c_prefix;
     verbosity = c_verbosity;
     automatic_file_read = c_automatic_file_read;
@@ -125,6 +126,7 @@ extern "C" void load_cpp_config() {
     smearing = c_smearing;
     mixing = c_mixing;
     max_iters = c_max_iters;
+    qp_weight = c_qp_weight;
 
 //[HAMILTONIAN]
     hamiltonian = c_hamiltonian;
@@ -347,6 +349,67 @@ int run_julia_method(const string& method_name) {
     if (bin_pos != string::npos) {
         string src_dir = loc.substr(0, bin_pos) + "/src/";
         string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.jl";
+        string exe = "julia " + script_path;
+        int result = std::system(exe.c_str());
+        return result;
+        //return run_with_config(exe, config_path);
+    }
+    return -1;  // Error: couldn't find src directory
+}
+
+int run_cpp_test(const string& test_name) {
+    string loc = get_loc();
+    string exe = loc + category + "_" + calculation + "_" + test_name + ".exe";
+    string config_path = loc + "input.cfg";
+    return run_with_config(exe, config_path);
+}
+
+int run_python_test(const string& test_name) {
+    string loc = get_loc();
+    string config_path = loc + "input.cfg";
+    // Go up from build/bin/ to project root, then to src/
+    size_t build_pos = loc.find("/build/bin/");
+    if (build_pos != string::npos) {
+        // Found build/bin/, go to project root
+        string src_dir = loc.substr(0, build_pos) + "/src/";
+        string script_path = src_dir + category + "/" + calculation + "/" + test_name + "/tests/test.py";
+        string exe = "python3 " + script_path;
+        int result = std::system(exe.c_str());
+        return result;
+        //return run_with_config(exe, config_path);
+    }
+    // Fallback: try simple /bin/ pattern (for non-build locations)
+    size_t bin_pos = loc.find("/bin/");
+    if (bin_pos != string::npos) {
+        string src_dir = loc.substr(0, bin_pos) + "/src/";
+        string script_path = src_dir + category + "/" + calculation + "/" + test_name + "/tests/test.py";
+        string exe = "python3 " + script_path;
+        int result = std::system(exe.c_str());
+        return result;
+        //return run_with_config(exe, config_path);
+    }
+    return -1;  // Error: couldn't find src directory
+}
+
+int run_julia_test(const string& test_name) {
+    string loc = get_loc();
+    string config_path = loc + "input.cfg";
+    // Go up from build/bin/ to project root, then to src/
+    size_t build_pos = loc.find("/build/bin/");
+    if (build_pos != string::npos) {
+        // Found build/bin/, go to project root
+        string src_dir = loc.substr(0, build_pos) + "/src/";
+        string script_path = src_dir + category + "/" + calculation + "/" + test_name + "/tests/test.jl";
+        string exe = "julia " + script_path;
+        int result = std::system(exe.c_str());
+        return result;
+        //return run_with_config(exe, config_path);
+    }
+    // Fallback: try simple /bin/ pattern (for non-build locations)
+    size_t bin_pos = loc.find("/bin/");
+    if (bin_pos != string::npos) {
+        string src_dir = loc.substr(0, bin_pos) + "/src/";
+        string script_path = src_dir + category + "/" + calculation + "/" + test_name + "tests/test.jl";
         string exe = "julia " + script_path;
         int result = std::system(exe.c_str());
         return result;

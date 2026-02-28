@@ -14,14 +14,14 @@ static Vec get_kvec(int i, int j, int k) {
     return newv;
 }
 
-void FLEX_renormalization() {
+float FLEX_renormalization() {
     string filename = outdir + prefix + "_chi." + filetype;
     printf("Reading chi from %s\n", filename.c_str());
-    Field_C chi(filename);
+    Field_R chi(filename);
     float U = U0;
     int chidim = chi.cmf.data.dimension;
 
-    vector<cfloat> vals;
+    vector<float> vals;
     float maxval = 0;
     float ave = 0.0;
 
@@ -34,15 +34,15 @@ void FLEX_renormalization() {
             Vec q(point.data(), chidim);
             q.dimension = chidim;
 
-            cfloat X = chi(q);
-            cfloat val = (U*U*U * X*X) / cfloat(1.0f - U * X) + (U*U * X) / cfloat(1.0f - U * U * X * X);
+            float X = chi(q);
+            float val = (U*U*U * X*X) / float(1.0f - U * X) + (U*U * X) / float(1.0f - U * U * X * X);
             vals.push_back(val);
-            ave += val.real() / chi.cmf.data.points.size();
+            ave += val / chi.cmf.data.points.size();
 
-            if (maxval < val.real())
-                maxval = val.real();
+            if (maxval < val)
+                maxval = val;
             if (abs(U * X) >= 1) {
-                printf("Geometric series not convergent: U*X = %f\n", U * X.real());
+                printf("Geometric series not convergent: U*X = %f\n", U * X);
                 exit(1);
             }
         }
@@ -62,16 +62,16 @@ void FLEX_renormalization() {
                     Vec q = brillouin_zone * Vec(i / nx - 0.5, j / ny - 0.5, k / nz - 0.5);
                     q.dimension = chidim;
 
-                    cfloat X = chi(q);
-                    cfloat val = (U*U*U * X*X) / cfloat(1.0f - U * X) + (U*U * X) / cfloat(1.0f - U * U * X * X);
+                    float X = chi(q);
+                    float val = (U*U*U * X*X) / float(1.0f - U * X) + (U*U * X) / float(1.0f - U * U * X * X);
                     vals.push_back(val);
                     //vals.push_back(1.0);
-                    ave += val.real() / (nx * ny * nz);
+                    ave += val / (nx * ny * nz);
 
-                    if (maxval < val.real())
-                        maxval = val.real();
+                    if (maxval < val)
+                        maxval = val;
                     if (abs(U * X) >= 1) {
-                        printf("Geometric series not convergent: U*X = %f\n", U * X.real());
+                        printf("Geometric series not convergent: U*X = %f\n", U * X);
                         exit(1);
                     }
                 }
@@ -96,6 +96,7 @@ void FLEX_renormalization() {
     //}
     cout << "Saved to " << outdir + prefix + "_renormalization." + filetype << endl;
 
+    return 1 + ave;
 }
 
 

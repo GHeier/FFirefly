@@ -12,7 +12,7 @@ extern char* c_category; char* get_category();
 extern char* c_calculation; char* get_calculation();
 extern char* c_method; char* get_method();
 extern char* c_outdir; char* get_outdir();
-extern char* c_indir; char* get_indir();
+extern bool c_debug;
 extern char* c_prefix; char* get_prefix();
 extern char* c_verbosity; char* get_verbosity();
 extern bool c_automatic_file_read;
@@ -32,6 +32,7 @@ extern float c_cutoff_energy;
 extern float c_smearing;
 extern float c_mixing;
 extern int c_max_iters;
+extern float c_qp_weight;
 
 //[HAMILTONIAN]
 extern char* c_hamiltonian; char* get_hamiltonian();

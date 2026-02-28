@@ -48,9 +48,9 @@ set(BASE_SOURCES
     src/algorithms/integration.cpp
     src/algorithms/linear_algebra.cpp
     src/algorithms/fft.cpp
+    src/algorithms/symmetry.cpp
     src/algorithms/electron_number.cpp
     src/algorithms/interpolate.cpp
-    src/algorithms/symmetry.cpp
     src/algorithms/tests/linalg_tests.cpp
     src/algorithms/tests/fft_tests.cpp
     src/algorithms/tests/sym_tests.cpp

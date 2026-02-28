@@ -6,6 +6,7 @@ extern int m;
 extern int l;
 extern float mu;
 extern float k_max;
+extern float Z;
 
 extern float t;
 extern float tn;

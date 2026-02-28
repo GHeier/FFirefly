@@ -6,7 +6,7 @@ category = 'test'
 calculation = 'test'
 method = 'none'
 outdir = './'
-indir = './'
+debug = False
 prefix = 'sample'
 verbosity = 'low'
 automatic_file_read = True
@@ -26,6 +26,7 @@ cutoff_energy = 0.05
 smearing = 0.02
 mixing = 0.02
 max_iters = 100
+qp_weight = 1.0
 
 #[HAMILTONIAN]
 hamiltonian = 'tight_binding'
@@ -68,7 +69,7 @@ t10 = 0.0
 
 #[SUPERCONDUCTOR]
 FS_only = True
-num_eigenvalues_to_save = 0
+num_eigenvalues_to_save = 5
 frequency_pts = 0
 projections = ''
 
@@ -128,9 +129,9 @@ def load_config():
             if "outdir" in key:
                 global outdir
                 outdir = value
-            if "indir" in key:
-                global indir
-                indir = value
+            if "debug" in key:
+                global debug
+                debug = value == 'true'
             if "prefix" in key:
                 global prefix
                 prefix = value
@@ -185,6 +186,9 @@ def load_config():
             if "max_iters" in key:
                 global max_iters
                 max_iters = int(value)
+            if "qp_weight" in key:
+                global qp_weight
+                qp_weight = float(value)
 
 #[HAMILTONIAN]
             if "hamiltonian" in key:

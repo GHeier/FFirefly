@@ -8,6 +8,7 @@ int l = 5;
 float wc = cutoff_energy;
 float mu = fermi_energy;
 float U = U0;
+float Z = qp_weight;
 
 // Constants
 float t = 1.0;
@@ -23,6 +24,7 @@ void load_cpp_cfg() {
     wc = cutoff_energy;
     mu = fermi_energy;
     U = U0;
+    Z = qp_weight;
 
     // Constants
     t = 1.0;

@@ -97,11 +97,26 @@ def make_node_files(category, calculations, category_dir):
     for calc_name, methods in calculations.items():
         for method_name, language in methods.items():
             if language == "c++":
-                conditions.append(f'    if (calculation == "{calc_name}" && method == "{method_name}") run_cpp_method("{method_name}");')
+                conditions.append(
+                    f'    if (calculation == "{calc_name}" && method == "{method_name}") {{\n'
+                    f'        if (debug) run_cpp_test("{method_name}");\n'
+                    f'        else run_cpp_method("{method_name}");\n'
+                    f'    }}'
+                )
             elif language == "python":
-                conditions.append(f'    if (calculation == "{calc_name}" && method == "{method_name}") run_python_method("{method_name}");')
+                conditions.append(
+                    f'    if (calculation == "{calc_name}" && method == "{method_name}") {{\n'
+                    f'        if (debug) run_python_test("{method_name}");\n'
+                    f'        else run_python_method("{method_name}");\n'
+                    f'    }}'
+                )
             elif language == "julia":
-                conditions.append(f'    if (calculation == "{calc_name}" && method == "{method_name}") run_julia_method("{method_name}");')
+                conditions.append(
+                    f'    if (calculation == "{calc_name}" && method == "{method_name}") {{\n'
+                    f'        if (debug) run_julia_test("{method_name}");\n'
+                    f'        else run_julia_method("{method_name}");\n'
+                    f'    }}'
+                )
 
     # Join with "else " prefix for all but the first
     if_chain = conditions[0] if conditions else ""

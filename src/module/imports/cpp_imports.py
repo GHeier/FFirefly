@@ -1598,38 +1598,30 @@ def interleave_complex(values: np.ndarray) -> np.ndarray:
     return np.column_stack((real, imag)).astype(np.float32).ravel()
 
 def save_field(filename: str, values, domain, mesh, w_points=None):
-    print("1")
     if w_points is None:
         w_points = []
 
-    print("2")
     with_w = len(w_points) > 0
     found_mesh = values.shape
     nbnd = 1
 
-    print("3")
     if with_w and found_mesh[0] != len(w_points) or (not with_w and found_mesh[0] != mesh[0]):
         nbnd = found_mesh[0]
 
-    print("4")
     domain = np.reshape(domain, -1).astype(np.float32)
     mesh_arr = np.array(mesh, dtype=np.int32)
     len_mesh = len(mesh_arr)
-    print("5")
 
     is_complex = np.iscomplexobj(values)
     is_vector = False  # Vector support not implemented
     with_n = nbnd > 1
-    print("6")
 
     if not is_complex:
         values_c = np.reshape(values, -1).astype(np.float32)
     else:
         values_c = interleave_complex(values)
-    print("7")
 
     w_points = np.array(w_points, dtype=np.float32) if with_w else np.array([], dtype=np.float32)
-    print("8")
 
     # Set up argument types
     lib.field_save_export0.argtypes = [
@@ -1647,21 +1639,6 @@ def save_field(filename: str, values, domain, mesh, w_points=None):
         POINTER(c_float),
     ]
     lib.field_save_export0.restype = None
-    print("9")
-
-    # Call C function
-    print(values)
-    print(filename)
-    print(domain)
-    print(mesh_arr)
-    print(len_mesh)
-    print(nbnd)
-    print(w_points)
-    print(len(w_points))
-    print(is_complex)
-    print(is_vector)
-    print(with_w)
-    print(with_n)
     lib.field_save_export0(
         filename.encode("utf-8"),
         domain.ctypes.data_as(POINTER(c_float)),
@@ -1676,7 +1653,6 @@ def save_field(filename: str, values, domain, mesh, w_points=None):
         with_n,
         values_c.ctypes.data_as(POINTER(c_float))
     )
-    print("10")
 
 # Set up the function signature
 lib.load_config_export0.argtypes = [ctypes.c_char_p]
@@ -2082,8 +2058,8 @@ lib.BaseData_load_with_ordering.restype = c_void_p
 lib.BaseData_save.argtypes = [c_void_p, c_char_p]
 lib.BaseData_save.restype = None
 
-lib.BaseData_save_with_ordering.argtypes = [c_void_p, c_char_p, c_char_p]
-lib.BaseData_save_with_ordering.restype = None
+# lib.BaseData_save_with_ordering.argtypes = [c_void_p, c_char_p, c_char_p]
+# lib.BaseData_save_with_ordering.restype = None
 
 lib.destroy_BaseData.argtypes = [c_void_p]
 lib.destroy_BaseData.restype = None
@@ -2159,19 +2135,26 @@ lib.Field_CM_get_data.restype = c_void_p
 class BaseData:
     """Python wrapper for BaseData C++ class with HDF5 save/load support."""
 
-    def __init__(self, filename=None, ordering="k-w"):
+    def __init__(self, filename=None, ordering="k-w", owns_ptr=True):
         """
-        Initialize BaseData from file or create empty instance.
+        Initialize BaseData from file or from existing pointer.
 
         Args:
-            filename: Path to HDF5 file to load (optional)
+            filename: Path to HDF5 file to load, or an existing c_void_p pointer
             ordering: Data ordering "k-w" or "w-k" (default: "k-w")
+            owns_ptr: Whether this object owns the pointer (for memory management)
         """
-        self.owns_ptr = True  # By default, we own the pointer
-        if filename is None:
+        self.owns_ptr = owns_ptr
+
+        # Check if filename is actually a pointer (from Field.get_data())
+        if isinstance(filename, int) or (hasattr(filename, 'value') and isinstance(filename, c_void_p)):
+            # filename is actually a pointer
+            self.ptr = filename
+        elif filename is None:
             self.ptr = None
             raise ValueError("BaseData requires a filename to load")
         else:
+            # filename is a string path
             if ordering == "k-w":
                 self.ptr = lib.BaseData_load(c_char_p(filename.encode('utf-8')))
             else:

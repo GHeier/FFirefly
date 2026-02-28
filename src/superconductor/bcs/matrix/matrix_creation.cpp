@@ -20,7 +20,7 @@ using namespace std;
 // Create V matrix
 // Picks the potential based on the global variable "interaction"
 void create_P(Matrix &P, vector<Vec> &k) {
-    Vertex V_func;
+    Field_R vertex(outdir + prefix + "_vertex.h5");
     cout << "Creating P Matrix\n";
     for (int i = 0; i < P.size; i++) {
         Vec k1 = k[i];
@@ -29,7 +29,7 @@ void create_P(Matrix &P, vector<Vec> &k) {
         for (int j = 0; j < P.size; j++) {
             Vec k2 = k[j];
             float f2 = pow(k2.area / vp(k2.n, k2), 0.5);
-            P(i, j) = -f1 * f2 * (V_func(k1 - k2, 0).real() + V_func(k1 + k2, 0).real()) / 2.0;
+            P(i, j) = -f1 * f2 * (vertex(k1 - k2, 0) + vertex(k1 + k2, 0)) / 2.0;
             //P(i, j) = f1 * f2 * (cos(k1.x) - cos(k1.y)) * (cos(k2.x) - cos(k2.y));
             assert(isnan(P(i, j)) == false);
         }

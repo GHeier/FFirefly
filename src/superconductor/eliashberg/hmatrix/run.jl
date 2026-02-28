@@ -16,11 +16,20 @@ prefix = cfg.prefix
 filetype = cfg.filetype
 
 dim = cfg.dimension
-mu = cfg.fermi_energy
 T = cfg.Temperature
-w_pts = cfg.w_pts
+Z = cfg.qp_weight
+
+mu = cfg.fermi_energy
+n = cfg.num_electrons
+mu_from_n = cfg.mu_from_n
+#
+# Must be even, code doesn't handle the pole well
+w_pts = cfg.w_pts 
+w_pts += (w_pts % 2) 
+
 wc = cfg.cutoff_energy
 
+debug = false
 
 function load_surface()
     eps_func = (k) -> Firefly.epsilon(1, [Float64(k.x), Float64(k.y), Float64(k.z)])
@@ -34,35 +43,6 @@ function load_surface()
     return kpoints, areas
 end
 
-function f(w)
-    return 1 / (exp(w / T) + 1)
-end
-
-function make_vertex_kernel(V::Firefly.Vertex, weights, frequencies::Vector{Float32}; w_plus = false)
-    s = w_plus ? 1 : -1
-    # Return kernel function V(k-k', w+w')
-    # Signature: kernel(k1, k2, w1, w2, i, j, iw, jw)
-    return function(k1, k2, w1, w2, i, j, iw, jw)
-        # Convert to Float64 for Vertex call
-        k1 = Float64.(k1)
-        k2 = Float64.(k2)
-        w1 = Float64(w1)
-        w2 = Float64(w2)
-
-        # Projected even-momentum vertex with V(k-k', w+w')
-        dk = k1 - k2
-        dw = w1 + s * w2
-        V_val = (V(dk, dw) + V(-dk, dw)) / 2
-
-        V_val = real(V_val)
-        V_val = 1.0
-        weight = weights[j]
-
-        return wc / w_pts * weight * V_val
-    end
-end
-
-
 function get_surface_data()
     # Parameters
     println("\nGenerating k-points from Fermi surface at μ = $mu")
@@ -75,10 +55,12 @@ function get_surface_data()
     else
         # Multiple frequency points: distribute from 0 to wc
         for i in 1:w_pts
-            #w_points[i] = -wc + (2 * wc) * (i - 1) / (w_pts - 1)
-            w_points[i] = wc * (i - 1) / (w_pts - 1)
+            w_points[i] = -wc + (2 * wc) * (i - 1) / (w_pts - 1)
+            #w_points[i] = wc * (i - 1) / (w_pts - 1)
         end
     end
+    println("")
+
 
     kpoints, areas = load_surface()
     n = length(kpoints)
@@ -100,79 +82,80 @@ function get_surface_data()
     return kpoints, dos_weights, w_points
 end
 
+function f(w)
+    return 1 / (exp(w / T) + 1)
+end
+
+function make_vertex_kernel(V, weights, frequencies::Vector{Float32})
+    dw = 2 * wc / w_pts
+    # Return kernel function V(k-k', w+w')
+    # Signature: kernel(k1, k2, w1, w2, i, j, iw, jw)
+    return function(k1, k2, w1, w2, i, j, iw, jw)
+        # Convert to Float64 for Vertex call
+        k1 = Float64.(k1)
+        k2 = Float64.(k2)
+        w1 = Float64(w1)
+        w2 = Float64(w2)
+
+        dk = k1 - k2
+        V_val = 1.0
+        if !debug
+            V_val = real(V(dk, w1 + w2))
+        end
+        weight = weights[j]
+
+        return dw * weight * V_val
+    end
+end
+
+
+
 function create_hmatrices(V, dos_weights, kpoints, w_points)
     # Create two kernel functions: V(k-k', w-w') and V(k-k', w+w')
-    kernel_minus = make_vertex_kernel(V, dos_weights, w_points, w_plus=false)
-    kernel_plus = make_vertex_kernel(V, dos_weights, w_points, w_plus=true)
+    kernel = make_vertex_kernel(V, dos_weights, w_points)
+    total_N = size(dos_weights,1) * size(w_points,1)
+    println("Total N = $total_N")
 
     # Build two HMatrices with frequency dependence
     println("\n" * "="^60)
-    println("Building HMatrix for V(k-k', w-w')...")
-    t_hmat_minus = @elapsed H_matrix_minus = HMatrixHelper.build_hmatrix(kpoints, w_points, kernel_minus; atol=1e-4, rank=30)
-
     println("\nBuilding HMatrix for V(k-k', w+w')...")
-    t_hmat_plus = @elapsed H_matrix_plus = HMatrixHelper.build_hmatrix(kpoints, w_points, kernel_plus; atol=1e-4, rank=30)
-    @printf("HMatrices built in %.3f seconds\n", t_hmat_plus+t_hmat_minus)
-    @printf("Compression ratio: %.2f\n", (compression_ratio(H_matrix_plus)+compression_ratio(H_matrix_minus)) / 4)
+    t_hmat= @elapsed H_matrix = HMatrixHelper.build_hmatrix(kpoints, w_points, kernel; atol=1e-4, rank=30)
+    @printf("HMatrices built in %.3f seconds\n", t_hmat)
+    @printf("Compression ratio: %.2f\n", (compression_ratio(H_matrix)))
 
-    return H_matrix_minus, H_matrix_plus
+    return H_matrix
 end
 
-function lanczos_solve(H_matrix_minus, H_matrix_plus, kpoints, w_points)
+function lanczos_solve(H_matrix, kpoints, w_points)
     # Matrix dimensions: n_k k-points × n_w frequencies
     n_k = length(kpoints)
     n_w = length(w_points)
     n_total = n_k * n_w
     @printf("Matrix size: %d × %d\n", n_total, n_total)
 
-    # Create custom matrix-vector product following the Eliashberg equation:
-    # λΔ(ω,k) = sum_{ω',k'} 1/(-2ω') [ V(ω-ω',k-k')f(-ω') - s*V(ω+ω',k-k')f(ω') ] Δ(ω',k')
-    # where s is the sign for singlet (s=1) vs triplet (s=-1) pairing
-    #
-    # This formula reduces to the standard BCS kernel tanh(ω'/(2T))/(2ω') with an overall sign:
-    # For s=1: [f(-ω') - f(ω')]/(-2ω') = -tanh(ω'/(2T))/(2ω')
-    #
-    # Note: The negative sign in (-2ω') leads to negative eigenvalues for attractive interactions.
-    # Standard convention uses positive eigenvalues, so we apply a negative sign to the result.
     hmv = (v) -> begin
-        v_reshaped = reshape(v, n_k, n_w)  # [k, w]
-        s = 1  # singlet pairing
+        newv = reshape(v, n_k, n_w)  # [k, w]
+        fv = similar(newv)
 
-        # Weight input vector by [f(-ω') - s*f(ω')]/(-2ω')
-        v_plus = similar(v_reshaped)
-        v_minus = similar(v_reshaped)
         for i_w in 1:n_w
             w = Float64(w_points[i_w])
             if abs(w) < 1e-8
-                # Handle w=0: lim_{w->0} [f(-w) - s*f(w)]/(-2w) = -1/(4T) for s=1
-                # (since tanh(w/(2T))/(-2w) → -1/(4T) as w→0)
-                v_plus[:, i_w] = v_reshaped[:, i_w] .* (-1 / (4 * T))
-                v_minus[:, i_w] = v_reshaped[:, i_w] .* (-1 / (4 * T))
+                fv[:, i_w] = newv[:, i_w] .* (-1 / (8 * T))
             else
-                v_plus[:, i_w] = v_reshaped[:, i_w] .* f(w) / (-2 * w)
-                v_minus[:, i_w] = v_reshaped[:, i_w] .* f(-w) / (-2 * w)
+                fv[:, i_w] = newv[:, i_w] .* (-f(w) / (w))
             end
         end
 
-        # Apply H_matrix: For V=const, use H_matrix_minus
-        result_minus = similar(v)
-        mul!(result_minus, H_matrix_minus, reshape(v_minus, n_total))
-        result_plus = similar(v)
-        mul!(result_plus, H_matrix_minus, reshape(v_plus, n_total))
+        result = similar(v)
+        mul!(result, H_matrix, reshape(fv, n_total))
+        #result .= 1 / n_total
 
-        # Negate result to match standard convention (positive eigenvalues for attractive V>0)
-        return -(result_minus - s * result_plus)
+        return result
     end
 
-    # Use the matrix-vector product function with eigsolve
-    # Request more eigenvalues to find the largest positive one
     num_eigs = min(10, n_total)  # Request up to 10 eigenvalues
-    t_lanczos_hmat = @elapsed begin
-        vals_hmat, vecs_hmat, info_hmat = eigsolve(hmv, n_total, num_eigs, :LR;
-                                                    issymmetric=false,
-                                                    krylovdim=30,
-                                                    maxiter=200,
-                                                    tol=1e-8)
+    t_lanczos_hmat = @elapsed begin # Perform Lanczos
+        vals_hmat, vecs_hmat, info_hmat = eigsolve(hmv, n_total, num_eigs, :LR; issymmetric=false, krylovdim=30, maxiter=200, tol=1e-8)
     end
 
     return vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat
@@ -250,6 +233,18 @@ function save!(vals, vecs, idx, kpoints, w_points)
 end
 
 function run()
+    global mu
+    global mu_from_n
+    if mu_from_n
+        println("Initial mu = $mu")
+        En = Firefly.Field_R(outdir * prefix * "_E_vs_n.h5")
+        mu = En(n)
+        println("Shifted mu = $mu")
+    end
+
+    if debug
+        println("Running in DEBUG mode")
+    end
     # Main function call goes here
     println("="^60)
     println("Initializing HMatrix + Arnoldi Eigenvalue Solver")
@@ -257,29 +252,32 @@ function run()
 
     kpoints, dos_weights, w_points = get_surface_data()
 
-    # Load Vertex
-    println("\nLoading Vertex...")
-    V = Firefly.Vertex()
-    println("Vertex loaded.")
+    println("Quasiparticle Weight: ", Z)
 
-    H_matrix_minus, H_matrix_plus = create_hmatrices(V, dos_weights, kpoints, w_points)
-    vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat = lanczos_solve(H_matrix_minus, H_matrix_plus, kpoints, w_points)
-
-    # Temporary integral for testing
-    ival = 0
-    for i in 1:w_pts
-        if w_points[i] == 0.0
-            ival += 1 / (4 * T)
-        else
-            ival += tanh(w_points[i] / (2 * T)) / (2 * w_points[i])
-        end
+    if !debug
+        # Load Vertex
+        println("\nLoading Vertex...")
+        V = Firefly.Field_R(outdir * prefix * "_vertex.h5")
+        println("Vertex loaded.")
+    else
+        V = 1
     end
-    println("Eigenvalue estimate: ", ival * (wc / w_pts) * sum(dos_weights))
+
+    H_matrix = create_hmatrices(V, dos_weights, kpoints, w_points)
+    println("Created HMatrix")
+    vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat = lanczos_solve(H_matrix, kpoints, w_points)
+    if !debug
+        vals_hmat .*= Z
+    end
+
+    fT = log(1.134 * wc / T)
+    eig_est = fT * sum(dos_weights)
+    println("Eigenvalue estimate: ", eig_est)
 
     idx_largest_positive, largest_positive = find_top_eig(vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat)
     save!(vals_hmat, vecs_hmat, idx_largest_positive, kpoints, w_points)
 
-    return largest_positive
+    return largest_positive, eig_est
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__ # Runs on file execution

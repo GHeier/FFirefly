@@ -21,8 +21,7 @@ char* c_method = "none";
 char* get_method() {return c_method;}
 char* c_outdir = "./";
 char* get_outdir() {return c_outdir;}
-char* c_indir = "./";
-char* get_indir() {return c_indir;}
+bool c_debug = false;
 char* c_prefix = "sample";
 char* get_prefix() {return c_prefix;}
 char* c_verbosity = "low";
@@ -47,6 +46,7 @@ float c_cutoff_energy = 0.05;
 float c_smearing = 0.02;
 float c_mixing = 0.02;
 int c_max_iters = 100;
+float c_qp_weight = 1.0;
 
 //[HAMILTONIAN]
 char* c_hamiltonian = "tight_binding";
@@ -92,7 +92,7 @@ float c_t10 = 0.0;
 
 //[SUPERCONDUCTOR]
 bool c_FS_only = true;
-int c_num_eigenvalues_to_save = 0;
+int c_num_eigenvalues_to_save = 5;
 int c_frequency_pts = 0;
 char* c_projections = "";
 char* get_projections() {return c_projections;}
@@ -299,8 +299,13 @@ void read_c_config(const char *path) {
             else if (strstr(key, "outdir") != NULL) {
                 set_string(&c_outdir, value);
             }
-            else if (strstr(key, "indir") != NULL) {
-                set_string(&c_indir, value);
+            else if (strstr(key, "debug") != NULL) {
+                strip_single_quotes(value);
+                if (strcmp(value, "true") == 0) {
+                    c_debug = true;
+                } else {
+                    c_debug = false;
+                }
             }
             else if (strstr(key, "prefix") != NULL) {
                 set_string(&c_prefix, value);
@@ -371,6 +376,9 @@ void read_c_config(const char *path) {
             }
             else if (strstr(key, "max_iters") != NULL) {
                 c_max_iters = atoi(value);
+            }
+            else if (strstr(key, "qp_weight") != NULL) {
+                c_qp_weight = atof(value);
             }
 
 //[HAMILTONIAN]
@@ -529,9 +537,6 @@ void read_c_config(const char *path) {
     int result = mkdir_p(c_outdir, 0755);
     if (result != 0)
         printf("Could not make outdir directory\n");
-    result = mkdir_p(c_indir, 0755);
-    if (result != 0)
-        printf("Could not make indir directory\n");
 }
 
 void load_c_config() {

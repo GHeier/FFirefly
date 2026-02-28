@@ -93,6 +93,7 @@ def run():
 def save_DMFT(S, eps_range = 0.0):
     pref = outdir + prefix
     S.G_loc.save(pref + '_G_iw.h5')
+    S.Sigma_loc.save(pref + '_self_energy.h5')
     S.Sigma_loc.save(pref + '_sigma_iw.h5')
     S.G_loc.save_spectral(pref + '_A_w.h5')
     save_G(S, eps_range)
@@ -106,7 +107,6 @@ def save_G(S, eps_range):
     G.obj_wk = inverse(G.obj_wk)
     G.obj_wk.data[:] = G.obj_wk.data[:] - S.Sigma_loc.obj_w.data[:, np.newaxis]
     G.obj_wk = inverse(G.obj_wk)
-    print(G.obj_wk.data.shape)
     G.save(pref + '_G.h5')
 
 

@@ -111,9 +111,11 @@ float epsilon_SC(int n, Vec k) {
 Vec fermi_velocity_SC(int n, Vec k) {
     Vec v;
     for (int i = 0; i < dimension; i++) {
-        v(i) = -sin(k(i));
+        v(i) += 2 * t0 * sin(k(i));
+        v(i) += 4 * t2 * sin(2 * k(i));    // NNNN hopping (fixed: was cos(k(i)))
     }
-    v = -2 * t0 * v;
+    v(0) += 4 * t1 * sin(k(0)) * cos(k(1));
+    v(1) += 4 * t1 * cos(k(0)) * sin(k(1));
     return v;
 }
 

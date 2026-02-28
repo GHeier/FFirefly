@@ -836,7 +836,12 @@ void save_data_with_points(const char* filename, BaseData::DataVariant& data_var
     bd.with_k = !mesh.empty() || !points.empty();
     bd.with_w = !w_points.empty();
     bd.as_mesh = !mesh.empty();
+    // Use domain size for dimension if available, as mesh may have trailing singleton dims (e.g., [24,24,1] for 2D)
     bd.dimension = mesh.size();
+    if (bd.dimension == 0 && points.size() > 0)
+        bd.dimension = points[0].size();
+    else if (mesh.size() > 0 && mesh[mesh.size() - 1] == 1) 
+        bd.dimension -= 1;
     save_data_to_hdf5(bd, string(filename));
 }
 

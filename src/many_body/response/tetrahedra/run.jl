@@ -128,7 +128,7 @@ Calculate response for all ω at a single q-group.
 """
 function calculate_qw_response(igroup, unique_to_qindices, qpts, w_pts,
                                Ek_grid, Ek_grids, k, l, dos, mu, kmesh, dim, iter)
-    results = Dict{Tuple{Int,Int}, ComplexF64}()
+    results = Dict{Tuple{Int,Int}, Float64}()
 
     # Get representative q-point
     iq_rep = unique_to_qindices[igroup][1]
@@ -178,7 +178,7 @@ function calculate_band_pair_response(i, j, k, l, Ek_grids, w_pts, unique_to_qin
     Ek_grid = evaluate_grid_for_dimension(Ek_grids[i, j], kmesh, dim)
 
     # Allocate result array for this band pair
-    chi_band = zeros(ComplexF64, nw, nqpts)
+    chi_band = zeros(Float64, nw, nqpts)
 
     # Parallelize over unique q-groups
     Threads.@threads for igroup in 1:nqpts_unique
@@ -223,7 +223,7 @@ function calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, dos, i
     unique_to_qindices, nqpts_unique, nqpts = setup_symmetry_reduction(qmesh, celltype, dim)
 
     # Initialize susceptibility
-    chi = zeros(ComplexF64, nw, nqpts, nbnd, nbnd, nbnd, nbnd)
+    chi = zeros(Float64, nw, nqpts, nbnd, nbnd, nbnd, nbnd)
 
     # Setup progress tracking
     total_iterations = nbnd^4 * nqpts_unique * nw
@@ -387,7 +387,7 @@ function mirror_to_negative_frequencies(chi_pos, w_pos, wpts_total)
     nbnd_dims = dims[3:end]
 
     # Create full chi array
-    chi_full = zeros(ComplexF64, wpts_total, nqpts, nbnd_dims...)
+    chi_full = zeros(Float64, wpts_total, nqpts, nbnd_dims...)
 
     # Create full frequency list
     w_max = w_pos[end]

@@ -12,15 +12,16 @@
 
 float run() {
     // Main function call goes here
+    float m_star = 0.0;
     if (interaction == "FLEX") {
-        FLEX_renormalization();
+        m_star = FLEX_renormalization();
     }
     else {
         std::cerr << "Error: Unsupported interaction type: " << interaction << "\n";
         exit(1);
     }
 
-    return 3.14; // Return something of any type that can be tested in the test suite.
+    return m_star;
 }
 
 int main() {

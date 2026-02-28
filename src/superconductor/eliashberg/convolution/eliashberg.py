@@ -25,7 +25,7 @@ def load():
     H_r, kmesh, e_k = load_triqs_H.get_energy_mesh()
     emax = e_k.data.max().real
     emin = e_k.data.min().real
-    print(f"emax: {emax}, emin: {emin}")
+    print(f"emax: {emax:.4f}, emin: {emin:.4f}")
     # Build Discrete Lehman Representation (DLR) mesh for imaginary frequencies
     DLRImMesh = load_triqs_H.create_dlr_meshes(e_k, beta, statistic='Fermion')
     k_mesh = MeshBrZone(BZ, n_k=Nk)   # uniform Nk x Nk x Nk (third dim is 1 if 2D)
@@ -64,9 +64,9 @@ def run_lanczos():
     i = np.where(eigs > 0, eigs, -np.inf).argmax() 
     print(f"Max Eig: {eigs[i]:.6f}")
     Deltas[i].save(outdir + prefix + '_gap.h5')
-    #for i in range(len(eigs)):
-    #    print(f"Saving eig{i}: {eigs[i]:.6f}")
-    #    Deltas[i].save(outdir + prefix + f'_gap_eig{i}.h5')
+    for i in range(len(eigs)):
+        print(f"Saving eig{i}: {eigs[i]:.6f}")
+        Deltas[i].save(outdir + prefix + f'_gap_eig{i}.h5')
     return eigs[i]
 
 # Main function 2

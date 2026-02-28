@@ -33,7 +33,8 @@ module ffirefly
     character(len=50) :: calculation
     character(len=50) :: method
     character(len=50) :: outdir
-    character(len=50) :: indir
+    logical(c_bool), bind(C, name="c_debug") :: c_debug
+    logical :: debug
     character(len=50) :: prefix
     character(len=50) :: verbosity
     logical(c_bool), bind(C, name="c_automatic_file_read") :: c_automatic_file_read
@@ -65,6 +66,8 @@ module ffirefly
     real :: mixing
     integer(c_int), bind(C, name="c_max_iters") :: c_max_iters
     integer :: max_iters
+    real(c_float), bind(C, name="c_qp_weight") :: c_qp_weight
+    real :: qp_weight
 
 ![HAMILTONIAN]
     character(len=50) :: hamiltonian
@@ -165,10 +168,7 @@ module ffirefly
             use iso_c_binding
             type(c_ptr) :: get_outdir
     end function get_outdir
-        function get_indir() bind(C)
-            use iso_c_binding
-            type(c_ptr) :: get_indir
-    end function get_indir
+
         function get_prefix() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_prefix
@@ -194,6 +194,7 @@ module ffirefly
             use iso_c_binding
             type(c_ptr) :: get_celltype
     end function get_celltype
+
 
 
 
@@ -326,7 +327,7 @@ contains
         calculation = get_string(get_calculation())
         method = get_string(get_method())
         outdir = get_string(get_outdir())
-        indir = get_string(get_indir())
+        debug = c_debug
         prefix = get_string(get_prefix())
         verbosity = get_string(get_verbosity())
         automatic_file_read = c_automatic_file_read
@@ -346,6 +347,7 @@ contains
         smearing = c_smearing
         mixing = c_mixing
         max_iters = c_max_iters
+        qp_weight = c_qp_weight
 
 ![HAMILTONIAN]
         hamiltonian = get_string(get_hamiltonian())

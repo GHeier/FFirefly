@@ -12,7 +12,7 @@ category::String = cfg.category
 calculation::String = cfg.calculation
 method::String = cfg.method
 outdir::String = cfg.outdir
-indir::String = cfg.indir
+debug::Bool = cfg.debug
 prefix::String = cfg.prefix
 verbosity::String = cfg.verbosity
 automatic_file_read::Bool = cfg.automatic_file_read
@@ -32,6 +32,7 @@ cutoff_energy::Float64 = cfg.cutoff_energy
 smearing::Float64 = cfg.smearing
 mixing::Float64 = cfg.mixing
 max_iters::Int = cfg.max_iters
+qp_weight::Float64 = cfg.qp_weight
 
 #[HAMILTONIAN]
 hamiltonian::String = cfg.hamiltonian

@@ -41,11 +41,11 @@ using namespace std;
 //                    complex<float> X = chi(q, w);
 //                    complex<float> val = (U * U * X) / complex<float>(1.0f - U * X) + (U * U * U * X * X) / complex<float>(1.0f - U * U * X * X);
 //                    if (filetype == "dat" || filetype == "txt")
-//                        values.push_back(complex<Vec>(Vec(val.real()), Vec(val.imag())));
+//                        values.push_back(complex<Vec>(Vec(val), Vec(val.imag())));
 //                    else if (filetype == "h5" || filetype == "hdf5")
-//                        vec_values[0].push_back({val.real(), val.imag()});
+//                        vec_values[0].push_back({val, val.imag()});
 //                    if (abs(U * X) >= 1) {
-//                        printf("Geometric series not convergent: U*X = %f\n", U * X.real());
+//                        printf("Geometric series not convergent: U*X = %f\n", U * X);
 //                        exit(1);
 //                    }
 //                }
@@ -73,7 +73,7 @@ using namespace std;
 void call_flex() {
     string filename = outdir + prefix + "_chi." + filetype;
     printf("Reading chi from %s\n", filename.c_str());
-    Field_C chi(filename);
+    Field_R chi(filename);
     float U = U0;
     int chidim = chi.cmf.data.dimension;
 
@@ -81,7 +81,7 @@ void call_flex() {
     if (wpts.size() == 0) {
         wpts.push_back(0.0);
     }
-    vector<cfloat> vals;
+    vector<float> vals;
 
     printf("Computing vertex\n");
 
@@ -94,12 +94,12 @@ void call_flex() {
             for (int l = 0; l < wpts.size(); l++) {
                 float w = wpts[l];
 
-                cfloat X = chi(q, w);
-                cfloat val = (U * U * X) / cfloat(1.0f - U * X) + (U * U * U * X * X) / cfloat(1.0f - U * U * X * X);
+                float X = chi(q, w);
+                float val = (U * U * X) / float(1.0f - U * X) + (U * U * U * X * X) / float(1.0f - U * U * X * X);
                 vals.push_back(val);
 
                 if (abs(U * X) >= 1) {
-                    printf("Geometric series not convergent: U*X = %f\n", U * X.real());
+                    printf("Geometric series not convergent: U*X = %f\n", U * X);
                     exit(1);
                 }
             }
@@ -119,12 +119,12 @@ void call_flex() {
                         Vec q = brillouin_zone * Vec(i / nx - 0.5, j / ny - 0.5, k / nz - 0.5);
                         q.dimension = chidim;
 
-                        cfloat X = chi(q, w);
-                        cfloat val = (U * U * X) / cfloat(1.0f - U * X) + (U * U * U * X * X) / cfloat(1.0f - U * U * X * X);
+                        float X = chi(q, w);
+                        float val = (U * U * X) / float(1.0f - U * X) + (U * U * U * X * X) / float(1.0f - U * U * X * X);
                         vals.push_back(val);
 
-                        if (real(U * X) >= 1.0) {
-                            printf("Geometric series not convergent: U*X = %f\n", U * X.real());
+                        if ((U * X) >= 1.0) {
+                            printf("Geometric series not convergent: U*X = %f\n", U * X);
                             exit(1);
                         }
                     }
@@ -145,19 +145,20 @@ void call_flex() {
     printf("Saving Vertex\n");
     string file = outdir + prefix + "_vertex." + filetype;
     if (filetype == "hdf5" || filetype == "h5") {
-        chi.cmf.data.data = vals;
-        // Update mesh to match the q_mesh used for vertex calculation
         if (chi.cmf.data.as_mesh) {
-            chi.cmf.data.mesh = vector<int>(q_mesh.begin(), q_mesh.begin() + chidim);
+            vector<int> mesh_vec(q_mesh.begin(), q_mesh.begin() + chidim);
+            // save_data(filename, data, inds, mesh, domain, w_points, points)
+            save_data(file, vals, vector<int>{}, mesh_vec, brillouin_zone, wpts);
+        } else {
+            save_data(file, vals, vector<int>{}, vector<int>{}, vector<vector<float>>{{}}, wpts, chi.cmf.data.points);
         }
-        chi.save(file);
     }
     cout << "Saved to " << outdir + prefix + "_vertex." + filetype << endl;
-    Field_C chi2(outdir + prefix + "_chi.h5");
-    Field_C vertex2(outdir + prefix + "_vertex.h5");
+    Field_R chi2(outdir + prefix + "_chi.h5");
+    Field_R vertex2(outdir + prefix + "_vertex.h5");
     Vec q(0.6, 0.8, -0.2);
-    float val_chi = real(chi2(q));
-    float val_vertex = real(vertex2(q));
+    float val_chi = (chi2(q));
+    float val_vertex = (vertex2(q));
 
     float expected_vertex = (U * U * val_chi) / (1.0f - U * val_chi) + (U * U * U * val_chi * val_chi) / (1.0f - U * U * val_chi * val_chi);
 

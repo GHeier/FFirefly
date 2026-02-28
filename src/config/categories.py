@@ -49,9 +49,13 @@ CATEGORIES = {
             "convolution": "python",  
             "matrix": "c++",  
         },
+        "bcs_w": {
+            "hmatrix": "julia",  
+        },
         "eliashberg": {
             "convolution": "python",  
             "hmatrix": "julia",  
+            "sparse_ir": "julia",  
             }
     }
 }

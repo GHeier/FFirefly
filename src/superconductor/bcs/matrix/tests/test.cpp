@@ -15,6 +15,20 @@ int test() { // Runs on file execution
     return fabs(result - 3.14) < 1e-6; // Example test condition
 }     
 
+int main() {
+    // Load configuration from the build directory
+    const char* config_path = "/home/g/Research/FFirefly/build/bin/input.cfg";
+
+    // Load configuration using existing infrastructure
+    //read_c_config(config_path);
+    //load_cpp_config();
+
+    // Run the method
+    float result = test();
+
+    // Success
+    return 0;
+}
 
 
 

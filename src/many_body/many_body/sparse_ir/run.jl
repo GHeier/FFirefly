@@ -10,7 +10,7 @@ import SparseIR: Statistics, value, valueim
 using Printf
 using DelimitedFiles
 #using Interpolations
-include("../objects/mesh.jl")
+include("../../../objects/mesh.jl")
 using .IRMesh
 using Firefly
 cfg = Firefly.Config
@@ -22,6 +22,7 @@ filetype = cfg.filetype
 scf = cfg.self_consistent 
 scf_tol = 1e-4
 mix = cfg.mixing
+mu_from_n = cfg.mu_from_n
 
 nx, ny, nz = cfg.k_mesh
 nqx, nqy, nqz = cfg.q_mesh
@@ -32,8 +33,9 @@ if dim == 2
 end
 nk = nx * ny * nz
 nbnd = cfg.nbnd
-nstates = cfg.nstates
+nbnd = cfg.nbnd
 mu = cfg.fermi_energy
+n = cfg.num_electrons
 U = cfg.U0
 BZ = cfg.brillouin_zone
 beta = 1 / cfg.Temperature
@@ -124,6 +126,7 @@ function make_ManyBodySolver(
         ek        ::Array{Float32, 3},
         U         ::Float64,
         mu         ::Float64,
+        n         ::Float64,
         sigma_init::Array{ComplexF32, 4};
         sfc_tol   ::Float64=1e-4,
         maxiter   ::Int64  =100,
@@ -132,7 +135,7 @@ function make_ManyBodySolver(
         verbose   ::Bool   =true
         )::ManyBodySolver
     
-        n::Float64 = 0.0
+        #n::Float64 = 0.0
     
         #Gkw = Array{Array{ComplexF32,4},4}(undef, mesh.fnw, 
         Gkw  = zeros(ComplexF32, mesh.fnw, nk1, nk2, nk3)
@@ -146,9 +149,18 @@ function make_ManyBodySolver(
         iv = reshape(iv, mesh.bnw, 1, 1, 1)
         ek_new = reshape(ek, 1, nx, ny, nz)
         solver = ManyBodySolver(mesh, beta, U, 0.0, n, sfc_tol, maxiter, U_maxiter, mix, verbose, mu, Gkw, Grt, Xkw, V, Ekw, iw, iv, ek_new, dim, nk)
-        solver.n = calc_electron_density(solver, mu)
+        if mu_from_n
+            solver.n = n
+            println("Initial mu = $mu")
+            solver.mu = mu_calc(solver)
+            println("New mu = $(solver.mu)")
+        else
+            solver.mu = mu
+            println("Initial n = $n")
+            solver.n = calc_electron_density(solver, mu)
+            println("New n = $(solver.n)")
+        end
     
-        solver.mu = mu_calc(solver)
         solver.Xkw .= 0.0
         solver.Gkw .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.Ekw)
         solver.Grt .= kw_to_rtau(solver.Gkw, 'F', solver.mesh)
@@ -166,10 +178,12 @@ function solve!(S::ManyBodySolver, comm)
     old_U = S.U
     #println("U, X, = $(S.U), $(maximum(abs, S.ckio))")
     if S.UX >= 1 && occursin("FLEX", interaction)
-        println("U * max(X) = $(S.UX). U Renormalization Starting")
-        U_renormalization(S, comm)
-        println("New U = $(S.U)")
-        if (S.U / old_U < 0.9)
+        if scf
+            println("U * max(X) = $(S.UX). U Renormalization Starting")
+            U_renormalization(S, comm)
+            println("New U = $(S.U)")
+        end
+        if (S.U / old_U < 0.9 || !scf)
             println("-----------------------------------------------")
             println("U is too large! Paramagnetic Phase Unavoidable!")
             println("-----------------------------------------------")
@@ -203,7 +217,7 @@ function solve!(S::ManyBodySolver, comm)
         sigma_old .= copy(S.Ekw)
     end
     S.Grt .= kw_to_rtau(S.Gkw, 'F', S.mesh)
-    S.Xkw .+= rtau_to_kw(S.Grt .* reverse(S.Grt, dims=1), 'B', S.mesh)
+    S.Xkw .= rtau_to_kw(S.Grt .* reverse(S.Grt, dims=1), 'B', S.mesh)
 end
     
 function FLEX_loop!(S::ManyBodySolver, comm)
@@ -420,6 +434,14 @@ function get_local_k_slice(rank, nprocs, total_kz)
 end
 # initialize calculation
 
+function find_zero_freq(iw)
+    for i in 1:length(iw)
+        if imag(iw[i]) * imag(iw[i+1]) < 0
+            return i
+        end
+    end
+end
+
 function main()
 
     #mpi_test2()
@@ -435,7 +457,7 @@ function main()
     println("Minimum Energy = $(minval)")
     println("Maximum Energy = $(maxval)")
     D = maxval - minval
-    mesh = IR_Mesh(D)
+    mesh = IR_Mesh(1.2*D)
 
     iw, iv = get_iw_iv(mesh)
 
@@ -448,12 +470,11 @@ function main()
     sigma_init = zeros(ComplexF32, mesh.fnw, nk1, nk2, nk3)
 
     verbose = cfg.verbosity == "high" 
-    solver = make_ManyBodySolver(mesh, beta, ek, U, mu, sigma_init, sfc_tol=sfc_tol, maxiter=maxiter, U_maxiter=U_maxiter, mix=mix, verbose=verbose)
+    solver = make_ManyBodySolver(mesh, beta, ek, U, mu, n, sigma_init, sfc_tol=sfc_tol, maxiter=maxiter, U_maxiter=U_maxiter, mix=mix, verbose=verbose)
 
     # perform FLEX loop
-    if scf
-        solve!(solver, comm)
-    end
+    # Always run solve! - maxiter is already set to 1 when scf=false (line 54)
+    solve!(solver, comm)
     println("New mu=$(solver.mu)")
 
     println("Sample G(k,w) = $(solver.Gkw[1, 1, 1, 1])")
@@ -463,6 +484,12 @@ function main()
     V = similar(solver.Xkw)
 
     V_FLEX!(solver.U, solver.Xkw, V)
+
+    ind = find_zero_freq(iw)
+    slope = -(imag(solver.Ekw[ind+1]) - imag(solver.Ekw[ind])) / (imag(iw[ind+1]) - imag(iw[ind]))
+    Z = 1 / (1 + slope)
+    println("Renormalization: ", 1 + slope)
+    println("Quasiparticle Weight: ", Z)
 
     #println("Max Self-Energy: $(maximum(abs.(solver.Ekw)))")
     #println("Min Self-Energy: $(minimum(abs.(solver.Ekw)))")
@@ -491,10 +518,13 @@ function main()
     println("DOS = $(G_w0.im / pi)")
 
     iw, iv = reshape(solver.iw, mesh.fnw), reshape(solver.iv, mesh.bnw)
-    save_data!(outdir * prefix * "_self_energy." * filetype, solver.Ekw, kmesh, BZ_in, imag.(iw))
+    save_data!(outdir * prefix * "_self_energy." * filetype, solver.Ekw, kmesh, BZ_in, w_points=imag.(iw))
+    println("Saving to ", outdir * prefix * "_self_energy.h5")
     # Vertex V_{ijkl} is 4-index tensor (stored as scalar for single-band case)
-    save_data!(outdir * prefix * "_vertex." * filetype, V, kmesh, BZ_in, imag.(iv), 4, 1)
-    save_data!(outdir * prefix * "_chi." * filetype, solver.Xkw, kmesh, BZ_in, imag.(iv))
+    save_data!(outdir * prefix * "_vertex." * filetype, V, kmesh, BZ_in, w_points=imag.(iv))
+    println("Saving to ", outdir * prefix * "_vertex.h5")
+    save_data!(outdir * prefix * "_chi." * filetype, solver.Xkw, kmesh, BZ_in, w_points=imag.(iv))
+    println("Saving to ", outdir * prefix * "_chi.h5")
     #save_field!(outdir * prefix * "_vertex." * filetype, V, kmesh, BZ_in, imag.(solver.iv))
     #save_field!(outdir * prefix * "_chi." * filetype, solver.Xkw, BZ_in, kmesh, imag.(solver.iv))
     return maximum(abs.(solver.Xkw))
