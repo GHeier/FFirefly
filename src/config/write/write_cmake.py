@@ -126,13 +126,10 @@ def get_cpp_method_executables(categories):
                     print(f"   Warning: Method directory not found: {method_dir}")
                     continue
 
-                # Find all source files in method directory
+                # Find all source files in method directory (including tests/)
                 sources = []
                 for ext in ["*.c", "*.cpp"]:
                     for file in method_dir.rglob(ext):
-                        # Skip test files
-                        if "/tests/" in str(file) or "\\tests\\" in str(file):
-                            continue
                         rel_path = file.relative_to(project_root)
                         sources.append(str(rel_path))
 

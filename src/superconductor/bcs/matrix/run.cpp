@@ -1,4 +1,5 @@
 #include "run.hpp"
+#include "tests/test.hpp"
 #include "../../../config/load/cpp_config.hpp"
 #include "../../../config/load/c_config.h"
 #include "../../../objects/CMField/fields.hpp"
@@ -24,7 +25,10 @@ int main() {
     load_cpp_config();
 
     // Run the method
-    float result = run();
+    if (debug) 
+        float result = test();
+    else 
+        float result = run();
 
     // Success
     return 0;

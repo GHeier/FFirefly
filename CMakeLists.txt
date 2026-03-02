@@ -98,6 +98,7 @@ set(BASE_SOURCES
     src/objects/CMField/tests/matrix_field_tests.cpp
     src/objects/CMField/tests/tensor_field_tests.cpp
     src/objects/CMField/tests/inds_field_tests.cpp
+    src/objects/CMField/tests/quad_field_tests.cpp
 )
 
 # END AUTO-GENERATED BASE LIBRARY SOURCES
@@ -229,6 +230,7 @@ endif()
 # hamiltonian/DOS/tetrahedra
 add_executable(hamiltonian_DOS_tetrahedra
     src/hamiltonian/DOS/tetrahedra/run.cpp
+    src/hamiltonian/DOS/tetrahedra/tests/test.cpp
 )
 target_link_libraries(hamiltonian_DOS_tetrahedra PRIVATE base)
 set_target_properties(hamiltonian_DOS_tetrahedra PROPERTIES
@@ -242,6 +244,7 @@ set_target_properties(hamiltonian_DOS_tetrahedra PROPERTIES
 add_executable(hamiltonian_FS_tetrahedra
     src/hamiltonian/FS/tetrahedra/fs.cpp
     src/hamiltonian/FS/tetrahedra/run.cpp
+    src/hamiltonian/FS/tetrahedra/tests/test.cpp
 )
 target_link_libraries(hamiltonian_FS_tetrahedra PRIVATE base)
 set_target_properties(hamiltonian_FS_tetrahedra PROPERTIES
@@ -255,6 +258,7 @@ set_target_properties(hamiltonian_FS_tetrahedra PROPERTIES
 add_executable(many_body_vertex_from_susceptibility
     src/many_body/vertex/from_susceptibility/run.cpp
     src/many_body/vertex/from_susceptibility/vertex.cpp
+    src/many_body/vertex/from_susceptibility/tests/test.cpp
 )
 target_link_libraries(many_body_vertex_from_susceptibility PRIVATE base)
 set_target_properties(many_body_vertex_from_susceptibility PROPERTIES
@@ -268,6 +272,7 @@ set_target_properties(many_body_vertex_from_susceptibility PROPERTIES
 add_executable(many_body_renormalization_analytic
     src/many_body/renormalization/analytic/renormalization.cpp
     src/many_body/renormalization/analytic/run.cpp
+    src/many_body/renormalization/analytic/tests/test.cpp
 )
 target_link_libraries(many_body_renormalization_analytic PRIVATE base)
 set_target_properties(many_body_renormalization_analytic PROPERTIES
@@ -281,6 +286,7 @@ set_target_properties(many_body_renormalization_analytic PROPERTIES
 add_executable(many_body_renormalization_from_sigma
     src/many_body/renormalization/from_sigma/main.cpp
     src/many_body/renormalization/from_sigma/run.cpp
+    src/many_body/renormalization/from_sigma/tests/test.cpp
 )
 target_link_libraries(many_body_renormalization_from_sigma PRIVATE base)
 set_target_properties(many_body_renormalization_from_sigma PROPERTIES
@@ -300,6 +306,7 @@ add_executable(superconductor_bcs_matrix
     src/superconductor/bcs/matrix/utilities.cpp
     src/superconductor/bcs/matrix/cfg.cpp
     src/superconductor/bcs/matrix/matrix_creation.cpp
+    src/superconductor/bcs/matrix/tests/test.cpp
 )
 target_link_libraries(superconductor_bcs_matrix PRIVATE base)
 set_target_properties(superconductor_bcs_matrix PROPERTIES

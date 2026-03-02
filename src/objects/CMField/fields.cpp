@@ -16,6 +16,38 @@ static void validate_file_exists(const string& filename) {
     }
 }
 
+// Helper function to validate field type matches file metadata
+static void validate_field_type(const BaseData& data, const string& filename,
+                                 bool expected_complex, bool expected_matrix) {
+    // Check is_complex
+    if (data.is_complex != expected_complex) {
+        cerr << "Error: Type mismatch loading '" << filename << "'" << endl;
+        cerr << "  File has is_complex=" << (data.is_complex ? "true" : "false")
+             << ", but loading as " << (expected_complex ? "complex" : "real") << " field" << endl;
+        if (expected_complex) {
+            cerr << "  Use Field_R or Field_RM instead of Field_C or Field_CM" << endl;
+        } else {
+            cerr << "  Use Field_C or Field_CM instead of Field_R or Field_RM" << endl;
+        }
+        exit(1);
+    }
+
+    // Check matrix vs scalar (based on inds rank)
+    bool is_matrix = (data.rank() >= 2);
+    if (is_matrix != expected_matrix) {
+        cerr << "Error: Type mismatch loading '" << filename << "'" << endl;
+        cerr << "  File has rank=" << data.rank()
+             << " (inds size=" << data.inds.size() << "), but loading as "
+             << (expected_matrix ? "matrix" : "scalar") << " field" << endl;
+        if (expected_matrix) {
+            cerr << "  Use Field_R or Field_C instead of Field_RM or Field_CM" << endl;
+        } else {
+            cerr << "  Use Field_RM or Field_CM instead of Field_R or Field_C" << endl;
+        }
+        exit(1);
+    }
+}
+
 // Field_C implementation
 Field_C::Field_C()
     : cmf({}, true, false, {}, {}, {}) {}
@@ -31,6 +63,7 @@ Field_C::Field_C(FieldImpl f) : cmf(f) {}
 
 Field_C::Field_C(const string& filename, bool centered)
     : cmf((validate_file_exists(filename), filename), centered) {
+    validate_field_type(cmf.data, filename, true, false);  // complex=true, matrix=false
 }
 
 complex<float> Field_C::operator()(float w) {
@@ -98,6 +131,7 @@ Field_R::Field_R(FieldImpl f) : cmf(f) {}
 
 Field_R::Field_R(const string& filename, bool centered)
     : cmf((validate_file_exists(filename), filename), centered) {
+    validate_field_type(cmf.data, filename, false, false);  // complex=false, matrix=false
 }
 
 float Field_R::operator()(float w) {
@@ -165,6 +199,7 @@ Field_CM::Field_CM(FieldImpl f) : cmf(f) {}
 
 Field_CM::Field_CM(const string& filename, bool centered)
     : cmf((validate_file_exists(filename), filename), centered) {
+    validate_field_type(cmf.data, filename, true, true);  // complex=true, matrix=true
 }
 Field_CM& Field_CM::operator=(const Field_CM& other) {
     if (this != &other) {
@@ -428,6 +463,7 @@ Field_RM::Field_RM(FieldImpl f) : cmf(f) {}
 
 Field_RM::Field_RM(const string& filename, bool centered)
     : cmf((validate_file_exists(filename), filename), centered) {
+    validate_field_type(cmf.data, filename, false, true);  // complex=false, matrix=true
 }
 
 Field_RM& Field_RM::operator=(const Field_RM& other) {

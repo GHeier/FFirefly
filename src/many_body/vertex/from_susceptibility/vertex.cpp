@@ -82,6 +82,7 @@ void call_flex() {
         wpts.push_back(0.0);
     }
     vector<float> vals;
+    vector<float> singlet_vals;
 
     printf("Computing vertex\n");
 
@@ -97,6 +98,9 @@ void call_flex() {
                 float X = chi(q, w);
                 float val = (U * U * X) / float(1.0f - U * X) + (U * U * U * X * X) / float(1.0f - U * U * X * X);
                 vals.push_back(val);
+
+                float singlet_val = 1.5 * (U * U * X) / float(1.0f - U * X) - 0.5 * U * U * X / (1 + U * X);
+                singlet_vals.push_back(singlet_val);
 
                 if (abs(U * X) >= 1) {
                     printf("Geometric series not convergent: U*X = %f\n", U * X);
@@ -123,6 +127,9 @@ void call_flex() {
                         float val = (U * U * X) / float(1.0f - U * X) + (U * U * U * X * X) / float(1.0f - U * U * X * X);
                         vals.push_back(val);
 
+                        float singlet_val = 1.5 * (U * U * X) / float(1.0f - U * X) - 0.5 * U * U * X / (1 + U * X);
+                        singlet_vals.push_back(singlet_val);
+
                         if ((U * X) >= 1.0) {
                             printf("Geometric series not convergent: U*X = %f\n", U * X);
                             exit(1);
@@ -144,13 +151,16 @@ void call_flex() {
 
     printf("Saving Vertex\n");
     string file = outdir + prefix + "_vertex." + filetype;
+    string singlet_file = outdir + prefix + "_vertex_singlet." + filetype;
     if (filetype == "hdf5" || filetype == "h5") {
         if (chi.cmf.data.as_mesh) {
             vector<int> mesh_vec(q_mesh.begin(), q_mesh.begin() + chidim);
             // save_data(filename, data, inds, mesh, domain, w_points, points)
             save_data(file, vals, vector<int>{}, mesh_vec, brillouin_zone, wpts);
+            save_data(singlet_file, singlet_vals, vector<int>{}, mesh_vec, brillouin_zone, wpts);
         } else {
             save_data(file, vals, vector<int>{}, vector<int>{}, vector<vector<float>>{{}}, wpts, chi.cmf.data.points);
+            save_data(singlet_file, singlet_vals, vector<int>{}, vector<int>{}, vector<vector<float>>{{}}, wpts, chi.cmf.data.points);
         }
     }
     cout << "Saved to " << outdir + prefix + "_vertex." + filetype << endl;

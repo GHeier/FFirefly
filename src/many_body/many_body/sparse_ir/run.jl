@@ -125,7 +125,7 @@ function make_ManyBodySolver(
         beta      ::Float64,
         ek        ::Array{Float32, 3},
         U         ::Float64,
-        mu         ::Float64,
+        mu        ::Float64,
         n         ::Float64,
         sigma_init::Array{ComplexF32, 4};
         sfc_tol   ::Float64=1e-4,
@@ -161,12 +161,12 @@ function make_ManyBodySolver(
             println("New n = $(solver.n)")
         end
     
-        solver.Xkw .= 0.0
         solver.Gkw .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.Ekw)
         solver.Grt .= kw_to_rtau(solver.Gkw, 'F', solver.mesh)
         solver.Xkw .= rtau_to_kw(solver.Grt .* reverse(solver.Grt, dims=1), 'B', solver.mesh)
         solver.UX = solver.U * maximum(abs, solver.Xkw)
         println("Initial Max Chi = $(maximum(abs, solver.Xkw))")
+        println("Initial UX = $(solver.UX)")
 
         return solver
 end
@@ -186,9 +186,11 @@ function solve!(S::ManyBodySolver, comm)
         if (S.U / old_U < 0.9 || !scf)
             println("-----------------------------------------------")
             println("U is too large! Paramagnetic Phase Unavoidable!")
+            println("Continuing with reduced U...")
             println("-----------------------------------------------")
-            exit()
         end
+        # Reset U to original value after renormalization (matching fulltest.jl behavior)
+        S.U = old_U
     end
             
     println("Beginning Self-Consistent Loop")
@@ -197,13 +199,8 @@ function solve!(S::ManyBodySolver, comm)
     sigma_old = copy(S.Ekw)
     #println("U, X, = $(S.U), $(maximum(abs, S.ckio))")
     for it in 1:S.maxiter
-        #println("U, X, = $(S.U), $(maximum(abs, S.ckio))")
         loop!(S)
-        if S.UX >= 1 && occursin("FLEX", interaction)
-            println("Divergence in interaction found. Paramagnetic phase entered. Code exiting")
-            exit()
-        end
-        
+
         # check whether solution is converged.
         sfc_check = sum(abs.(S.Ekw-sigma_old))/sum(abs.(S.Ekw))
 
@@ -330,55 +327,45 @@ end
 
 #%%%%%%%%%%% U renormalization loop instance
 function U_renormalization(solver::ManyBodySolver, comm)
-    """ Loop for renormalizing U if Stoner enhancement U*max{chi0} >= 1. """
+    """ Loop for renormalizing U if Stoner enhancement U*max{chi0} >= 1.
+        Matches fulltest.jl behavior: temporarily reduce U, run loop, reset U. """
     println("WARNING: U is too large and the spin susceptibility denominator will diverge/turn unphysical!")
     println("Initiate U renormalization loop.")
-    
+
     # save old U for later
     U_old::Float64 = solver.U
-    # renormalization loop may run infinitely! Insert break condition after U_it_max steps
     U_it::Int64 = 0
 
-    UX = solver.UX 
-    prev_U = 0.0
-    U_diff = 1.0
-    
-    while UX >= 1.0
+    while U_old * maximum(abs, solver.Xkw) >= 1.0
         U_it += 1
-        # reset U
-        solver.U = U_old / (solver.UX + 0.01)
-        #solver.U = U_old
-        
-        # remormalize U such that U*chi0 < 1
+
+        # Temporarily reduce U so U*chi0 < 1
+        solver.U = solver.U / (maximum(abs, solver.Xkw) * solver.U + 0.01)
         println(U_it, '\t', solver.U, '\t', U_old)
-        
-        # perform one shot FLEX loop
+
+        # Perform one FLEX loop iteration
         loop!(solver)
-        solver.UX *= U_old / solver.U
-        
-        
-        # break condition for too many steps
-        if U_it == solver.U_maxiter || U_diff < 1e-4
-            println("U_diff = $U_diff")
-            println("Iterations = $U_it")
-            println("Maximum Iterations = $(solver.U_maxiter)")
+
+        # Reset U to original value (key difference from before)
+        solver.U = U_old
+
+        # Break condition for too many steps
+        if U_it == solver.U_maxiter
+            println("U renormalization reached breaking point")
             break
         end
-        U_diff = abs(solver.U - prev_U)
-        prev_U = solver.U
     end
-    solver.UX = solver.U * maximum(abs, solver.Xkw)
     println("Leaving U renormalization...")
 end
 
 function V_FLEX!(U, Xkw, out)
+    # Triplet channel vertex for self-energy: 1.5*U²*χ_spin + 0.5*U²*χ_charge - U²*χ₀
     out .= (1.5*U^2) .* Xkw ./ (1 .- U.*Xkw) .+ (0.5*U^2) .* Xkw ./ (1 .+ U.*Xkw) - U^2 .* Xkw
-    #@inbounds @simd for i in eachindex(Xkw)
-    #    x = Xkw[i]
-    #    term1 = (1.5*U^2) * x / (1 - U*x)
-    #    term2 = (0.5*U^2) * x / (1 + U*x)
-    #    out[i] = term1 + term2 - U2 * x
-    #end
+end
+
+function V_singlet!(U, Xkw, out)
+    # Singlet channel vertex for pairing: 1.5*U²*χ_spin - 0.5*U²*χ_charge
+    out .= (1.5*U^2) .* Xkw ./ (1 .- U.*Xkw) .- (0.5*U^2) .* Xkw ./ (1 .+ U.*Xkw)
 end
 
 function V_calc(solver::ManyBodySolver)
@@ -457,33 +444,32 @@ function main()
     println("Minimum Energy = $(minval)")
     println("Maximum Energy = $(maxval)")
     D = maxval - minval
-    mesh = IR_Mesh(1.2*D)
+    wmax = 10.0  # Match fulltest.jl exactly
+    mesh = IR_Mesh(wmax, 0, 1e-10)  # Match fulltest.jl tolerance
 
     iw, iv = get_iw_iv(mesh)
-
-    Gkw = 1.0 ./ (reshape(iw, mesh.fnw, 1, 1, 1) .- (reshape(ek, 1, nx, ny, nz) .- mu) .+ 0.0)
-    ind = Int(mesh.fnw / 2)
-    G_w0 = sum(Gkw[ind, :, :, :]) / nk
-    println("DOS = $(G_w0.im / pi)")
-
-
     sigma_init = zeros(ComplexF32, mesh.fnw, nk1, nk2, nk3)
 
     verbose = cfg.verbosity == "high" 
     solver = make_ManyBodySolver(mesh, beta, ek, U, mu, n, sigma_init, sfc_tol=sfc_tol, maxiter=maxiter, U_maxiter=U_maxiter, mix=mix, verbose=verbose)
 
+    Gkw = 1.0 ./ (reshape(iw, mesh.fnw, 1, 1, 1) .- (reshape(ek, 1, nx, ny, nz) .+ solver.mu))
+    ind = Int(mesh.fnw / 2)
+    G_w0 = sum(Gkw[ind, :, :, :]) / nk
+    println("Non-interacting DOS = $(G_w0.im / pi)")
+
     # perform FLEX loop
     # Always run solve! - maxiter is already set to 1 when scf=false (line 54)
-    solve!(solver, comm)
+    if scf
+        solve!(solver, comm)
+    end
     println("New mu=$(solver.mu)")
 
-    println("Sample G(k,w) = $(solver.Gkw[1, 1, 1, 1])")
-
-    #solver.Grt = Array{ComplexF32,5}(undef, 0, 0, 0, 0, 0)
-    #solver.Vrt = Array{ComplexF32,4}(undef, 0, 0, 0, 0)
     V = similar(solver.Xkw)
+    V_singlet = similar(solver.Xkw)
 
     V_FLEX!(solver.U, solver.Xkw, V)
+    V_singlet!(solver.U, solver.Xkw, V_singlet)
 
     ind = find_zero_freq(iw)
     slope = -(imag(solver.Ekw[ind+1]) - imag(solver.Ekw[ind])) / (imag(iw[ind+1]) - imag(iw[ind]))
@@ -491,8 +477,8 @@ function main()
     println("Renormalization: ", 1 + slope)
     println("Quasiparticle Weight: ", Z)
 
-    #println("Max Self-Energy: $(maximum(abs.(solver.Ekw)))")
-    #println("Min Self-Energy: $(minimum(abs.(solver.Ekw)))")
+    println("Max Self-Energy: $(maximum(abs.(solver.Ekw)))")
+    println("Min Self-Energy: $(minimum(abs.(solver.Ekw)))")
     println("Max Vertex: $(maximum(abs.(V)))")
     println("Min Vertex: $(minimum(abs.(V)))")
     println("Max Chi: $(maximum(abs.(solver.Xkw)))")
@@ -507,15 +493,16 @@ function main()
 
     # Centers points correctly, so they go from (-pi,pi) to (pi,pi) instead of the current (0,0) to (2pi,2pi). Important for saving
     for i in 1:mesh.fnw
-        solver.Ekw[i, :, :, :] .= fftshift(solver.Ekw[i, :, :, :])
+        #solver.Ekw[i, :, :, :] .= fftshift(solver.Ekw[i, :, :, :])
     end
     for i in 1:mesh.bnw
         V[i, :, :, :] .= fftshift(V[i, :, :, :])
+        V_singlet[i, :, :, :] .= fftshift(V_singlet[i, :, :, :])
         solver.Xkw[i, :, :, :] .= fftshift(solver.Xkw[i, :, :, :])
     end
 
     G_w0 = sum(solver.Gkw[ind, :, :, :]) / nk
-    println("DOS = $(G_w0.im / pi)")
+    println("Interacting DOS = $(G_w0.im / pi)")
 
     iw, iv = reshape(solver.iw, mesh.fnw), reshape(solver.iv, mesh.bnw)
     save_data!(outdir * prefix * "_self_energy." * filetype, solver.Ekw, kmesh, BZ_in, w_points=imag.(iw))
@@ -523,6 +510,9 @@ function main()
     # Vertex V_{ijkl} is 4-index tensor (stored as scalar for single-band case)
     save_data!(outdir * prefix * "_vertex." * filetype, V, kmesh, BZ_in, w_points=imag.(iv))
     println("Saving to ", outdir * prefix * "_vertex.h5")
+    # Singlet vertex for superconductor pairing
+    save_data!(outdir * prefix * "_vertex_singlet." * filetype, V_singlet, kmesh, BZ_in, w_points=imag.(iv))
+    println("Saving to ", outdir * prefix * "_vertex_singlet.h5")
     save_data!(outdir * prefix * "_chi." * filetype, solver.Xkw, kmesh, BZ_in, w_points=imag.(iv))
     println("Saving to ", outdir * prefix * "_chi.h5")
     #save_field!(outdir * prefix * "_vertex." * filetype, V, kmesh, BZ_in, imag.(solver.iv))

@@ -14,18 +14,18 @@ using Base.Threads, MPI
 
 cfg = Firefly.Config
 
-const prefix = cfg.prefix 
-const outdir = cfg.outdir 
+prefix = cfg.prefix 
+outdir = cfg.outdir 
 
 nx, ny, nz = cfg.k_mesh
-const dim = cfg.dimension
+dim = cfg.dimension
 if dim == 2 nz = 1 end
-const nk = nx * ny * nz
-const nw = cfg.w_pts
-const nbnd = cfg.nbnd
+nk = nx * ny * nz
+nw = cfg.w_pts
+nbnd = cfg.nbnd
 
-const U = cfg.U0
-const BZ = cfg.brillouin_zone
+U = cfg.U0
+BZ = cfg.brillouin_zone
 mu = cfg.fermi_energy
 n = cfg.num_electrons
 mu_from_n = cfg.mu_from_n
@@ -36,15 +36,15 @@ if mu_from_n
     mu = En(n)
     println("Shifted mu = $mu")
 end
-const wc = cfg.cutoff_energy
+wc = cfg.cutoff_energy
 projs = cfg.projections
 
-const verbosity = cfg.verbosity
-const filetype = cfg.filetype
+verbosity = cfg.verbosity
+filetype = cfg.filetype
 
-const beta = 1 / cfg.Temperature
+beta = 1 / cfg.Temperature
 
-const bcs_debug = false
+bcs_debug = false
 if bcs_debug
     printstyled("BCS Debug Session enabled\n"; color = :blue)
     if nw % 2 != 0
@@ -94,27 +94,7 @@ function fill_V_rt(vertex, iv, mesh)
     if bcs_debug
         return fft(V)
     end
-    V_r = k_to_r(V, mesh)
-    V_rt = kw_to_rtau(V, 'B', mesh)
-    return V_rt
-end
-
-function fill_V_rt_from_chi(chi, iv, mesh)
-    """Compute V_singlet directly from chi like fulltest.jl does"""
-    bnw = length(iv)
-    V = Array{ComplexF32}(undef, bnw, nx, ny, nz)
-    for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:bnw
-        q = get_kvec(i - 1, j - 1, k - 1)
-        w = imag(iv[l])
-        chi_val = chi(q, w)
-        chi_spin = chi_val / (1 - U * chi_val)
-        chi_charge = chi_val / (1 + U * chi_val)
-        V[l, i, j, k] = 1.5 * U^2 * chi_spin - 0.5 * U^2 * chi_charge
-    end
-
-    V_r = k_to_r(V, mesh)
-    V_rt = kw_to_rtau(V, 'B', mesh)
-    return V_rt
+    return kw_to_rtau(V, 'B', mesh)
 end
 
 function create_energy_mesh(band, iw, Sigma, with_sigma=true)
@@ -181,7 +161,7 @@ function linearized_eliashberg_loop(iw, V_rt, e, deflates, mesh = 0)
     phi = rand(ComplexF32, phinw, nx, ny, nz)
     #phi = ones(ComplexF32, phinw, nx, ny, nz)
     for iy in 1:ny, ix in 1:nx, iw in 1:phinw
-        kx, ky = get_kvec(ix - 1, iy - 1, 0)
+        kx, ky = get_kvec(ix, iy, 1)
         #kx::Float64 = (2*π*(ix-1))/nx
         #ky::Float64 = (2*π*(iy-1))/ny
         phi[iw,ix,iy,1] = cos(kx) - cos(ky)
@@ -223,10 +203,9 @@ end
 
 
 function linearized_eliashberg(phi, iw, V_rt, e, mesh)
-    # Use |G|² = G*conj(G) like fulltest.jl
+    # Use |G|² = G*conj(G) like fulltest.jl, not G(iw)*G(-iw)
     G = 1 ./ (iw .- e)
-    G2 = G .* conj.(G)
-    F = -phi .* G2
+    F = -phi .* G .* conj.(G)
     result = convolution(F, V_rt, mesh)
 
     eig = sum(real.(conj.(result) .* phi))
@@ -287,11 +266,11 @@ function eigenvalue_computation()
 
     if !bcs_debug
         println("Creating Mesh")
-        D = maximum(abs.(e)) - minimum(abs.(e))
-        mesh = IR_Mesh(10.0, 0, 1e-10)
+        D = maximum(real.(e)) - minimum(real.(e))
+        mesh = IR_Mesh(1.2 * D)
         iw, iv = get_iw_iv(mesh)
         fnw, bnw = length(iw), length(iv)
-    else
+    else 
         mesh = 0
         iw, iv = get_iw_iv_bcs()
         fnw, bnw = nw, nw
@@ -301,18 +280,17 @@ function eigenvalue_computation()
     println("Getting Self Energy")
     Sigma = Self_Energy()
     println("Sigma test: ", Sigma([0.0, 0.0], 0.1))
-    e = create_energy_mesh(band, iw, Sigma, false)
+    e = create_energy_mesh(band, iw, Sigma, false)  # Skip self-energy for now due to frequency mismatch
 
     if !bcs_debug
         println("Getting Vertex")
-        vertex = Field_C(outdir * prefix * "_vertex_singlet.h5")
+        vertex = Firefly.Field_C(outdir * prefix * "_vertex_singlet.h5")
         println("Fourier Transforming Vertex")
         V_rt = fill_V_rt(vertex, iv, mesh)
-        println("Max V_rt: ", maximum(abs.(V_rt)))
     else
         #V = -1.0 .* ones(Complex{Float32}, bnw, nx, ny, nz)
         #V_rt = fft(V)
-        vertex = Field_C(outdir * prefix * "_vertex.h5")
+        vertex = Firefly.Vertex()
         V_rt = fill_V_rt(vertex, iv, 0)
         println("BCS DEBUG: FFT'd Vertex")
     end
@@ -361,7 +339,7 @@ function get_projections(fnw, nx, ny, nz, num_projs)
     for i in 1:num_projs
         phi = Array{Float32}(undef, fnw, nx, ny, nz)
         for j in 1:nx, k in 1:ny, l in 1:nz
-            kvec = get_kvec(j - 1, k - 1, l - 1)
+            kvec = get_kvec(j, k, l)
             if projs[i] == 's'
                 phi[:, j, k, l] .= 1.0
             elseif projs[i] == 'd'

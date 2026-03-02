@@ -257,7 +257,7 @@ function run()
     if !debug
         # Load Vertex
         println("\nLoading Vertex...")
-        V = Firefly.Field_R(outdir * prefix * "_vertex.h5")
+        V = Firefly.Field_C(outdir * prefix * "_vertex_singlet.h5")
         println("Vertex loaded.")
     else
         V = 1
