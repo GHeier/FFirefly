@@ -824,7 +824,8 @@ void destroy_Vec(Vec *a) { delete a; }
 // Helper function to construct BaseData and save to HDF5
 void save_data_with_points(const char* filename, BaseData::DataVariant& data_var,
                            bool is_complex, vector<int>& mesh, vector<vector<float>>& domain,
-                           vector<float>& w_points, vector<int>& inds, vector<vector<float>>& points) {
+                           vector<float>& w_points, vector<int>& inds, vector<vector<float>>& points,
+                           bool centered = true) {
     BaseData bd;
     bd.data = data_var;
     bd.is_complex = is_complex;
@@ -836,11 +837,12 @@ void save_data_with_points(const char* filename, BaseData::DataVariant& data_var
     bd.with_k = !mesh.empty() || !points.empty();
     bd.with_w = !w_points.empty();
     bd.as_mesh = !mesh.empty();
+    bd.centered = centered;
     // Use domain size for dimension if available, as mesh may have trailing singleton dims (e.g., [24,24,1] for 2D)
     bd.dimension = mesh.size();
     if (bd.dimension == 0 && points.size() > 0)
         bd.dimension = points[0].size();
-    else if (mesh.size() > 0 && mesh[mesh.size() - 1] == 1) 
+    else if (mesh.size() > 0 && mesh[mesh.size() - 1] == 1)
         bd.dimension -= 1;
     save_data_to_hdf5(bd, string(filename));
 }
@@ -853,7 +855,8 @@ void save_data_scalar_export0(const char *filename, const float *data_interleave
                                const int *mesh, int mesh_size,
                                const float *domain_flat, int domain_rows, int domain_cols,
                                const float *w_points, int w_size,
-                               const float *points_flat, int n_points, int point_dim) {
+                               const float *points_flat, int n_points, int point_dim,
+                               bool centered) {
     // Convert flat arrays to C++ types
     vector<int> mesh_vec(mesh, mesh + mesh_size);
     vector<vector<float>> domain_vec(domain_rows, vector<float>(domain_cols));
@@ -891,7 +894,7 @@ void save_data_scalar_export0(const char *filename, const float *data_interleave
     // Create DataVariant and call save_data_with_points
     BaseData::DataVariant data = data_vec;
     vector<int> inds = {};  // Scalar field has empty inds
-    save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec);
+    save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec, centered);
 }
 
 // For vector fields (rank = 0, but is_vector = true, inds = {})
@@ -900,7 +903,8 @@ void save_data_vector_export0(const char *filename, const float *data_interleave
                                const int *mesh, int mesh_size,
                                const float *domain_flat, int domain_rows, int domain_cols,
                                const float *w_points, int w_size,
-                               const float *points_flat, int n_points, int point_dim) {
+                               const float *points_flat, int n_points, int point_dim,
+                               bool centered) {
     // Convert flat arrays to C++ types
     vector<int> mesh_vec(mesh, mesh + mesh_size);
     vector<vector<float>> domain_vec(domain_rows, vector<float>(domain_cols));
@@ -945,7 +949,7 @@ void save_data_vector_export0(const char *filename, const float *data_interleave
     // Create DataVariant and call save_data_with_points
     BaseData::DataVariant data = data_vec;
     vector<int> inds = {};  // Vector field has empty inds (vec_len is handled separately)
-    save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec);
+    save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec, centered);
 }
 
 // For matrix fields (rank = 2, inds = {mat_dim, mat_dim})
@@ -954,7 +958,8 @@ void save_data_matrix_export0(const char *filename, const float *data_interleave
                                const int *mesh, int mesh_size,
                                const float *domain_flat, int domain_rows, int domain_cols,
                                const float *w_points, int w_size,
-                               const float *points_flat, int n_points, int point_dim) {
+                               const float *points_flat, int n_points, int point_dim,
+                               bool centered) {
     // Convert flat arrays to C++ types
     vector<int> mesh_vec(mesh, mesh + mesh_size);
     vector<vector<float>> domain_vec(domain_rows, vector<float>(domain_cols));
@@ -1005,7 +1010,7 @@ void save_data_matrix_export0(const char *filename, const float *data_interleave
     // Create DataVariant and call save_data_with_points
     BaseData::DataVariant data = data_vec;
     vector<int> inds = {mat_dim, mat_dim};  // 2D matrix
-    save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec);
+    save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec, centered);
 }
 
 // For 3D tensor fields (rank = 3, inds = {ten_dim, ten_dim, ten_dim})
@@ -1014,7 +1019,8 @@ void save_data_tensor3_export0(const char *filename, const float *data_interleav
                                const int *mesh, int mesh_size,
                                const float *domain_flat, int domain_rows, int domain_cols,
                                const float *w_points, int w_size,
-                               const float *points_flat, int n_points, int point_dim) {
+                               const float *points_flat, int n_points, int point_dim,
+                               bool centered) {
     // Convert flat arrays to C++ types
     vector<int> mesh_vec(mesh, mesh + mesh_size);
     vector<vector<float>> domain_vec(domain_rows, vector<float>(domain_cols));
@@ -1071,7 +1077,7 @@ void save_data_tensor3_export0(const char *filename, const float *data_interleav
     // Create DataVariant and call save_data_with_points
     BaseData::DataVariant data = data_vec;
     vector<int> inds = {ten_dim, ten_dim, ten_dim};  // 3D tensor
-    save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec);
+    save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec, centered);
 }
 
 // For 4D tensor fields (rank = 4, inds = {ten_dim, ten_dim, ten_dim, ten_dim})
@@ -1080,7 +1086,8 @@ void save_data_tensor4_export0(const char *filename, const float *data_interleav
                                const int *mesh, int mesh_size,
                                const float *domain_flat, int domain_rows, int domain_cols,
                                const float *w_points, int w_size,
-                               const float *points_flat, int n_points, int point_dim) {
+                               const float *points_flat, int n_points, int point_dim,
+                               bool centered) {
     // Convert flat arrays to C++ types
     vector<int> mesh_vec(mesh, mesh + mesh_size);
     vector<vector<float>> domain_vec(domain_rows, vector<float>(domain_cols));
@@ -1142,7 +1149,7 @@ void save_data_tensor4_export0(const char *filename, const float *data_interleav
     // Create DataVariant and call save_data_with_points
     BaseData::DataVariant data = data_vec;
     vector<int> inds = {ten_dim, ten_dim, ten_dim, ten_dim};  // 4D tensor
-    save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec);
+    save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec, centered);
 }
 
 // BaseData exports
@@ -1169,6 +1176,7 @@ extern "C" int BaseData_get_is_matrix(BaseData *data) { return data->rank() >= 2
 extern "C" int BaseData_get_with_k(BaseData *data) { return data->with_k; }
 extern "C" int BaseData_get_with_w(BaseData *data) { return data->with_w; }
 extern "C" int BaseData_get_as_mesh(BaseData *data) { return data->as_mesh; }
+extern "C" int BaseData_get_centered(BaseData *data) { return data->centered; }
 extern "C" int BaseData_get_rank(BaseData *data) { return data->rank(); }
 extern "C" int BaseData_get_inds_size(BaseData *data) { return data->inds.size(); }
 extern "C" void BaseData_get_inds(BaseData *data, int *inds_out) {

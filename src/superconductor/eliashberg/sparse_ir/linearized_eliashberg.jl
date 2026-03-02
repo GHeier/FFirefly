@@ -26,16 +26,17 @@ const nbnd = cfg.nbnd
 
 const U = cfg.U0
 const BZ = cfg.brillouin_zone
+
 mu = cfg.fermi_energy
 n = cfg.num_electrons
 mu_from_n = cfg.mu_from_n
-
 if mu_from_n
     println("Initial mu = $mu")
     En = Field_R(outdir * prefix * "_E_vs_n.h5")
     mu = En(n)
     println("Shifted mu = $mu")
 end
+
 const wc = cfg.cutoff_energy
 projs = cfg.projections
 
@@ -288,7 +289,7 @@ function eigenvalue_computation()
     if !bcs_debug
         println("Creating Mesh")
         D = maximum(abs.(e)) - minimum(abs.(e))
-        mesh = IR_Mesh(10.0, 0, 1e-10)
+        mesh = IR_Mesh(1.2*D)
         iw, iv = get_iw_iv(mesh)
         fnw, bnw = length(iw), length(iv)
     else
@@ -299,13 +300,15 @@ function eigenvalue_computation()
     end
 
     println("Getting Self Energy")
-    Sigma = Self_Energy()
+    Sigma = Field_C(outdir * prefix * "_self_energy.h5")
     println("Sigma test: ", Sigma([0.0, 0.0], 0.1))
-    e = create_energy_mesh(band, iw, Sigma, false)
+    e = create_energy_mesh(band, iw, Sigma, true)
 
     if !bcs_debug
         println("Getting Vertex")
         vertex = Field_C(outdir * prefix * "_vertex_singlet.h5")
+        println("V(0,0) = ", vertex([0.0, 0.0]))
+        println("V(pi,pi) = ", vertex([3.14, 3.14]))
         println("Fourier Transforming Vertex")
         V_rt = fill_V_rt(vertex, iv, mesh)
         println("Max V_rt: ", maximum(abs.(V_rt)))

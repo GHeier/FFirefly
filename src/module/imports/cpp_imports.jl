@@ -1320,6 +1320,7 @@ function save_data!(
     n_indices::Union{Integer, Nothing} = nothing,
     dim_indices::Union{Integer, Nothing} = nothing,
     points = nothing,
+    centered::Bool = true,
 )
     # Handle positional vs keyword arguments
     # Positional args take precedence over keyword args
@@ -1396,19 +1397,19 @@ function save_data!(
     # Determine data type based on rank
     if rank == 4
         # 4D tensor data
-        save_data_tensor4(path, data, is_complex, mesh, domain, w_points, inds, points)
+        save_data_tensor4(path, data, is_complex, mesh, domain, w_points, inds, points, centered)
     elseif rank == 3
         # 3D tensor data
-        save_data_tensor3(path, data, is_complex, mesh, domain, w_points, inds, points)
+        save_data_tensor3(path, data, is_complex, mesh, domain, w_points, inds, points, centered)
     elseif rank == 2
         # Matrix data
-        save_data_matrix(path, data, is_complex, mesh, domain, w_points, inds, points)
+        save_data_matrix(path, data, is_complex, mesh, domain, w_points, inds, points, centered)
     elseif rank == 1
         # Vector data
-        save_data_vector(path, data, is_complex, mesh, domain, w_points, inds, points)
+        save_data_vector(path, data, is_complex, mesh, domain, w_points, inds, points, centered)
     else
         # Scalar data (rank == 0)
-        save_data_scalar(path, data, is_complex, mesh, domain, w_points, points)
+        save_data_scalar(path, data, is_complex, mesh, domain, w_points, points, centered)
     end
 end
 
@@ -1486,7 +1487,8 @@ end
 function save_data_scalar(filename::String, data::AbstractArray,
                           is_complex::Bool, mesh::Vector{<:Integer}, domain::Matrix{<:Real},
                           w_points::Vector{<:Real}=Float32[],
-                          points::Union{AbstractMatrix{<:AbstractFloat}, Nothing}=nothing)
+                          points::Union{AbstractMatrix{<:AbstractFloat}, Nothing}=nothing,
+                          centered::Bool=true)
     # Flatten and interleave data
     if is_complex
         data_interleaved = interleave_complex(data)
@@ -1523,17 +1525,18 @@ function save_data_scalar(filename::String, data::AbstractArray,
     ccall((:save_data_scalar_export0, libfly), Cvoid,
           (Cstring, Ptr{Float32}, Cint, Bool,
            Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint,
-           Ptr{Float32}, Cint, Cint),
+           Ptr{Float32}, Cint, Cint, Bool),
           filename, data_interleaved, total_size, is_complex,
           mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size,
-          points_flat, n_points, point_dim)
+          points_flat, n_points, point_dim, centered)
 end
 
 function save_data_vector(filename::String, data::AbstractArray,
                           nk_or_is_complex = nothing, vec_len_or_mesh = nothing,
                           is_complex_or_domain = nothing, mesh_or_w_points = nothing,
                           domain_or_inds = nothing, w_points = nothing, inds = nothing,
-                          points::Union{AbstractMatrix{<:AbstractFloat}, Nothing} = nothing)
+                          points::Union{AbstractMatrix{<:AbstractFloat}, Nothing} = nothing,
+                          centered::Bool = true)
     # Detect which API is being used based on parameter types
     # NOTE: Check Bool FIRST since Bool <: Integer in Julia!
     if isa(nk_or_is_complex, Bool)
@@ -1599,17 +1602,18 @@ function save_data_vector(filename::String, data::AbstractArray,
     ccall((:save_data_vector_export0, libfly), Cvoid,
           (Cstring, Ptr{Float32}, Cint, Cint, Bool,
            Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint,
-           Ptr{Float32}, Cint, Cint),
+           Ptr{Float32}, Cint, Cint, Bool),
           filename, data_interleaved, nk_i32, vec_len_i32, is_complex,
           mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size,
-          points_flat, n_points, point_dim)
+          points_flat, n_points, point_dim, centered)
 end
 
 function save_data_matrix(filename::String, data::AbstractArray,
                           num_matrices_or_is_complex = nothing, mat_dim_or_mesh = nothing,
                           is_complex_or_domain = nothing, mesh_or_w_points = nothing,
                           domain_or_inds = nothing, w_points = nothing, inds = nothing,
-                          points::Union{AbstractMatrix{<:AbstractFloat}, Nothing} = nothing)
+                          points::Union{AbstractMatrix{<:AbstractFloat}, Nothing} = nothing,
+                          centered::Bool = true)
     # Detect which API is being used based on parameter types
     # NOTE: Check Bool FIRST since Bool <: Integer in Julia!
     if isa(num_matrices_or_is_complex, Bool)
@@ -1682,16 +1686,17 @@ function save_data_matrix(filename::String, data::AbstractArray,
     ccall((:save_data_matrix_export0, libfly), Cvoid,
           (Cstring, Ptr{Float32}, Cint, Cint, Bool,
            Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint,
-           Ptr{Float32}, Cint, Cint),
+           Ptr{Float32}, Cint, Cint, Bool),
           filename, data_interleaved, num_matrices_i32, mat_dim_i32, is_complex,
           mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size,
-          points_flat, n_points, point_dim)
+          points_flat, n_points, point_dim, centered)
 end
 
 function save_data_tensor3(filename::String, data::AbstractArray,
                           is_complex::Bool, mesh::Vector{<:Integer}, domain::Matrix{<:Real},
                           w_points::Vector{<:Real}=Float32[], inds::Vector{<:Integer}=Int[],
-                          points::Union{AbstractMatrix{<:AbstractFloat}, Nothing}=nothing)
+                          points::Union{AbstractMatrix{<:AbstractFloat}, Nothing}=nothing,
+                          centered::Bool=true)
     # Extract dimensions from inds
     if length(inds) != 3
         error("save_data_tensor3 requires inds with 3 dimensions")
@@ -1744,16 +1749,17 @@ function save_data_tensor3(filename::String, data::AbstractArray,
     ccall((:save_data_tensor3_export0, libfly), Cvoid,
           (Cstring, Ptr{Float32}, Cint, Cint, Bool,
            Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint,
-           Ptr{Float32}, Cint, Cint),
+           Ptr{Float32}, Cint, Cint, Bool),
           filename, data_interleaved, num_tensors_i32, ten_dim_i32, is_complex,
           mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size,
-          points_flat, n_points, point_dim)
+          points_flat, n_points, point_dim, centered)
 end
 
 function save_data_tensor4(filename::String, data::AbstractArray,
                           is_complex::Bool, mesh::Vector{<:Integer}, domain::Matrix{<:Real},
                           w_points::Vector{<:Real}=Float32[], inds::Vector{<:Integer}=Int[],
-                          points::Union{AbstractMatrix{<:AbstractFloat}, Nothing}=nothing)
+                          points::Union{AbstractMatrix{<:AbstractFloat}, Nothing}=nothing,
+                          centered::Bool=true)
     # Extract dimensions from inds
     if length(inds) != 4
         error("save_data_tensor4 requires inds with 4 dimensions")
@@ -1806,10 +1812,10 @@ function save_data_tensor4(filename::String, data::AbstractArray,
     ccall((:save_data_tensor4_export0, libfly), Cvoid,
           (Cstring, Ptr{Float32}, Cint, Cint, Bool,
            Ptr{Cint}, Cint, Ptr{Float32}, Cint, Cint, Ptr{Float32}, Cint,
-           Ptr{Float32}, Cint, Cint),
+           Ptr{Float32}, Cint, Cint, Bool),
           filename, data_interleaved, num_tensors_i32, ten_dim_i32, is_complex,
           mesh_i32, mesh_size, domain_flat, domain_rows, domain_cols, w_points_f32, w_size,
-          points_flat, n_points, point_dim)
+          points_flat, n_points, point_dim, centered)
 end
 
 # BaseData exports
@@ -1821,6 +1827,7 @@ mutable struct BaseData
     with_k::Bool
     with_w::Bool
     as_mesh::Bool
+    centered::Bool
     inds::Vector{Int32}
     dimension::Int32
     nk::Int32
@@ -1853,6 +1860,7 @@ mutable struct BaseData
         obj.with_k = Bool(ccall((:BaseData_get_with_k, libfly), Cint, (Ptr{Cvoid},), ptr))
         obj.with_w = Bool(ccall((:BaseData_get_with_w, libfly), Cint, (Ptr{Cvoid},), ptr))
         obj.as_mesh = Bool(ccall((:BaseData_get_as_mesh, libfly), Cint, (Ptr{Cvoid},), ptr))
+        obj.centered = Bool(ccall((:BaseData_get_centered, libfly), Cint, (Ptr{Cvoid},), ptr))
 
         # Load inds array
         inds_size = ccall((:BaseData_get_inds_size, libfly), Cint, (Ptr{Cvoid},), ptr)
@@ -1917,7 +1925,7 @@ end
 # Helper function to create BaseData from existing pointer (does not manage lifetime)
 function _basedata_from_ptr(ptr::Ptr{Cvoid})
     # Directly create object without calling the constructor
-    obj = BaseData(ptr, false, false, false, false, false, false, 0, 0, 0, 0, 0,
+    obj = BaseData(ptr, false, false, false, false, false, false, true, 0, 0, 0, 0, 0,
                    Int32[], Matrix{Float32}(undef, 0, 0), Float32[], nothing)
 
     # Load metadata
@@ -1927,6 +1935,7 @@ function _basedata_from_ptr(ptr::Ptr{Cvoid})
     obj.with_k = Bool(ccall((:BaseData_get_with_k, libfly), Cint, (Ptr{Cvoid},), ptr))
     obj.with_w = Bool(ccall((:BaseData_get_with_w, libfly), Cint, (Ptr{Cvoid},), ptr))
     obj.as_mesh = Bool(ccall((:BaseData_get_as_mesh, libfly), Cint, (Ptr{Cvoid},), ptr))
+    obj.centered = Bool(ccall((:BaseData_get_centered, libfly), Cint, (Ptr{Cvoid},), ptr))
 
     # Load inds array
     inds_size = ccall((:BaseData_get_inds_size, libfly), Cint, (Ptr{Cvoid},), ptr)

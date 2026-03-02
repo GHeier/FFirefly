@@ -164,10 +164,10 @@ void call_flex() {
         }
     }
     cout << "Saved to " << outdir + prefix + "_vertex." + filetype << endl;
-    Field_R chi2(outdir + prefix + "_chi.h5");
+    cout << "Saved to " << outdir + prefix + "_vertex_singlet." + filetype << endl;
     Field_R vertex2(outdir + prefix + "_vertex.h5");
     Vec q(0.6, 0.8, -0.2);
-    float val_chi = (chi2(q));
+    float val_chi = (chi(q));
     float val_vertex = (vertex2(q));
 
     float expected_vertex = (U * U * val_chi) / (1.0f - U * val_chi) + (U * U * U * val_chi * val_chi) / (1.0f - U * U * val_chi * val_chi);

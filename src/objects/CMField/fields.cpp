@@ -61,8 +61,8 @@ Field_C::Field_C(const BaseData::DataVariant& data,
 
 Field_C::Field_C(FieldImpl f) : cmf(f) {}
 
-Field_C::Field_C(const string& filename, bool centered)
-    : cmf((validate_file_exists(filename), filename), centered) {
+Field_C::Field_C(const string& filename)
+    : cmf((validate_file_exists(filename), filename)) {
     validate_field_type(cmf.data, filename, true, false);  // complex=true, matrix=false
 }
 
@@ -129,8 +129,8 @@ Field_R::Field_R(const BaseData::DataVariant& data,
 
 Field_R::Field_R(FieldImpl f) : cmf(f) {}
 
-Field_R::Field_R(const string& filename, bool centered)
-    : cmf((validate_file_exists(filename), filename), centered) {
+Field_R::Field_R(const string& filename)
+    : cmf((validate_file_exists(filename), filename)) {
     validate_field_type(cmf.data, filename, false, false);  // complex=false, matrix=false
 }
 
@@ -197,8 +197,8 @@ Field_CM::Field_CM(const BaseData::DataVariant& data,
 
 Field_CM::Field_CM(FieldImpl f) : cmf(f) {}
 
-Field_CM::Field_CM(const string& filename, bool centered)
-    : cmf((validate_file_exists(filename), filename), centered) {
+Field_CM::Field_CM(const string& filename)
+    : cmf((validate_file_exists(filename), filename)) {
     validate_field_type(cmf.data, filename, true, true);  // complex=true, matrix=true
 }
 Field_CM& Field_CM::operator=(const Field_CM& other) {
@@ -461,8 +461,8 @@ Field_RM::Field_RM(const BaseData::DataVariant& data,
 
 Field_RM::Field_RM(FieldImpl f) : cmf(f) {}
 
-Field_RM::Field_RM(const string& filename, bool centered)
-    : cmf((validate_file_exists(filename), filename), centered) {
+Field_RM::Field_RM(const string& filename)
+    : cmf((validate_file_exists(filename), filename)) {
     validate_field_type(cmf.data, filename, false, true);  // complex=false, matrix=true
 }
 
@@ -798,7 +798,7 @@ void Field::generate_plot_labels(const string& filename) {
     }
 }
 
-Field::Field(const string& filename, bool centered) {
+Field::Field(const string& filename) {
     // Load metadata from file to determine type
     BaseData base = load_data_from_hdf5(filename);
     is_complex = base.is_complex;
@@ -810,15 +810,15 @@ Field::Field(const string& filename, bool centered) {
     field_cm = nullptr;
     field_rm = nullptr;
 
-    // Create appropriate field type
+    // Create appropriate field type (centered is read from file)
     if (is_matrix && is_complex) {
-        field_cm = new Field_CM(filename, centered);
+        field_cm = new Field_CM(filename);
     } else if (is_matrix && !is_complex) {
-        field_rm = new Field_RM(filename, centered);
+        field_rm = new Field_RM(filename);
     } else if (!is_matrix && is_complex) {
-        field_c = new Field_C(filename, centered);
+        field_c = new Field_C(filename);
     } else {
-        field_r = new Field_R(filename, centered);
+        field_r = new Field_R(filename);
     }
 
     // Generate plot labels from filename

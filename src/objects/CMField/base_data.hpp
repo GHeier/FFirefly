@@ -26,6 +26,7 @@ public:
     bool with_k = false;
     bool with_w = false;
     bool as_mesh = false;
+    bool centered = true;  // Whether coordinates are centered (default true for backwards compatibility)
 
     // Tensor indices: inds[i] = size of i-th tensor dimension
     //   Single-band 4-vertex: inds = {1, 1, 1, 1}
@@ -109,15 +110,15 @@ inline const std::vector<std::vector<float>>& ep() {
 }
 // Save overloads
 void save_data_to_hdf5(BaseData& data, const std::string& filename);
-void save_data(string filename, vector<vector<vector<vector<cfloat>>>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
-void save_data(string filename, vector<vector<vector<cfloat>>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
-void save_data(string filename, vector<vector<cfloat>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
-void save_data(string filename, vector<cfloat>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
+void save_data(string filename, vector<vector<vector<vector<cfloat>>>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep(), bool centered = true);
+void save_data(string filename, vector<vector<vector<cfloat>>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep(), bool centered = true);
+void save_data(string filename, vector<vector<cfloat>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep(), bool centered = true);
+void save_data(string filename, vector<cfloat>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep(), bool centered = true);
 
-void save_data(string filename, vector<vector<vector<vector<float>>>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
-void save_data(string filename, vector<vector<vector<float>>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
-void save_data(string filename, vector<vector<float>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
-void save_data(string filename, vector<float>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep());
-void save_data(string filename, vector<float>& data, vector<float> w_points);
+void save_data(string filename, vector<vector<vector<vector<float>>>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep(), bool centered = true);
+void save_data(string filename, vector<vector<vector<float>>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep(), bool centered = true);
+void save_data(string filename, vector<vector<float>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep(), bool centered = true);
+void save_data(string filename, vector<float>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep(), bool centered = true);
+void save_data(string filename, vector<float>& data, vector<float> w_points, bool centered = true);
 
 //void save_data_to_hdf5(std::string& filename, bool is_complex, bool is_vector, bool with_k, bool with_w, bool as_mesh, const vector<int>& inds, vector<int> &mesh, vector<vector<float>> &domain, int dimension, vector<float> &w_points, vector<vector<float>> &points, const BaseData::DataVariant& data);

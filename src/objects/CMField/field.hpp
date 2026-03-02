@@ -123,9 +123,9 @@ public:
     }
 
     // Constructor from file
-    FieldImpl(const string& filename, bool centered_coords = true) {
+    FieldImpl(const string& filename) {
         data = load_data_from_hdf5(filename);
-        centered = centered_coords;
+        centered = data.centered;  // Use the value saved in the file
         initialize();
     }
 

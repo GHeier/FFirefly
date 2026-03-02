@@ -29,7 +29,7 @@ public:
           const vector<float>& w_points = {},
           bool centered = true);
   Field_C(FieldImpl f);
-  Field_C(const string& filename, bool centered = true);
+  Field_C(const string& filename);
 
   // Copy assignment operator
   Field_C& operator=(const Field_C& other);
@@ -61,7 +61,7 @@ public:
           const vector<float>& w_points = {},
           bool centered = true);
   Field_R(FieldImpl f);
-  Field_R(const string& filename, bool centered = true);
+  Field_R(const string& filename);
 
   // Copy assignment operator
   Field_R& operator=(const Field_R& other);
@@ -95,7 +95,7 @@ public:
            const vector<float>& w_points = {},
            bool centered = true);
   Field_CM(FieldImpl f);
-  Field_CM(const string& filename, bool centered = true);
+  Field_CM(const string& filename);
 
   // Copy assignment operator
   Field_CM& operator=(const Field_CM& other);
@@ -137,7 +137,7 @@ public:
            const vector<float>& w_points = {},
            bool centered = true);
   Field_RM(FieldImpl f);
-  Field_RM(const string& filename, bool centered = true);
+  Field_RM(const string& filename);
 
   // Copy assignment operator
   Field_RM& operator=(const Field_RM& other);
@@ -186,7 +186,7 @@ public:
   string y_label;
 
   Field();
-  Field(const string& filename, bool centered = true);
+  Field(const string& filename);
   ~Field();
 
   // Generate plot labels from filename

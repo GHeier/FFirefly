@@ -1664,7 +1664,8 @@ def load_config(path: str) -> None:
 
 # Save data functions
 def save_data(filename: str, data: np.ndarray, mesh=None, domain=None,
-              w_points=None, inds=None, n_indices=None, dim_indices=None):
+              w_points=None, inds=None, n_indices=None, dim_indices=None,
+              centered: bool = True):
     """Save data to HDF5 file with automatic dispatch based on data type.
 
     Args:
@@ -1676,6 +1677,7 @@ def save_data(filename: str, data: np.ndarray, mesh=None, domain=None,
         inds: Tensor index dimensions (e.g., [3,3] for 3x3 matrix)
         n_indices: DEPRECATED - Number of band indices (for backward compatibility)
         dim_indices: DEPRECATED - Dimension of indices (for backward compatibility)
+        centered: Whether coordinates are centered (default True)
     """
     # Set defaults
     if mesh is None:
@@ -1715,30 +1717,30 @@ def save_data(filename: str, data: np.ndarray, mesh=None, domain=None,
     # Determine data type based on rank
     if rank == 4:
         # 4D tensor data
-        save_data_tensor4(filename, data, is_complex, mesh, domain, w_points, inds)
+        save_data_tensor4(filename, data, is_complex, mesh, domain, w_points, inds, centered)
     elif rank == 3:
         # 3D tensor data
-        save_data_tensor3(filename, data, is_complex, mesh, domain, w_points, inds)
+        save_data_tensor3(filename, data, is_complex, mesh, domain, w_points, inds, centered)
     elif rank == 2:
         # Matrix data
-        save_data_matrix(filename, data, is_complex, mesh, domain, w_points, inds)
+        save_data_matrix(filename, data, is_complex, mesh, domain, w_points, inds, centered)
     elif rank == 1:
         # Vector data
-        save_data_vector(filename, data, is_complex, mesh, domain, w_points, inds)
+        save_data_vector(filename, data, is_complex, mesh, domain, w_points, inds, centered)
     else:
         # Scalar data (rank == 0)
-        save_data_scalar(filename, data, is_complex, mesh, domain, w_points)
+        save_data_scalar(filename, data, is_complex, mesh, domain, w_points, centered)
 
 lib.save_data_scalar_export0.argtypes = [
     c_char_p, POINTER(c_float), c_int, c_bool,
     POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int,
-    POINTER(c_float), c_int, c_int
+    POINTER(c_float), c_int, c_int, c_bool
 ]
 lib.save_data_scalar_export0.restype = None
 
 def save_data_scalar(filename: str, data: np.ndarray,
                      is_complex: bool, mesh, domain: np.ndarray,
-                     w_points = None):
+                     w_points = None, centered: bool = True):
     """Save scalar field data to HDF5 file.
 
     Args:
@@ -1748,6 +1750,7 @@ def save_data_scalar(filename: str, data: np.ndarray,
         mesh: Mesh dimensions (e.g., [nx, ny, nz])
         domain: Domain vectors (2D array, shape [dimension, dimension])
         w_points: Frequency points (optional)
+        centered: Whether coordinates are centered (default True)
     """
     if w_points is None:
         w_points = np.array([], dtype=np.float32)
@@ -1781,31 +1784,33 @@ def save_data_scalar(filename: str, data: np.ndarray,
         domain_flat.ctypes.data_as(POINTER(c_float)),
         c_int(domain_rows), c_int(domain_cols),
         w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size),
-        None, c_int(0), c_int(0)
+        None, c_int(0), c_int(0), c_bool(centered)
     )
 
 lib.save_data_vector_export0.argtypes = [
     c_char_p, POINTER(c_float), c_int, c_int, c_bool,
     POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int,
-    POINTER(c_float), c_int, c_int
+    POINTER(c_float), c_int, c_int, c_bool
 ]
 lib.save_data_vector_export0.restype = None
 
 def save_data_vector(filename: str, data: np.ndarray,
                      nk_or_is_complex = None, vec_len_or_mesh = None,
                      is_complex_or_domain = None, mesh_or_w_points = None,
-                     domain_or_inds = None, w_points = None, inds = None):
+                     domain_or_inds = None, w_points = None, inds = None,
+                     centered: bool = True):
     """Save vector field data to HDF5 file.
 
     Supports two API styles:
-    - New API: save_data_vector(filename, data, is_complex, mesh, domain, w_points=None, inds=None)
+    - New API: save_data_vector(filename, data, is_complex, mesh, domain, w_points=None, inds=None, centered=True)
     - Old API: save_data_vector(filename, data, nk, vec_len, is_complex, mesh, domain, w_points=None)
 
     Args:
         filename: Output filename
         data: nD array (complex or real)
-        For new API: is_complex, mesh, domain, w_points, inds
+        For new API: is_complex, mesh, domain, w_points, inds, centered
         For old API: nk, vec_len, is_complex, mesh, domain, w_points
+        centered: Whether coordinates are centered (default True)
     """
     # Detect which API is being used based on parameter types
     if isinstance(nk_or_is_complex, bool):
@@ -1829,44 +1834,46 @@ def save_data_vector(filename: str, data: np.ndarray,
         raise ValueError("Invalid arguments to save_data_vector")
 
     # Use same save mechanism as scalar - vectors are saved as scalars
-    save_data_scalar(filename, data, is_complex, mesh, domain, w_points)
+    save_data_scalar(filename, data, is_complex, mesh, domain, w_points, centered)
 
 lib.save_data_matrix_export0.argtypes = [
     c_char_p, POINTER(c_float), c_int, c_int, c_bool,
     POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int,
-    POINTER(c_float), c_int, c_int
+    POINTER(c_float), c_int, c_int, c_bool
 ]
 lib.save_data_matrix_export0.restype = None
 
 lib.save_data_tensor3_export0.argtypes = [
     c_char_p, POINTER(c_float), c_int, c_int, c_bool,
     POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int,
-    POINTER(c_float), c_int, c_int
+    POINTER(c_float), c_int, c_int, c_bool
 ]
 lib.save_data_tensor3_export0.restype = None
 
 lib.save_data_tensor4_export0.argtypes = [
     c_char_p, POINTER(c_float), c_int, c_int, c_bool,
     POINTER(c_int), c_int, POINTER(c_float), c_int, c_int, POINTER(c_float), c_int,
-    POINTER(c_float), c_int, c_int
+    POINTER(c_float), c_int, c_int, c_bool
 ]
 lib.save_data_tensor4_export0.restype = None
 
 def save_data_matrix(filename: str, data: np.ndarray,
                      num_matrices_or_is_complex = None, mat_dim_or_mesh = None,
                      is_complex_or_domain = None, mesh_or_w_points = None,
-                     domain_or_inds = None, w_points = None, inds = None):
+                     domain_or_inds = None, w_points = None, inds = None,
+                     centered: bool = True):
     """Save matrix field data to HDF5 file.
 
     Supports two API styles:
-    - New API: save_data_matrix(filename, data, is_complex, mesh, domain, w_points=None, inds=None)
+    - New API: save_data_matrix(filename, data, is_complex, mesh, domain, w_points=None, inds=None, centered=True)
     - Old API: save_data_matrix(filename, data, num_matrices, mat_dim, is_complex, mesh, domain, w_points=None)
 
     Args:
         filename: Output filename
         data: nD array (complex or real)
-        For new API: is_complex, mesh, domain, w_points, inds
+        For new API: is_complex, mesh, domain, w_points, inds, centered
         For old API: num_matrices, mat_dim, is_complex, mesh, domain, w_points
+        centered: Whether coordinates are centered (default True)
     """
     # Detect which API is being used based on parameter types
     if isinstance(num_matrices_or_is_complex, bool):
@@ -1927,12 +1934,12 @@ def save_data_matrix(filename: str, data: np.ndarray,
         domain_flat.ctypes.data_as(POINTER(c_float)),
         c_int(domain_rows), c_int(domain_cols),
         w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size),
-        None, c_int(0), c_int(0)
+        None, c_int(0), c_int(0), c_bool(centered)
     )
 
 def save_data_tensor3(filename: str, data: np.ndarray,
                      is_complex: bool, mesh, domain: np.ndarray,
-                     w_points = None, inds = None):
+                     w_points = None, inds = None, centered: bool = True):
     """Save 3D tensor field data to HDF5 file.
 
     Args:
@@ -1943,6 +1950,7 @@ def save_data_tensor3(filename: str, data: np.ndarray,
         domain: Domain vectors
         w_points: Frequency points (optional)
         inds: Tensor index dimensions (e.g., [3,3,3] for 3x3x3 tensor)
+        centered: Whether coordinates are centered (default True)
     """
     # Extract dimensions from inds
     if inds is None or len(inds) != 3:
@@ -1986,12 +1994,12 @@ def save_data_tensor3(filename: str, data: np.ndarray,
         domain_flat.ctypes.data_as(POINTER(c_float)),
         c_int(domain_rows), c_int(domain_cols),
         w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size),
-        None, c_int(0), c_int(0)
+        None, c_int(0), c_int(0), c_bool(centered)
     )
 
 def save_data_tensor4(filename: str, data: np.ndarray,
                      is_complex: bool, mesh, domain: np.ndarray,
-                     w_points = None, inds = None):
+                     w_points = None, inds = None, centered: bool = True):
     """Save 4D tensor field data to HDF5 file.
 
     Args:
@@ -2002,6 +2010,7 @@ def save_data_tensor4(filename: str, data: np.ndarray,
         domain: Domain vectors
         w_points: Frequency points (optional)
         inds: Tensor index dimensions (e.g., [3,3,3,3] for 3x3x3x3 tensor)
+        centered: Whether coordinates are centered (default True)
     """
     # Extract dimensions from inds
     if inds is None or len(inds) != 4:
@@ -2045,7 +2054,7 @@ def save_data_tensor4(filename: str, data: np.ndarray,
         domain_flat.ctypes.data_as(POINTER(c_float)),
         c_int(domain_rows), c_int(domain_cols),
         w_points.ctypes.data_as(POINTER(c_float)), c_int(w_size),
-        None, c_int(0), c_int(0)
+        None, c_int(0), c_int(0), c_bool(centered)
     )
 
 # BaseData exports
@@ -2077,6 +2086,8 @@ lib.BaseData_get_with_w.argtypes = [c_void_p]
 lib.BaseData_get_with_w.restype = c_int
 lib.BaseData_get_as_mesh.argtypes = [c_void_p]
 lib.BaseData_get_as_mesh.restype = c_int
+lib.BaseData_get_centered.argtypes = [c_void_p]
+lib.BaseData_get_centered.restype = c_int
 lib.BaseData_get_rank.argtypes = [c_void_p]
 lib.BaseData_get_rank.restype = c_int
 lib.BaseData_get_inds_size.argtypes = [c_void_p]
@@ -2177,6 +2188,7 @@ class BaseData:
         self.with_k = bool(lib.BaseData_get_with_k(self.ptr))
         self.with_w = bool(lib.BaseData_get_with_w(self.ptr))
         self.as_mesh = bool(lib.BaseData_get_as_mesh(self.ptr))
+        self.centered = bool(lib.BaseData_get_centered(self.ptr))
 
         # Load inds array
         inds_size = lib.BaseData_get_inds_size(self.ptr)

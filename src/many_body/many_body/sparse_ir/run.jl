@@ -182,8 +182,11 @@ function solve!(S::ManyBodySolver, comm)
             println("U * max(X) = $(S.UX). U Renormalization Starting")
             U_renormalization(S, comm)
             println("New U = $(S.U)")
+        else
+            println("U * max(X) = $(S.UX). Calculations Impossible")
+            exit(1)
         end
-        if (S.U / old_U < 0.9 || !scf)
+        if (S.U / old_U < 0.9)
             println("-----------------------------------------------")
             println("U is too large! Paramagnetic Phase Unavoidable!")
             println("Continuing with reduced U...")
@@ -213,8 +216,8 @@ function solve!(S::ManyBodySolver, comm)
         end
         sigma_old .= copy(S.Ekw)
     end
-    S.Grt .= kw_to_rtau(S.Gkw, 'F', S.mesh)
-    S.Xkw .= rtau_to_kw(S.Grt .* reverse(S.Grt, dims=1), 'B', S.mesh)
+    #S.Grt .= kw_to_rtau(S.Gkw, 'F', S.mesh)
+    #S.Xkw .= rtau_to_kw(S.Grt .* reverse(S.Grt, dims=1), 'B', S.mesh)
 end
     
 function FLEX_loop!(S::ManyBodySolver, comm)
@@ -444,14 +447,15 @@ function main()
     println("Minimum Energy = $(minval)")
     println("Maximum Energy = $(maxval)")
     D = maxval - minval
-    wmax = 10.0  # Match fulltest.jl exactly
-    mesh = IR_Mesh(wmax, 0, 1e-10)  # Match fulltest.jl tolerance
+    mesh = IR_Mesh(1.2*D)
 
     iw, iv = get_iw_iv(mesh)
     sigma_init = zeros(ComplexF32, mesh.fnw, nk1, nk2, nk3)
 
     verbose = cfg.verbosity == "high" 
     solver = make_ManyBodySolver(mesh, beta, ek, U, mu, n, sigma_init, sfc_tol=sfc_tol, maxiter=maxiter, U_maxiter=U_maxiter, mix=mix, verbose=verbose)
+
+    X_copy = copy(solver.Xkw)
 
     Gkw = 1.0 ./ (reshape(iw, mesh.fnw, 1, 1, 1) .- (reshape(ek, 1, nx, ny, nz) .+ solver.mu))
     ind = Int(mesh.fnw / 2)
@@ -460,8 +464,9 @@ function main()
 
     # perform FLEX loop
     # Always run solve! - maxiter is already set to 1 when scf=false (line 54)
-    if scf
-        solve!(solver, comm)
+    solve!(solver, comm)
+    if !scf
+        solver.Xkw .= X_copy
     end
     println("New mu=$(solver.mu)")
 
@@ -491,32 +496,23 @@ function main()
         BZ_in = BZ_in[1:end-1, 1:end-1]
     end
 
-    # Centers points correctly, so they go from (-pi,pi) to (pi,pi) instead of the current (0,0) to (2pi,2pi). Important for saving
-    for i in 1:mesh.fnw
-        #solver.Ekw[i, :, :, :] .= fftshift(solver.Ekw[i, :, :, :])
-    end
-    for i in 1:mesh.bnw
-        V[i, :, :, :] .= fftshift(V[i, :, :, :])
-        V_singlet[i, :, :, :] .= fftshift(V_singlet[i, :, :, :])
-        solver.Xkw[i, :, :, :] .= fftshift(solver.Xkw[i, :, :, :])
-    end
 
     G_w0 = sum(solver.Gkw[ind, :, :, :]) / nk
     println("Interacting DOS = $(G_w0.im / pi)")
 
     iw, iv = reshape(solver.iw, mesh.fnw), reshape(solver.iv, mesh.bnw)
-    save_data!(outdir * prefix * "_self_energy." * filetype, solver.Ekw, kmesh, BZ_in, w_points=imag.(iw))
+    save_data!(outdir * prefix * "_self_energy." * filetype, solver.Ekw, kmesh, BZ_in, w_points=imag.(iw), centered=false)
     println("Saving to ", outdir * prefix * "_self_energy.h5")
-    # Vertex V_{ijkl} is 4-index tensor (stored as scalar for single-band case)
-    save_data!(outdir * prefix * "_vertex." * filetype, V, kmesh, BZ_in, w_points=imag.(iv))
+
+    save_data!(outdir * prefix * "_vertex." * filetype, V, kmesh, BZ_in, w_points=imag.(iv), centered=false)
     println("Saving to ", outdir * prefix * "_vertex.h5")
-    # Singlet vertex for superconductor pairing
-    save_data!(outdir * prefix * "_vertex_singlet." * filetype, V_singlet, kmesh, BZ_in, w_points=imag.(iv))
+
+    save_data!(outdir * prefix * "_vertex_singlet." * filetype, V_singlet, kmesh, BZ_in, w_points=imag.(iv), centered=false)
     println("Saving to ", outdir * prefix * "_vertex_singlet.h5")
-    save_data!(outdir * prefix * "_chi." * filetype, solver.Xkw, kmesh, BZ_in, w_points=imag.(iv))
+
+    save_data!(outdir * prefix * "_chi." * filetype, solver.Xkw, kmesh, BZ_in, w_points=imag.(iv), centered=false)
     println("Saving to ", outdir * prefix * "_chi.h5")
-    #save_field!(outdir * prefix * "_vertex." * filetype, V, kmesh, BZ_in, imag.(solver.iv))
-    #save_field!(outdir * prefix * "_chi." * filetype, solver.Xkw, BZ_in, kmesh, imag.(solver.iv))
+
     return maximum(abs.(solver.Xkw))
 end
 
