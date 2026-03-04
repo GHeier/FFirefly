@@ -421,6 +421,120 @@ function mirror_to_negative_frequencies(chi_pos, w_pos, wpts_total)
 end
 
 """
+    find_chi_extrema(chi, w_list, qmesh, BZ, dim; band_indices=(1,1,1,1))
+
+Find the locations of maximum positive and minimum negative values in chi.
+
+# Arguments
+- `chi`: Response function array, shape (nw, nqx, nqy, nqz, nbnd, nbnd, nbnd, nbnd)
+- `w_list`: Frequency points
+- `qmesh`: Q-mesh dimensions (nqx, nqy, nqz)
+- `BZ`: Brillouin zone matrix
+- `dim`: Spatial dimension (2 or 3)
+- `band_indices`: Tuple (i, j, k, l) specifying which band combination to analyze (default: (1,1,1,1))
+
+# Returns
+- Dictionary with :max and :min entries, each containing :value, :w, :q, :indices
+"""
+function find_chi_extrema(chi, w_list, qmesh, BZ, dim; band_indices=(1,1,1,1))
+    i, j, k, l = band_indices
+    chi_slice = chi[:, :, :, :, i, j, k, l]
+
+    nw = length(w_list)
+    nqx, nqy, nqz = qmesh
+
+    # Find max and min values (only consider finite values)
+    chi_real = real.(chi_slice)
+
+    # Mask non-finite values
+    finite_mask = isfinite.(chi_real)
+    if !any(finite_mask)
+        @warn "No finite values in chi array"
+        return nothing
+    end
+
+    # Find maximum positive value
+    max_val = -Inf
+    max_idx = CartesianIndex(1, 1, 1, 1)
+    min_val = Inf
+    min_idx = CartesianIndex(1, 1, 1, 1)
+
+    for idx in CartesianIndices(chi_real)
+        val = chi_real[idx]
+        if isfinite(val)
+            if val > max_val
+                max_val = val
+                max_idx = idx
+            end
+            if val < min_val
+                min_val = val
+                min_idx = idx
+            end
+        end
+    end
+
+    # Convert indices to physical coordinates
+    function idx_to_coords(idx)
+        iw, iqx, iqy, iqz = Tuple(idx)
+        w = w_list[iw]
+
+        # Convert q-indices to fractional coordinates (centered grid)
+        qfrac = [(iqx - 1) / nqx - 0.5,
+                 (iqy - 1) / nqy - 0.5,
+                 (iqz - 1) / nqz - 0.5]
+
+        # Convert to Cartesian coordinates using BZ matrix
+        q_cart = BZ' * qfrac
+
+        if dim == 2
+            q_cart = q_cart[1:2]
+            qfrac = qfrac[1:2]
+        end
+
+        return (w=w, q_frac=qfrac, q_cart=q_cart, indices=(iw, iqx, iqy, iqz))
+    end
+
+    max_coords = idx_to_coords(max_idx)
+    min_coords = idx_to_coords(min_idx)
+
+    # Print results
+    println("\n" * "="^60)
+    println("χ Extrema Analysis (bands: $i,$j,$k,$l)")
+    println("="^60)
+
+    println("\n📈 Maximum (most positive):")
+    @printf("   Value: %.6f\n", max_val)
+    @printf("   Frequency ω: %.4f\n", max_coords.w)
+    if dim == 2
+        @printf("   q (fractional): (%.4f, %.4f)\n", max_coords.q_frac[1], max_coords.q_frac[2])
+        @printf("   q (Cartesian):  (%.4f, %.4f)\n", max_coords.q_cart[1], max_coords.q_cart[2])
+    else
+        @printf("   q (fractional): (%.4f, %.4f, %.4f)\n", max_coords.q_frac...)
+        @printf("   q (Cartesian):  (%.4f, %.4f, %.4f)\n", max_coords.q_cart...)
+    end
+    @printf("   Indices (iw, iqx, iqy, iqz): %s\n", max_coords.indices)
+
+    println("\n📉 Minimum (most negative):")
+    @printf("   Value: %.6f\n", min_val)
+    @printf("   Frequency ω: %.4f\n", min_coords.w)
+    if dim == 2
+        @printf("   q (fractional): (%.4f, %.4f)\n", min_coords.q_frac[1], min_coords.q_frac[2])
+        @printf("   q (Cartesian):  (%.4f, %.4f)\n", min_coords.q_cart[1], min_coords.q_cart[2])
+    else
+        @printf("   q (fractional): (%.4f, %.4f, %.4f)\n", min_coords.q_frac...)
+        @printf("   q (Cartesian):  (%.4f, %.4f, %.4f)\n", min_coords.q_cart...)
+    end
+    @printf("   Indices (iw, iqx, iqy, iqz): %s\n", min_coords.indices)
+
+    println("="^60)
+
+    return Dict(
+        :max => (value=max_val, coords=max_coords),
+        :min => (value=min_val, coords=min_coords)
+    )
+end
+
+"""
     save_response_results(chi, w_list, qmesh, BZ, dim)
 
 Save response function results to file.
@@ -492,6 +606,9 @@ function response_bz_integral()
     println("="^60)
     chi, w_full = mirror_to_negative_frequencies(chi_pos, w_pos, wpts_total)
     println("✓ Full frequency grid constructed: $(wpts_total) points")
+
+    # Analyze extrema
+    extrema_info = find_chi_extrema(chi, w_full, qmesh, BZ, dim)
 
     # Save results
     save_response_results(chi, w_full, qmesh, BZ, dim)

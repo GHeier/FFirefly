@@ -91,12 +91,13 @@ function build_hmatrix(kpoints, frequencies, kernel_func; atol=1e-6, rank=20)
     X = build_spoints(kpoints, frequencies)
     # Build the hierarchical matrix
     println("Building HMatrix...")
-    splitter = HMatrices.CardinalitySplitter(; nmax=50)
+    splitter = HMatrices.CardinalitySplitter(; nmax=25)
     Xclt = HMatrices.ClusterTree(X, splitter)
     Yclt = Xclt  # Same cluster tree for row/column spaces
 
     # Create compression method
     comp = HMatrices.PartialACA(; atol=atol, rank=rank)
+    #comp = HMatrices.TSVD(; atol=atol, rank=rank)
 
     # Assemble HMatrix from matrix and cluster trees
     H = assemble_hmatrix(K, Xclt, Yclt; comp=comp)

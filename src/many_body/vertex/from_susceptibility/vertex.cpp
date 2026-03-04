@@ -73,30 +73,30 @@ using namespace std;
 void call_flex() {
     string filename = outdir + prefix + "_chi." + filetype;
     printf("Reading chi from %s\n", filename.c_str());
+
     Field_R chi(filename);
     float U = U0;
-    int chidim = chi.cmf.data.dimension;
+    int chidim = chi.get_data()->dimension;
 
-    vector<float> wpts = chi.cmf.data.w_points;
+    vector<float> wpts = chi.get_data()->w_points;
     if (wpts.size() == 0) {
         wpts.push_back(0.0);
     }
     vector<float> vals;
     vector<float> singlet_vals;
 
-    printf("Computing vertex\n");
-
-    if (!chi.cmf.data.as_mesh) {
+    if (!chi.get_data()->as_mesh) {
         printf("Using stored point data\n");
         // Loop over stored points
-        for (const auto& point : chi.cmf.data.points) {
+        for (const auto& point : chi.get_data()->points) {
             Vec q(point.data(), chidim);
             q.dimension = chidim;
-            for (int l = 0; l < wpts.size(); l++) {
+            for (size_t l = 0; l < wpts.size(); l++) {
                 float w = wpts[l];
 
                 float X = chi(q, w);
-                float val = (U * U * X) / float(1.0f - U * X) + (U * U * U * X * X) / float(1.0f - U * U * X * X);
+                //float val = (U * U * X) / float(1.0f - U * X) + (U * U * U * X * X) / float(1.0f - U * U * X * X);
+                float val = 1.5 * (U * U * X) / float(1.0f - U * X) + 0.5 * U * U * X / (1 + U * X) - U * U * X;
                 vals.push_back(val);
 
                 float singlet_val = 1.5 * (U * U * X) / float(1.0f - U * X) - 0.5 * U * U * X / (1 + U * X);
@@ -115,7 +115,7 @@ void call_flex() {
         if (chidim == 2) nz = 1;
 
         // w loop outermost to generate data in w-k order (matching CMF_search expectations)
-        for (int l = 0; l < wpts.size(); l++) {
+        for (size_t l = 0; l < wpts.size(); l++) {
             float w = wpts[l];
             for (int i = 0; i < nx; i++) {
                 for (int j = 0; j < ny; j++) {
@@ -124,13 +124,14 @@ void call_flex() {
                         q.dimension = chidim;
 
                         float X = chi(q, w);
-                        float val = (U * U * X) / float(1.0f - U * X) + (U * U * U * X * X) / float(1.0f - U * U * X * X);
+                        //float val = (U * U * X) / float(1.0f - U * X) + (U * U * U * X * X) / float(1.0f - U * U * X * X);
+                        float val = 1.5 * (U * U * X) / float(1.0f - U * X) + 0.5 * U * U * X / (1 + U * X) - U * U * X;
                         vals.push_back(val);
 
                         float singlet_val = 1.5 * (U * U * X) / float(1.0f - U * X) - 0.5 * U * U * X / (1 + U * X);
                         singlet_vals.push_back(singlet_val);
 
-                        if ((U * X) >= 1.0) {
+                        if (abs(U * X) >= 1.0) {
                             printf("Geometric series not convergent: U*X = %f\n", U * X);
                             exit(1);
                         }
@@ -153,27 +154,15 @@ void call_flex() {
     string file = outdir + prefix + "_vertex." + filetype;
     string singlet_file = outdir + prefix + "_vertex_singlet." + filetype;
     if (filetype == "hdf5" || filetype == "h5") {
-        if (chi.cmf.data.as_mesh) {
+        if (chi.get_data()->as_mesh) {
             vector<int> mesh_vec(q_mesh.begin(), q_mesh.begin() + chidim);
-            // save_data(filename, data, inds, mesh, domain, w_points, points)
             save_data(file, vals, vector<int>{}, mesh_vec, brillouin_zone, wpts);
             save_data(singlet_file, singlet_vals, vector<int>{}, mesh_vec, brillouin_zone, wpts);
         } else {
-            save_data(file, vals, vector<int>{}, vector<int>{}, vector<vector<float>>{{}}, wpts, chi.cmf.data.points);
-            save_data(singlet_file, singlet_vals, vector<int>{}, vector<int>{}, vector<vector<float>>{{}}, wpts, chi.cmf.data.points);
+            save_data(file, vals, vector<int>{}, vector<int>{}, vector<vector<float>>{{}}, wpts, chi.get_data()->points);
+            save_data(singlet_file, singlet_vals, vector<int>{}, vector<int>{}, vector<vector<float>>{{}}, wpts, chi.get_data()->points);
         }
     }
-    cout << "Saved to " << outdir + prefix + "_vertex." + filetype << endl;
-    cout << "Saved to " << outdir + prefix + "_vertex_singlet." + filetype << endl;
-    Field_R vertex2(outdir + prefix + "_vertex.h5");
-    Vec q(0.6, 0.8, -0.2);
-    float val_chi = (chi(q));
-    float val_vertex = (vertex2(q));
-
-    float expected_vertex = (U * U * val_chi) / (1.0f - U * val_chi) + (U * U * U * val_chi * val_chi) / (1.0f - U * U * val_chi * val_chi);
-
-    printf("At Vec q = (0.6, 0.8, -0.2):\n");
-    printf("Chi(q) = %f\n", val_chi);
-    printf("Vertex(q) = %f\n", val_vertex);
-    printf("Expected Vertex(q) = %f\n", expected_vertex);
+    cout << "Saved to " << file << endl;
+    cout << "Saved to " << singlet_file << endl;
 }

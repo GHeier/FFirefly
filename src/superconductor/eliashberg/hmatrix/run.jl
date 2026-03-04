@@ -99,8 +99,10 @@ function make_vertex_kernel(V, weights, frequencies::Vector{Float32})
 
         dk = k1 - k2
         V_val = 1.0
+        V_val = (cos(k1[1]) - cos(k1[2])) * (cos(k2[1]) - cos(k2[2]))
         if !debug
-            V_val = real(V(dk, w1 + w2))
+            #V_val = real(V(dk, w1 + w2))
+            V_val = (real(V(dk, 0.0)) + real(V(k1 + k2,0))) / 2
         end
         weight = weights[j]
 
@@ -119,7 +121,7 @@ function create_hmatrices(V, dos_weights, kpoints, w_points)
     # Build two HMatrices with frequency dependence
     println("\n" * "="^60)
     println("\nBuilding HMatrix for V(k-k', w+w')...")
-    t_hmat= @elapsed H_matrix = HMatrixHelper.build_hmatrix(kpoints, w_points, kernel; atol=1e-4, rank=30)
+    t_hmat = @elapsed H_matrix = HMatrixHelper.build_hmatrix(kpoints, w_points, kernel; atol=1e-4, rank=50)
     @printf("HMatrices built in %.3f seconds\n", t_hmat)
     @printf("Compression ratio: %.2f\n", (compression_ratio(H_matrix)))
 
@@ -148,7 +150,6 @@ function lanczos_solve(H_matrix, kpoints, w_points)
 
         result = similar(v)
         mul!(result, H_matrix, reshape(fv, n_total))
-        #result .= 1 / n_total
 
         return result
     end
@@ -188,6 +189,7 @@ function find_top_eig(vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat)
     for i in 1:min(5, length(real_vals))
         @printf("  λ_%d = %.10f\n", i, real_vals[i])
     end
+
 
     @printf("\nLargest eigenvalue (by magnitude): %.10f\n", real_vals[1])
     @printf("Largest positive eigenvalue: %.10f\n", largest_positive)
@@ -232,6 +234,19 @@ function save!(vals, vecs, idx, kpoints, w_points)
     end
 end
 
+function eig_est_k(kpts, weights, with_k)
+    eig = 0
+    nk = length(kpts)
+    for i in 1:nk, j in 1:nk
+        k1 = kpts[i]
+        k2 = kpts[j]
+        f = ( cos(k1[1]) - cos(k1[2]) ) * ( cos(k2[1]) - cos(k2[2]) )
+        if !with_k f = 1 end
+        eig += f^2 * weights[i] * weights[j]
+    end
+    return eig
+end
+
 function run()
     global mu
     global mu_from_n
@@ -257,7 +272,7 @@ function run()
     if !debug
         # Load Vertex
         println("\nLoading Vertex...")
-        V = Firefly.Field_C(outdir * prefix * "_vertex_singlet.h5")
+        V = Firefly.Field_R(outdir * prefix * "_vertex_singlet.h5")
         println("Vertex loaded.")
     else
         V = 1
@@ -271,10 +286,18 @@ function run()
     end
 
     fT = log(1.134 * wc / T)
-    eig_est = fT * sum(dos_weights)
-    println("Eigenvalue estimate: ", eig_est)
+    eig_est = eig_est_k(kpoints, dos_weights, true)
+    println("Eigenvalue estimate: ", eig_est * fT)
 
     idx_largest_positive, largest_positive = find_top_eig(vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat)
+    # Check eigenvalue calculation
+
+    result = similar(vecs_hmat[1])
+    mul!(result, H_matrix, vecs_hmat[1])
+    eig = sum(real.(result .* vecs_hmat[1]))
+    println("Eig test: $eig")
+
+
     save!(vals_hmat, vecs_hmat, idx_largest_positive, kpoints, w_points)
 
     return largest_positive, eig_est

@@ -302,7 +302,7 @@ function eigenvalue_computation()
     println("Getting Self Energy")
     Sigma = Field_C(outdir * prefix * "_self_energy.h5")
     println("Sigma test: ", Sigma([0.0, 0.0], 0.1))
-    e = create_energy_mesh(band, iw, Sigma, true)
+    e = create_energy_mesh(band, iw, Sigma, false)
 
     if !bcs_debug
         println("Getting Vertex")
