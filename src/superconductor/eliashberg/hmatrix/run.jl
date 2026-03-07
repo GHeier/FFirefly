@@ -4,6 +4,9 @@ cfg = Firefly.Config
 include("hmatrix_helper.jl")
 using .HMatrixHelper
 
+include("dense_matrix.jl")
+using .DenseMatrix
+
 using HMatrices
 using KrylovKit
 using LinearAlgebra
@@ -29,7 +32,7 @@ w_pts += (w_pts % 2)
 
 wc = cfg.cutoff_energy
 
-debug = false
+debug = cfg.debug
 
 function load_surface()
     eps_func = (k) -> Firefly.epsilon(1, [Float64(k.x), Float64(k.y), Float64(k.z)])
@@ -87,7 +90,6 @@ function f(w)
 end
 
 function make_vertex_kernel(V, weights, frequencies::Vector{Float32})
-    dw = 2 * wc / w_pts
     # Return kernel function V(k-k', w+w')
     # Signature: kernel(k1, k2, w1, w2, i, j, iw, jw)
     return function(k1, k2, w1, w2, i, j, iw, jw)
@@ -97,16 +99,14 @@ function make_vertex_kernel(V, weights, frequencies::Vector{Float32})
         w1 = Float64(w1)
         w2 = Float64(w2)
 
-        dk = k1 - k2
         V_val = 1.0
         V_val = (cos(k1[1]) - cos(k1[2])) * (cos(k2[1]) - cos(k2[2]))
         if !debug
             #V_val = real(V(dk, w1 + w2))
-            V_val = (real(V(dk, 0.0)) + real(V(k1 + k2,0))) / 2
+            V_val = (real(V(k1 - k2, 0.0)) + real(V(k1 + k2,0))) / 2
         end
-        weight = weights[j]
 
-        return dw * weight * V_val
+        return weights[j] * V_val
     end
 end
 
@@ -121,11 +121,24 @@ function create_hmatrices(V, dos_weights, kpoints, w_points)
     # Build two HMatrices with frequency dependence
     println("\n" * "="^60)
     println("\nBuilding HMatrix for V(k-k', w+w')...")
-    t_hmat = @elapsed H_matrix = HMatrixHelper.build_hmatrix(kpoints, w_points, kernel; atol=1e-4, rank=50)
+    t_hmat = @elapsed H_matrix = HMatrixHelper.build_hmatrix(kpoints, w_points, kernel; atol=1e-4, rank=30, eta=3.0)
     @printf("HMatrices built in %.3f seconds\n", t_hmat)
     @printf("Compression ratio: %.2f\n", (compression_ratio(H_matrix)))
 
     return H_matrix
+end
+
+function create_full_matrix(V, dos_weights, kpoints, w_points)
+    kernel = make_vertex_kernel(V, dos_weights, w_points)
+    total_N = size(dos_weights,1) * size(w_points,1)
+    println("Total N = $total_N")
+
+    println("\n" * "="^60)
+    println("\nBuilding dense matrix...")
+    t_dense = @elapsed full_matrix = DenseMatrix.create_full_matrix(V, dos_weights, kpoints, w_points, kernel)
+    @printf("Dense matrix built in %.3f seconds\n", t_dense)
+
+    return full_matrix
 end
 
 function lanczos_solve(H_matrix, kpoints, w_points)
@@ -134,24 +147,17 @@ function lanczos_solve(H_matrix, kpoints, w_points)
     n_w = length(w_points)
     n_total = n_k * n_w
     @printf("Matrix size: %d × %d\n", n_total, n_total)
+    dw = 2 * wc / n_w
+    fw = f.(w_points) ./ w_points .* dw
+    fw = reshape(fw, 1, n_w)
 
     hmv = (v) -> begin
-        newv = reshape(v, n_k, n_w)  # [k, w]
-        fv = similar(newv)
-
-        for i_w in 1:n_w
-            w = Float64(w_points[i_w])
-            if abs(w) < 1e-8
-                fv[:, i_w] = newv[:, i_w] .* (-1 / (8 * T))
-            else
-                fv[:, i_w] = newv[:, i_w] .* (-f(w) / (w))
-            end
-        end
+        newv = reshape(v, n_k, n_w) .* fw
 
         result = similar(v)
-        mul!(result, H_matrix, reshape(fv, n_total))
+        mul!(result, H_matrix, reshape(newv, n_total))
 
-        return result
+        return result #./ n_w
     end
 
     num_eigs = min(10, n_total)  # Request up to 10 eigenvalues
@@ -162,22 +168,12 @@ function lanczos_solve(H_matrix, kpoints, w_points)
     return vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat
 end
 
-function find_top_eig(vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat)
+function view_eigs!(vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat)
     real_vals = real.(vals_hmat)
     positive_vals = filter(x -> x > 0, real_vals)
 
     if isempty(positive_vals)
         @printf("Warning: No positive eigenvalues found!\n")
-        @printf("All %d eigenvalues:\n", length(real_vals))
-        for (i, val) in enumerate(real_vals)
-            @printf("  λ_%d = %.10f\n", i, val)
-        end
-        largest_positive = NaN
-        idx_largest_positive = 0
-    else
-        largest_positive = maximum(positive_vals)
-        # Find the index of the largest positive eigenvalue
-        idx_largest_positive = findfirst(x -> x == largest_positive, real_vals)
     end
 
     @printf("Time: %.3f seconds\n", t_lanczos_hmat)
@@ -186,65 +182,56 @@ function find_top_eig(vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat)
 
     # Show top eigenvalues
     @printf("\nTop eigenvalues:\n")
-    for i in 1:min(5, length(real_vals))
+    for i in 1:length(real_vals)
         @printf("  λ_%d = %.10f\n", i, real_vals[i])
     end
 
-
-    @printf("\nLargest eigenvalue (by magnitude): %.10f\n", real_vals[1])
-    @printf("Largest positive eigenvalue: %.10f\n", largest_positive)
-    return idx_largest_positive, largest_positive
+    @printf("\nLargest eigenvalue: %.10f\n", real_vals[1])
 end
 
-# Save the eigenvector corresponding to the largest positive eigenvalue
-function save!(vals, vecs, idx, kpoints, w_points)
-    if idx > 0
-        eigenvec = vecs[idx]
-        n_k = length(kpoints)
-        n_w = length(w_points)
-
-        eigenvec_2d = reshape(eigenvec, n_k, n_w)
-
-        # Save gap function with k-points from Fermi surface using save_data!
-        filename = outdir * prefix * "_gap." * filetype
-        @printf("\nSaving eigenvector to %s\n", filename)
-
-        # Determine k-space dimension
-        k_dim = length(kpoints[1])
-
-        # Prepare k-points matrix [n_k × k_dim]
-        points_matrix = Matrix{Float64}(undef, n_k, k_dim)
-        for i_k in 1:n_k
-            for d in 1:k_dim
-                points_matrix[i_k, d] = Float64(kpoints[i_k][d])
-            end
+function save!(vals, vecs, kpoints, w_points)
+    n_k = length(kpoints)
+    k_dim = length(kpoints[1])
+    n_w = length(w_points)
+    # Prepare k-points matrix [n_k × k_dim]
+    points_matrix = Matrix{Float64}(undef, n_k, k_dim)
+    for i_k in 1:n_k
+        for d in 1:k_dim
+            points_matrix[i_k, d] = Float64(kpoints[i_k][d])
         end
-
-        data_array = Float64.(real.(eigenvec_2d))
-        save_data! = Firefly.Imports.save_data!
-        if w_pts > 1
-            save_data!(filename, data_array, points=points_matrix, w_points=w_points)
-        else
-            save_data!(filename, data_array, points=points_matrix)
-        end
-
-        @printf("Eigenvector saved successfully.\n")
-    else
-        @printf("\nNo positive eigenvalue found - eigenvector not saved.\n")
     end
+
+    save_data! = Firefly.Imports.save_data!
+    for i in 1:length(vals)
+        filename = outdir * prefix * "_gap_$i." * filetype
+        @printf("Saving eigenvector to %s\n", filename)
+        eigenvec = reshape(vecs[i], n_k, n_w)
+        save_data!(filename, eigenvec, points=points_matrix, w_points=w_points)
+    end
+    # KrylovKit's eigsolve with :LR returns eigenvalues sorted largest-first,
+    # so vecs[1] is the dominant eigenvector (largest eigenvalue), not vecs[end]
+    filename = outdir * prefix * "_gap.h5"
+    save_data!(filename, reshape(vecs[1], n_k, n_w), points=points_matrix, w_points=w_points)
+    @printf("Saved dominant eigenvector to %s\n", filename)
 end
 
 function eig_est_k(kpts, weights, with_k)
     eig = 0
+    dos = 0
     nk = length(kpts)
-    for i in 1:nk, j in 1:nk
+    for i in 1:nk
         k1 = kpts[i]
-        k2 = kpts[j]
-        f = ( cos(k1[1]) - cos(k1[2]) ) * ( cos(k2[1]) - cos(k2[2]) )
+        f = cos(k1[1]) - cos(k1[2])
         if !with_k f = 1 end
-        eig += f^2 * weights[i] * weights[j]
+        dos += weights[i] * f^2
+        for j in 1:nk
+            k2 = kpts[j]
+            f = ( cos(k1[1]) - cos(k1[2]) ) * ( cos(k2[1]) - cos(k2[2]) )
+            if !with_k f = 1 end
+            eig += f^2 * weights[i] * weights[j]
+        end
     end
-    return eig
+    return eig / dos
 end
 
 function run()
@@ -280,27 +267,29 @@ function run()
 
     H_matrix = create_hmatrices(V, dos_weights, kpoints, w_points)
     println("Created HMatrix")
+
     vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat = lanczos_solve(H_matrix, kpoints, w_points)
+    view_eigs!(vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat)
+
     if !debug
         vals_hmat .*= Z
     end
 
     fT = log(1.134 * wc / T)
-    eig_est = eig_est_k(kpoints, dos_weights, true)
-    println("Eigenvalue estimate: ", eig_est * fT)
+    eig_est = eig_est_k(kpoints, dos_weights, true) * fT
+    println("Eigenvalue estimate: ", eig_est)
 
-    idx_largest_positive, largest_positive = find_top_eig(vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat)
     # Check eigenvalue calculation
 
-    result = similar(vecs_hmat[1])
-    mul!(result, H_matrix, vecs_hmat[1])
-    eig = sum(real.(result .* vecs_hmat[1]))
-    println("Eig test: $eig")
+    #result = similar(vecs_hmat[1])
+    #mul!(result, full_matrix, vecs_hmat[1])
+    #eig = sum(real.(result .* vecs_hmat[1]))
+    #println("Eig test: $eig")
 
 
-    save!(vals_hmat, vecs_hmat, idx_largest_positive, kpoints, w_points)
+    save!(vals_hmat, vecs_hmat, kpoints, w_points)
 
-    return largest_positive, eig_est
+    return vals_hmat[1], eig_est
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__ # Runs on file execution

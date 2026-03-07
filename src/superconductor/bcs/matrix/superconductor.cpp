@@ -80,6 +80,17 @@ float bcs() {
 
     float f = f_singlet_integral(T);
     cout << "F-integral value: " << f << endl;
+    float f2 = 0.0;
+    cout << "F-integral value test";
+    float dw = 2.0 * wc / 32;
+    for (int i = 0; i < 32; i++) {
+        float x = -wc + 2 * wc * i / 32;
+        if (abs(x) < 0.00001)
+            f2 += dw / (4 * T);
+        else
+            f2 += dw * tanh(x / (2 * T)) / (2 * x);
+    }
+    cout << " = " << f2 << endl;
 
     printf("\n");
     vector<float> proj_eigs = matrix_projections(FS, P, renorm);

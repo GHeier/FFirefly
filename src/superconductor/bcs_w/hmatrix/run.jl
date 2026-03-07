@@ -228,7 +228,6 @@ function un_hermitize_gap(gap, weights)
     return Float64.(real.(result))
 end
 
-# Save the eigenvector corresponding to the largest positive eigenvalue
 function save!(vals, vecs, kpoints, weights)
     n_k = length(kpoints)
     k_dim = length(kpoints[1])

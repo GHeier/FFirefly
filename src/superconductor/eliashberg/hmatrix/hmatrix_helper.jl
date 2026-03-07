@@ -80,11 +80,12 @@ function build_spoints(kpoints, frequencies)
 end
 
 # Build HMatrix with frequency dependence
-function build_hmatrix(kpoints, frequencies, kernel_func; atol=1e-6, rank=20)
+function build_hmatrix(kpoints, frequencies, kernel_func; atol=1e-6, rank=20, eta=3.0)
     n_k = length(kpoints)
     n_w = length(frequencies)
     n_total = n_k * n_w
     @printf("Building HMatrix for %d k-points × %d frequencies = %d total points\n", n_k, n_w, n_total)
+    @printf("Admissibility eta = %.2f\n", eta)
     # Create frequency-dependent kernel matrix wrapper
     K = FreqKernelMatrixWrapper(kernel_func, kpoints, frequencies, n_k, n_w)
 
@@ -96,11 +97,14 @@ function build_hmatrix(kpoints, frequencies, kernel_func; atol=1e-6, rank=20)
     Yclt = Xclt  # Same cluster tree for row/column spaces
 
     # Create compression method
-    comp = HMatrices.PartialACA(; atol=atol, rank=rank)
-    #comp = HMatrices.TSVD(; atol=atol, rank=rank)
+    #comp = HMatrices.PartialACA(; atol=atol, rank=rank)
+    comp = HMatrices.TSVD(; atol=atol, rank=rank)
+
+    # Admissibility condition: smaller eta = tighter = more dense blocks = higher accuracy
+    adm = HMatrices.StrongAdmissibilityStd(eta)
 
     # Assemble HMatrix from matrix and cluster trees
-    H = assemble_hmatrix(K, Xclt, Yclt; comp=comp)
+    H = assemble_hmatrix(K, Xclt, Yclt; comp=comp, adm=adm)
 
     return H
 end
