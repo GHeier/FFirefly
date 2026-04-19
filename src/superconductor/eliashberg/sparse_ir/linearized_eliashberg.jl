@@ -39,6 +39,7 @@ end
 
 const wc = cfg.cutoff_energy
 projs = cfg.projections
+Z = cfg.qp_weight
 
 const verbosity = cfg.verbosity
 const filetype = cfg.filetype
@@ -302,7 +303,7 @@ function eigenvalue_computation()
     println("Getting Self Energy")
     Sigma = Field_C(outdir * prefix * "_self_energy.h5")
     println("Sigma test: ", Sigma([0.0, 0.0], 0.1))
-    e = create_energy_mesh(band, iw, Sigma, false)
+    e = create_energy_mesh(band, iw, Sigma, true)
 
     if !bcs_debug
         println("Getting Vertex")

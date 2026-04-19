@@ -193,13 +193,15 @@ function find_top_eig(vals_hmat, vecs_hmat, vals_ptb, vecs_ptb)
 
     eff_lambdas = zeros(size(vals_hmat))
     eff_vecs = copy(vecs_hmat)
+    mu_star = 0.10
     @printf("\nTop eigenvalues:\n")
     for i in 1:length(eff_lambdas)
-        eff_lambdas[i] = l0[i] / (1 / Z + l1[i])
+        eff_lambdas[i] = l0[i] * (1 - mu_star) / (1 / Z + l1[i])
         eff_vecs[i] .+= vecs_ptb[i]
         @printf("%d)  λ0 = %.10f, λ1 = %.10f, λe = %.10f\n", i, l0[i], l1[i], eff_lambdas[i])
     end
     println("Quasiparticle Weight Z = ", Z)
+    println("mu* = ", mu_star)
     lz = 1/Z - 1
     @printf("λz = %.10f\n", lz)
     perm = sortperm(eff_lambdas)
@@ -263,7 +265,7 @@ function run()
 
     # Load Vertex
     println("\nLoading Vertex...")
-    V = Firefly.Field_R(outdir * prefix * "_vertex.h5")
+    V = Firefly.Field_R(outdir * prefix * "_vertex_singlet.h5")
     println("Vertex loaded.")
 
     H_matrix, H_matrix_ptb = create_hmatrices(V, dos_weights, kpoints, w_points)
@@ -282,6 +284,9 @@ function run()
 
     fT = log(1.134 * wc / T)
     println("Max f(T)*Eig: ", fT * l[end])
+    Tc = 1.134 * wc * exp(-1/l[end])
+    println("Tc (eV): ", Tc)
+    println("Tc (K): ", Tc * 11604.5)
 
     save!(l, v, kpoints, dos_weights)
 

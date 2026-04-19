@@ -84,6 +84,7 @@ void call_flex() {
     }
     vector<float> vals;
     vector<float> singlet_vals;
+    float max_chi = 0.0;
 
     if (!chi.get_data()->as_mesh) {
         printf("Using stored point data\n");
@@ -100,8 +101,10 @@ void call_flex() {
                 vals.push_back(val);
 
                 float singlet_val = 1.5 * (U * U * X) / float(1.0f - U * X) - 0.5 * U * U * X / (1 + U * X);
-                singlet_vals.push_back(singlet_val);
+                //singlet_vals.push_back(singlet_val);
+                singlet_vals.push_back(U*U*X);
 
+                if (X > max_chi) max_chi = X;
                 if (abs(U * X) >= 1) {
                     printf("Geometric series not convergent: U*X = %f\n", U * X);
                     exit(1);
@@ -129,9 +132,11 @@ void call_flex() {
                         vals.push_back(val);
 
                         float singlet_val = 1.5 * (U * U * X) / float(1.0f - U * X) - 0.5 * U * U * X / (1 + U * X);
-                        singlet_vals.push_back(singlet_val);
+                        //singlet_vals.push_back(singlet_val);
+                        singlet_vals.push_back(U*U*X);
 
-                        if (abs(U * X) >= 1.0) {
+                        if (X > max_chi) max_chi = X;
+                        if (0 && abs(U * X) >= 1.0) {
                             printf("Geometric series not convergent: U*X = %f\n", U * X);
                             exit(1);
                         }
@@ -148,6 +153,7 @@ void call_flex() {
         }
     }
     printf("Computed %zu vertex values\n", vals.size());
+    printf("Max UX: %f\n", max_chi * U0);
     printf("Max vertex magnitude: %f\n", max_val);
 
     printf("Saving Vertex\n");

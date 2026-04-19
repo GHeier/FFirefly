@@ -39,6 +39,8 @@ n = cfg.num_electrons
 U = cfg.U0
 BZ = cfg.brillouin_zone
 beta = 1 / cfg.Temperature
+Z = cfg.qp_weight
+
 
 
 ### System parameters
@@ -111,6 +113,7 @@ mutable struct ManyBodySolver
     Xkw      ::Array{ComplexF32, 4}
     Vrt      ::Array{ComplexF32, 4}
     Ekw      ::Array{ComplexF32, 4}
+    Ekw_bubble      ::Array{ComplexF32, 4}
     iw       ::Array{ComplexF32,4}
     iv       ::Array{ComplexF32,4}
     ek       ::Array{Float32, 4}
@@ -143,12 +146,14 @@ function make_ManyBodySolver(
         Xkw  = zeros(ComplexF32, mesh.bnw, nk1, nk2, nk3)
         V    = zeros(ComplexF32, mesh.bntau, nk1, nk2, nk3)
         Ekw = sigma_init
+        Ekw_bubble = zeros(ComplexF32, mesh.fnw, nk1, nk2, nk3)
+
     
         iw, iv = get_iw_iv(mesh)
         iw = reshape(iw, mesh.fnw, 1, 1, 1)
         iv = reshape(iv, mesh.bnw, 1, 1, 1)
         ek_new = reshape(ek, 1, nx, ny, nz)
-        solver = ManyBodySolver(mesh, beta, U, 0.0, n, sfc_tol, maxiter, U_maxiter, mix, verbose, mu, Gkw, Grt, Xkw, V, Ekw, iw, iv, ek_new, dim, nk)
+        solver = ManyBodySolver(mesh, beta, U, 0.0, n, sfc_tol, maxiter, U_maxiter, mix, verbose, mu, Gkw, Grt, Xkw, V, Ekw, Ekw_bubble, iw, iv, ek_new, dim, nk)
         if mu_from_n
             solver.n = n
             println("Initial mu = $mu")
@@ -161,12 +166,14 @@ function make_ManyBodySolver(
             println("New n = $(solver.n)")
         end
     
+        #solver.Gkw .= Z ./ (solver.iw .- Z.* (solver.ek .- solver.mu) .- solver.Ekw)
         solver.Gkw .= 1.0 ./ (solver.iw .- (solver.ek .- solver.mu) .- solver.Ekw)
         solver.Grt .= kw_to_rtau(solver.Gkw, 'F', solver.mesh)
         solver.Xkw .= rtau_to_kw(solver.Grt .* reverse(solver.Grt, dims=1), 'B', solver.mesh)
         solver.UX = solver.U * maximum(abs, solver.Xkw)
         println("Initial Max Chi = $(maximum(abs, solver.Xkw))")
         println("Initial UX = $(solver.UX)")
+        solver.Ekw_bubble .= rtau_to_kw(solver.U^2 .* kw_to_rtau(solver.Xkw, 'B', solver.mesh) .* solver.Grt, 'F', solver.mesh)
 
         return solver
 end
@@ -184,7 +191,7 @@ function solve!(S::ManyBodySolver, comm)
             println("New U = $(S.U)")
         else
             println("U * max(X) = $(S.UX). Calculations Impossible")
-            exit(1)
+            return
         end
         if (S.U / old_U < 0.9)
             println("-----------------------------------------------")
@@ -363,6 +370,7 @@ end
 
 function V_FLEX!(U, Xkw, out)
     # Triplet channel vertex for self-energy: 1.5*U²*χ_spin + 0.5*U²*χ_charge - U²*χ₀
+    #out .= U^2 .* Xkw
     out .= (1.5*U^2) .* Xkw ./ (1 .- U.*Xkw) .+ (0.5*U^2) .* Xkw ./ (1 .+ U.*Xkw) - U^2 .* Xkw
 end
 
@@ -458,6 +466,7 @@ function main()
     X_copy = copy(solver.Xkw)
 
     Gkw = 1.0 ./ (reshape(iw, mesh.fnw, 1, 1, 1) .- (reshape(ek, 1, nx, ny, nz) .+ solver.mu))
+    #Gkw = Z ./ (reshape(iw, mesh.fnw, 1, 1, 1) .- (Z .* reshape(ek, 1, nx, ny, nz) .+ solver.mu))
     ind = Int(mesh.fnw / 2)
     G_w0 = sum(Gkw[ind, :, :, :]) / nk
     println("Non-interacting DOS = $(G_w0.im / pi)")
@@ -476,11 +485,39 @@ function main()
     V_FLEX!(solver.U, solver.Xkw, V)
     V_singlet!(solver.U, solver.Xkw, V_singlet)
 
+
+    println("Initial Quasiparticle Weight: ", Z)
+    # BUBBLE CALCULATION
+    Gkw = Z ./ (reshape(iw, mesh.fnw, 1, 1, 1) .- Z.* (reshape(ek, 1, nx, ny, nz) .- solver.mu))
+    Grt = kw_to_rtau(Gkw, 'F', mesh)
+    Ert = U^2 .* kw_to_rtau(solver.Xkw, 'B', mesh) .* Grt
+    Ekw = rtau_to_kw(Ert, 'F', mesh)
+    sig2 = zeros(ComplexF32, mesh.fnw)
+    for i in 1:mesh.fnw
+        sig2[i] = sum(Ekw[i, :, :, :]) / nk
+    end
+    slope = -(imag(sig2[ind+1]) - imag(sig2[ind])) / (imag(iw[ind+1]) - imag(iw[ind]))
+    Z1 = 1 / (1 + slope)
+    println("Renormalization (bubble): ", 1 + slope)
+    println("Quasiparticle Weight(bubble): ", Z1)
+
+
     ind = find_zero_freq(iw)
-    slope = -(imag(solver.Ekw[ind+1]) - imag(solver.Ekw[ind])) / (imag(iw[ind+1]) - imag(iw[ind]))
-    Z = 1 / (1 + slope)
+    sig = zeros(ComplexF32, mesh.fnw)
+    for i in 1:mesh.fnw
+        sig[i] = sum(solver.Ekw[i, :, :, :]) / nk 
+    end
+    slope = -(imag(sig[ind+1]) - imag(sig[ind])) / (imag(iw[ind+1]) - imag(iw[ind]))
+    Z2 = 1 / (1 + slope)
     println("Renormalization: ", 1 + slope)
-    println("Quasiparticle Weight: ", Z)
+    println("Quasiparticle Weight: ", Z2)
+
+
+    sig .= sig .- sig2
+    slope = -(imag(sig[ind+1]) - imag(sig[ind])) / (imag(iw[ind+1]) - imag(iw[ind]))
+    Z3 = 1 / (1 + slope)
+    println("Renormalization (minus double count): ", 1 + slope)
+    println("Quasiparticle Weight(minus double count): ", Z3)
 
     println("Max Self-Energy: $(maximum(abs.(solver.Ekw)))")
     println("Min Self-Energy: $(minimum(abs.(solver.Ekw)))")

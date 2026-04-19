@@ -103,7 +103,7 @@ function make_vertex_kernel(V, weights, frequencies::Vector{Float32})
         V_val = (cos(k1[1]) - cos(k1[2])) * (cos(k2[1]) - cos(k2[2]))
         if !debug
             #V_val = real(V(dk, w1 + w2))
-            V_val = (real(V(k1 - k2, 0.0)) + real(V(k1 + k2,0))) / 2
+            V_val = (real(V(k1 - k2, w1 + w2)) + real(V(k1 + k2, w1 + w2))) / 2
         end
 
         return weights[j] * V_val
@@ -269,15 +269,18 @@ function run()
     println("Created HMatrix")
 
     vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat = lanczos_solve(H_matrix, kpoints, w_points)
-    view_eigs!(vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat)
 
     if !debug
         vals_hmat .*= Z
     end
 
-    fT = log(1.134 * wc / T)
-    eig_est = eig_est_k(kpoints, dos_weights, true) * fT
-    println("Eigenvalue estimate: ", eig_est)
+    view_eigs!(vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat)
+
+    if !debug
+        fT = log(1.134 * wc / T)
+        eig_est = eig_est_k(kpoints, dos_weights, true) * fT
+        println("Eigenvalue estimate: ", eig_est)
+    end
 
     # Check eigenvalue calculation
 

@@ -43,6 +43,10 @@ extern "C" void many_body_wrapper() {
         if (debug) run_cpp_test("from_sigma");
         else run_cpp_method("from_sigma");
     }
+    else if (calculation == "renormalization" && method == "FS_approx") {
+        if (debug) run_python_test("FS_approx");
+        else run_python_method("FS_approx");
+    }
     else {
         printf("In many_body category, calculation `%s` with method `%s` not recognized\n", calculation.c_str(), method.c_str());
     }

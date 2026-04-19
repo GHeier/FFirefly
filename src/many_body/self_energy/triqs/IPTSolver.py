@@ -14,8 +14,13 @@ class IPTSolver:
 
         # Matsubara frequency Green's functions
         dlr_iw_mesh = MeshDLRImFreq(beta=beta, statistic='Fermion', w_max=w_max, eps=eps)
+        ws = np.array([float(iw.imag) for iw in dlr_iw_mesh], dtype=np.float32)
+        print("Max w: ", max(ws))
+        print("Min w: ", min(ws))
+
         G_iw = Gf(mesh=dlr_iw_mesh, target_shape=[1,1])
         self.G_weiss = Diagram(G_iw, 'Fermion')
+        self.G_weiss_old = self.G_weiss.copy()
         self.Sigma_loc = self.G_weiss.copy()
         self.Sigma_loc.zero()
 
@@ -30,11 +35,14 @@ class IPTSolver:
         return self.Sigma_loc
 
     def set_Weiss(self):
+        self.G_weiss_old = self.G_weiss.copy()
         self.G_weiss.obj_w << inverse(inverse(self.G_loc.obj_w) + self.Sigma_loc.obj_w)
+        self.G_weiss.obj_w = self.mix * self.G_weiss_old.obj_w + (1.0 - self.mix) * self.G_weiss.obj_w
 
     def solve(self, U):
-        Sigma_iw = self.get_IPT_Sigma(U)
-        self.Sigma_loc.obj_w = self.mix * Sigma_iw.obj_w + (1.0 - self.mix) * self.Sigma_loc.obj_w
+        Sigma_loc = self.get_IPT_Sigma(U)
+        #Sigma_iw = self.get_IPT_Sigma(U)
+        #self.Sigma_loc.obj_w = self.mix * Sigma_iw.obj_w + (1.0 - self.mix) * self.Sigma_loc.obj_w
 
         # Dyson
         #self.G << inverse(inverse(self.G0) - self.Sigma_iw)
@@ -54,14 +62,30 @@ class IPTSolver:
         #self.G_iw = self.G0_iw * self.mix + self.G_iw * (1.0 - self.mix)
 
     def loop(self, U, bethe_lattice=False):
+        err_history = []
         for i in range(self.max_loops):
-            G_iw_old = self.G_loc.obj_w.copy()
+            G_iw_prev = self.G_weiss.obj_w.data.copy()  # Save for averaging
+
             if bethe_lattice:
                 self.solve_bethe_lattice(U)
             else:
                 self.solve(U)
-            err = abs(self.G_loc.obj_w.data - G_iw_old.data).max()
+
+            err = abs(self.G_weiss.obj_w.data - self.G_weiss_old.obj_w.data).max()
             print("IPT loop %d, err = %.3e" % (i+1, err))
+
             if err < self.tol:
                 break
+
+            # Detect two-cycle oscillation
+            #err_history.append(err)
+            #if len(err_history) > 5:
+            #    err_history.pop(0)
+            #    err_std = np.std(err_history)
+            #    if err_std < 1e-6:  # Error is constant
+            #        print("Detected two-cycle oscillation. Averaging states.")
+            #        # Average current and previous states
+            #        self.G_weiss.obj_w.data[:] = 0.5 * (self.G_weiss.obj_w.data + G_iw_prev)
+            #        self.G_weiss.w_to_t()
+            #        err_history = []  # Reset history after intervention
 

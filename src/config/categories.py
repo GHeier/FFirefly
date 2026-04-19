@@ -41,7 +41,8 @@ CATEGORIES = {
         },
         "renormalization": {
             "analytic": "c++",
-            "from_sigma": "c++"
+            "from_sigma": "c++",
+            "FS_approx": "python"
         }
     },
     "superconductor": {

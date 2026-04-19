@@ -68,6 +68,7 @@ def FLEX():
     loc_sigma = make_local(S.Sigma.obj_wk.data)
     renorm = get_renorm(loc_sigma, S.Sigma.w_points)
     print(f"Quasiparticle renormalization factor: {renorm:.4f}")
+    print(f"Quasiparticle weight: {1/renorm:.4f}")
 
     print(f"Final Max Chi: {np.max(np.abs(S.X.obj_wk.data)):.4f}")
     if hasattr(S, 'V'):
@@ -96,7 +97,7 @@ def FLEX_DMFT():
     S = FLEX_DMFT_Solver(G0, U=U, mix=mixing, n=n, mu=mu)
 
     if cfg.self_consistent:
-        S.loop_FLEX_DMFT(n_loops=cfg.max_iters, check_divergence=True)
+        S.loop_FLEX_DMFT(n_loops=cfg.max_iters, check_divergence=False)
     else:
         S.solve_FLEX_DMFT(S.FLEX, S.IPT)
     if S.diverged:
@@ -111,6 +112,7 @@ def FLEX_DMFT():
     loc_sigma = make_local(S.Sigma_k.obj_wk.data)
     renorm = get_renorm(loc_sigma, S.Sigma_k.w_points)
     print(f"Quasiparticle renormalization factor: {renorm:.4f}")
+    print(f"Quasiparticle weight: {1/renorm:.4f}")
 
     save_FLEX_DMFT(S)
     max_chi = np.max(np.abs(S.FLEX.X.obj_wk.data))

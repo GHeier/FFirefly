@@ -25,6 +25,7 @@ if cfg.mu_from_n
 end
 BZ = cfg.brillouin_zone
 beta = 1 / cfg.Temperature
+Z = cfg.qp_weight
 
 function get_kvec(ix, iy, iz, nx, ny, nz)
     kvec = [ix / nx - 0.0, iy / ny - 0.0, iz / nz - 0.0]
@@ -44,6 +45,16 @@ function fill_energy_mesh(band)
         ek[i, j, k] = band(kvec)
     end
     return ek
+end
+
+function fill_sigma_mesh(sigma, iw)
+    nw = length(iw)
+    Ekw = Array{ComplexF32}(undef, nw, nx, ny, nz)
+    for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:nw
+        kvec = get_kvec(i - 1, j - 1, k - 1, nx, ny, nz)
+        Ekw[i, j, k] = sigma(kvec, imag(iw[l]))
+    end
+    return Ekw
 end
 
 function main()
@@ -68,7 +79,14 @@ function main()
     println("Constructing G(iω,k)")
     ek_reshaped = reshape(ek, 1, nx, ny, nz)
     iw_reshaped = reshape(iw, mesh.fnw, 1, 1, 1)
-    Gkw = 1.0 ./ (iw_reshaped .- (ek_reshaped .- mu))
+
+    #filename = outdir * prefix * "_self_energy.h5"
+    #println("Checking if Self-Energy file `$filename` exists.")
+    #Sigma = Field_C(filename)
+    #Ekw = fill_sigma_mesh(Sigma, iw)
+    
+    #Gkw = 1.0 ./ (iw_reshaped .- (ek_reshaped .- mu))
+    Gkw = Z ./ (iw_reshaped .- (Z .* ek_reshaped .- mu))
 
     # Calculate χ(iν,k) via convolution: χ = -G(iω,k) * G(-iω,-k)
     # Transform to (r,τ) space

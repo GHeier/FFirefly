@@ -43,6 +43,8 @@ U = cfg.U0
 BZ = cfg.brillouin_zone
 celltype = cfg.celltype
 
+Z = cfg.qp_weight
+
 """
     setup_symmetry_reduction(qmesh, celltype, dim)
 
@@ -231,7 +233,6 @@ function calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, dos, i
     progress_lock = ReentrantLock()
 
     println("\nStarting band and q-ω loops...")
-    println("Using ", nthreads(), " threads for parallel computation")
     println("Total iterations: $total_iterations (reduced from $(nbnd^4 * nqpts * nw))")
     start_time = time()
 
@@ -570,6 +571,7 @@ Orchestrates the entire calculation:
 - Maximum finite real part of susceptibility
 """
 function response_bz_integral()
+    println("Using ", nthreads(), " threads for parallel computation")
     println("="^60)
     println("Calculating response function using BZIntegral")
     println("="^60)
@@ -599,6 +601,7 @@ function response_bz_integral()
     println("Starting response grid calculation (ω ≥ 0)")
     println("="^60)
     chi_pos = calculate_response_grid(Ek_grids, Uk_grids, w_pos, kmesh, qmesh, dos, 0)
+    chi_pos .*= Z
 
     # Mirror to negative frequencies using symmetry
     println("\n" * "="^60)

@@ -32,7 +32,7 @@ void create_P(Matrix &P, vector<Vec> &k) {
             P(i, j) = -f1 * f2 * (vertex(k1 - k2, 0) + vertex(k1 + k2, 0)) / 2.0;
             //cout << P(i, j) / (-f1 * f2) << endl;
             //P(i, j) = f1 * f2 * (cos(k1.x) - cos(k1.y)) * (cos(k2.x) - cos(k2.y));
-            P(i, j) = f1 * f2;
+            //P(i, j) = f1 * f2;
             assert(isnan(P(i, j)) == false);
         }
         progress_bar(1.0 * i / (P.size - 1));

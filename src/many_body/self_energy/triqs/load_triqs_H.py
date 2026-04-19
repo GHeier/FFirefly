@@ -23,7 +23,11 @@ def create_dlr_meshes(e_k, beta, statistic='Fermion'):
     w_max = 1.2 * (emax - emin)
     eps = 1e-14
 
-    return MeshDLRImFreq(beta=beta, statistic=statistic, w_max=w_max, eps=eps)
+    mesh = MeshDLRImFreq(beta=beta, statistic=statistic, w_max=w_max, eps=eps)
+    ws = [w.value for w in mesh]
+    print("Max w: ", max(ws))
+    print("Min w: ", min(ws))
+    return mesh
 
 
 def get_energy_mesh():

@@ -79,7 +79,7 @@ def grep(output, phrase):
 
 
 def extract_value(string):
-    match = re.search(r"[-+]?\d*\.?\d+", string)  # Regex for both integers and floats
+    match = re.search(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", string)
     return float(match.group())
 
 
