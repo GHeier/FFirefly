@@ -7,6 +7,8 @@ from triqs.gf import Gf, inverse, SemiCircular
 from triqs_tprf.lattice import lattice_dyson_g0_wk
 from IPTSolver import IPTSolver
 from IPTSolver_real import IPTSolver_real
+from BubbleSolver import BubbleSolver
+from Bubble_DMFTSolver import Bubble_DMFTSolver
 from load_triqs_H import create_dlr_meshes, get_energy_mesh
 from triqs.gf.meshes import MeshDLRImFreq, MeshDLRImTime
 
@@ -77,74 +79,131 @@ def get_H(N):
 
 def run():
     print(f"mu = {mu}, n = {n}")
+    print(f"interaction = {interaction}")
     print("mixing = ", mixing)
-    # IPT solver works with any DOS-based approach
-    if interaction not in ["DMFT"]:
-        print(f"Warning: interaction = '{interaction}' may not be fully supported.")
-        print("IPT solver will proceed using DOS-based local approximation.")
 
+    if interaction == "DMFT":
+        return run_DMFT()
+    elif interaction == "Bubble":
+        return run_Bubble()
+    elif interaction == "Bubble+DMFT":
+        return run_Bubble_DMFT()
+    else:
+        raise ValueError(f"Unknown interaction: {interaction}. Use 'DMFT', 'Bubble', or 'Bubble+DMFT'.")
+
+
+def get_G0_wk():
+    """Create G0(k,iw) from tight-binding model."""
+    H_r, kmesh, e_k = get_energy_mesh()
+    emax = e_k.data.max().real
+    emin = e_k.data.min().real
+    D = 1.2 * (emax - emin)
+    DLRImMesh = MeshDLRImFreq(beta=beta, statistic='Fermion', w_max=D, eps=eps)
+    G0_wk = lattice_dyson_g0_wk(mu=mu, e_k=e_k, mesh=DLRImMesh)
+    return G0_wk, D
+
+
+def run_DMFT():
+    """Run DMFT with IPT solver."""
     if debug:
         H, D = get_H_debug()
     else:
         N = fly.Field_R(outdir + prefix + '_DOS.h5')
         H, D = get_H(N)
-    # Set up DMFT parameters
 
-    # Check temperature and dispatch to appropriate solver
     if T == 0.0:
         print("Temperature = 0: Using real-axis IPT solver")
         S = IPTSolver_real(H=H, mu=mu, mix=mixing, n_loops=max_iters,
-                          w_min=eps_min-margin, w_max=eps_max+margin, n_w=int(w_pts))
-        # Run DMFT loop
+                          w_min=-D, w_max=D, n_w=int(w_pts))
         S.loop(U)
-
-        # Print results
         print(f"Final Sigma max: {np.max(np.abs(S.Sigma_loc.data)):.4f}")
         print(f"Final G max: {np.max(np.abs(S.G_loc.data)):.4f}")
         renorm = get_renorm_real(S.Sigma_loc.data, S.w_points)
-        print(f"Quasiparticle renormalization factor: {renorm:.4f}")
-
-        # Save data
         save_DMFT_real(S)
     else:
         print(f"Temperature = {T}: Using Matsubara IPT solver")
-        # Initialize ManyBodySolver in DMFT mode
         S = IPTSolver(beta, H=H, mix=mixing, mu=mu, n_loops=max_iters, w_max=1.2*D, eps=eps)
-
-        # Run DMFT loop
         S.loop(U, bethe_lattice=False)
-
-        # Print results
         print(f"Final Sigma max: {np.max(np.abs(S.Sigma_loc.obj_w.data)):.4f}")
         print(f"Final G max: {np.max(np.abs(S.G_loc.obj_w.data)):.4f}")
         renorm = get_renorm(S.Sigma_loc.obj_w.data, S.Sigma_loc.w_points)
-        print(f"Quasiparticle Weight: {1/renorm:.4f}")
-        print(f"m*/m: {renorm:.4f}")
-        print(f"lambda_z: {renorm - 1:.4f}")
-
-        # Save data
         save_DMFT(S, D)
 
-        #print("\nDoing one-shot bubble computation\n")
-        #S = IPTSolver(beta, H=H, mix=mixing, mu=mu, n_loops=max_iters, w_max=1.2*D, eps=eps)
-        ## Run DMFT loop
-        #S.solve(U)
-
-        #renorm = get_renorm(S.Sigma_loc.obj_w.data, S.Sigma_loc.w_points)
-        #print(f"Quasiparticle Weight(one-shot): {1/renorm:.4f}")
-        #print(f"m*/m(one-shot): {renorm:.4f}")
-        #print(f"lambda_z(one-shot): {renorm - 1:.4f}")
+    print(f"Quasiparticle Weight: {1/renorm:.4f}")
+    print(f"m*/m: {renorm:.4f}")
+    print(f"lambda_z: {renorm - 1:.4f}")
+    return 1/renorm
 
 
-    return 1/renorm # Return something of any type that can be tested in the test suite.
+def run_Bubble():
+    """Run Bubble (second-order perturbation theory) solver."""
+    G0_wk, D = get_G0_wk()
+    print(f"Temperature = {T}: Using Bubble solver")
 
-def save_DMFT(S, eps_range = 0.0):
+    S = BubbleSolver(G0=G0_wk, U=U, mix=mixing, n=n, mu=mu)
+    S.loop_Bubble(n_loops=max_iters)
+
+    print(f"Final Sigma max: {np.max(np.abs(S.Sigma.obj_wk.data)):.4f}")
+    print(f"Final G max: {np.max(np.abs(S.G.obj_wk.data)):.4f}")
+    # Get local Sigma for renorm calculation
+    Sigma_loc = np.einsum('wknm->wnm', S.Sigma.obj_wk.data) / S.G.nk
+    w_points = S.G_loc.w_points
+    renorm = get_renorm(Sigma_loc, w_points)
+    save_Bubble(S, D)
+
+    print(f"Quasiparticle Weight: {1/renorm:.4f}")
+    print(f"m*/m: {renorm:.4f}")
+    print(f"lambda_z: {renorm - 1:.4f}")
+    return 1/renorm
+
+
+def run_Bubble_DMFT():
+    """Run Bubble+DMFT solver."""
+    G0_wk, D = get_G0_wk()
+    print(f"Temperature = {T}: Using Bubble+DMFT solver")
+
+    S = Bubble_DMFTSolver(G0=G0_wk, U=U, mix=mixing, n=n, mu=mu)
+    S.loop_Bubble_DMFT(n_loops=max_iters)
+
+    print(f"Final Sigma max: {np.max(np.abs(S.Bubble.Sigma.obj_wk.data)):.4f}")
+    print(f"Final G max: {np.max(np.abs(S.Bubble.G.obj_wk.data)):.4f}")
+    # Get local Sigma for renorm calculation
+    Sigma_loc = np.einsum('wknm->wnm', S.Sigma_k.obj_wk.data) / S.Bubble.G.nk
+    w_points = S.Bubble.G_loc.w_points
+    renorm = get_renorm(Sigma_loc, w_points)
+    save_Bubble_DMFT(S, D)
+
+    print(f"Quasiparticle Weight: {1/renorm:.4f}")
+    print(f"m*/m: {renorm:.4f}")
+    print(f"lambda_z: {renorm - 1:.4f}")
+    return 1/renorm
+
+def save_DMFT(S, eps_range=0.0):
     pref = outdir + prefix
     S.G_loc.save(pref + '_G_iw.h5')
     S.Sigma_loc.save(pref + '_self_energy.h5')
     S.Sigma_loc.save(pref + '_sigma_iw.h5')
     S.G_loc.save_spectral(pref + '_A_w.h5')
     save_G(S, eps_range)
+
+
+def save_Bubble(S, eps_range=0.0):
+    pref = outdir + prefix
+    S.G_loc.save(pref + '_G_iw.h5')
+    S.Sigma.save(pref + '_self_energy.h5')
+    S.Sigma.save(pref + '_sigma_wk.h5')
+    S.G.save(pref + '_G.h5')
+    S.X.save(pref + '_chi0.h5')
+
+
+def save_Bubble_DMFT(S, eps_range=0.0):
+    pref = outdir + prefix
+    S.Bubble.G_loc.save(pref + '_G_iw.h5')
+    S.Bubble.Sigma.save(pref + '_self_energy.h5')
+    S.Bubble.Sigma.save(pref + '_sigma_wk.h5')
+    S.Bubble.G.save(pref + '_G.h5')
+    S.Sigma_imp.save(pref + '_sigma_imp.h5')
+    S.Sigma_nonloc.save(pref + '_sigma_nonloc.h5')
 
 def save_G(S, eps_range):
     pref = outdir + prefix
