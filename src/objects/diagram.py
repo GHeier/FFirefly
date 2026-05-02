@@ -236,6 +236,25 @@ class Diagram:
 def make_local(data):
     return np.einsum('wknm->wnm', data) / data.shape[1]
 
+def get_renorm(loc_sigma, w_points):
+    loc_sigma = loc_sigma[:, 0, 0]
+    signs = np.sign(loc_sigma.imag)
+    diff = np.diff(signs)
+    zero_crossings = np.where(diff != 0)[0]
+
+    if (len(zero_crossings) == 0):
+        print("Uncontrolled Self-Energy result, no zero crossing. Returning infinity")
+        return float('inf')
+
+    ind = zero_crossings[0]
+    w_prev = w_points[ind]
+    w_next = w_points[ind+1]
+    sigma_prev = loc_sigma[ind]
+    sigma_next = loc_sigma[ind+1]
+    renorm = 1.0 - (sigma_next.imag - sigma_prev.imag) / (w_next - w_prev)
+
+    return renorm
+
 def contract(obj1, obj2):
     shape1 = obj1.data.shape
     shape2 = obj2.data.shape

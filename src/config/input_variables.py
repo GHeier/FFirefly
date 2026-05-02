@@ -71,7 +71,10 @@ ALL = {
         "projections": "",
     },
     "RESPONSE": {"dynamic": False},
-    "MANY_BODY": {"self_consistent": False},
+    "MANY_BODY": {
+        "self_consistent": False,
+        "impurity_solver": "IPT"
+    },
 }
 
 

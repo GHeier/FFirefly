@@ -18,6 +18,7 @@ prefix = cfg.prefix
 debug = cfg.debug
 
 interaction = cfg.interaction
+scf = cfg.self_consistent
 mu = cfg.fermi_energy
 n = cfg.num_electrons
 print(f"mu = {mu}, n = {n}")
@@ -31,6 +32,7 @@ beta = 1 / T
 w_pts = cfg.w_pts
 mixing = cfg.mixing
 U = cfg.U0  # Hubbard U parameter
+print("U = ", U)
 max_iters = cfg.max_iters
 
 nx, ny, nz = cfg.k_mesh
@@ -124,9 +126,9 @@ def run_DMFT():
         print(f"Temperature = {T}: Using Matsubara IPT solver")
         S = IPTSolver(beta, H=H, mix=mixing, mu=mu, n_loops=max_iters, w_max=1.2*D, eps=eps)
         S.loop(U, bethe_lattice=False)
-        print(f"Final Sigma max: {np.max(np.abs(S.Sigma_loc.obj_w.data)):.4f}")
+        print(f"Final Sigma max: {np.max(np.abs(S.Sigma_imp.obj_w.data)):.4f}")
         print(f"Final G max: {np.max(np.abs(S.G_loc.obj_w.data)):.4f}")
-        renorm = get_renorm(S.Sigma_loc.obj_w.data, S.Sigma_loc.w_points)
+        renorm = get_renorm(S.Sigma_imp.obj_w.data, S.Sigma_imp.w_points)
         save_DMFT(S, D)
 
     print(f"Quasiparticle Weight: {1/renorm:.4f}")
@@ -140,8 +142,12 @@ def run_Bubble():
     G0_wk, D = get_G0_wk()
     print(f"Temperature = {T}: Using Bubble solver")
 
-    S = BubbleSolver(G0=G0_wk, U=U, mix=mixing, n=n, mu=mu)
-    S.loop_Bubble(n_loops=max_iters)
+    if scf:
+        S = BubbleSolver(G0=G0_wk, U=U, mix=mixing, n=n, mu=mu)
+        S.loop_Bubble(n_loops=max_iters)
+    else:
+        S = BubbleSolver(G0=G0_wk, U=U, mix=1.0, n=n, mu=mu)
+        S.solve_Bubble()
 
     print(f"Final Sigma max: {np.max(np.abs(S.Sigma.obj_wk.data)):.4f}")
     print(f"Final G max: {np.max(np.abs(S.G.obj_wk.data)):.4f}")
@@ -181,8 +187,8 @@ def run_Bubble_DMFT():
 def save_DMFT(S, eps_range=0.0):
     pref = outdir + prefix
     S.G_loc.save(pref + '_G_iw.h5')
-    S.Sigma_loc.save(pref + '_self_energy.h5')
-    S.Sigma_loc.save(pref + '_sigma_iw.h5')
+    S.Sigma_imp.save(pref + '_self_energy.h5')
+    S.Sigma_imp.save(pref + '_sigma_iw.h5')
     S.G_loc.save_spectral(pref + '_A_w.h5')
     save_G(S, eps_range)
 
@@ -212,7 +218,7 @@ def save_G(S, eps_range):
     G = lattice_dyson_g0_wk(mu=mu, e_k=e_k, mesh=DLRImMesh)
     G = Diagram(G, 'Fermion')
     G.obj_wk = inverse(G.obj_wk)
-    G.obj_wk.data[:] = G.obj_wk.data[:] - S.Sigma_loc.obj_w.data[:, np.newaxis]
+    G.obj_wk.data[:] = G.obj_wk.data[:] - S.Sigma_imp.obj_w.data[:, np.newaxis]
     G.obj_wk = inverse(G.obj_wk)
     G.save(pref + '_G.h5')
 

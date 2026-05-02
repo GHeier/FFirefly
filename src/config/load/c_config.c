@@ -102,6 +102,8 @@ bool c_dynamic = false;
 
 //[MANY_BODY]
 bool c_self_consistent = false;
+char* c_impurity_solver = "IPT";
+char* get_impurity_solver() {return c_impurity_solver;}
 // End of Global Variables
 
 void get_dimensions() {
@@ -495,6 +497,9 @@ void read_c_config(const char *path) {
                 } else {
                     c_self_consistent = false;
                 }
+            }
+            else if (strstr(key, "impurity_solver") != NULL) {
+                set_string(&c_impurity_solver, value);
             }
             // End of variable reading
             else {

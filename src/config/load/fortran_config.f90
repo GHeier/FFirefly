@@ -146,6 +146,7 @@ module ffirefly
 ![MANY_BODY]
     logical(c_bool), bind(C, name="c_self_consistent") :: c_self_consistent
     logical :: self_consistent
+    character(len=50) :: impurity_solver
     ! End of global variables
 
     interface
@@ -267,6 +268,10 @@ module ffirefly
 
 ![MANY_BODY]
 
+        function get_impurity_solver() bind(C)
+            use iso_c_binding
+            type(c_ptr) :: get_impurity_solver
+    end function get_impurity_solver
     ! End of global functions
 
     end interface
@@ -405,6 +410,7 @@ contains
 
 ![MANY_BODY]
         self_consistent = c_self_consistent
+        impurity_solver = get_string(get_impurity_solver())
         ! End of loading variables
     end subroutine load_f90_config
 

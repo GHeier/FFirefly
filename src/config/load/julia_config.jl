@@ -84,6 +84,7 @@ dynamic::Bool = cfg.dynamic
 
 #[MANY_BODY]
 self_consistent::Bool = cfg.self_consistent
+impurity_solver::String = cfg.impurity_solver
 # End variable definitions
 
 end

@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
+#include <cstdio>
 #include <sys/wait.h>
 #include <linux/limits.h>
 #include <unistd.h>
@@ -92,6 +93,7 @@ bool dynamic;
 
 //[MANY_BODY]
 bool self_consistent;
+string impurity_solver;
 // End of Global Variables
 
 // Track if config has been loaded
@@ -178,6 +180,7 @@ extern "C" void load_cpp_config() {
 
 //[MANY_BODY]
     self_consistent = c_self_consistent;
+    impurity_solver = c_impurity_solver;
     // End of Global Functions 
     if (!isDirectoryExisting(outdir)) {
         if (fs::create_directory(outdir)) {
@@ -303,6 +306,25 @@ int run_cpp_method(const string& method_name) {
     return run_with_config(exe, config_path);
 }
 
+// Helper function to run a command and pipe its output to stdout
+static int run_and_pipe_output(const string& cmd) {
+    string full_cmd = cmd + " 2>&1";  // Redirect stderr to stdout
+    FILE* pipe = popen(full_cmd.c_str(), "r");
+    if (!pipe) {
+        fprintf(stderr, "Error: popen() failed for command: %s\n", cmd.c_str());
+        return -1;
+    }
+
+    char buffer[256];
+    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+        printf("%s", buffer);
+        fflush(stdout);  // Ensure output is immediately visible
+    }
+
+    int status = pclose(pipe);
+    return WEXITSTATUS(status);
+}
+
 int run_python_method(const string& method_name) {
     string loc = get_loc();
     string config_path = loc + "input.cfg";
@@ -313,9 +335,7 @@ int run_python_method(const string& method_name) {
         string src_dir = loc.substr(0, build_pos) + "/src/";
         string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.py";
         string exe = "python3 " + script_path;
-        int result = std::system(exe.c_str());
-        return result;
-        //return run_with_config(exe, config_path);
+        return run_and_pipe_output(exe);
     }
     // Fallback: try simple /bin/ pattern (for non-build locations)
     size_t bin_pos = loc.find("/bin/");
@@ -323,9 +343,7 @@ int run_python_method(const string& method_name) {
         string src_dir = loc.substr(0, bin_pos) + "/src/";
         string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.py";
         string exe = "python3 " + script_path;
-        int result = std::system(exe.c_str());
-        return result;
-        //return run_with_config(exe, config_path);
+        return run_and_pipe_output(exe);
     }
     return -1;  // Error: couldn't find src directory
 }
@@ -340,9 +358,7 @@ int run_julia_method(const string& method_name) {
         string src_dir = loc.substr(0, build_pos) + "/src/";
         string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.jl";
         string exe = "julia " + script_path;
-        int result = std::system(exe.c_str());
-        return result;
-        //return run_with_config(exe, config_path);
+        return run_and_pipe_output(exe);
     }
     // Fallback: try simple /bin/ pattern (for non-build locations)
     size_t bin_pos = loc.find("/bin/");
@@ -350,9 +366,7 @@ int run_julia_method(const string& method_name) {
         string src_dir = loc.substr(0, bin_pos) + "/src/";
         string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.jl";
         string exe = "julia " + script_path;
-        int result = std::system(exe.c_str());
-        return result;
-        //return run_with_config(exe, config_path);
+        return run_and_pipe_output(exe);
     }
     return -1;  // Error: couldn't find src directory
 }

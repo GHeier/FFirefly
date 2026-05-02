@@ -84,6 +84,7 @@ extern bool dynamic;
 
 //[MANY_BODY]
 extern bool self_consistent;
+extern string impurity_solver;
 // End of Global Variables
 
 

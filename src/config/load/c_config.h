@@ -84,6 +84,7 @@ extern bool c_dynamic;
 
 //[MANY_BODY]
 extern bool c_self_consistent;
+extern char* c_impurity_solver; char* get_impurity_solver();
 // End of Global Variables
 
 void get_dimensions();

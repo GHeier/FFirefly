@@ -78,6 +78,7 @@ dynamic = False
 
 #[MANY_BODY]
 self_consistent = False
+impurity_solver = 'IPT'
 ### End Variables ###
 nbnd += 1
 ### Functions ###
@@ -305,6 +306,9 @@ def load_config():
             if "self_consistent" in key:
                 global self_consistent
                 self_consistent = value == 'true'
+            if "impurity_solver" in key:
+                global impurity_solver
+                impurity_solver = value
             # Finished setting variables
         if not brillouin_zone:
             print("Error: Brillouin zone not specified.")

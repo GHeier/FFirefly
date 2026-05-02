@@ -21,42 +21,42 @@ class IPTSolver:
         G_iw = Gf(mesh=dlr_iw_mesh, target_shape=[1,1])
         self.G_weiss = Diagram(G_iw, 'Fermion')
         self.G_weiss_old = self.G_weiss.copy()
-        self.Sigma_loc = self.G_weiss.copy()
-        self.Sigma_loc.zero()
+        self.Sigma_imp = self.G_weiss.copy()
+        self.Sigma_imp.zero()
 
         if H is not None:
-            self.G_weiss.obj_w << H(Sigma = self.Sigma_loc.obj_w, mu=self.mu)
+            self.G_weiss.obj_w << H(Sigma = self.Sigma_imp.obj_w, mu=self.mu)
         self.G_loc = self.G_weiss.copy()
 
-    def get_IPT_Sigma(self, U):
-        self.G_weiss.w_to_t()
-        self.Sigma_loc.obj_t << (U**2) * self.G_weiss.obj_t * self.G_weiss.obj_t * self.G_weiss.obj_t
-        self.Sigma_loc.t_to_w()
-        return self.Sigma_loc
+    def get_IPT_Sigma(self, U, G_weiss):
+        G_weiss.w_to_t()
+        self.Sigma_imp.obj_t << (U**2) * G_weiss.obj_t * G_weiss.obj_t * G_weiss.obj_t
+        self.Sigma_imp.t_to_w()
+        return self.Sigma_imp
 
     def set_Weiss(self):
         self.G_weiss_old = self.G_weiss.copy()
-        self.G_weiss.obj_w << inverse(inverse(self.G_loc.obj_w) + self.Sigma_loc.obj_w)
-        self.G_weiss.obj_w = self.mix * self.G_weiss_old.obj_w + (1.0 - self.mix) * self.G_weiss.obj_w
+        self.G_weiss.obj_w << inverse(inverse(self.G_loc.obj_w) + self.Sigma_imp.obj_w)
+        self.G_weiss.obj_w << self.mix * self.G_weiss_old.obj_w + (1.0 - self.mix) * self.G_weiss.obj_w
 
     def solve(self, U):
-        Sigma_loc = self.get_IPT_Sigma(U)
+        Sigma_imp = self.get_IPT_Sigma(U, self.G_weiss)
         #Sigma_iw = self.get_IPT_Sigma(U)
-        #self.Sigma_loc.obj_w = self.mix * Sigma_iw.obj_w + (1.0 - self.mix) * self.Sigma_loc.obj_w
+        #self.Sigma_imp.obj_w = self.mix * Sigma_iw.obj_w + (1.0 - self.mix) * self.Sigma_imp.obj_w
 
         # Dyson
         #self.G << inverse(inverse(self.G0) - self.Sigma_iw)
-        self.G_loc.obj_w << self.H(Sigma=self.Sigma_loc.obj_w, mu=self.mu)
+        self.G_loc.obj_w << self.H(Sigma=self.Sigma_imp.obj_w, mu=self.mu)
         #self.G0 << inverse( iOmega_n - t**2 * self.G )
         self.set_Weiss()
         #self.G_iw = self.G0_iw * self.mix + self.G_iw * (1.0 - self.mix)
 
     def solve_bethe_lattice(self, U):
         self.G_weiss.w_to_t()
-        self.Sigma_loc.obj_t << (U**2) * self.G_weiss.obj_t * self.G_weiss.obj_t * self.G_weiss.obj_t
-        self.Sigma_loc.t_to_w()
+        self.Sigma_imp.obj_t << (U**2) * self.G_weiss.obj_t * self.G_weiss.obj_t * self.G_weiss.obj_t
+        self.Sigma_imp.t_to_w()
 
-        self.G_loc.obj_w = inverse(inverse(self.G_weiss.obj_w) - self.Sigma_loc.obj_w)
+        self.G_loc.obj_w = inverse(inverse(self.G_weiss.obj_w) - self.Sigma_imp.obj_w)
         t = 1
         self.G_weiss.obj_w << inverse( iOmega_n - t**2 * self.G_loc.obj_w )
         #self.G_iw = self.G0_iw * self.mix + self.G_iw * (1.0 - self.mix)
