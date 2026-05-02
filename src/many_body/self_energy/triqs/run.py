@@ -147,7 +147,7 @@ def run_Bubble():
         S.loop_Bubble(n_loops=max_iters)
     else:
         S = BubbleSolver(G0=G0_wk, U=U, mix=1.0, n=n, mu=mu)
-        S.solve_Bubble()
+        S.solve_Bubble(n_loops=1)
 
     print(f"Final Sigma max: {np.max(np.abs(S.Sigma.obj_wk.data)):.4f}")
     print(f"Final G max: {np.max(np.abs(S.G.obj_wk.data)):.4f}")
@@ -166,10 +166,16 @@ def run_Bubble():
 def run_Bubble_DMFT():
     """Run Bubble+DMFT solver."""
     G0_wk, D = get_G0_wk()
+    N = fly.Field_R(outdir + prefix + '_DOS.h5')
+    H, D = get_H(N)
     print(f"Temperature = {T}: Using Bubble+DMFT solver")
 
-    S = Bubble_DMFTSolver(G0=G0_wk, U=U, mix=mixing, n=n, mu=mu)
-    S.loop_Bubble_DMFT(n_loops=max_iters)
+    if scf:
+        S = Bubble_DMFTSolver(H, G0=G0_wk, U=U, mix=mixing, n=n, mu=mu)
+        S.loop_Bubble_DMFT(n_loops=max_iters, dmft_ave=False)
+    else:
+        S = Bubble_DMFTSolver(H, G0=G0_wk, U=U, mix=1.0, n=n, mu=mu)
+        S.loop_Bubble_DMFT(n_loops=1, dmft_ave=False)
 
     print(f"Final Sigma max: {np.max(np.abs(S.Bubble.Sigma.obj_wk.data)):.4f}")
     print(f"Final G max: {np.max(np.abs(S.Bubble.G.obj_wk.data)):.4f}")

@@ -7,7 +7,7 @@ import numpy as np
 from firefly.diagram import Diagram, dot_t, get_renorm
 
 class Bubble_DMFTSolver:
-    def __init__(self, G0, U=0.0, mix=0.2, n=None, mu=None):
+    def __init__(self, H, G0, U=0.0, mix=0.2, n=None, mu=None):
         self.U = U
         self.mix = mix
         self.n = n
@@ -30,7 +30,7 @@ class Bubble_DMFTSolver:
 
         self.Bubble = BubbleSolver(self.G0.obj_wk, U, mix=mix, n=n, mu=mu)
         mu = self.Bubble.find_mu_for_density(n)
-        self.IPT = IPTSolver(self.beta, None, mix=mix, w_max=self.w_max, eps=self.eps, mu=mu)
+        self.IPT = IPTSolver(self.beta, H, mix=mix, w_max=self.w_max, eps=self.eps, mu=mu)
 
         DLR_b = MeshDLRImFreq(beta=self.beta, statistic='Boson', w_max=self.w_max, eps=self.eps)
 
@@ -72,9 +72,11 @@ class Bubble_DMFTSolver:
     def solve_Bubble_DMFT_diag(self, Bubble, IPT):
         # Step 1 - solve DMFT
         IPT.loop(self.U) 
+        print("IPT) ", get_renorm(IPT.Sigma_imp, IPT.Sigma_imp.w_points))
 
         # Step 2 - construct G(k,iw)
-        new_Sigma_k = add_local_to_nonlocal(self.Sigma_nonloc, IPT.Sigma_imp)
+        self.Sigma_loc.obj_w.data[:] = IPT.Sigma_imp.obj_w.data - self.Sigma_loc.obj_w.data
+        new_Sigma_k = add_local_to_nonlocal(self.Sigma_nonloc, self.Sigma_loc)
         self.Sigma_k.obj_wk.data[:] = self.mix * new_sigma_k.obj_wk.data + (1.0 - self.mix) * self.Sigma_k.obj_wk.data
         Bubble.Sigma = self.Sigma_k.copy()
         Bubble.make_G(self.mu)
@@ -87,6 +89,7 @@ class Bubble_DMFTSolver:
         # Step 4 - Find Σ^(2)[G]
         Bubble.get_local_G()
         self.Sigma_loc = IPT.get_IPT_Sigma(self.U, Bubble.G_loc)
+        print("SOPT) ", get_renorm(IPT.Sigma_loc, IPT.Sigma_loc.w_points))
         self.Sigma_loc.obj_w.data[:] = IPT.Sigma_imp.obj_w.data - self.Sigma_loc.obj_w.data
 
         # Step 5 - Make Σ(k,iw)
