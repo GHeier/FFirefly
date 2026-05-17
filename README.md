@@ -32,7 +32,7 @@ The Ffirefly project consists of the base executable and additional methods. The
 
 Make sure you add /usr/local/lib to your $LD_LIBRARY_PATH for ease of compilation. 
 
-#### **1️⃣  Required Packages**  
+#### 1. Required Packages
 To install the base C/C++ packages, run 
 
 ```bash
