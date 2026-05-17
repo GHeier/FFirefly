@@ -1,22 +1,21 @@
 # Ffirefly
 
 [🚀 Welcome](#-welcome)
-
 [📦 Installation](#-installation)
-
 [📖 User Guide](#-user-guide)
-
 [📚 Developer Guide](#-developer-guide)
-
 [🧪 Testing](#-testing)
-
 [📝 Documentation](#-documentation)
 
 
 ---
 
 ## **🚀 Welcome**  
-Firefly is a computational physics workspace for condensed matter research. It provides ready-to-use algorithms, simple input-driven workflows, and a modular structure that makes it easy for anyone to add new models and solvers, connect them to existing calculations, and build large computational pipelines.
+Firefly is a computational physics workspace for condensed matter research. It provides
+
+- Ready-to-use algorithms
+- Simple input-driven workflows
+- A modular structure that makes it easy for anyone to add new models and solvers, connect them to existing calculations, and build large computational pipelines.
 
 ### **🔹 Current Computational Areas**
 - **Electronic Structure**: Bands, Density of States, and Fermi Surface Calculations
