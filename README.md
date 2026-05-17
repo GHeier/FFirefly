@@ -1,11 +1,11 @@
 # Ffirefly
 
-- [🚀 Welcome](#-welcome)
-- [📦 Installation](#-installation)
-- [📖 User Guide](#-user-guide)
-- [📚 Developer Guide](#-developer-guide)
-- [🧪 Testing](#-testing)
-- [📝 Documentation](#-documentation)
+[🚀 Welcome](#-welcome)
+[📦 Installation](#-installation)
+[📖 User Guide](#-user-guide)
+[📚 Developer Guide](#-developer-guide)
+[🧪 Testing](#-testing)
+[📝 Documentation](#-documentation)
 
 ---
 
