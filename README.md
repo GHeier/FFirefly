@@ -1,11 +1,11 @@
 # Ffirefly
 
-- [Welcome](#-welcome)
-- [Installation](#-installation)
-- [User Guide](#-user-guide)
-- [Developer Guide](#-developer-guide)
-- [Testing](#testing)
-- [Documentation](#documentation)
+- [🚀 Welcome](#-welcome)
+- [📦 Installation](#-installation)
+- [📖 User Guide](#-user-guide)
+- [📚 Developer Guide](#-developer-guide)
+- [🧪 Testing](#-testing)
+- [📝 Documentation](#-documentation)
 
 ---
 
@@ -27,7 +27,7 @@ Firefly is a computational physics workspace for condensed matter research. It p
 #### [Developer Documentation](./docs/Developer.md)
 
 ---
-### **🔹 Installation**  
+## **📦 Installation**  
 The Ffirefly project consists of the base executable and additional methods. The base package uses C/C++, with the python and julia packages used for various methods.
 
 Make sure you add /usr/local/lib to your $LD_LIBRARY_PATH for ease of compilation. 
@@ -206,7 +206,7 @@ Your code has access to config variables (from the input file). There are exampl
 
 ---
 
-## Testing
+## **🧪 Testing**
 
 Ffirefly is designed to make testing easy across all calculation categories. Good tests can save a lot of time by catching mistakes early.
 
@@ -233,7 +233,7 @@ The goal is to confirm that the calculation is working without making the test s
 
 ---
 
-## Documentation
+## **📝 Documentation**
 
 When adding a new category, update your local `README.md` file. The `Quick Description` will be seen in the `User.md` file guide.
 
