@@ -23,7 +23,7 @@ The Ffirefly project consists of the base executable and additional methods. The
 Make sure you add /usr/local/lib to your $LD_LIBRARY_PATH for ease of compilation. 
 
 #### **1️⃣  Required Packages**  
-For the base install to work, all that is needed is C/C++ packages. Install before following the Build Instructions. Those packages are:
+For the base install to work, the below C/C++ packages are needed. Install before following the Build Instructions
 | C/C++      |
 |:--------:|
 | gcc      |
@@ -53,9 +53,6 @@ The complete list of packages required for the various methods are below. These 
 | tbmodels   | PencilFFTs        |            |
 |            | LoopVectorization |            |
 |            |                   |            |
-|            |                   |            |
-|            |                   |            |
-|            |                   |            |
 
 ---
 
@@ -82,7 +79,7 @@ The complete list of packages required for the various methods are below. These 
 
    Replace `/path/to/FFirefly` with the path to your local Ffirefly installation.
 
-> **Developer notes:** You should add fly.x to your list of commands. In bash, this can be done with 
+> **Developer notes:** You should make fly.x custom terminal command. In bash, this can be done with 
 
    ```bash
    nano ~/.bashrc
@@ -91,7 +88,7 @@ The complete list of packages required for the various methods are below. These 
 
    Replace /pathto with the path to fly.x in build/bin
 
-> If you rebuild often, it may be useful to add `fly-build.sh` as a custom terminal command. This lets you recompile Ffirefly from any directory while testing code or running material calculations.
+> If you rebuild often, it may be useful to add `fly-build.sh` as a custom terminal command as well. This lets you recompile Ffirefly from any directory while testing code or running material calculations.
 
 > For fly-build.sh, the `-v` and `-vv` flags control the verbosity of the build output. For a first build, `-vv` is recommended because it makes compilation errors easier to diagnose.
 
