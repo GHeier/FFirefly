@@ -23,36 +23,31 @@ The Ffirefly project consists of the base executable and additional methods. The
 Make sure you add /usr/local/lib to your $LD_LIBRARY_PATH for ease of compilation. 
 
 #### **1️⃣  Required Packages**  
-For the base install to work, the below C/C++ packages are needed. Install before following the Build Instructions
-| C/C++      |
-|:--------:|
-| gcc      |
-| g++      |
-| Cmake    |
-| BLAS     |
-| openBLAS |
-| LAPACK   |
-| LAPACKE  |
-| Ninja    |
-| OpenMP   |
-| ccache   |
-| Boost    |
-| pybind   |
-| hdf5     |
+To install the base C/C++ packages, run 
 
-The complete list of packages required for the various methods are below. These are not needed for base functionality. Install as needed, after confirming download works.
+```bash
+cd scripts
+chmod +x install.sh
+./install.sh
+```
+```
+```
 
-| Python     | Julia             | Fortran    |
-|:----------:|:-----------------:|:----------:|
-| numpy      | PyCall            | gfortran   |
-| scipy      | CUDA              | libtetrabz |
-| matplotlib | FFTW              |            |
-| h5py       | Roots             |            |
-| sparse_ir  | SparseIR          |            |
-| pandas     | MPI               |            |
-| tbmodels   | PencilFFTs        |            |
-|            | LoopVectorization |            |
-|            |                   |            |
+This will install the packages sufficient for base functionality. The complete list of packages for all solvers are below.
+| Python     | Julia             | C++      | Fortran    | C    |
+|:----------:|:-----------------:|:--------:|:----------:|:----:|
+| numpy      | PyCall            | g++      | gfortran   | gcc  |
+| scipy      | CUDA              | Cmake    | libtetrabz |      |
+| matplotlib | FFTW              | BLAS     |            |      |
+| h5py       | Roots             | openBLAS |            |      |
+| sparse_ir  | SparseIR          | LAPACK   |            |      |
+| pandas     | MPI               | LAPACKE  |            |      |
+| tbmodels   | PencilFFTs        | Ninja    |            |      |
+|            | LoopVectorization | OpenMP   |            |      |
+|            |                   | ccache   |            |      |
+|            |                   | Boost    |            |      |
+|            |                   | pybind   |            |      |
+|            |                   | hdf5     |            |      |
 
 ---
 
@@ -96,30 +91,279 @@ The complete list of packages required for the various methods are below. These 
 ---
 
 ## **📖 User Guide**  
-The simplest way to use Ffirefly is to create a .cfg input file and run fly.x with the command `fly.x < input_file.cfg`. An example input can be seen in the file `sample.cfg`, which shows the proper formatting. 
 
-    `category` indicates the type of calculation to be performed, 
-    with a separate section called [CATEGORY_NAME] for inputs.
-    "prefix" is the filename prefix for files read and written by this program. 
-    Any custom datasets to be read by Ffirefly MUST be named in the format of 'prefix_filetype.dat', so a density of states calculation should be called 'prefix_dos.dat' and so on. Output files are saved following the same naming convention.
-    Sequential calculations may be run using '+' signs between each specified category.
+The easiest way to run Ffirefly is with a `.cfg` input file:
 
-A python wrapper is also available to run multiple sequential calculations.  
-This wrapper comes with a launcher and data extracters for every calculation type, making it easy to create sets of calculations and extract the data at every step. This can be useful, for instance, to calculate the phase across a range of temperatures and chemical potentials. An example of this can be seen in scripts/eliashberg.py.
+```bash
+fly.x < input_file.cfg
+```
+
+A basic example is provided in
+
+```bash
+sample.cfg
+```
+
+Use this file as a reference for the expected input format.
+
+### Input File Structure
+
+Each input file should specify a `category`, which tells Ffirefly what type of calculation to run.
+
+For each category, the input file should also include a matching section:
+
+```cfg
+category = CATEGORY_NAME
+
+[CATEGORY_NAME]
+...
+```
+
+For example, if the category is `superconductor`, then the input file should include a section called
+
+```cfg
+[superconductor]
+```
+
+This section contains the input variables for that calculation.
+
+### File Prefixes
+
+The `prefix` variable controls the names of files that Ffirefly reads and writes.
+
+Input datasets should follow the format
+
+```bash
+prefix_filetype.dat
+```
+
+For example, if
+
+```cfg
+prefix = hg1201
+```
+
+then a density of states file should be named
+
+```bash
+hg1201_dos.dat
+```
+
+Output files follow the same naming convention.
+
+### Sequential Calculations
+
+Multiple calculations can be run in sequence by joining categories with `+`.
+
+For example:
+
+```cfg
+category = bands+dos+superconductor
+```
+
+This tells Ffirefly to run each calculation in order.
+
+### Python Wrapper
+
+Ffirefly also provides a Python wrapper for running sequential calculations.
+
+The wrapper includes launchers and data extractors for each calculation type, making it easier to automate workflows and collect results at each step.
+
+This is useful for parameter sweeps, such as calculating a phase diagram over many temperatures and chemical potentials.
+
+An example can be found in
+
+```bash
+scripts/eliashberg.py
+```
 
 ---
 
 ## **📚 Developer Guide**
-In src/, there are folders for each category of calculation, with subfolders as needed. If you are adding a new category, simply create a new folder in src/ and add a new file for the calculation. After your folder has been created, add a "node" that connects main.c to your calculation folder and make sure to call it within main.c. Finally, recompile the project with fly-build.sh. The main.c file handles the input file and calls the appropriate calculation function.
-An example of this in the superconductor/ folder in the `node.cpp` file. This file has a function called superconductor_wrapper(), which determines the type of calculation to be performed. main.c calls this superconductor_wrapper() function if the category type is "superconductor". New categories should follow this format.
-If you do add new code to the project, the code must interact with the config file by modifying its behavior based on all relevant variables. Adding config variables is done in `src/config/input_variables.py`.
-   - It also must pass tests to confirm that it is working correctly and that the code still works upon future development. These tests must have a source, whether it be an analytical limit or a reference paper. This must be quick to run, so simply check that 1 or 2 points are correct rather than calculating an entire dense mesh.
 
-### **🔹 Testing**  
- This project encourages good coding practice by giving easy access to all tests across all projects. By setting up simple tests prior to running large calculations, you can save yourself a lot of time and headache. In Ffirefly, it is easy to set up and run new tests.
- - To run all existing tests, simply run "fly.x". The tests will run, and the ones that fail will be printed. 
- - To add tests to the test suite, make a "tests/" folder in your category folder. In this new folder, create "all.cpp" and "all.hpp", copying the format shown in src/objects/tests/all.cpp. This file stores a bool array of all test results, and runs "print_test_results" to display them. Replace the tests with your own, and link the function in main.c. Don't forget to update num_tests to the correct number of tests you run.
- - These tests will run when `fly.x` is executed with no arguments.
+The source code is organized by calculation category.
 
-### **🔹 Documentation**
-When adding a new category, describe what it does and how it works in the User.md file. Include the relevant input and outputs, both datafiles and config variables. 
+Each main category has its own folder inside
+
+```bash
+src/
+```
+
+For example:
+
+```bash
+src/superconductor/
+src/many_body/
+src/hamiltonian/
+```
+
+Additional subfolders can be added inside each category as needed.
+
+### Adding a New Category
+
+To add a new calculation category:
+
+1. Create a new folder inside `src/`.
+
+   For example:
+
+   ```bash
+   src/new_category/
+   ```
+
+2. Add the source files for the new calculation.
+
+3. Add a `node.cpp` file that connects the new category to the main Ffirefly executable.
+
+4. Make sure the new category is called from `main.c`.
+
+5. Recompile the project with
+
+   ```bash
+   fly-build.sh
+   ```
+
+The `main.c` file reads the input file, determines which category was requested, and calls the appropriate wrapper function.
+
+### Category Nodes
+
+Each category should have a node file that decides which calculation inside that category should be run.
+
+For example, the `superconductor/` folder contains
+
+```bash
+src/superconductor/node.cpp
+```
+
+This file defines a function called
+
+```cpp
+superconductor_wrapper()
+```
+
+The `main.c` file calls `superconductor_wrapper()` whenever the input file specifies
+
+```cfg
+category = superconductor
+```
+
+New categories should follow this same structure.
+
+### Config Variables
+
+New code should interact with the Ffirefly config system.
+
+If your calculation needs new input variables, add them in
+
+```bash
+src/config/input_variables.py
+```
+
+Your code should read the relevant config variables and modify its behavior accordingly.
+
+Do not hard-code values that should be controlled by the input file.
+
+---
+
+## Testing
+
+Ffirefly is designed to make testing easy across all calculation categories.
+
+Before running large calculations, you should add small tests that check whether the code is working correctly. Good tests can save a lot of time by catching mistakes early.
+
+### Running Tests
+
+To run all existing tests, simply run
+
+```bash
+fly.x
+```
+
+When `fly.x` is run with no input file, the default test suite is executed.
+
+If any tests fail, Ffirefly will print which tests failed.
+
+### Adding Tests
+
+To add tests for a new category, create a `tests/` folder inside the category folder.
+
+For example:
+
+```bash
+src/new_category/tests/
+```
+
+Inside this folder, create
+
+```bash
+all.cpp
+all.hpp
+```
+
+Use the format in
+
+```bash
+src/objects/tests/all.cpp
+```
+
+as a template.
+
+The test file should store the results of each test in a boolean array and call
+
+```cpp
+print_test_results
+```
+
+to display the results.
+
+Make sure to update
+
+```cpp
+num_tests
+```
+
+so that it matches the number of tests being run.
+
+Finally, link the test function in `main.c` so that it runs when
+
+```bash
+fly.x
+```
+
+is executed with no input file.
+
+### Test Requirements
+
+Tests should be quick to run.
+
+A good test should check one or two representative points, not an entire dense mesh.
+
+Each test should also have a clear reference. This can be:
+
+- an analytical limit,
+- a known exact result,
+- a comparison to a reference paper,
+- or a previously validated benchmark.
+
+The goal is to confirm that the calculation is working without making the test suite slow.
+
+---
+
+## Documentation
+
+When adding a new category, update
+
+```bash
+User.md
+```
+
+The documentation should explain:
+
+- what the category does,
+- how the calculation works at a basic level,
+- which config variables are required,
+- which input files are read,
+- which output files are written,
+- and how to run a simple example.
+
+New features should not be considered complete until they are documented and tested.
