@@ -1,7 +1,5 @@
 # Ffirefly
 
-## Table of Contents
-
 - [Welcome](#-welcome)
 - [Installation](#-installation)
 - [User Guide](#-user-guide)
