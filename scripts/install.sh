@@ -17,7 +17,7 @@ elif [ "$OS" = "Darwin" ]; then
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
 
-    brew install gcc cmake openblas lapack ninja libomp ccache boost pybind11 hdf5
+    /opt/homebrew/bin/brew install gcc cmake openblas lapack ninja libomp ccache boost pybind11 hdf5
 
 else
     echo "Unsupported OS: $OS"
