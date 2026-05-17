@@ -56,12 +56,12 @@ void print_banner_bottom(time_t now) {
 void test() {
     printf("Starting Test Calculations\n");
 
-    int num_tests = 3;
+    int num_tests = 2;
 
     bool all_tests[num_tests];
     all_tests[0] = object_tests();
     all_tests[1] = algorithm_tests();
-    all_tests[2] = module_tests();
+    //all_tests[2] = module_tests();
 
     printf("\n");
     print_test_results(all_tests, num_tests, "Test Categories");

@@ -18,29 +18,83 @@ Firefly is a computational physics workspace for condensed matter research. It p
 
 ---
 ### **🔹 Installation**  
-The Ffirefly project grants access to a wide variety of extremely powerful algorithms with a simple interface, but depends on many packages that are listed below. Make sure you add /usr/local/lib to your $LD_LIBRARY_PATH. 
+The Ffirefly project consists of the base executable and additional methods. The base package uses C/C++, with the python and julia packages used for various methods.
+
+Make sure you add /usr/local/lib to your $LD_LIBRARY_PATH for ease of compilation. 
 
 #### **1️⃣  Required Packages**  
-| Python     | Julia             | C++      | Fortran    | C    |
-|:----------:|:-----------------:|:--------:|:----------:|:----:|
-| numpy      | PyCall            | g++      | gfortran   | gcc  |
-| scipy      | CUDA              | Cmake    | libtetrabz |      |
-| matplotlib | FFTW              | BLAS     |            |      |
-| h5py       | Roots             | openBLAS |            |      |
-| sparse_ir  | SparseIR          | LAPACK   |            |      |
-| pandas     | MPI               | LAPACKE  |            |      |
-| tbmodels   | PencilFFTs        | Ninja    |            |      |
-|            | LoopVectorization | OpenMP   |            |      |
-|            |                   | ccache   |            |      |
-|            |                   | Boost    |            |      |
-|            |                   | pybind   |            |      |
-|            |                   | hdf5     |            |      |
+For the base install to work, all that is needed is C/C++ packages. Install before following the Build Instructions. Those packages are:
+| C/C++      |
+|:--------:|
+| gcc      |
+| g++      |
+| Cmake    |
+| BLAS     |
+| openBLAS |
+| LAPACK   |
+| LAPACKE  |
+| Ninja    |
+| OpenMP   |
+| ccache   |
+| Boost    |
+| pybind   |
+| hdf5     |
+
+The complete list of packages required for the various methods are below. These are not needed for base functionality. Install as needed, after confirming download works.
+
+| Python     | Julia             | Fortran    |
+|:----------:|:-----------------:|:----------:|
+| numpy      | PyCall            | gfortran   |
+| scipy      | CUDA              | libtetrabz |
+| matplotlib | FFTW              |            |
+| h5py       | Roots             |            |
+| sparse_ir  | SparseIR          |            |
+| pandas     | MPI               |            |
+| tbmodels   | PencilFFTs        |            |
+|            | LoopVectorization |            |
+|            |                   |            |
+|            |                   |            |
+|            |                   |            |
+|            |                   |            |
 
 ---
-#### **2️⃣ Build Instructions**  
- 1) Go to the "scripts" folder and run "./fly-build.sh -vv" to build the code. -v indicates a verbose output, -vv indicates a very verbose output, and a -v option exists for regular verbosity. However, for the first time building, using -vv is recommended in the event of an error. If you are a dev, I recommend setting fly-build.sh to a custom terminal command, so recompilation can be done from outside folders. This may be useful while running tests and material calculations.
- 2) To ensure Ffirefly has been properly installed, simply run "fly.x". The default tests will run, and if all pass, then you have downloaded the packages correctly. If not, the package that failed will be listed.
- 3) For categories that use julia, precompile packages with "julia --project=~/Research/FFirefly/jlpkg/Firefly -e 'using Pkg; Pkg.Registry.update(); Pkg.instantiate(); Pkg.precompile()'"
+
+#### 2. Build Instructions
+
+1. From the `scripts/` directory, build Ffirefly with
+
+   ```bash
+   ./fly-build.sh -vv
+   ```
+
+2. After building, confirm all tests pass by running
+
+   ```bash
+   cd build/bin
+   ./fly.x
+   ```
+
+3. Some Ffirefly modules use Julia. To precompile the Julia environment, run
+
+   ```bash
+   julia --project=/path/to/FFirefly/jlpkg/Firefly -e 'using Pkg; Pkg.Registry.update(); Pkg.instantiate(); Pkg.precompile()'
+   ```
+
+   Replace `/path/to/FFirefly` with the path to your local Ffirefly installation.
+
+> **Developer notes:** You should add fly.x to your list of commands. In bash, this can be done with 
+
+   ```bash
+   nano ~/.bashrc
+   alias fly.x="/pathto/fly.x"
+   ```
+
+   Replace /pathto with the path to fly.x in build/bin
+
+> If you rebuild often, it may be useful to add `fly-build.sh` as a custom terminal command. This lets you recompile Ffirefly from any directory while testing code or running material calculations.
+
+> For fly-build.sh, the `-v` and `-vv` flags control the verbosity of the build output. For a first build, `-vv` is recommended because it makes compilation errors easier to diagnose.
+
 
 ---
 
