@@ -1,4 +1,27 @@
 # Ffirefly
+
+## Table of Contents
+
+- [Welcome](#-welcome)
+- [Installation](#-installation)
+  - [Required Packages](#1️⃣--required-packages)
+  - [Build Instructions](#2-build-instructions)
+- [User Guide](#-user-guide)
+  - [Input File Structure](#input-file-structure)
+  - [File Prefixes](#file-prefixes)
+  - [Sequential Calculations](#sequential-calculations)
+  - [Python Wrapper](#python-wrapper)
+- [Developer Guide](#-developer-guide)
+  - [Adding a New Category](#adding-a-new-category)
+  - [Category Nodes](#category-nodes)
+  - [Config Variables](#config-variables)
+- [Testing](#testing)
+  - [Running Tests](#running-tests)
+  - [Test Requirements](#test-requirements)
+- [Documentation](#documentation)
+
+---
+
 ## **🚀 Welcome**  
 Firefly is a computational physics workspace for condensed matter research. It provides ready-to-use algorithms, simple input-driven workflows, and a modular structure that makes it easy for anyone to add new models and solvers, connect them to existing calculations, and build large computational pipelines.
 
