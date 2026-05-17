@@ -31,7 +31,6 @@ chmod +x install.sh
 ./install.sh
 ```
 ```
-```
 
 This will install the packages sufficient for base functionality. The complete list of packages for all solvers are below.
 | Python     | Julia             | C++      | Fortran    | C    |
