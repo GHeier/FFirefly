@@ -2,37 +2,38 @@
 
 ## Overview
 
-Brief overview of what this calculation does and its purpose in the FFirefly framework.
+Calculates the electronic density of states (DOS) using the tetrahedron integration method. This approach divides the Brillouin zone into tetrahedra and analytically integrates the band structure to obtain the DOS at each energy point. Also computes the integrated electron number as a function of chemical potential.
 
 ## Quick Description
 
-One sentence description of the method/algorithm used. Example: "This solves the superconducting gap equation, and returns the leading eigenvalue/eigenvector"
+Computes the Density of States using surface construction at discrete w-points.
 
 ## Dependencies
 
 ### Required
-- List required dependencies (e.g., LAPACK, HDF5, etc.)
-- Python/Julia packages if applicable
+- Band structure model (tight_binding or fermi_gas)
+- LAPACK/OpenBLAS for linear algebra
+- HDF5 for output
 
 ### Optional
-- Optional dependencies that enable additional features
+- None
 
 ## Install Instructions
 
 ```bash
-# Any special installation steps
-# If none needed, say "No special installation required - built automatically by fly-build.sh"
+# No special installation required - built automatically by fly-build.sh
 ```
 
 ## Results Saved
 
 Output files created by this calculation (using `prefix` from config):
 
-- `{prefix}_output1.{ext}` - Description of what this file contains
-- `{prefix}_output2.{ext}` - Description of what this file contains
+- `{outdir}/{prefix}_DOS.h5` - Density of states D(E) vs energy
+- `{outdir}/{prefix}_E_vs_n.h5` - Integrated electron number n(E) vs chemical potential
 
 File format details:
-- Specify HDF5 structure, column formats, etc.
+- Both files are 1D real fields stored in HDF5 format
+- Energy grid spans from band minimum to maximum with `w_pts` points
 
 ## Testing
 
@@ -41,23 +42,19 @@ Run the test suite:
 fly.x  # Runs all tests including this one
 ```
 
-Or test this specific method:
-```bash
-# Include specific test command if applicable
-```
-
 Expected test behavior:
-- What the test validates
-- Expected return value or output
+- For 3D tight-binding at half-filling, DOS should show van Hove singularities
+- Integrated electron number should equal 1.0 at the band center for half-filled single band
 
 ## Calculation Details
 
 ### Algorithm
 
-Detailed description of the algorithm:
-1. Step 1
-2. Step 2
-3. etc.
+1. Determine energy range from band structure minimum/maximum across k-mesh
+2. Create energy grid with `w_pts` points spanning the band range
+3. For each energy point E, compute the constant-energy surface (isoenergy contour)
+4. Integrate over the surface using: DOS(E) = (1/(2π)^d) * ∫ dS / |∇ε(k)|
+5. Compute cumulative electron number by integrating DOS over energy
 
 ### Parameters
 
@@ -65,16 +62,18 @@ Configuration parameters from `input.cfg`:
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `param1` | float | 0.0 | Description |
-| `param2` | int | 100 | Description |
+| `k_mesh` | int[3] | - | k-point mesh dimensions [nx, ny, nz] |
+| `dimension` | int | 3 | Spatial dimensionality (1, 2, or 3) |
+| `w_pts` | int | 500 | Number of energy points for DOS |
+| `fermi_energy` | float | 0.0 | Fermi level in eV |
 
 ### Implementation Notes
 
-- Any important implementation details
-- Performance considerations
-- Known limitations
+- Uses tetrahedron interpolation for smooth DOS without artificial broadening
+- Van Hove singularities are captured accurately
+- More efficient than Gaussian smearing for large k-meshes
 
 ## References
 
-1. Author et al., "Paper Title", Journal Volume, Pages (Year). DOI/arXiv
-2. Additional references as needed
+1. P. E. Blochl, O. Jepsen, and O. K. Andersen, "Improved tetrahedron method for Brillouin-zone integrations", Phys. Rev. B 49, 16223 (1994).
+2. G. Lehmann and M. Taut, "On the Numerical Calculation of the Density of States and Related Properties", Phys. Status Solidi B 54, 469 (1972).

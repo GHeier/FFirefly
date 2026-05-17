@@ -2,54 +2,69 @@
 
 ## Overview
 
-Brief overview of what this calculation does and its purpose in the FFirefly framework.
+Solves the frequency-dependent BCS gap equation using Hierarchical Matrix (H-Matrix) compression combined with Lanczos iteration. This method includes Matsubara frequency dependence in the pairing kernel while maintaining computational efficiency through low-rank approximations of the interaction matrix blocks.
 
 ## Quick Description
 
-One sentence description of the method/algorithm used. Example: "This solves the superconducting gap equation, and returns the leading eigenvalue/eigenvector"
+Solves the linearized BCS gap equation across the Fermi Surface using compressed Hierarchical Matrices and a lanczos matrix solver.
 
 ## Dependencies
-- List required dependencies (e.g., LAPACK, HDF5, etc.)
-- Python/Julia packages if applicable
+
+- HMatrices.jl for hierarchical matrix operations
+- LinearAlgebra for eigenvalue computations
+- Firefly Field classes for data I/O
+- HDF5 for file storage
 
 ## Install Instructions
 
-Download {package} from conda
+```julia
+using Pkg
+Pkg.add("HMatrices")
+```
 
 ### Parameters
 
 Configuration parameters from `input.cfg`:
 
-param1 - how it is used by code
-param2 - how it is used by code
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `k_mesh` | int[3] | - | k-point mesh dimensions |
+| `w_pts` | int | 100 | Number of Matsubara frequencies |
+| `Temperature` | float | 0.01 | Temperature T in eV |
+| `fermi_energy` | float | 0.0 | Chemical potential μ |
+| `compression_tol` | float | 1e-6 | H-matrix compression tolerance |
 
 ## Results Saved
 
-- `{outdir}_{prefix}_output1.{ext}` - Description of what this file contains
-- `{outdir}_{prefix}_output2.{ext}` - Description of what this file contains
+- `{outdir}/{prefix}_gap.h5` - Gap function Δ(k,iω_n)
+- `{outdir}/{prefix}_eigenvalue.dat` - Leading eigenvalue and T_c estimate
 
 ## Testing
 
 Expected test behavior:
-- What the test validates
-- Expected return value or output
+- For constant vertex V(k,iω) = V₀, should recover standard BCS result
+- Eigenvalue should converge with increasing w_pts
+- H-matrix compression should achieve significant memory savings for large systems
 
 ## Calculation Details
 
 ### Algorithm
 
-Description of the algorithm:
-1. Step 1
-2. Step 2
-3. etc.
+1. Generate Fermi surface points and Matsubara frequency grid
+2. Construct pairing kernel K(k,iω; k',iω') including frequency dependence
+3. Compress kernel into H-matrix format using adaptive cross approximation
+4. Apply Lanczos iteration to find largest eigenvalue of compressed kernel
+5. Extract gap function from dominant eigenvector
+6. Estimate T_c from eigenvalue crossing λ = 1
 
 ### Implementation Notes
 
-- Any important implementation details
-- Performance considerations
-- Known limitations
+- H-matrix compression reduces O(N²) storage to O(N log N)
+- Particularly effective when interaction is smooth in momentum space
+- Compression tolerance controls accuracy vs memory tradeoff
+- Frequency dependence important for retardation effects
 
 ## References
 
-1. Author et al., "Paper Title", Journal Volume, Pages (Year). DOI/arXiv
-2. Additional references as needed
+1. W. Hackbusch, "Hierarchical Matrices: Algorithms and Analysis", Springer (2015).
+2. S. Borm, L. Grasedyck, and W. Hackbusch, "Introduction to hierarchical matrices with applications", Eng. Anal. Bound. Elem. 27, 405 (2003).

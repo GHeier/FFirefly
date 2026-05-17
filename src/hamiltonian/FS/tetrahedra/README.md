@@ -2,7 +2,7 @@
 
 ## Overview
 
-Brief overview of what this calculation does and its purpose in the FFirefly framework.
+Generates the Fermi surface (FS) - the locus of k-points where the band energy equals the Fermi level. Uses tetrahedron interpolation to construct a smooth surface representation with associated area elements and Fermi velocities. The output is used by many-body and superconductor calculations that integrate over the Fermi surface.
 
 ## Quick Description
 
@@ -11,28 +11,29 @@ One or two sentence description of the method/algorithm used.
 ## Dependencies
 
 ### Required
-- List required dependencies (e.g., LAPACK, HDF5, etc.)
-- Python/Julia packages if applicable
+- Band structure model (tight_binding or fermi_gas)
+- Tetrahedron integration algorithm
+- HDF5 for output (optional)
 
 ### Optional
-- Optional dependencies that enable additional features
+- None
 
 ## Install Instructions
 
 ```bash
-# Any special installation steps
-# If none needed, say "No special installation required - built automatically by fly-build.sh"
+# No special installation required - built automatically by fly-build.sh
 ```
 
 ## Results Saved
 
 Output files created by this calculation (using `prefix` from config):
 
-- `{prefix}_output1.{ext}` - Description of what this file contains
-- `{prefix}_output2.{ext}` - Description of what this file contains
+- `{outdir}/{prefix}_FS.dat` - Fermi surface k-points in text format
 
 File format details:
-- Specify HDF5 structure, column formats, etc.
+- ASCII file with columns: `kx ky [kz] band_index`
+- Each row is a k-point on the Fermi surface
+- For 2D systems, kz column is omitted
 
 ## Testing
 
@@ -41,23 +42,21 @@ Run the test suite:
 fly.x  # Runs all tests including this one
 ```
 
-Or test this specific method:
-```bash
-# Include specific test command if applicable
-```
-
 Expected test behavior:
-- What the test validates
-- Expected return value or output
+- For 3D tight-binding at half-filling, should produce a connected surface
+- For 2D square lattice at half-filling, should produce a diamond-shaped contour
+- Total FS area should match analytical expectations for simple models
 
 ## Calculation Details
 
 ### Algorithm
 
-Detailed description of the algorithm:
-1. Step 1
-2. Step 2
-3. etc.
+1. Load band structure parameters and compute ε(k) on k-mesh
+2. Divide Brillouin zone into tetrahedra
+3. For each tetrahedron, find intersection with ε(k) = μ using linear interpolation
+4. Collect all intersection points to form the Fermi surface
+5. Compute surface area elements dA and Fermi velocities v_F = |∇ε(k)|
+6. Save k-points with metadata (area, band index)
 
 ### Parameters
 
@@ -65,16 +64,18 @@ Configuration parameters from `input.cfg`:
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `param1` | float | 0.0 | Description |
-| `param2` | int | 100 | Description |
+| `k_mesh` | int[3] | - | k-point mesh dimensions [nx, ny, nz] |
+| `dimension` | int | 3 | Spatial dimensionality (1, 2, or 3) |
+| `fermi_energy` | float | 0.0 | Fermi level μ in eV |
+| `nbnd` | int | 1 | Number of bands to include |
 
 ### Implementation Notes
 
-- Any important implementation details
-- Performance considerations
-- Known limitations
+- Finer k-mesh produces smoother Fermi surface representation
+- Multiple bands may contribute separate Fermi surface sheets
+- Area elements are used for proper weighting in FS integrals
+- Fermi velocity is stored for DOS and transport calculations
 
 ## References
 
-1. Author et al., "Paper Title", Journal Volume, Pages (Year). DOI/arXiv
-2. Additional references as needed
+1. P. E. Blochl, O. Jepsen, and O. K. Andersen, "Improved tetrahedron method for Brillouin-zone integrations", Phys. Rev. B 49, 16223 (1994).
