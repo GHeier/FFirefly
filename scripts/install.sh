@@ -12,12 +12,14 @@ if [ "$OS" = "Linux" ]; then
 elif [ "$OS" = "Darwin" ]; then
     echo "Detected macOS — using Homebrew..."
 
-    if ! command -v brew &>/dev/null; then
+    BREW=/opt/homebrew/bin/brew
+
+    if ! command -v "$BREW" &>/dev/null; then
         echo "Homebrew not found. Installing Homebrew first..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
 
-    /opt/homebrew/bin/brew install gcc cmake openblas lapack ninja libomp ccache boost pybind11 hdf5
+    $BREW install gcc cmake openblas lapack ninja libomp ccache boost pybind11 hdf5
 
 else
     echo "Unsupported OS: $OS"
