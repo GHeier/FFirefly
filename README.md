@@ -100,13 +100,13 @@ A basic example is provided in `sample.cfg`. Use this file as a reference for th
 
 ### Input File Structure
 
-Each input file should specify a `category`, which tells Ffirefly what type of calculation to run. Each category corresponds to a `calculation` type and `method` choice.
+Each input file should specify a `category`, `calculation` type and `method` choice. This tells the executable what project to run.
 
 ### File Prefixes
 
 The `prefix` variable controls the names of files that Ffirefly reads and writes.
 
-Input datasets should follow the format
+Input & output datasets should follow the format
 
 ```bash
 outdir/prefix_filetype.h5
@@ -124,8 +124,6 @@ then a density of states file should be named
 data/hg1201_dos.h5
 ```
 
-Output files follow the same naming convention.
-
 ### Sequential Calculations
 
 Multiple calculations can be run in sequence by joining categories with `+`.
@@ -140,9 +138,9 @@ This tells Ffirefly to run each calculation in order.
 
 ### Python Wrapper
 
-Ffirefly also provides a Python wrapper for running sequential calculations.
+Ffirefly also provides a Python wrapper for running sequential calculations. The wrapper includes launchers and grep functions to read command line output. 
 
-The wrapper includes launchers and grep functions to read command line output. This is useful for parameter sweeps, such as calculating a phase diagram over many temperatures and chemical potentials.
+This is useful for parameter sweeps, such as calculating a phase diagram over many temperatures and chemical potentials.
 
 An example can be found in
 
@@ -178,7 +176,11 @@ To add a new calculation category:
 
 ### Category Nodes
 
-Each project folder has `run`, `README.md`, and `tests/`. The `run` file is the one that is executed when calling `fly.x`, the `README.md` is your documentation, and `tests/` contains the testing file. This is helpful for personal testing of your code, and for others to confirm that your code works properly on their machine.
+Each project folder has `run`, `README.md`, and `tests/`. The `run` file is the one that is executed when calling `fly.x`, the `README.md` is your documentation, and `tests/` contains the testing file. 
+
+`tests/` is helpful for personal testing of your code, and for others to confirm that your code works properly on their machine.
+
+> Developer note: Run the `test` file in `tests/`, it's really helpful!
 
 ### Config Variables
 
@@ -188,15 +190,15 @@ If your calculation needs new input variables, add them in
 src/config/input_variables.py
 ```
 
-Your code should read the relevant config variables and modify its behavior accordingly. There are examples of this usage in every newly created project.
+and then run `python input_variables.py`
+
+Your code has access to config variables (from the input file). There are examples of how to access these config variables from your code in every newly created project.
 
 ---
 
 ## Testing
 
-Ffirefly is designed to make testing easy across all calculation categories.
-
-Before running large calculations, you should add small tests that check whether the code is working correctly. Good tests can save a lot of time by catching mistakes early.
+Ffirefly is designed to make testing easy across all calculation categories. Good tests can save a lot of time by catching mistakes early.
 
 ### Running Tests
 
@@ -208,9 +210,7 @@ To test beyond the default suite, navigate to a project's test folder and run th
 
 ### Test Requirements
 
-Tests should be quick to run.
-
-A good test should check one or two representative points, not an entire dense mesh.
+Ideal tests are quick to run. A good test should check one or two representative points, not an entire dense mesh.
 
 Each test should also have a clear reference. This can be:
 
