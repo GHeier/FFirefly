@@ -4,20 +4,9 @@
 
 - [Welcome](#-welcome)
 - [Installation](#-installation)
-  - [Required Packages](#1️⃣--required-packages)
-  - [Build Instructions](#2-build-instructions)
 - [User Guide](#-user-guide)
-  - [Input File Structure](#input-file-structure)
-  - [File Prefixes](#file-prefixes)
-  - [Sequential Calculations](#sequential-calculations)
-  - [Python Wrapper](#python-wrapper)
 - [Developer Guide](#-developer-guide)
-  - [Adding a New Category](#adding-a-new-category)
-  - [Category Nodes](#category-nodes)
-  - [Config Variables](#config-variables)
 - [Testing](#testing)
-  - [Running Tests](#running-tests)
-  - [Test Requirements](#test-requirements)
 - [Documentation](#documentation)
 
 ---
