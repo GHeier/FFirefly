@@ -96,34 +96,11 @@ The easiest way to run Ffirefly is with a `.cfg` input file:
 fly.x < input_file.cfg
 ```
 
-A basic example is provided in
-
-```bash
-sample.cfg
-```
-
-Use this file as a reference for the expected input format.
+A basic example is provided in `sample.cfg`. Use this file as a reference for the expected input format.
 
 ### Input File Structure
 
-Each input file should specify a `category`, which tells Ffirefly what type of calculation to run.
-
-For each category, the input file should also include a matching section:
-
-```cfg
-category = CATEGORY_NAME
-
-[CATEGORY_NAME]
-...
-```
-
-For example, if the category is `superconductor`, then the input file should include a section called
-
-```cfg
-[superconductor]
-```
-
-This section contains the input variables for that calculation.
+Each input file should specify a `category`, which tells Ffirefly what type of calculation to run. Each category corresponds to a `calculation` type and `method` choice.
 
 ### File Prefixes
 
@@ -132,19 +109,19 @@ The `prefix` variable controls the names of files that Ffirefly reads and writes
 Input datasets should follow the format
 
 ```bash
-prefix_filetype.dat
+outdir/prefix_filetype.h5
 ```
 
 For example, if
 
 ```cfg
-prefix = hg1201
+prefix = hg1201, outdir='./data'
 ```
 
 then a density of states file should be named
 
 ```bash
-hg1201_dos.dat
+data/hg1201_dos.h5
 ```
 
 Output files follow the same naming convention.
@@ -165,9 +142,7 @@ This tells Ffirefly to run each calculation in order.
 
 Ffirefly also provides a Python wrapper for running sequential calculations.
 
-The wrapper includes launchers and data extractors for each calculation type, making it easier to automate workflows and collect results at each step.
-
-This is useful for parameter sweeps, such as calculating a phase diagram over many temperatures and chemical potentials.
+The wrapper includes launchers and grep functions to read command line output. This is useful for parameter sweeps, such as calculating a phase diagram over many temperatures and chemical potentials.
 
 An example can be found in
 
@@ -187,69 +162,25 @@ Each main category has its own folder inside
 src/
 ```
 
-For example:
-
-```bash
-src/superconductor/
-src/many_body/
-src/hamiltonian/
-```
-
-Additional subfolders can be added inside each category as needed.
-
 ### Adding a New Category
 
 To add a new calculation category:
 
-1. Create a new folder inside `src/`.
+1. Go to `src/config` and edit `categories.py`, which stores all the categories, calculations, and methods.
 
-   For example:
+2. Add your category, calculation, and/or method as needed.
 
-   ```bash
-   src/new_category/
-   ```
+3. Run `python categories.py` to add files and folders
 
-2. Add the source files for the new calculation.
+4. Run `fly-build.sh` to recompile base package
 
-3. Add a `node.cpp` file that connects the new category to the main Ffirefly executable.
-
-4. Make sure the new category is called from `main.c`.
-
-5. Recompile the project with
-
-   ```bash
-   fly-build.sh
-   ```
-
-The `main.c` file reads the input file, determines which category was requested, and calls the appropriate wrapper function.
+5. Navigate to `src/{category}/{calculation}{method}` to see the setup of your project folder.
 
 ### Category Nodes
 
-Each category should have a node file that decides which calculation inside that category should be run.
-
-For example, the `superconductor/` folder contains
-
-```bash
-src/superconductor/node.cpp
-```
-
-This file defines a function called
-
-```cpp
-superconductor_wrapper()
-```
-
-The `main.c` file calls `superconductor_wrapper()` whenever the input file specifies
-
-```cfg
-category = superconductor
-```
-
-New categories should follow this same structure.
+Each project folder has `run`, `README.md`, and `tests/`. The `run` file is the one that is executed when calling `fly.x`, the `README.md` is your documentation, and `tests/` contains the testing file. This is helpful for personal testing of your code, and for others to confirm that your code works properly on their machine.
 
 ### Config Variables
-
-New code should interact with the Ffirefly config system.
 
 If your calculation needs new input variables, add them in
 
@@ -257,9 +188,7 @@ If your calculation needs new input variables, add them in
 src/config/input_variables.py
 ```
 
-Your code should read the relevant config variables and modify its behavior accordingly.
-
-Do not hard-code values that should be controlled by the input file.
+Your code should read the relevant config variables and modify its behavior accordingly. There are examples of this usage in every newly created project.
 
 ---
 
@@ -271,64 +200,11 @@ Before running large calculations, you should add small tests that check whether
 
 ### Running Tests
 
-To run all existing tests, simply run
+When `fly.x` is run with no input file, the default test suite is executed. If any tests fail, Ffirefly will print which tests failed.
 
-```bash
-fly.x
-```
+To test beyond the default suite, navigate to a project's test folder and run the test file. It will output success or failure based on the test conditions set by the developer.
 
-When `fly.x` is run with no input file, the default test suite is executed.
-
-If any tests fail, Ffirefly will print which tests failed.
-
-### Adding Tests
-
-To add tests for a new category, create a `tests/` folder inside the category folder.
-
-For example:
-
-```bash
-src/new_category/tests/
-```
-
-Inside this folder, create
-
-```bash
-all.cpp
-all.hpp
-```
-
-Use the format in
-
-```bash
-src/objects/tests/all.cpp
-```
-
-as a template.
-
-The test file should store the results of each test in a boolean array and call
-
-```cpp
-print_test_results
-```
-
-to display the results.
-
-Make sure to update
-
-```cpp
-num_tests
-```
-
-so that it matches the number of tests being run.
-
-Finally, link the test function in `main.c` so that it runs when
-
-```bash
-fly.x
-```
-
-is executed with no input file.
+> Developer note: This is very helpful for debugging, being able to have a constant set of tests to check when you change your code.
 
 ### Test Requirements
 
@@ -349,19 +225,15 @@ The goal is to confirm that the calculation is working without making the test s
 
 ## Documentation
 
-When adding a new category, update
+When adding a new category, update your local `README.md` file. The `Quick Description` will be seen in the `User.md` file guide.
 
-```bash
-User.md
-```
+The rest of the `README.md` is seen upon viewing, and should explain:
 
-The documentation should explain:
-
-- what the category does,
+- what the code does,
 - how the calculation works at a basic level,
 - which config variables are required,
 - which input files are read,
 - which output files are written,
-- and how to run a simple example.
+- and any dependencies (ie numpy)
 
-New features should not be considered complete until they are documented and tested.
+If all tests meet the conditions above, and documentation is filled out, your code may be added to the main repository for all to use.
