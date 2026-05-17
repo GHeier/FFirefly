@@ -60,58 +60,48 @@
 
 ---
 
+#### 🔸 `hamiltonian`
+
+- **DOS**
+  - [gaussian](src/hamiltonian/DOS/gaussian/README.md)
+  - [tetrahedra](src/hamiltonian/DOS/tetrahedra/README.md)
+- **FS**
+  - [tetrahedra](src/hamiltonian/FS/tetrahedra/README.md)
+- **generate**
+  - [hk_from_hr](src/hamiltonian/generate/hk_from_hr/README.md)
+
+---
+
+#### 🔸 `many_body`
+
+- **many_body**
+  - [sparse_ir](src/many_body/many_body/sparse_ir/README.md) - Performs FLEX calculations using DLR sparse_ir code, with the option of self-consistency
+  - [triqs](src/many_body/many_body/triqs/README.md) - Solves FLEX or FLEX+DMFT self-consistently with DLR calculations using matsubara frequencies at finite Temperature
+- **renormalization**
+  - [FS_approx](src/many_body/renormalization/FS_approx/README.md)
+  - [analytic](src/many_body/renormalization/analytic/README.md) - Calculates renormalization constant Z analytically based on the FLEX formula for self-energy
+  - [from_sigma](src/many_body/renormalization/from_sigma/README.md) - Calculates Z(k) based on the slope of Sigma(iω,k) at ω→0, using data from a previous self-energy calculation.
+- **response**
+  - [sparse_ir](src/many_body/response/sparse_ir/README.md) - Computes the non-interacting response function by constructing the Green's function from the band structure and performing the convolution χ(r,τ) = G(r,τ) · G(r,-τ).
+  - [tetrahedra](src/many_body/response/tetrahedra/README.md) - Calculates non-interacting response function chi0(w,q) using recursive tetrahedron method for BZ integration.
+- **self_energy**
+  - [sparse_ir](src/many_body/self_energy/sparse_ir/README.md) - Calculates Self-Energy from Vertex and non-interacting green's function. Takes the Vertex as input
+  - [triqs](src/many_body/self_energy/triqs/README.md) - Calculates the self-energy using Iterated Perturbation Theory (IPT) on the imaginary axis.
+- **vertex**
+  - [from_susceptibility](src/many_body/vertex/from_susceptibility/README.md) - Analytically calculates FLEX vertex from chi(q,w)
+
+---
+
 #### 🔸 `superconductor`
-- **Purpose**: Calculates superconducting gap size and symmetry.
-- **Options**:
-  - `method`:  
-    - `bcs` – Basic BCS approximation  
-        - Outputs `_gap.dat` file with gap values along surface
-    - `eliashberg` – Eliashberg theory
-        - Outputs `_gap.dat` file with gap values across brillouin zone
-  - `calculation`:  
-    - `diagonalization` – Direct diagonalization of gap functions  
-    - `projection` – Projection onto a predefined basis set
-  - `FS_only`:  
-    - `true` – Only compute gap on the Fermi surface  
-    - `false` – Compute over the entire Brillouin zone
+
+- **bcs**
+  - [convolution](src/superconductor/bcs/convolution/README.md)
+  - [matrix](src/superconductor/bcs/matrix/README.md)
+- **bcs_w**
+  - [hmatrix](src/superconductor/bcs_w/hmatrix/README.md)
+- **eliashberg**
+  - [convolution](src/superconductor/eliashberg/convolution/README.md) - Uses ARPACK's Lanczos eigensolver to find the leading eigenvalues of the Eliashberg kernel K, where Δ = λK[Δ], returning multiple eigenpairs to identify dominant and subdominant pairing symmetries.
+  - [hmatrix](src/superconductor/eliashberg/hmatrix/README.md) - Solves Eliashberg equation on real axis using HMatrix compression and Lanczos solver.
+  - [sparse_ir](src/superconductor/eliashberg/sparse_ir/README.md)
 
 ---
-
-#### 🔸 `response`
-! **Purpose**: Computes bare susceptibility.
-! **Options**:
-  ! `method`:  
-    ! `sparse_ir` – Uses sparse Matsubara frequencies (finite T; requires dense k-grid)  
-        - Outputs `_chi.dat` file with chi values across brillouin zone
-    ! `libtetrabz` – Uses analytic tetrahedra integration (0 K; allows sparse grid)  
-        - Outputs `_chi.dat` file with chi values across brillouin zone
-        ! ⚠️ *If you encounter "STOP NESTING", adjust the k-grid size.*
-  ! `dynamic`:  
-    ! `true` – Calculate and save data for finite $\omega$  
-    ! `false` – Only compute at $\omega = 0$
-  ! `wpts`:  
-    ! Number of Matsubara frequencies.  
-    ! `wpts = 1` calculates only at $i\omega = 0$.
-
----
-
-#### 🔸 `vertex`
-- **Purpose**: Calculates a specific two-particle vertex function.
-- **Options**:
-  - `interaction`:  
-    - `FLEX` – Computes the FLEX vertex; requires bare susceptibility file (`_chi.dat`)
-- Outputs `_vertex.dat` file with vertex values across brillouin zone
-
----
-
-#### 🔸 `DOS`
-- **Purpose**: Computes the Density of States.
-- **Options**:
-  - `method`:  
-    - `libtetrabz` – Analytic tetrahedra integration  
-    - `surface_sum` – Alternative method with comparable results
-  - w_pts:
-    - Number of energy points across bandwidth
-  - k_mesh
-    - Density of points when defining tetrahedra/surface points
-- Outputs `_DOS.dat` file with Density of States vs Energy

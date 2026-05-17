@@ -74,11 +74,18 @@ def run():
     kkpts = get_scattering_kpts(kpts).reshape(-1, dim)
 
     chi = fly.Field_R(outdir + prefix + "_chi.h5")
-    V = U**1 * chi(kkpts).reshape(npts, npts)
+    V = U**2 * Z * chi(kkpts).reshape(npts, npts)
 
     val = dA @ V @ dA / dos
-    print("lambda_z = ", val)
-    print("Quasiparticle Weight: ", 1 / (1+val))
+    #print("lambda_z = ", val)
+    #print("Quasiparticle Weight: ", 1 / (1+val))
+
+    Zk = fly.Field_C(outdir + prefix + "_renormalization.h5")
+    Zk = Zk(kkpts).reshape(npts, npts).real
+
+    Z_ave = dA @ Zk @ dA / dos
+    print("Quasiparticle Weight: ", Z_ave)
+    print("lambda_z = ", 1/Z_ave - 1)
 
 
     return val

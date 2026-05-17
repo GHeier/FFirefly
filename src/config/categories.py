@@ -62,7 +62,7 @@ CATEGORIES = {
 }
 
 if __name__ == "__main__":
-    from write import write_cmake, write_categories
+    from write import write_cmake, write_categories, write_user_docs
     # Run code generators when this file is executed
     print("=" * 60)
     print("FFirefly Category Code Generator")
@@ -78,7 +78,10 @@ if __name__ == "__main__":
     print("\n2. Generating CMakeLists.txt sections...")
     write_cmake.update_cmakelists(CATEGORIES)
 
-    # print("\n3. Generating category node files...")
+    print("\n3. Updating User.md with README descriptions...")
+    write_user_docs.write(CATEGORIES)
+
+    # print("\n4. Generating category node files...")
     # for category in CATEGORIES:
     #     write_nodes.write_node_files(category, CATEGORIES[category])
     # print("   ✓ Generated node.cpp and node.hpp for all categories")

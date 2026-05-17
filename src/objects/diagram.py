@@ -244,6 +244,7 @@ def get_renorm(loc_sigma, w_points):
 
     if (len(zero_crossings) == 0):
         print("Uncontrolled Self-Energy result, no zero crossing. Returning infinity")
+        print(loc_sigma)
         return float('inf')
 
     ind = zero_crossings[0]
@@ -252,6 +253,7 @@ def get_renorm(loc_sigma, w_points):
     sigma_prev = loc_sigma[ind]
     sigma_next = loc_sigma[ind+1]
     renorm = 1.0 - (sigma_next.imag - sigma_prev.imag) / (w_next - w_prev)
+    print("w-cross: ", w_prev)
 
     return renorm
 

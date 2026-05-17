@@ -150,7 +150,7 @@ bool evaluate_real_scalar_1d_w() {
     DataEvaluator field(data);
     auto result = field(1.5);
     if (auto* s = std::get_if<float>(&result)) {
-            return fabs(*s - 1.5) < 1e-6;
+            return abs(*s - 1.5) < 1e-6;
     }
     return false;
 }
@@ -180,7 +180,7 @@ bool evaluate_complex_scalar_1d_w() {
     auto result = field(1.5);
     if (auto* s = std::get_if<cfloat>(&result)) {
             cfloat ans(1.5, 0.15);
-            return fabs(*s - ans) < 1e-6;
+            return abs(*s - ans) < 1e-6;
     }
     return false;
 }
@@ -208,7 +208,7 @@ bool evaluate_real_scalar_1d_k() {
     Vec v(0.5);
     auto result = field(v);
     if (auto* s = std::get_if<float>(&result)) {
-            return fabs(*s - 0.5) < 1e-6;
+            return abs(*s - 0.5) < 1e-6;
     }
     return false;
 }
@@ -234,7 +234,7 @@ bool evaluate_complex_scalar_1d_k() {
     Vec v(0.5);
     auto result = field(v);
     if (auto* s = std::get_if<cfloat>(&result)) {
-        return fabs(*s - cfloat(0.5, 0.05)) < 1e-6;
+        return abs(*s - cfloat(0.5, 0.05)) < 1e-6;
     }
     return false;
 }
@@ -259,7 +259,7 @@ bool evaluate_real_scalar_2d_k() {
     Vec v(0.5, 0.5);
     auto result = field(v);
     if (auto* s = std::get_if<float>(&result)) {
-        return fabs(*s - 1.0) < 1e-6;
+        return abs(*s - 1.0) < 1e-6;
     }
     return false;
 }
@@ -284,7 +284,7 @@ bool evaluate_complex_scalar_2d_k() {
     Vec v(0.5, 0.5);
     auto result = field(v);
     if (auto* s = std::get_if<cfloat>(&result)) {
-        return fabs(*s - cfloat(1.0, 0.1)) < 1e-6;
+        return abs(*s - cfloat(1.0, 0.1)) < 1e-6;
     }
     return false;
 }
@@ -309,7 +309,7 @@ bool evaluate_real_scalar_2d_w() {
     Vec p(0.6, 0.6);
     auto result = field(p, 1.1);
     if (auto* s = std::get_if<float>(&result)) {
-        return fabs(*s - 2.3) < 1e-6;
+        return abs(*s - 2.3) < 1e-6;
     }
     return false;
 }
@@ -335,7 +335,7 @@ bool evaluate_complex_scalar_2d_w() {
     Vec p(0.6, 0.6);
     auto result = field(p, 1.1);
     if (auto* s = std::get_if<cfloat>(&result)) {
-        return fabs(*s - cfloat(2.3, 0.23)) < 1e-6;
+        return abs(*s - cfloat(2.3, 0.23)) < 1e-6;
     }
     return false;
 }
@@ -360,7 +360,7 @@ bool evaluate_real_scalar_3d_k() {
     Vec v(0.5, 0.5, 0.5);
     auto result = field(v);
     if (auto* s = std::get_if<float>(&result)) {
-        return fabs(*s - 1.5) < 1e-6;
+        return abs(*s - 1.5) < 1e-6;
     }
     return false;
 }
@@ -385,7 +385,7 @@ bool evaluate_complex_scalar_3d_k() {
     Vec v(0.5, 0.5, 0.5);
     auto result = field(v);
     if (auto* s = std::get_if<cfloat>(&result)) {
-        return fabs(*s - cfloat(1.5, 0.15)) < 1e-6;
+        return abs(*s - cfloat(1.5, 0.15)) < 1e-6;
     }
     return false;
 }
@@ -410,7 +410,7 @@ bool evaluate_real_scalar_3d_w() {
     Vec p(0.25, 0.25, 0.25);
     auto result = field(p, 1.5);
     if (auto* s = std::get_if<float>(&result)) {
-        return fabs(*s - 2.25) < 1e-6;
+        return abs(*s - 2.25) < 1e-6;
     }
     return false;
 }
@@ -435,7 +435,7 @@ bool evaluate_complex_scalar_3d_w() {
     Vec p(0.25, 0.25, 0.25);
     auto result = field(p, 1.5);
     if (auto* s = std::get_if<cfloat>(&result)) {
-        return fabs(*s - cfloat(2.25, 0.225)) < 1e-6;
+        return abs(*s - cfloat(2.25, 0.225)) < 1e-6;
     }
     return false;
 }
@@ -490,8 +490,8 @@ bool create_destroy() {
         for (size_t j = 0; j < vecs[i].size(); ++j) {
             float expected_real = vecs[i][j].real();
             float expected_imag = vecs[i][j].imag();
-            if (fabs(loaded.real_values[idx] - expected_real) > 1e-6f) return false;
-            if (loaded.is_complex && fabs(loaded.imag_values[idx] - expected_imag) > 1e-6f) return false;
+            if (abs(loaded.real_values[idx] - expected_real) > 1e-6f) return false;
+            if (loaded.is_complex && abs(loaded.imag_values[idx] - expected_imag) > 1e-6f) return false;
             idx++;
         }
     }
@@ -549,15 +549,15 @@ bool point_storage_scalar() {
     for (size_t i = 0; i < loaded.points.size(); ++i) {
         if (loaded.points[i].size() != 3) return false;
         for (size_t j = 0; j < 3; ++j) {
-            if (fabs(loaded.points[i][j] - data.points[i][j]) > 1e-6) return false;
+            if (abs(loaded.points[i][j] - data.points[i][j]) > 1e-6) return false;
         }
     }
 
     // Verify data via flat arrays
     if (loaded.real_values.size() != values.size()) return false;
     for (size_t i = 0; i < loaded.real_values.size(); ++i) {
-        if (fabs(loaded.real_values[i] - values[i].real()) > 1e-6f) return false;
-        if (loaded.is_complex && fabs(loaded.imag_values[i] - values[i].imag()) > 1e-6f) return false;
+        if (abs(loaded.real_values[i] - values[i].real()) > 1e-6f) return false;
+        if (loaded.is_complex && abs(loaded.imag_values[i] - values[i].imag()) > 1e-6f) return false;
     }
 
     filesystem::remove(fname);
@@ -619,21 +619,21 @@ bool point_storage_with_frequency() {
     for (size_t i = 0; i < loaded.points.size(); ++i) {
         if (loaded.points[i].size() != 2) return false;
         for (size_t j = 0; j < 2; ++j) {
-            if (fabs(loaded.points[i][j] - data.points[i][j]) > 1e-6) return false;
+            if (abs(loaded.points[i][j] - data.points[i][j]) > 1e-6) return false;
         }
     }
 
     // Verify w_points
     if (loaded.w_points.size() != 3) return false;
     for (size_t i = 0; i < loaded.w_points.size(); ++i) {
-        if (fabs(loaded.w_points[i] - data.w_points[i]) > 1e-6) return false;
+        if (abs(loaded.w_points[i] - data.w_points[i]) > 1e-6) return false;
     }
 
     // Verify data via flat arrays
     if (loaded.real_values.size() != values.size()) return false;
     for (size_t i = 0; i < loaded.real_values.size(); ++i) {
-        if (fabs(loaded.real_values[i] - values[i].real()) > 1e-6f) return false;
-        if (loaded.is_complex && fabs(loaded.imag_values[i] - values[i].imag()) > 1e-6f) return false;
+        if (abs(loaded.real_values[i] - values[i].real()) > 1e-6f) return false;
+        if (loaded.is_complex && abs(loaded.imag_values[i] - values[i].imag()) > 1e-6f) return false;
     }
 
     filesystem::remove(fname);
@@ -661,7 +661,7 @@ bool evaluate_tensor_complex_1d_w() {
     Vec p(0.25, 0.25, 0.25);
     auto result = field(p, 1.5);
     if (auto* s = std::get_if<cfloat>(&result)) {
-        return fabs(*s - cfloat(2.25, 0.225)) < 1e-6;
+        return abs(*s - cfloat(2.25, 0.225)) < 1e-6;
     }
     return false;
 }

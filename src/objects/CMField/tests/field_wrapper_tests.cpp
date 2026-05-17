@@ -26,7 +26,7 @@ bool field_wrapper_basic_test() {
     auto result = field(v);
 
     if (auto* s = std::get_if<float>(&result)) {
-        return fabs(*s - 0.5) < 1e-6;
+        return abs(*s - 0.5) < 1e-6;
     }
     return false;
 }
@@ -65,7 +65,7 @@ bool field_wrapper_with_w_test() {
         // At original p=(0.5, 0.5), spatial contribution = 0.5 + 0.5 = 1.0
         // At w=1.5, w contribution = 1.5
         // Total = 2.5
-        return fabs(*s - cfloat(2.5, 0.25)) < 1e-6;
+        return abs(*s - cfloat(2.5, 0.25)) < 1e-6;
     }
     return false;
 }

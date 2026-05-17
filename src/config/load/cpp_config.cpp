@@ -335,7 +335,8 @@ int run_python_method(const string& method_name) {
         string src_dir = loc.substr(0, build_pos) + "/src/";
         string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.py";
         string exe = "python3 " + script_path;
-        return run_and_pipe_output(exe);
+        int result = std::system(exe.c_str());
+        return result;
     }
     // Fallback: try simple /bin/ pattern (for non-build locations)
     size_t bin_pos = loc.find("/bin/");
@@ -343,7 +344,8 @@ int run_python_method(const string& method_name) {
         string src_dir = loc.substr(0, bin_pos) + "/src/";
         string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.py";
         string exe = "python3 " + script_path;
-        return run_and_pipe_output(exe);
+        int result = std::system(exe.c_str());
+        return result;
     }
     return -1;  // Error: couldn't find src directory
 }
@@ -358,7 +360,8 @@ int run_julia_method(const string& method_name) {
         string src_dir = loc.substr(0, build_pos) + "/src/";
         string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.jl";
         string exe = "julia " + script_path;
-        return run_and_pipe_output(exe);
+        int result = std::system(exe.c_str());
+        return result;
     }
     // Fallback: try simple /bin/ pattern (for non-build locations)
     size_t bin_pos = loc.find("/bin/");
@@ -366,7 +369,8 @@ int run_julia_method(const string& method_name) {
         string src_dir = loc.substr(0, bin_pos) + "/src/";
         string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.jl";
         string exe = "julia " + script_path;
-        return run_and_pipe_output(exe);
+        int result = std::system(exe.c_str());
+        return result;
     }
     return -1;  // Error: couldn't find src directory
 }
