@@ -54,8 +54,8 @@ This will install the packages sufficient for base functionality. The complete l
 | sparse_ir  | SparseIR          | LAPACK   |            |      |
 | pandas     | MPI               | LAPACKE  |            |      |
 | tbmodels   | PencilFFTs        | Ninja    |            |      |
-|            | LoopVectorization | OpenMP   |            |      |
-|            |                   | ccache   |            |      |
+| triqs      | LoopVectorization | OpenMP   |            |      |
+| triqs_tprf |                   | ccache   |            |      |
 |            |                   | Boost    |            |      |
 |            |                   | pybind   |            |      |
 |            |                   | hdf5     |            |      |
@@ -73,7 +73,7 @@ This will install the packages sufficient for base functionality. The complete l
 2. After building, confirm all tests pass by running
 
    ```bash
-   cd build/bin
+   cd ../build/bin
    ./fly.x
    ```
 
@@ -117,9 +117,7 @@ Each input file should specify a `category`, `calculation` type and `method` cho
 
 ### File Prefixes
 
-The `prefix` variable controls the names of files that Ffirefly reads and writes.
-
-Input & output datasets should follow the format
+The `outdir` and `prefix` variables control the names of files that Ffirefly reads and writes. Input & output datasets follow the format
 
 ```bash
 outdir/prefix_filetype.h5
@@ -131,11 +129,13 @@ For example, if
 prefix = hg1201, outdir='./data'
 ```
 
-then a density of states file should be named
+then the density of states file is named
 
 ```bash
 data/hg1201_dos.h5
 ```
+This convention must be followed when saving results so that Firefly projects know where to look for input data. Functions for aving and reading data are supplied, with a breakdown in the [Developer Documentation](./docs/Developer.md).
+
 
 ### Sequential Calculations
 
@@ -179,9 +179,9 @@ To add a new calculation category:
 
 1. Go to `src/config` and edit `categories.py`, which stores all the categories, calculations, and methods.
 
-2. Add your category, calculation, and/or method as needed.
+2. Add the names of your category, calculation, and/or method.
 
-3. Run `python categories.py` to add files and folders
+3. Run `python categories.py` to add your project to Firefly. Folders and files will be created for you.
 
 4. Run `fly-build.sh` to recompile base package
 
