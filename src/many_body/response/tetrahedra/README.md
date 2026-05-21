@@ -6,7 +6,7 @@ Calculates chi0(w,q) using recursive tetrahedron method for BZ integration. Take
 
 ## Quick Description
 
-Calculates non-interacting response function chi0(w,q) using recursive tetrahedron method for BZ integration.
+Calculates non-interacting response function chi0(w,q) using recursive tetrahedron integration
 
 ## Dependencies
 - BZIntegral

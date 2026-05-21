@@ -6,7 +6,7 @@ Calculates FLEX or FLEX+DMFT, taking the electron density as a conserved quantit
 
 ## Quick Description
 
-Solves FLEX or FLEX+DMFT self-consistently with DLR calculations using matsubara frequencies at finite Temperature
+Solves FLEX or FLEX+DMFT with DLR calculations at finite Temperature
 
 ## Dependencies
 - triqs

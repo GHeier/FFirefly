@@ -6,7 +6,7 @@ Solves the linearized BCS gap equation using FFT-based convolution in real space
 
 ## Quick Description
 
-Solves the linearized BCS gap equation across the Brillouin Zone using convolutions for speed.
+Solves the linearized BCS gap equation across the Brillouin Zone 
 
 ## Dependencies
 

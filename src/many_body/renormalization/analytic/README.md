@@ -6,7 +6,7 @@ Calculates renormalization constant Z analytically based on the FLEX formula for
 
 ## Quick Description
 
-Calculates renormalization constant Z analytically based on the FLEX formula for self-energy
+Calculates quasiparticle weight Z approximating V(w)=V(0)
 
 ## Dependencies
 - None

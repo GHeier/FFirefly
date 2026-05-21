@@ -6,7 +6,7 @@ Solves the linearized Eliashberg equation using Lanczos algorithm to find multip
 
 ## Quick Description
 
-Uses ARPACK's Lanczos eigensolver to find the leading eigenvalues of the Eliashberg kernel K, where Δ = λK[Δ], returning multiple eigenpairs to identify dominant and subdominant pairing symmetries.
+Uses Lanczos eigensolver to find the leading gap solutions in full Brillouin Zone 
 
 ## Dependencies
 

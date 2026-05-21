@@ -6,7 +6,7 @@ Calculates the quasiparticle renormalization factor Z and mass enhancement λ_z 
 
 ## Quick Description
 
-Computes quasiparticle weight Z across the Fermi Surface using V(w)=V(0) approximation.
+Computes quasiparticle weight Z(k) across the Fermi Surface using V(w)=V(0) approximation.
 
 ## Dependencies
 

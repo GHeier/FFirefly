@@ -6,7 +6,7 @@ Extracts the quasiparticle renormalization factor Z(k) from the frequency deriva
 
 ## Quick Description
 
-Calculates Z(k) based on the slope of Sigma(iω,k) at ω→0, using data from a previous self-energy calculation.
+Calculates Z(k) based on the slope of a given Sigma(iω,k) at ω→0
 
 ## Dependencies
 

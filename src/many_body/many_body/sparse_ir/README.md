@@ -6,7 +6,7 @@ Performs FLEX calculations using DLR sparse_ir code, with the option of self-con
 
 ## Quick Description
 
-Performs FLEX calculations using DLR sparse_ir code, with the option of self-consistency
+Performs FLEX calculations using DLR sparse_ir package
 
 ## Dependencies
 - SparseIR julia library

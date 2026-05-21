@@ -103,7 +103,7 @@ function make_vertex_kernel(V, weights, frequencies, with_w)
         if with_w                                                                               
             dV = 0
             for w in frequencies
-                if abs(w) < 1e-4
+                if (w) < 1e-4
                     continue
                 end
                 dV += real( (V(dkm,w) + V(dkp,w)) / 2 - V_val) / w
@@ -175,8 +175,8 @@ function perturb_solve(H, eigs, vecs)
     ptb_eigs = zeros(Float64, length(eigs))
     ptb_vecs = [zeros(Float64, length(v)) for v in vecs]
     for i in 1:length(vecs)
-        #println("Perturbing eigenvector #", i)
         ptb_eigs[i] = real(hmv_eig(vecs[i]))
+        #println("Perturbing eigenvector #", i, "Eig: ", ptb_eigs[i])
         ptb_vecs[i] .= 0.0
         for j in 1:length(vecs)
             i == j && continue

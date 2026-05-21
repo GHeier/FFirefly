@@ -61,6 +61,7 @@
 ---
 
 
+
 #### 🔸 `hamiltonian`
 
 - **DOS**
@@ -76,17 +77,17 @@
 #### 🔸 `many_body`
 
 - **many_body**
-  - [sparse_ir](src/many_body/many_body/sparse_ir/README.md) - Performs FLEX calculations using DLR sparse_ir code, with the option of self-consistency
-  - [triqs](src/many_body/many_body/triqs/README.md) - Solves FLEX or FLEX+DMFT self-consistently with DLR calculations using matsubara frequencies at finite Temperature
+  - [sparse_ir](src/many_body/many_body/sparse_ir/README.md) - Performs FLEX calculations using DLR sparse_ir package
+  - [triqs](src/many_body/many_body/triqs/README.md) - Solves FLEX or FLEX+DMFT with DLR calculations at finite Temperature
 - **renormalization**
-  - [FS_approx](src/many_body/renormalization/FS_approx/README.md) - Computes quasiparticle weight Z across the Fermi Surface using V(w)=V(0) approximation.
-  - [analytic](src/many_body/renormalization/analytic/README.md) - Calculates renormalization constant Z analytically based on the FLEX formula for self-energy
-  - [from_sigma](src/many_body/renormalization/from_sigma/README.md) - Calculates Z(k) based on the slope of Sigma(iω,k) at ω→0, using data from a previous self-energy calculation.
+  - [FS_approx](src/many_body/renormalization/FS_approx/README.md) - Computes quasiparticle weight Z(k) across the Fermi Surface using V(w)=V(0) approximation.
+  - [analytic](src/many_body/renormalization/analytic/README.md) - Calculates quasiparticle weight Z approximating V(w)=V(0)
+  - [from_sigma](src/many_body/renormalization/from_sigma/README.md) - Calculates Z(k) based on the slope of a given Sigma(iω,k) at ω→0
 - **response**
-  - [sparse_ir](src/many_body/response/sparse_ir/README.md) - Computes the non-interacting response function by constructing the Green's function from the band structure and performing the convolution χ(r,τ) = G(r,τ) · G(r,-τ).
-  - [tetrahedra](src/many_body/response/tetrahedra/README.md) - Calculates non-interacting response function chi0(w,q) using recursive tetrahedron method for BZ integration.
+  - [sparse_ir](src/many_body/response/sparse_ir/README.md) - Computes the non-interacting response function by via Green's function convolution
+  - [tetrahedra](src/many_body/response/tetrahedra/README.md) - Calculates non-interacting response function chi0(w,q) using recursive tetrahedron integration
 - **self_energy**
-  - [sparse_ir](src/many_body/self_energy/sparse_ir/README.md) - Calculates Self-Energy from Vertex and non-interacting green's function. Takes the Vertex as input
+  - [sparse_ir](src/many_body/self_energy/sparse_ir/README.md) - Calculates Self-Energy from given Vertex and non-interacting green's function
   - [triqs](src/many_body/self_energy/triqs/README.md) - Calculates the self-energy using Iterated Perturbation Theory (IPT) on the imaginary axis.
 - **vertex**
   - [from_susceptibility](src/many_body/vertex/from_susceptibility/README.md) - Analytically calculates FLEX vertex from chi(q,w)
@@ -96,12 +97,12 @@
 #### 🔸 `superconductor`
 
 - **bcs**
-  - [convolution](src/superconductor/bcs/convolution/README.md) - Solves the linearized BCS gap equation across the Brillouin Zone using convolutions for speed.
+  - [convolution](src/superconductor/bcs/convolution/README.md) - Solves the linearized BCS gap equation across the Brillouin Zone
   - [matrix](src/superconductor/bcs/matrix/README.md) - Solves the linearized BCS gap equation on the Fermi Surface using standard matrix diagonalization.
 - **bcs_w**
   - [hmatrix](src/superconductor/bcs_w/hmatrix/README.md) - Solves the linearized BCS gap equation across the Fermi Surface using compressed Hierarchical Matrices and a lanczos matrix solver.
 - **eliashberg**
-  - [convolution](src/superconductor/eliashberg/convolution/README.md) - Uses ARPACK's Lanczos eigensolver to find the leading eigenvalues of the Eliashberg kernel K, where Δ = λK[Δ], returning multiple eigenpairs to identify dominant and subdominant pairing symmetries.
+  - [convolution](src/superconductor/eliashberg/convolution/README.md) - Uses Lanczos eigensolver to find the leading gap solutions in full Brillouin Zone
   - [hmatrix](src/superconductor/eliashberg/hmatrix/README.md) - Solves Eliashberg equation on real axis using HMatrix compression and Lanczos solver.
   - [sparse_ir](src/superconductor/eliashberg/sparse_ir/README.md) - Solves the linearized Eliashberg equation on imaginary axis using convolution and the power iteration / Krylov projection approach.
 

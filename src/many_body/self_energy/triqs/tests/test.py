@@ -5,12 +5,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import run as base
 # Set configuration variables for test run
 kmesh = [4, 4, 4]  # Example k-mesh values
-base.mixing = 1.0    # Example mixing parameter
+#base.mixing = 1.0    # Example mixing parameter
 base.interaction = "DMFT"
 base.mu = 0.0
 base.n = 1.0
-base.U = 2.0
+#base.U = 2.0
 base.beta = 20.0
+base.Temperature = 0.05
 
 def test():
     # Main function call goes here

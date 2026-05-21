@@ -6,7 +6,7 @@ Calculates bare susceptibility χ(iν,k) from band structure using sparse_ir for
 
 ## Quick Description
 
-Computes the non-interacting response function by constructing the Green's function from the band structure and performing the convolution χ(r,τ) = G(r,τ) · G(r,-τ).
+Computes the non-interacting response function by via Green's function convolution
 
 ## Dependencies
 - SparseIR julia library

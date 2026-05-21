@@ -68,7 +68,7 @@ class IPTSolver:
             else:
                 self.solve(U)
 
-            err = abs(self.G_weiss.obj_w.data - self.G_weiss_old.obj_w.data).max()
+            err = abs(self.G_weiss.obj_w.data - G_iw_prev).max()
             print("IPT loop %d, err = %.3e" % (i+1, err))
 
             if err < self.tol:

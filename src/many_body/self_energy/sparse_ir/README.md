@@ -6,7 +6,7 @@ Calculates Self-Energy from Vertex and non-interacting green's function. Takes t
 
 ## Quick Description
 
-Calculates Self-Energy from Vertex and non-interacting green's function. Takes the Vertex as input
+Calculates Self-Energy from given Vertex and non-interacting green's function
 
 ## Dependencies
 - sparse_ir
