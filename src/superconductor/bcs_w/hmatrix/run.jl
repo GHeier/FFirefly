@@ -135,6 +135,15 @@ function create_hmatrices(V, dos_weights, kpoints, frequencies)
     @printf("HMatrix built in %.3f seconds\n", t_hmat_ptb)
     @printf("Compression ratio: %.2f\n", (compression_ratio(H_matrix_ptb)))
 
+    # Probe a few raw kernel values to verify non-zero perturbation
+    n_k = length(kpoints)
+    println("\nDEBUG: Sample kernel values (i,j) for i!=j:")
+    for (i,j) in [(1,2),(1,3),(n_k÷2, n_k÷2+1)]
+        v0 = kernel(kpoints[i], kpoints[j], i, j)
+        vp = kernel_ptb(kpoints[i], kpoints[j], i, j)
+        @printf("  (%d,%d): K0=%.6e  Kptb=%.6e  ratio=%.4f\n", i, j, v0, vp, abs(vp)/(abs(v0)+1e-30))
+    end
+
     return H_matrix, H_matrix_ptb
 end
 
@@ -172,17 +181,43 @@ function perturb_solve(H, eigs, vecs)
         return  l .* v2 
     end
 
+    # --- Projection diagnostics for dominant mode (i=1) ---
+    v0 = real.(vecs[1])
+    Hv0 = similar(v0)
+    mul!(Hv0, H, v0)  # H_ptb * v0
+    println("\n=== Projection of H_ptb * v0 onto eigenbasis of H_0 ===")
+    @printf("  Diagonal <v0|H_ptb|v0>     = %.6e  (this is λ1)\n", LinearAlgebra.dot(v0, Hv0))
+    println("  Off-diagonal <vj|H_ptb|v0>:")
+    offdiag_norm_sq = 0.0
+    for j in 2:length(vecs)
+        vj = real.(vecs[j])
+        c = LinearAlgebra.dot(vj, Hv0)
+        eig_gap = real(eigs[1] - eigs[j])
+        @printf("    j=%2d: <vj|H_ptb|v0>=%.4e  eig_gap=%.4e  correction_coeff=%.4e\n",
+            j, c, eig_gap, c / eig_gap)
+        offdiag_norm_sq += c^2
+    end
+    @printf("  |off-diagonal part of H_ptb*v0| = %.6e\n", sqrt(offdiag_norm_sq))
+    @printf("  |H_ptb*v0| total               = %.6e\n", LinearAlgebra.norm(Hv0))
+    @printf("  Fraction captured by 10 eigvecs = %.4f\n",
+        sqrt(LinearAlgebra.dot(v0,Hv0)^2 + offdiag_norm_sq) / LinearAlgebra.norm(Hv0))
+    println("======================================================")
+
     ptb_eigs = zeros(Float64, length(eigs))
     ptb_vecs = [zeros(Float64, length(v)) for v in vecs]
     for i in 1:length(vecs)
         ptb_eigs[i] = real(hmv_eig(vecs[i]))
-        #println("Perturbing eigenvector #", i, "Eig: ", ptb_eigs[i])
         ptb_vecs[i] .= 0.0
         for j in 1:length(vecs)
             i == j && continue
-            ptb_vecs[i] += real.(hmv_vec(vecs[i], vecs[j]) / (eigs[i] - eigs[j]))
+            eig_gap = eigs[i] - eigs[j]
+            proj = hmv_vec(vecs[i], vecs[j])
+            correction = real.(proj / eig_gap)
+            ptb_vecs[i] += correction
         end
     end
+    @printf("DEBUG: |ptb_vecs[1]|=%.6e, |vecs[1]|=%.6e\n", LinearAlgebra.norm(ptb_vecs[1]), LinearAlgebra.norm(vecs[1]))
+    @printf("DEBUG: overlap(ptb_vecs[1], vecs[1])=%.6e\n", LinearAlgebra.dot(ptb_vecs[1], real.(vecs[1])))
 
     return ptb_eigs, ptb_vecs
 end
@@ -192,13 +227,18 @@ function find_top_eig(vals_hmat, vecs_hmat, vals_ptb, vecs_ptb)
     l1 = real.(vals_ptb)
 
     eff_lambdas = zeros(size(vals_hmat))
-    eff_vecs = copy(vecs_hmat)
+    eff_vecs = [copy(v) for v in vecs_hmat]  # deep copy each eigenvector
     mu_star = 0.10
     @printf("\nTop eigenvalues:\n")
     for i in 1:length(eff_lambdas)
+        v0 = real.(vecs_hmat[i])  # snapshot BEFORE mutation
         eff_lambdas[i] = l0[i] * (1 - mu_star) / (1 / Z + l1[i])
         eff_vecs[i] .+= vecs_ptb[i]
-        @printf("%d)  λ0 = %.10f, λ1 = %.10f, λe = %.10f\n", i, l0[i], l1[i], eff_lambdas[i])
+        vptb = vecs_ptb[i]
+        eff_v = eff_vecs[i]
+        @printf("%d)  λ0=%.8f λ1=%.8f λe=%.8f  |ptb_vec|=%.4e  cos(v0,eff)=%.6f\n",
+            i, l0[i], l1[i], eff_lambdas[i], LinearAlgebra.norm(vptb),
+            LinearAlgebra.dot(v0, real.(eff_v)) / (LinearAlgebra.norm(v0) * LinearAlgebra.norm(real.(eff_v)) + 1e-30))
     end
     println("Quasiparticle Weight Z = ", Z)
     println("mu* = ", mu_star)

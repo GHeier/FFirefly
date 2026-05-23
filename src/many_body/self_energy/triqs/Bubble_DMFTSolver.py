@@ -167,16 +167,19 @@ class Bubble_DMFTSolver:
         if n_loops == 1:
             self.Bubble.Sigma = add_local_to_nonlocal(self.Sigma_nonloc, self.Sigma_loc)
             #self.Bubble.Sigma = self.Sigma_nonloc.copy()
-        # Output 3 Results
         m_star_dmft = get_renorm(self.IPT.Sigma_imp.obj_w.data, self.IPT.Sigma_imp.w_points)
         print("DMFT Z = ", 1/m_star_dmft)
-        m_star_G_loc = get_renorm(self.Sigma_SOPT.obj_w.data, self.Sigma_SOPT.w_points)
-        print("SOPT[G] Z = ", 1/m_star_G_loc)
-        sigma_nonloc = make_local(self.Sigma_nonloc.obj_wk.data)
-        m_star_nonloc = get_renorm(sigma_nonloc, self.Sigma_nonloc.w_points)
-        print("SOPT Z = ", 1/m_star_nonloc)
-        m_star_tot = m_star_dmft + m_star_nonloc - m_star_G_loc
-        print("Total Z = ", 1/m_star_tot)
+        if mode == 'base':
+            return m_star_dmft
+        else:
+        # Output 3 Results
+            m_star_G_loc = get_renorm(self.Sigma_SOPT.obj_w.data, self.Sigma_SOPT.w_points)
+            print("SOPT[G] Z = ", 1/m_star_G_loc)
+            sigma_nonloc = make_local(self.Sigma_nonloc.obj_wk.data)
+            m_star_nonloc = get_renorm(sigma_nonloc, self.Sigma_nonloc.w_points)
+            print("SOPT Z = ", 1/m_star_nonloc)
+            m_star_tot = m_star_dmft + m_star_nonloc - m_star_G_loc
+            print("Total Z = ", 1/m_star_tot)
 
         return m_star_tot
 

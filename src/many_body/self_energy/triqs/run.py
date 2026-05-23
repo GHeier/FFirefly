@@ -176,8 +176,8 @@ def run_Bubble_DMFT():
         print(f"Final Sigma max: {np.max(np.abs(S.Bubble.Sigma.obj_wk.data)):.4f}")
         print(f"Final G max: {np.max(np.abs(S.Bubble.G.obj_wk.data)):.4f}")
     else:
-        S = Bubble_DMFTSolver(H, G0=G0_wk, U=U, mix=0.0, n=n, mu=mu)
-        renorm = S.loop_Bubble_DMFT(n_loops=1, mode='diagram')
+        S = Bubble_DMFTSolver(H, G0=G0_wk, U=U, mix=1.0, n=n, mu=mu)
+        renorm = S.loop_Bubble_DMFT(n_loops=1, mode='base')
 
 
     print(f"Quasiparticle Weight: {1/renorm:.4f}")
