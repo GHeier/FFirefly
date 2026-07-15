@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 folder="${SCRIPT_DIR}/.."
 folder="$(realpath "$folder")"
 
-# Default to failure
+# Default to failure (pessimistic :/ )
 status=1
 
 if [ "$1" == "-v" ]; then
