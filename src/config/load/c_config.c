@@ -47,10 +47,17 @@ float c_smearing = 0.02;
 float c_mixing = 0.02;
 int c_max_iters = 100;
 float c_qp_weight = 1.0;
+int c_recurse_level = 0;
 
 //[HAMILTONIAN]
 char* c_hamiltonian = "tight_binding";
 char* get_hamiltonian() {return c_hamiltonian;}
+float c_eps_dx2y2 = 0.0;
+float c_eps_dz2 = 0.0;
+float c_eps_px = 0.0;
+float c_eps_py = 0.0;
+float c_eps_pz = 0.0;
+float c_delta_dp = 0.0;
 
 //[HUBBARD]
 float c_U0 = 0.0;
@@ -89,6 +96,11 @@ float c_t7 = 0.0;
 float c_t8 = 0.0;
 float c_t9 = 0.0;
 float c_t10 = 0.0;
+float c_tz0 = 0.0;
+float c_tz1 = 0.0;
+float c_tz2 = 0.0;
+float c_tz3 = 0.0;
+float c_tz4 = 0.0;
 
 //[SUPERCONDUCTOR]
 bool c_FS_only = true;
@@ -382,10 +394,31 @@ void read_c_config(const char *path) {
             else if (strstr(key, "qp_weight") != NULL) {
                 c_qp_weight = atof(value);
             }
+            else if (strstr(key, "recurse_level") != NULL) {
+                c_recurse_level = atoi(value);
+            }
 
 //[HAMILTONIAN]
             else if (strstr(key, "hamiltonian") != NULL) {
                 set_string(&c_hamiltonian, value);
+            }
+            else if (strstr(key, "eps_dx2y2") != NULL) {
+                c_eps_dx2y2 = atof(value);
+            }
+            else if (strstr(key, "eps_dz2") != NULL) {
+                c_eps_dz2 = atof(value);
+            }
+            else if (strstr(key, "eps_px") != NULL) {
+                c_eps_px = atof(value);
+            }
+            else if (strstr(key, "eps_py") != NULL) {
+                c_eps_py = atof(value);
+            }
+            else if (strstr(key, "eps_pz") != NULL) {
+                c_eps_pz = atof(value);
+            }
+            else if (strstr(key, "delta_dp") != NULL) {
+                c_delta_dp = atof(value);
             }
 
 //[HUBBARD]
@@ -458,6 +491,21 @@ void read_c_config(const char *path) {
             }
             else if (strstr(key, "t10") != NULL) {
                 c_t10 = atof(value);
+            }
+            else if (strstr(key, "tz0") != NULL) {
+                c_tz0 = atof(value);
+            }
+            else if (strstr(key, "tz1") != NULL) {
+                c_tz1 = atof(value);
+            }
+            else if (strstr(key, "tz2") != NULL) {
+                c_tz2 = atof(value);
+            }
+            else if (strstr(key, "tz3") != NULL) {
+                c_tz3 = atof(value);
+            }
+            else if (strstr(key, "tz4") != NULL) {
+                c_tz4 = atof(value);
             }
 
 //[SUPERCONDUCTOR]

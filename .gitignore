@@ -1,6 +1,5 @@
 # Large data files
 *.dat
-*.txt
 *.jld
 *.npy
 
@@ -41,3 +40,4 @@ build/*
 CL*
 __pycache__/
 fcode.egg-info/
+*.egg-info/

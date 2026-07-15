@@ -101,8 +101,10 @@ void call_flex() {
                 vals.push_back(val);
 
                 float singlet_val = 1.5 * (U * U * X) / float(1.0f - U * X) - 0.5 * U * U * X / (1 + U * X);
-                //singlet_vals.push_back(singlet_val);
-                singlet_vals.push_back(U*U*X);
+                if (interaction == "SOPT")
+                    singlet_vals.push_back(U*U*X);
+                else
+                    singlet_vals.push_back(singlet_val);
 
                 if (X > max_chi) max_chi = X;
                 if (abs(U * X) >= 1) {
@@ -132,8 +134,10 @@ void call_flex() {
                         vals.push_back(val);
 
                         float singlet_val = 1.5 * (U * U * X) / float(1.0f - U * X) - 0.5 * U * U * X / (1 + U * X);
-                        //singlet_vals.push_back(singlet_val);
-                        singlet_vals.push_back(U*U*X);
+                        if (interaction == "SOPT")
+                            singlet_vals.push_back(U*U*X);
+                        else
+                            singlet_vals.push_back(singlet_val);
 
                         if (X > max_chi) max_chi = X;
                         if (0 && abs(U * X) >= 1.0) {

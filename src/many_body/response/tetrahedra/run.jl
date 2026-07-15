@@ -8,6 +8,7 @@ using Printf
 using Interpolations
 using Interpolations: extrapolate, Periodic
 using Base.Threads
+#using Statistics
 
 # Import utility functions
 include("response_utils.jl")
@@ -43,7 +44,9 @@ U = cfg.U0
 BZ = cfg.brillouin_zone
 celltype = cfg.celltype
 
-Z = cfg.qp_weight
+iter_level = cfg.recurse_level
+
+println("Recursive Level: $iter_level")
 
 """
     setup_symmetry_reduction(qmesh, celltype, dim)
@@ -121,7 +124,7 @@ end
 
 """
     calculate_qw_response(igroup, unique_to_qindices, qpts, w_pts, Ek_grid, Ek_grids,
-                         k, l, dos, mu, kmesh, dim, iter)
+                         Zk_mesh, Zk_grid, k, l, dos, mu, kmesh, dim, iter)
 
 Calculate response for all ω at a single q-group.
 
@@ -129,15 +132,16 @@ Calculate response for all ω at a single q-group.
 - Dictionary mapping (iw, iq) → response value
 """
 function calculate_qw_response(igroup, unique_to_qindices, qpts, w_pts,
-                               Ek_grid, Ek_grids, k, l, dos, mu, kmesh, dim, iter)
+                               Ek_grid, Ek_grids, Zk_mesh, Zk_grid, k, l, dos, mu, kmesh, dim, iter)
     results = Dict{Tuple{Int,Int}, Float64}()
 
     # Get representative q-point
     iq_rep = unique_to_qindices[igroup][1]
     q = qpts[iq_rep, :]
 
-    # Evaluate E(k+q) once for this q-group
+    # Evaluate E(k+q) and Z(k+q) once for this q-group
     Ekq_grid = evaluate_Ekq_on_grid(Ek_grids[k, l], kmesh, q, dim)
+    Zkq_mesh = evaluate_Ekq_on_grid(Zk_grid, kmesh, q, dim)
 
     for (iw, w) in enumerate(w_pts)
         # Special case: q=0, w=0 → static susceptibility = DOS
@@ -152,7 +156,7 @@ function calculate_qw_response(igroup, unique_to_qindices, qpts, w_pts,
         end
 
         # Calculate response for representative q-point
-        result = calculate_response_bzintegral_2(w, Ek_grid, Ekq_grid, mu, iter)
+        result = calculate_response_bzintegral_2(w, Ek_grid, Ekq_grid, Zk_mesh, Zkq_mesh, mu, iter)
 
         # Store for all symmetry-equivalent q-points
         for iq in unique_to_qindices[igroup]
@@ -164,7 +168,7 @@ function calculate_qw_response(igroup, unique_to_qindices, qpts, w_pts,
 end
 
 """
-    calculate_band_pair_response(i, j, k, l, Ek_grids, w_pts, unique_to_qindices,
+    calculate_band_pair_response(i, j, k, l, Ek_grids, Zk_mesh, Zk_grid, w_pts, unique_to_qindices,
                                  qpts, nqpts_unique, dos, mu, kmesh, dim, iter,
                                  progress_counter, progress_lock, total_iterations, start_time)
 
@@ -173,7 +177,7 @@ Calculate response for one band pair combination.
 # Returns
 - 4D array chi[iw, iq] for the given band indices
 """
-function calculate_band_pair_response(i, j, k, l, Ek_grids, w_pts, unique_to_qindices,
+function calculate_band_pair_response(i, j, k, l, Ek_grids, Zk_mesh, Zk_grid, w_pts, unique_to_qindices,
                                      qpts, nqpts_unique, nw, nqpts, dos, mu, kmesh, dim, iter,
                                      progress_counter, progress_lock, total_iterations, start_time)
     # Evaluate E_ij(k) once
@@ -185,7 +189,7 @@ function calculate_band_pair_response(i, j, k, l, Ek_grids, w_pts, unique_to_qin
     # Parallelize over unique q-groups
     Threads.@threads for igroup in 1:nqpts_unique
         results = calculate_qw_response(igroup, unique_to_qindices, qpts, w_pts,
-                                       Ek_grid, Ek_grids, k, l, dos, mu, kmesh, dim, iter)
+                                       Ek_grid, Ek_grids, Zk_mesh, Zk_grid, k, l, dos, mu, kmesh, dim, iter)
 
         # Store results
         for ((iw, iq), value) in results
@@ -205,14 +209,14 @@ function calculate_band_pair_response(i, j, k, l, Ek_grids, w_pts, unique_to_qin
 end
 
 """
-    calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, dos, iter=2)
+    calculate_response_grid(Ek_grids, Uk_grids, Zk_grid, w_pts, kmesh, qmesh, dos, iter=2)
 
 Calculate response function on q-ω grid with symmetry reduction.
 
 # Returns
 - 8D array chi[iw, iqx, iqy, iqz, i, j, k, l] with response function
 """
-function calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, dos, iter=2)
+function calculate_response_grid(Ek_grids, Uk_grids, Zk_grid, w_pts, kmesh, qmesh, dos, iter=2)
     nw = length(w_pts)
     nkx, nky, nkz = kmesh
     nqx, nqy, nqz = qmesh
@@ -220,6 +224,9 @@ function calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, dos, i
 
     nbnd = Int(sqrt(length(Ek_grids)))
     println("nbnd: ", nbnd)
+
+    # Z(k) is band-independent, so evaluate it once on the k-grid
+    Zk_mesh = evaluate_grid_for_dimension(Zk_grid, kmesh, dim)
 
     # Setup symmetry reduction
     unique_to_qindices, nqpts_unique, nqpts = setup_symmetry_reduction(qmesh, celltype, dim)
@@ -238,7 +245,7 @@ function calculate_response_grid(Ek_grids, Uk_grids, w_pts, kmesh, qmesh, dos, i
 
     # Loop over all band combinations
     for i in 1:nbnd, j in 1:nbnd, k in 1:nbnd, l in 1:nbnd
-        chi_band = calculate_band_pair_response(i, j, k, l, Ek_grids, w_pts,
+        chi_band = calculate_band_pair_response(i, j, k, l, Ek_grids, Zk_mesh, Zk_grid, w_pts,
                                                 unique_to_qindices, qpts, nqpts_unique,
                                                 nw, nqpts, dos, mu, kmesh, dim, iter,
                                                 progress_counter, progress_lock,
@@ -271,6 +278,7 @@ Load Hamiltonian and compute eigenvalues/wavefunctions on k-mesh.
 # Returns
 - `Ek_array`: Eigenvalues array [nkpts, norb, norb]
 - `psis`: Wavefunctions array [nkpts, norb, norb]
+- `Zk_array`: Quasiparticle renormalization Z(k) at each k-point [nkpts]
 - `dos`: Density of states at Fermi level
 - `norb`: Number of orbitals/bands
 """
@@ -292,22 +300,30 @@ function setup_hamiltonian_eigenvalues(kmesh, BZ, dim)
     norb = size(Ek_array, 2)
     nkpts = size(Ek_array, 1)
 
+    # Quasiparticle renormalization Z(k), defaults to 1.0 if no field is found
+    Z = Firefly.Renormalization()
+    Zk_array = [Z(kpts[ik, :]) for ik in 1:nkpts]
+    #Z_ave = mean(Zk_array)
+    #println("  Z_ave along Fermi Surface: $(Z_ave)") 
+
     println("  DOS at μ = $(mu): $(dos) states/unit cell/eV")
     println("  nbnd: $(norb), nkpts: $(nkpts)")
 
-    return Ek_array, psis, dos, norb
+    return Ek_array, psis, Zk_array, dos, norb
 end
 
 """
-    create_interpolation_grids(Ek_array, psis, kmesh, dim, norb)
+    create_interpolation_grids(Ek_array, psis, Zk_array, kmesh, dim, norb)
 
-Create periodic interpolation grids for eigenvalues and wavefunctions.
+Create periodic interpolation grids for eigenvalues, wavefunctions, and the
+quasiparticle renormalization Z(k).
 
 # Returns
 - `Ek_grids`: Matrix of interpolation objects for E(k)
 - `Uk_grids`: Matrix of interpolation objects for wavefunctions
+- `Zk_grid`: Interpolation object for Z(k) (band-independent)
 """
-function create_interpolation_grids(Ek_array, psis, kmesh, dim, norb)
+function create_interpolation_grids(Ek_array, psis, Zk_array, kmesh, dim, norb)
     nkx, nky, nkz = kmesh
 
     Ek_grids = Matrix{Interpolations.AbstractInterpolation}(undef, norb, norb)
@@ -334,7 +350,15 @@ function create_interpolation_grids(Ek_array, psis, kmesh, dim, norb)
         Uk_grids[i, j] = itp_Uk_periodic
     end
 
-    return Ek_grids, Uk_grids
+    # Z(k) is band-independent
+    Zk_mesh = reshape(Zk_array, nkx, nky, nkz)
+    if dim == 2
+        Zk_mesh = dropdims(Zk_mesh, dims=3)
+    end
+    itp_Zk = interpolate(Zk_mesh, BSpline(Linear()))
+    Zk_grid = extrapolate(itp_Zk, Periodic())
+
+    return Ek_grids, Uk_grids, Zk_grid
 end
 
 """
@@ -589,19 +613,18 @@ function response_bz_integral()
     println("  ω range: [-$(w_max), $(w_max)]")
     println("  Computing for ω ≥ 0 only ($(length(w_pos)) points), will mirror to ω < 0")
 
-    # Load Hamiltonian and compute eigenvalues
-    Ek_array, psis, dos, norb = setup_hamiltonian_eigenvalues(kmesh, BZ, dim)
+    # Load Hamiltonian and compute eigenvalues (and quasiparticle renormalization Z(k))
+    Ek_array, psis, Zk_array, dos, norb = setup_hamiltonian_eigenvalues(kmesh, BZ, dim)
 
     # Create interpolation grids
     println("\nCreating interpolation grids...")
-    Ek_grids, Uk_grids = create_interpolation_grids(Ek_array, psis, kmesh, dim, norb)
+    Ek_grids, Uk_grids, Zk_grid = create_interpolation_grids(Ek_array, psis, Zk_array, kmesh, dim, norb)
 
     # Calculate response with symmetry reduction (only for w >= 0)
     println("\n" * "="^60)
     println("Starting response grid calculation (ω ≥ 0)")
     println("="^60)
-    chi_pos = calculate_response_grid(Ek_grids, Uk_grids, w_pos, kmesh, qmesh, dos, 0)
-    chi_pos .*= Z
+    chi_pos = calculate_response_grid(Ek_grids, Uk_grids, Zk_grid, w_pos, kmesh, qmesh, dos, iter_level)
 
     # Mirror to negative frequencies using symmetry
     println("\n" * "="^60)

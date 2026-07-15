@@ -1,27 +1,18 @@
 #include "run.hpp"
+#include "tests/test.hpp"
 #include "../../../config/load/cpp_config.hpp"
 #include "../../../config/load/c_config.h"
-#include "../../../objects/CMField/fields.hpp"
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
-
-#include "renormalization.hpp"
-
-
+#include <vector>
 
 float run() {
     // Main function call goes here
-    float m_star = 0.0;
-    if (interaction == "FLEX") {
-        m_star = FLEX_renormalization();
-    }
-    else {
-        std::cerr << "Error: Unsupported interaction type: " << interaction << "\n";
-        exit(1);
-    }
+    std::vector<int> k_mesh = {4, 4, 4}; // Example k-mesh values
 
-    return m_star;
+    printf("Hello World! This is a Firefly run with k-mesh: [%d %d %d]\n", k_mesh[0], k_mesh[1], k_mesh[2]);
+    return 3.14f;
 }
 
 int main() {
@@ -33,11 +24,11 @@ int main() {
     load_cpp_config();
 
     // Run the method
-    float result = run();
+    if (debug)
+        float result = test();
+    else
+        float result = run();
 
     // Success
     return 0;
 }
-
-
-

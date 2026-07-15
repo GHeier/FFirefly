@@ -117,13 +117,14 @@ class Diagram:
         k_data = np.fft.fftn(r_data, axes=tuple(range(1, len(mesh))))
         self.obj_k.data[:] = np.reshape(k_data, self.shape)
 
-    def save(self, filename):
+    def save(self, filename, force_real=False):
         if self.varspace in ['wk', 'tr']:
             mesh, BZ = extract_mesh_and_bz(self.obj_wk)
             # mesh is (nw, nkx, nky, nkz) for k-space dimensions only
             # Append orbital/tensor dimensions for reshaping
             full_shape = mesh + self.shape[2:]  # (nw, nkx, nky, nkz, orbital_dims...)
-            obj = np.reshape(self.obj_wk.data, full_shape)
+            data = self.obj_wk.data.real if force_real else self.obj_wk.data
+            obj = np.reshape(data, full_shape)
             # Shift k-points to center (only shift spatial dimensions, not orbital indices)
             n_spatial_dims = len(mesh) - 1  # Exclude nw
             obj = np.fft.fftshift(obj, axes=tuple(range(1, n_spatial_dims + 1)))
@@ -142,7 +143,8 @@ class Diagram:
             fly.save_data(filename, obj, mesh=spatial_mesh, domain=BZ, w_points=self.w_points,
                          n_indices=n_indices, dim_indices=dim_indices)
         else:
-            obj = np.reshape(self.obj_w.data, (self.nw, ))
+            data = self.obj_w.data.real if force_real else self.obj_w.data
+            obj = np.reshape(data, (self.nw, ))
             fly.save_data(filename, obj, mesh=None, domain=None, w_points=self.w_points)
         print(f"Diagram saved to {filename}")
 

@@ -9,6 +9,7 @@ using KrylovKit
 using LinearAlgebra
 using Printf
 using StaticArrays
+using Statistics
 
 # Load relevant variables from the configuration
 outdir = cfg.outdir
@@ -17,6 +18,7 @@ filetype = cfg.filetype
 
 dim = cfg.dimension
 Z = cfg.qp_weight
+Z_const = false
 T = cfg.Temperature
 
 mu = cfg.fermi_energy
@@ -51,6 +53,10 @@ function get_surface_data()
     # Parameters
     println("\nGenerating k-points from Fermi surface at μ = $mu")
     H = Firefly.Hamiltonian()
+    Z_k = Firefly.Renormalization()
+    if Z_k(fill(0.0,dim)) == Z_k(fill(0.1,dim))
+        global Z_const = true
+    end
 
     w_points = Vector{Float32}(undef, w_pts)
     if w_pts == 1
@@ -79,7 +85,13 @@ function get_surface_data()
     @printf("Fermi Velocity Min, Max, Ave: %.6f, %.6f, %.6f\n", minimum(v_norms), maximum(v_norms), sum(v_norms) / n)
 
     # Compute density of states weights
-    dos_weights = areas ./ v_norms ./ (2 * π)^dim
+    Z_weights = Z_k.(kpoints_f64)
+    println("Average Quasiparticle Weight: ", mean(Z_weights))
+    if Z_const
+        dos_weights = areas ./ v_norms ./ (2 * π)^dim
+    else
+        dos_weights = areas ./ v_norms ./ (2 * π)^dim .* Z_weights
+    end
     @printf("DOS Min, Max, Ave, Total: %.6f, %.6f, %.6f, %.6f\n", minimum(dos_weights), maximum(dos_weights), sum(dos_weights) / n, sum(dos_weights))
 
     return kpoints, dos_weights, w_points
@@ -232,7 +244,11 @@ function find_top_eig(vals_hmat, vecs_hmat, vals_ptb, vecs_ptb)
     @printf("\nTop eigenvalues:\n")
     for i in 1:length(eff_lambdas)
         v0 = real.(vecs_hmat[i])  # snapshot BEFORE mutation
-        eff_lambdas[i] = l0[i] * (1 - mu_star) / (1 / Z + l1[i])
+        if Z_const
+            eff_lambdas[i] = l0[i] * (1 - mu_star) / (1 / Z + l1[i])
+        else
+            eff_lambdas[i] = l0[i] * (1 - mu_star) / (1 + l1[i])
+        end
         eff_vecs[i] .+= vecs_ptb[i]
         vptb = vecs_ptb[i]
         eff_v = eff_vecs[i]
@@ -240,10 +256,14 @@ function find_top_eig(vals_hmat, vecs_hmat, vals_ptb, vecs_ptb)
             i, l0[i], l1[i], eff_lambdas[i], LinearAlgebra.norm(vptb),
             LinearAlgebra.dot(v0, real.(eff_v)) / (LinearAlgebra.norm(v0) * LinearAlgebra.norm(real.(eff_v)) + 1e-30))
     end
-    println("Quasiparticle Weight Z = ", Z)
+    if Z_const
+        println("Quasiparticle Weight Z = ", Z)
+        lz = 1/Z - 1
+        @printf("λz = %.10f\n", lz)
+    else
+        println("Quasiparticle Weight read in from file.")
+    end
     println("mu* = ", mu_star)
-    lz = 1/Z - 1
-    @printf("λz = %.10f\n", lz)
     perm = sortperm(eff_lambdas)
     l_sort = eff_lambdas[perm]
     v_sort = eff_vecs[perm]
@@ -283,7 +303,7 @@ function save!(vals, vecs, kpoints, weights)
 
     save_data! = Firefly.Imports.save_data!
     for i in 1:length(vals)
-        filename = outdir * prefix * "_gap_$i." * filetype
+        filename = outdir * prefix * "_gap_$(length(vals)+1-i)." * filetype
         @printf("Saving eigenvector to %s\n", filename)
         data_array = un_hermitize_gap(vecs[i], weights)
         save_data!(filename, data_array, points=points_matrix)

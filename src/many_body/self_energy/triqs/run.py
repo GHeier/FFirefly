@@ -197,7 +197,7 @@ def get_renorm_k(Ekw, wpts):
     # Use imaginary part only, like get_renorm does
     dSigma_imag = (Ekw.obj_wk.data[ind+1, :, :, :].imag - Ekw.obj_wk.data[ind, :, :, :].imag) / (wpts[ind+1] - wpts[ind])
     dEkw.obj_wk.data[:] = (1 - dSigma_imag)**(-1)
-    print("Z(k) ave: ", np.mean(dEkw.obj_wk.data))
+    print("Z(k) ave: ", np.mean(dEkw.obj_wk.data).real)
     print("Z(k) spread: ", (np.max(dEkw.obj_wk.data) - np.min(dEkw.obj_wk.data)).real)
     return dEkw
 
@@ -216,7 +216,7 @@ def save_Bubble(S, eps_range=0.0):
     S.G_loc.save(pref + '_G_iw.h5')
     S.Sigma.save(pref + '_self_energy.h5')
     Z = get_renorm_k(S.Sigma, S.Sigma.w_points)
-    Z.save(pref + "_renormalization.h5")
+    Z.save(pref + "_renormalization.h5", force_real=True)
     #S.Sigma.save(pref + '_sigma_wk.h5')
     S.G.save(pref + '_G.h5')
     S.X.save(pref + '_chi0.h5')
@@ -227,7 +227,7 @@ def save_Bubble_DMFT(S, eps_range=0.0):
     S.Bubble.G_loc.save(pref + '_G_iw.h5')
     S.Bubble.Sigma.save(pref + '_self_energy.h5')
     Z = get_renorm_k(S.Bubble.Sigma, S.Bubble.Sigma.w_points)
-    Z.save(pref + "_renormalization.h5")
+    Z.save(pref + "_renormalization.h5", force_real=True)
     S.Bubble.G.save(pref + '_G.h5')
     S.Sigma_imp.save(pref + '_sigma_imp.h5')
     S.Sigma_nonloc.save(pref + '_sigma_nonloc.h5')

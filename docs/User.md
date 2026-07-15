@@ -62,6 +62,9 @@
 
 
 
+
+
+
 #### 🔸 `hamiltonian`
 
 - **DOS**
@@ -70,6 +73,7 @@
 - **FS**
   - [tetrahedra](src/hamiltonian/FS/tetrahedra/README.md)
 - **generate**
+  - [band_structure](src/hamiltonian/generate/band_structure/README.md) - Computes Hamiltonian, H(k) based on an H(r) tight-binding construction
   - [hk_from_hr](src/hamiltonian/generate/hk_from_hr/README.md) - Computes Hamiltonian, H(k) based on an H(r) tight-binding construction
 
 ---

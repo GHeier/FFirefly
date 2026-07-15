@@ -33,9 +33,16 @@ extern float smearing;
 extern float mixing;
 extern int max_iters;
 extern float qp_weight;
+extern int recurse_level;
 
 //[HAMILTONIAN]
 extern string hamiltonian;
+extern float eps_dx2y2;
+extern float eps_dz2;
+extern float eps_px;
+extern float eps_py;
+extern float eps_pz;
+extern float delta_dp;
 
 //[HUBBARD]
 extern float U0;
@@ -72,6 +79,11 @@ extern float t7;
 extern float t8;
 extern float t9;
 extern float t10;
+extern float tz0;
+extern float tz1;
+extern float tz2;
+extern float tz3;
+extern float tz4;
 
 //[SUPERCONDUCTOR]
 extern bool FS_only;

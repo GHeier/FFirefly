@@ -2,40 +2,37 @@ cmake_minimum_required(VERSION 3.14)
 
 project(Ffirefly VERSION 1.0 LANGUAGES C CXX Fortran)
 
-# Specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 add_definitions(-D_GLIBCXX_USE_CXX11_ABI=1)
 
-# Use ccache to speed up compilation
 set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
 set(CMAKE_C_COMPILER_LAUNCHER ccache)
 
-# Output directories
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fPIC -march=native -ffast-math -fopenmp")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -fPIC -fopenmp")
+
+# Find packages
+find_package(OpenMP REQUIRED)
+find_package(HDF5 REQUIRED COMPONENTS C CXX)
+find_package(OpenBLAS QUIET)
+find_package(FFTW3 QUIET)
+
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR})
-include_directories(${CMAKE_SOURCE_DIR}/external/h2pack/include)
-include_directories(/home/g/Research/H2Lib/Library)
+#include_directories(${CMAKE_SOURCE_DIR}/external/h2pack/include)
+include_directories(/usr/include/H2Lib/Library)
+include_directories(${HDF5_INCLUDE_DIRS})
 
-# Also include system headers for packages installed via pacman
-include_directories(/usr/include)
-link_directories(/usr/lib)
-
-# Compiler flags
-set(CMAKE_CXX_FLAGS "-O3 -fopenmp -fPIC -march=native -ffast-math")
-set(CMAKE_C_FLAGS "-fopenmp -fPIC")
-set(CMAKE_Fortran_FLAGS "-O3 -fopenmp -fPIC")
-
-# H2Pack library paths
-link_directories(${CMAKE_SOURCE_DIR}/external/h2pack/lib)
-link_directories(/home/g/Research/H2Lib)
+set(H2LIB /usr/include/H2Lib/libh2.a)
 
 # Libraries to link (removed -ljulia, Python linking handled separately below)
-set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -lopenblas -lhdf5_cpp -lhdf5 -lfftw3 -lfftw3f -lh2)
+#set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -lopenblas -lhdf5_cpp -lhdf5 -lfftw3 -lfftw3)
+set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -lopenblas -lfftw3 -lfftw3f ${HDF5_LIBRARIES} ${H2LIB} -fopenmp)
+#set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -lopenblas -lfftw3 -lfftw3f)
 
 # ---------------------------
 # BASE LIBRARY SOURCES
@@ -45,60 +42,61 @@ set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -lopenblas -lhdf5_cpp
 # Base library sources
 set(BASE_SOURCES
     src/algorithms/scf_interaction.c
-    src/algorithms/integration.cpp
-    src/algorithms/linear_algebra.cpp
-    src/algorithms/fft.cpp
     src/algorithms/symmetry.cpp
-    src/algorithms/electron_number.cpp
+    src/algorithms/fft.cpp
     src/algorithms/interpolate.cpp
+    src/algorithms/electron_number.cpp
+    src/algorithms/linear_algebra.cpp
+    src/algorithms/integration.cpp
     src/algorithms/tests/linalg_tests.cpp
-    src/algorithms/tests/fft_tests.cpp
     src/algorithms/tests/sym_tests.cpp
     src/algorithms/tests/all.cpp
-    src/config/load/jl_interface_stub.c
+    src/algorithms/tests/fft_tests.cpp
     src/config/load/c_config.c
     src/config/load/py_interface_stub.c
+    src/config/load/jl_interface_stub.c
     src/config/load/cpp_config.cpp
-    src/config/load/tests/py_interface_bool_tests.cpp
-    src/config/load/tests/py_interface_typed_tests.cpp
-    src/config/load/tests/jl_interface_typed_tests.cpp
     src/config/load/tests/all.cpp
+    src/config/load/tests/py_interface_bool_tests.cpp
+    src/config/load/tests/jl_interface_typed_tests.cpp
+    src/config/load/tests/py_interface_typed_tests.cpp
     src/hamiltonian/node.cpp
-    src/hamiltonian/models/band_structure.cpp
-    src/hamiltonian/models/preloaded_hamiltonians.cpp
     src/hamiltonian/models/interaction.cpp
+    src/hamiltonian/models/preloaded_hamiltonians.cpp
+    src/hamiltonian/models/band_structure.cpp
     src/module/exports/temp.cpp
     src/module/exports/cpp_export.cpp
-    src/objects/array.cpp
-    src/objects/matrix.cpp
     src/objects/hmatrix.cpp
-    src/objects/surfaces.cpp
+    src/objects/matrix.cpp
+    src/objects/array.cpp
     src/objects/eigenvec.cpp
+    src/objects/surfaces.cpp
     src/objects/vec.cpp
-    src/objects/CMField/field.cpp
-    src/objects/CMField/hamiltonian.cpp
-    src/objects/CMField/base_data.cpp
-    src/objects/CMField/field_funcs.cpp
-    src/objects/CMField/self_energy.cpp
-    src/objects/CMField/data_evaluator.cpp
-    src/objects/CMField/bands.cpp
-    src/objects/CMField/vertex.cpp
-    src/objects/CMField/fields.cpp
+    src/objects/tests/all.cpp
+    src/objects/tests/surface_tests.cpp
     src/objects/tests/hmatrix_tests.cpp
     src/objects/tests/array_tests.cpp
-    src/objects/tests/surface_tests.cpp
-    src/objects/tests/all.cpp
+    src/objects/CMField/bands.cpp
+    src/objects/CMField/fields.cpp
+    src/objects/CMField/field_funcs.cpp
+    src/objects/CMField/renormalization.cpp
+    src/objects/CMField/field.cpp
+    src/objects/CMField/self_energy.cpp
+    src/objects/CMField/vertex.cpp
+    src/objects/CMField/data_evaluator.cpp
+    src/objects/CMField/hamiltonian.cpp
+    src/objects/CMField/base_data.cpp
     src/objects/CMData/cmdata.cpp
     src/objects/CMData/tests/all.cpp
-    src/objects/CMField/tests/field_wrapper_tests.cpp
-    src/objects/CMField/tests/field_tests.cpp
-    src/objects/CMField/tests/base_data_tests.cpp
-    src/objects/CMField/tests/band_tests.cpp
-    src/objects/CMField/tests/hamiltonian_tests.cpp
-    src/objects/CMField/tests/matrix_field_tests.cpp
-    src/objects/CMField/tests/tensor_field_tests.cpp
     src/objects/CMField/tests/inds_field_tests.cpp
+    src/objects/CMField/tests/tensor_field_tests.cpp
+    src/objects/CMField/tests/band_tests.cpp
     src/objects/CMField/tests/quad_field_tests.cpp
+    src/objects/CMField/tests/field_tests.cpp
+    src/objects/CMField/tests/field_wrapper_tests.cpp
+    src/objects/CMField/tests/base_data_tests.cpp
+    src/objects/CMField/tests/matrix_field_tests.cpp
+    src/objects/CMField/tests/hamiltonian_tests.cpp
 )
 
 # END AUTO-GENERATED BASE LIBRARY SOURCES
@@ -242,8 +240,8 @@ set_target_properties(hamiltonian_DOS_tetrahedra PROPERTIES
 
 # hamiltonian/FS/tetrahedra
 add_executable(hamiltonian_FS_tetrahedra
-    src/hamiltonian/FS/tetrahedra/fs.cpp
     src/hamiltonian/FS/tetrahedra/run.cpp
+    src/hamiltonian/FS/tetrahedra/fs.cpp
     src/hamiltonian/FS/tetrahedra/tests/test.cpp
 )
 target_link_libraries(hamiltonian_FS_tetrahedra PRIVATE base)
@@ -256,8 +254,8 @@ set_target_properties(hamiltonian_FS_tetrahedra PROPERTIES
 
 # many_body/vertex/from_susceptibility
 add_executable(many_body_vertex_from_susceptibility
-    src/many_body/vertex/from_susceptibility/run.cpp
     src/many_body/vertex/from_susceptibility/vertex.cpp
+    src/many_body/vertex/from_susceptibility/run.cpp
     src/many_body/vertex/from_susceptibility/tests/test.cpp
 )
 target_link_libraries(many_body_vertex_from_susceptibility PRIVATE base)
@@ -298,14 +296,14 @@ set_target_properties(many_body_renormalization_from_sigma PROPERTIES
 
 # superconductor/bcs/matrix
 add_executable(superconductor_bcs_matrix
-    src/superconductor/bcs/matrix/save_data.cpp
-    src/superconductor/bcs/matrix/frequency_inclusion.cpp
-    src/superconductor/bcs/matrix/superconductor.cpp
     src/superconductor/bcs/matrix/solver.cpp
-    src/superconductor/bcs/matrix/run.cpp
-    src/superconductor/bcs/matrix/utilities.cpp
-    src/superconductor/bcs/matrix/cfg.cpp
+    src/superconductor/bcs/matrix/frequency_inclusion.cpp
     src/superconductor/bcs/matrix/matrix_creation.cpp
+    src/superconductor/bcs/matrix/save_data.cpp
+    src/superconductor/bcs/matrix/run.cpp
+    src/superconductor/bcs/matrix/cfg.cpp
+    src/superconductor/bcs/matrix/utilities.cpp
+    src/superconductor/bcs/matrix/superconductor.cpp
     src/superconductor/bcs/matrix/tests/test.cpp
 )
 target_link_libraries(superconductor_bcs_matrix PRIVATE base)

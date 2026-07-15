@@ -24,6 +24,8 @@ float epsilon(int n, Vec k) {
         return epsilon_FCC(n, k);
     if (band == "tight_binding" && celltype == "BCC")
         return epsilon_BCC(n, k);
+    if (band == "tight_binding" && celltype == "LSCO")
+        return epsilon_LSCO(n, k);
     if (band == "fermi_gas")
         return epsilon_fermi_gas(n, k);
     if (band == "noband") {
@@ -40,8 +42,6 @@ float e_diff(int n, Vec k, Vec q) { return epsilon(n, k + q) - epsilon(n, k); }
 // Fermi Velocity corresponds to energy band functions above
 float vp(int n, Vec k) {
     n--;
-    if (band == "simple_cubic_layered")
-        return fermi_velocity_SC_layered(n, k).norm();
     if (band == "tight_binding" && celltype == "SC") {
         return fermi_velocity_SC(n, k).norm();
     }
@@ -50,6 +50,9 @@ float vp(int n, Vec k) {
     }
     if (band == "tight_binding" && celltype == "FCC") {
         return fermi_velocity_FCC(n, k).norm();
+    }
+    if (band == "tight_binding" && celltype == "LSCO") {
+        return fermi_velocity_LSCO(n, k).norm();
     }
     if (band == "fermi_gas")
         return fermi_velocity_fermi_gas(n, k).norm();
@@ -62,9 +65,9 @@ float vp(int n, Vec k) {
 
 float vp_diff(int n, Vec k, Vec q) {
     Vec v;
-    if (band == "simple_cubic_layered")
-        v = fermi_velocity_SC_layered(n, k + q) -
-            fermi_velocity_SC_layered(n, k);
+    if (band == "LSCO")
+        v = fermi_velocity_LSCO(n, k + q) -
+            fermi_velocity_LSCO(n, k);
     else if (band == "simple_cubic")
         v = fermi_velocity_SC(n, k + q) - fermi_velocity_SC(n, k);
     else if (band == "fermi_gas")
@@ -120,25 +123,64 @@ Vec fermi_velocity_SC(int n, Vec k) {
 }
 
 // Cubic lattice with different hopping in z-direction
-float epsilon_SC_layered(int n, Vec k) {
+float epsilon_LSCO(int n, Vec k) {
+    float a = cell[0][0];
+    float c = cell[2][2];
     float val = 0.0;
-    for (int i = 0; i < dimension; i++) {
-        if (i < 2)
-            val += (-2 * t0) * (cos(k(i)));
-        else
-            val += (-2 * t1) * (cos(k(i)));
-    }
+// 2D dispersion
+    val += -2 * t0 * (cos(k(0)) + cos(k(1)));
+    val += -4 * t1 * cos(k(0)) * cos(k(1));
+    val += -2 * t2 * (cos(2*k(0)) + cos(2*k(1)));
+    val += -2 * t3 * (cos(2*k(0))*cos(k(1)) + cos(k(0))*cos(2*k(1)));
+// kz dispersion 
+    val += -2 * tz0 * pow((cos(k(0)) - cos(k(1))),2) * cos(k(0)/2) * cos(k(1)/2) * cos(k(2)/2 * c/a);
     return val;
 }
 
-Vec fermi_velocity_SC_layered(int n, Vec k) {
-    Vec v;
-    for (int i = 0; i < dimension; i++) {
-        if (i < 2)
-            v(i) = (-2 * t0) * (-sin(k(i)));
-        else
-            v(i) = (-2 * t1) * (-sin(k(i)));
-    }
+Vec fermi_velocity_LSCO(int n, Vec k) {
+
+    double a = cell[0][0];
+    double c = cell[2][2];
+
+    double kx = k(0);
+    double ky = k(1);
+    double kz = k(2);
+
+    double A = cos(kx) - cos(ky);
+    double B = cos(kx/2);
+    double C = cos(ky/2);
+    double D = cos(kz*c/(2*a));
+
+    Vec v(3);
+
+    // vx
+    v(0) =
+          2*t0*sin(kx)
+        + 4*t1*sin(kx)*cos(ky)
+        + 4*t2*sin(2*kx)
+        + 4*t3*sin(2*kx)*cos(ky)
+        + 2*t3*sin(kx)*cos(2*ky)
+        + 2*tz0*D*C*
+          ( 2*A*sin(kx)*B
+            + 0.5*A*A*sin(kx/2) );
+
+    // vy
+    v(1) =
+          2*t0*sin(ky)
+        + 4*t1*cos(kx)*sin(ky)
+        + 4*t2*sin(2*ky)
+        + 2*t3*cos(2*kx)*sin(ky)
+        + 4*t3*cos(kx)*sin(2*ky)
+        - 2*tz0*D*B*
+          ( 2*A*sin(ky)*C
+            - 0.5*A*A*sin(ky/2) );
+
+    // vz
+    v(2) =
+          tz0*(c/a)
+          *A*A*B*C
+          *sin(kz*c/(2*a));
+
     return v;
 }
 

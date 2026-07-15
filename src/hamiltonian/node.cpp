@@ -23,6 +23,10 @@ extern "C" void hamiltonian_wrapper() {
         if (debug) run_python_test("hk_from_hr");
         else run_python_method("hk_from_hr");
     }
+    else if (calculation == "generate" && method == "band_structure") {
+        if (debug) run_python_test("band_structure");
+        else run_python_method("band_structure");
+    }
     else {
         printf("In hamiltonian category, calculation `%s` with method `%s` not recognized\n", calculation.c_str(), method.c_str());
     }

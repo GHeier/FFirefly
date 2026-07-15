@@ -1,0 +1,14 @@
+using Firefly
+cfg = Firefly.Config
+
+kmesh = cfg.k_mesh
+
+function run()
+    # Main function call goes here
+    println("Hello World! This is a Firefly run with k-mesh:", kmesh)
+    return 3.14
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__ # Runs on file execution
+    run()
+end

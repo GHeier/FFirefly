@@ -68,9 +68,23 @@ module ffirefly
     integer :: max_iters
     real(c_float), bind(C, name="c_qp_weight") :: c_qp_weight
     real :: qp_weight
+    integer(c_int), bind(C, name="c_recurse_level") :: c_recurse_level
+    integer :: recurse_level
 
 ![HAMILTONIAN]
     character(len=50) :: hamiltonian
+    real(c_float), bind(C, name="c_eps_dx2y2") :: c_eps_dx2y2
+    real :: eps_dx2y2
+    real(c_float), bind(C, name="c_eps_dz2") :: c_eps_dz2
+    real :: eps_dz2
+    real(c_float), bind(C, name="c_eps_px") :: c_eps_px
+    real :: eps_px
+    real(c_float), bind(C, name="c_eps_py") :: c_eps_py
+    real :: eps_py
+    real(c_float), bind(C, name="c_eps_pz") :: c_eps_pz
+    real :: eps_pz
+    real(c_float), bind(C, name="c_delta_dp") :: c_delta_dp
+    real :: delta_dp
 
 ![HUBBARD]
     real(c_float), bind(C, name="c_U0") :: c_U0
@@ -129,6 +143,16 @@ module ffirefly
     real :: t9
     real(c_float), bind(C, name="c_t10") :: c_t10
     real :: t10
+    real(c_float), bind(C, name="c_tz0") :: c_tz0
+    real :: tz0
+    real(c_float), bind(C, name="c_tz1") :: c_tz1
+    real :: tz1
+    real(c_float), bind(C, name="c_tz2") :: c_tz2
+    real :: tz2
+    real(c_float), bind(C, name="c_tz3") :: c_tz3
+    real :: tz3
+    real(c_float), bind(C, name="c_tz4") :: c_tz4
+    real :: tz4
 
 ![SUPERCONDUCTOR]
     logical(c_bool), bind(C, name="c_FS_only") :: c_FS_only
@@ -206,11 +230,18 @@ module ffirefly
 
 
 
+
 ![HAMILTONIAN]
         function get_hamiltonian() bind(C)
             use iso_c_binding
             type(c_ptr) :: get_hamiltonian
     end function get_hamiltonian
+
+
+
+
+
+
 
 ![HUBBARD]
 
@@ -241,6 +272,11 @@ module ffirefly
             use iso_c_binding
             type(c_ptr) :: get_band
     end function get_band
+
+
+
+
+
 
 
 
@@ -353,9 +389,16 @@ contains
         mixing = c_mixing
         max_iters = c_max_iters
         qp_weight = c_qp_weight
+        recurse_level = c_recurse_level
 
 ![HAMILTONIAN]
         hamiltonian = get_string(get_hamiltonian())
+        eps_dx2y2 = c_eps_dx2y2
+        eps_dz2 = c_eps_dz2
+        eps_px = c_eps_px
+        eps_py = c_eps_py
+        eps_pz = c_eps_pz
+        delta_dp = c_delta_dp
 
 ![HUBBARD]
         U0 = c_U0
@@ -398,6 +441,11 @@ contains
         t8 = c_t8
         t9 = c_t9
         t10 = c_t10
+        tz0 = c_tz0
+        tz1 = c_tz1
+        tz2 = c_tz2
+        tz3 = c_tz3
+        tz4 = c_tz4
 
 ![SUPERCONDUCTOR]
         FS_only = c_FS_only

@@ -104,12 +104,12 @@ def unpack(filename):
         return value
 
     def parse_list_value(value):
-        return [int(x) for x in value.split()]
+        return [int(x) for x in value.split('#')[0].split()]
 
     with open(filename, 'r') as f:
         for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
+            line = line.split('#', 1)[0].strip()
+            if not line:
                 continue
 
             # Section header
@@ -127,7 +127,7 @@ def unpack(filename):
             # Matrix-style lines (no "=")
             if "=" not in line and current_section:
                 parts = line.split()
-                if all(p.replace('.', '', 1).replace('-', '', 1).isdigit() for p in parts):
+                if parts and all(p.replace('.', '', 1).replace('-', '', 1).isdigit() for p in parts):
                     if not collecting_matrix:
                         collecting_matrix = True
                         matrix_buffer = []

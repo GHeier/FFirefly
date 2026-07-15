@@ -33,9 +33,16 @@ extern float c_smearing;
 extern float c_mixing;
 extern int c_max_iters;
 extern float c_qp_weight;
+extern int c_recurse_level;
 
 //[HAMILTONIAN]
 extern char* c_hamiltonian; char* get_hamiltonian();
+extern float c_eps_dx2y2;
+extern float c_eps_dz2;
+extern float c_eps_px;
+extern float c_eps_py;
+extern float c_eps_pz;
+extern float c_delta_dp;
 
 //[HUBBARD]
 extern float c_U0;
@@ -72,6 +79,11 @@ extern float c_t7;
 extern float c_t8;
 extern float c_t9;
 extern float c_t10;
+extern float c_tz0;
+extern float c_tz1;
+extern float c_tz2;
+extern float c_tz3;
+extern float c_tz4;
 
 //[SUPERCONDUCTOR]
 extern bool c_FS_only;

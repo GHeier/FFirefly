@@ -20,7 +20,8 @@ CATEGORIES = {
             "tetrahedra": "c++"
         },
         "generate": {
-            "hk_from_hr": "python"
+            "hk_from_hr": "python",
+            "band_structure": "python"
         }
     },
     "many_body": {

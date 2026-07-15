@@ -22,20 +22,10 @@ def make_run_file(language, dir, template_dir):
         src = template_dir / "julia_run.txt"
         shutil.copy2(src, file_path)
     elif language == "c++":
-        # Determine project root dynamically
-        script_dir = Path(__file__).parent  # .../src/config/write
-        project_root = script_dir.parent.parent.parent  # .../FFirefly
-        config_path = project_root / "build/bin/input.cfg"
-
-        # Read template and replace placeholder
+        # The template resolves its config path at runtime via get_loc(), so it
+        # works regardless of where the repo is checked out - no substitution needed.
         src = template_dir / "cpp_run.txt"
-        with open(src, 'r') as f:
-            template = f.read()
-        content = template.replace("{CONFIG_PATH}", str(config_path))
-
-        # Write customized file
-        with open(file_path, 'w') as f:
-            f.write(content)
+        shutil.copy2(src, file_path)
 
         # Copy hpp file as-is
         src = template_dir / "hpp_run.txt"

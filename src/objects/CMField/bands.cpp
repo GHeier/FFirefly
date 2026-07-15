@@ -16,18 +16,24 @@ Bands::Bands() {
     file_found = false;
     nbands = 0;
 
-    string filename = outdir + prefix + "_Hk.h5";
-    ifstream file(filename);
+    for (int i = 1; i <= nbnd; i++) {
+        string filename = outdir + prefix + "_bands_" + to_string(i) + ".h5";
+        ifstream file(filename);
 
-    if (file.is_open()) {
-        file.close();
-        // Load the Hamiltonian as a complex matrix field
-        Field_CM H(filename);
-        fill_grid(H);
-        file_found = true;
-        printv("Read in Hamiltonian from %s\n", filename.c_str());
+        if (file.is_open()) {
+            file.close();
+            Field_R tmp(filename);
+            band_fields.push_back(tmp);
+            file_found = true;
+            printv("Read in bands from %s\n", filename.c_str());
+        } else if (i == 1) {
+            printv("No band file found at %s. Using default band structure\n", filename.c_str());
+        }
+    }
+
+    if (file_found) {
+        nbands = (int)band_fields.size();
     } else {
-        printv("No Hamiltonian file found at %s. Using default band structure\n", filename.c_str());
         nbands = 1;
     }
 }
@@ -44,11 +50,11 @@ void Bands::fill_grid(Field_CM &H) {
     vector<vector<eigvec>> eigenvectors(nbands, vector<eigvec>(nk[0] * nk[1] * nk[2], eigvec(0)));
     int ind = 0;
     for (int i = 0; i < nk[0]; i++) {
-        float x = (float)i / (float)(nk[0] - 1) - 0.5;
+        float x = (nk[0] > 1) ? (float)i / (float)(nk[0] - 1) - 0.5 : 0.0f;
         for (int j = 0; j < nk[1]; j++) {
-            float y = (float)j / (float)(nk[1] - 1) - 0.5;
+            float y = (nk[1] > 1) ? (float)j / (float)(nk[1] - 1) - 0.5 : 0.0f;
             for (int k = 0; k < nk[2]; k++) {
-                float z = (float)k / (float)(nk[2] - 1) - 0.5;
+                float z = (nk[2] > 1) ? (float)k / (float)(nk[2] - 1) - 0.5 : 0.0f;
                 Vec kpoint = brillouin_zone * Vec(x, y, z);
                 auto eigvals_and_vecs = H.fulldiag(kpoint, 0.0);
                 if (eigvals_and_vecs.empty()) {
@@ -84,6 +90,7 @@ float Bands::operator()(int n, Vec k) {
     }
 
     // Return eigenvalue for band n (n is 1-indexed)
+    //return bands(n-1,k);
     return band_fields[n - 1](k, 0.0f);
 }
 
@@ -97,5 +104,6 @@ float Bands::operator()(Vec k) {
     }
 
     // Return eigenvalue for band n (n is 1-indexed)
+    //return bands(n-1,k);
     return band_fields[0](k, 0.0f);
 }

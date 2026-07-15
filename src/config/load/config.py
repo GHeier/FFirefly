@@ -27,9 +27,16 @@ smearing = 0.02
 mixing = 0.02
 max_iters = 100
 qp_weight = 1.0
+recurse_level = 0
 
 #[HAMILTONIAN]
 hamiltonian = 'tight_binding'
+eps_dx2y2 = 0.0
+eps_dz2 = 0.0
+eps_px = 0.0
+eps_py = 0.0
+eps_pz = 0.0
+delta_dp = 0.0
 
 #[HUBBARD]
 U0 = 0.0
@@ -66,6 +73,11 @@ t7 = 0.0
 t8 = 0.0
 t9 = 0.0
 t10 = 0.0
+tz0 = 0.0
+tz1 = 0.0
+tz2 = 0.0
+tz3 = 0.0
+tz4 = 0.0
 
 #[SUPERCONDUCTOR]
 FS_only = True
@@ -190,11 +202,32 @@ def load_config():
             if "qp_weight" in key:
                 global qp_weight
                 qp_weight = float(value)
+            if "recurse_level" in key:
+                global recurse_level
+                recurse_level = int(value)
 
 #[HAMILTONIAN]
             if "hamiltonian" in key:
                 global hamiltonian
                 hamiltonian = value
+            if "eps_dx2y2" in key:
+                global eps_dx2y2
+                eps_dx2y2 = float(value)
+            if "eps_dz2" in key:
+                global eps_dz2
+                eps_dz2 = float(value)
+            if "eps_px" in key:
+                global eps_px
+                eps_px = float(value)
+            if "eps_py" in key:
+                global eps_py
+                eps_py = float(value)
+            if "eps_pz" in key:
+                global eps_pz
+                eps_pz = float(value)
+            if "delta_dp" in key:
+                global delta_dp
+                delta_dp = float(value)
 
 #[HUBBARD]
             if "U0" in key:
@@ -282,6 +315,21 @@ def load_config():
             if "t10" in key:
                 global t10
                 t10 = float(value)
+            if "tz0" in key:
+                global tz0
+                tz0 = float(value)
+            if "tz1" in key:
+                global tz1
+                tz1 = float(value)
+            if "tz2" in key:
+                global tz2
+                tz2 = float(value)
+            if "tz3" in key:
+                global tz3
+                tz3 = float(value)
+            if "tz4" in key:
+                global tz4
+                tz4 = float(value)
 
 #[SUPERCONDUCTOR]
             if "FS_only" in key:
@@ -314,9 +362,6 @@ def load_config():
             print("Error: Brillouin zone not specified.")
             brillouin_zone = BZ_from_cell(cell)
         #band = band[1:]
-        if len(band) != nbnd and nbnd != 1:
-            print("Error: Number of bands does not match number of bands specified in input.")
-            sys.exit(1)
 
         #nbnd = len(band)
         if outdir[-1] != '/':

@@ -11,9 +11,6 @@ dependencies = []
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-package-dir = {"" = "firefly"} 
-#packages = ["ffirefly"]
-
 [tool.setuptools.packages.find]
-where = ["firefly"]
+where = ["."]
+include = ["firefly*"]

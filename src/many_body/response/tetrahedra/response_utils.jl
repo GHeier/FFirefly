@@ -10,8 +10,17 @@ This module contains helper functions for:
 
 using BZIntegral
 using BZIntegral.BZInt2D
+using BZIntegral.BZInt3D
 using Interpolations
 using Printf
+
+# Small generic offset (in fractional k-coords) applied to the k-mesh used for
+# the tetrahedron 1D integration. Prevents mesh vertices from landing exactly on
+# high-symmetry nesting manifolds (e.g. e(k+q)=e(k)), which causes the analytic
+# 1/D tetrahedron weight (FracTetraWeight) to blow up as D->0 at a vertex.
+
+#const K_MESH_SHIFT = (0.013, 0.017, 0.019)
+const K_MESH_SHIFT = (0.0, 0.0, 0.0)
 
 """
     get_fractional_mesh(n; centered=true)
@@ -63,9 +72,9 @@ function get_kmesh(BZ::AbstractMatrix{<:Real}, n; centered=true)
     nx, ny, nz = n
 
     if centered
-        xs = (0:nx-1) ./ nx .- 0.5
-        ys = (0:ny-1) ./ ny .- 0.5
-        zs = (0:nz-1) ./ nz .- 0.5
+        xs = (0:nx-1) ./ nx .- 0.5 .+ K_MESH_SHIFT[1] ./ nx
+        ys = (0:ny-1) ./ ny .- 0.5 .+ K_MESH_SHIFT[2] ./ ny
+        zs = (0:nz-1) ./ nz .- 0.5 .+ K_MESH_SHIFT[3] ./ nz
     else
         xs = (0:nx-1) ./ nx
         ys = (0:ny-1) ./ ny
@@ -99,10 +108,12 @@ Evaluate E(k+q) for all k on the grid with periodic boundary conditions.
 function evaluate_Ekq_on_grid(itp_Ek, kmesh, q_frac, dim=3)
     nkx, nky, nkz = kmesh
 
-    # Original k-grid in fractional coordinates (centered: -0.5 to 0.5)
-    kx_frac = (0:nkx-1) ./ nkx .- 0.5
-    ky_frac = (0:nky-1) ./ nky .- 0.5
-    kz_frac = (0:nkz-1) ./ nkz .- 0.5
+    # Original k-grid in fractional coordinates (centered: -0.5 to 0.5),
+    # using the same K_MESH_SHIFT offset as get_kmesh so this grid matches the
+    # one E(k) was actually evaluated on.
+    kx_frac = (0:nkx-1) ./ nkx .- 0.5 .+ K_MESH_SHIFT[1] ./ nkx
+    ky_frac = (0:nky-1) ./ nky .- 0.5 .+ K_MESH_SHIFT[2] ./ nky
+    kz_frac = (0:nkz-1) ./ nkz .- 0.5 .+ K_MESH_SHIFT[3] ./ nkz
 
     # Add q shift and apply periodic boundary conditions: wrap to [-0.5, 0.5)
     kxq_frac = mod.(kx_frac .+ q_frac[1] .+ 0.5, 1.0) .- 0.5
@@ -156,28 +167,32 @@ function calculate_dos(E, Ek_mesh, iter=2)
 end
 
 """
-    calculate_response_bzintegral_2(w, Ek_mesh, Ekq_mesh, mu, iter=2)
+    calculate_response_bzintegral_2(w, Ek_mesh, Ekq_mesh, Zk_mesh, Zkq_mesh, mu, iter=2)
 
-Calculate response function using BZIntegral tetrahedron method.
+Calculate response function using BZIntegral tetrahedron method, including the
+quasiparticle renormalization Z(k).
 
-χ₀(q,ω) = -2 ∫dk [f(ε(k+q)) - f(ε(k))] / [ω + ε(k) - ε(k+q) + iη]
+χ₀(q,ω) = -∫dk Z(k)Z(k+q) [f(ε(k+q)) - f(ε(k))] / [ω + ε(k) - ε(k+q) + iη]
 
 For the integrand F(k) = 1/[ω + ε(k) - ε(k+q) + iη], we compute:
   ∫ Θ(-ε(k+q)) * F(k) dk  -  ∫ Θ(-ε(k)) * F(k) dk
+and weight each k-point's contribution by Z(k)Z(k+q) before summing.
 
 # Arguments
 - `w`: Frequency
 - `Ek_mesh`: E(k) on k-mesh
 - `Ekq_mesh`: E(k+q) on k-mesh
+- `Zk_mesh`: Z(k) on k-mesh
+- `Zkq_mesh`: Z(k+q) on k-mesh
 - `mu`: Chemical potential
 - `iter`: Iteration parameter for tetrahedron integration
 
 # Returns
 - Complex susceptibility value at (q, ω)
 """
-function calculate_response_bzintegral_2(w, Ek_mesh, Ekq_mesh, mu, iter=2)
+function calculate_response_bzintegral_2(w, Ek_mesh, Ekq_mesh, Zk_mesh, Zkq_mesh, mu, iter=2)
     # Denominator: ω + ε(k) - ε(k+q) + small eta to avoid division by zero
-    eta = 1e-4  # Small broadening parameter
+    eta = 1e-2  # Small broadening parameter
     denom = w .+ Ek_mesh .- Ekq_mesh .+ eta
 
     dim = ndims(Ek_mesh)
@@ -190,7 +205,10 @@ function calculate_response_bzintegral_2(w, Ek_mesh, Ekq_mesh, mu, iter=2)
         error("Dimension must be 2 or 3")
     end
 
-    out = -1.0 * sum(Wmesh)  # Don't include -2 spin factor
+    # Numerator weight Z(k)Z(k+q), applied per-k-point before summing
+    Fmesh = Zk_mesh .* Zkq_mesh
+
+    out = -1.0 * sum(Fmesh .* Wmesh)  # Don't include -2 spin factor
     return out
 end
 

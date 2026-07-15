@@ -165,7 +165,7 @@ class Bubble_DMFTSolver:
             old_m_star = m_star
 
         if n_loops == 1:
-            self.Bubble.Sigma = add_local_to_nonlocal(self.Sigma_nonloc, self.Sigma_loc)
+            self.Bubble.Sigma = add_local_to_nonlocal(self.Sigma_nonloc, self.IPT.Sigma_imp)
             #self.Bubble.Sigma = self.Sigma_nonloc.copy()
         m_star_dmft = get_renorm(self.IPT.Sigma_imp.obj_w.data, self.IPT.Sigma_imp.w_points)
         print("DMFT Z = ", 1/m_star_dmft)

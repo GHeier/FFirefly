@@ -4,6 +4,7 @@
 #include "src/config/load/cpp_config.hpp"
 #include "src/objects/CMField/fields.hpp"
 #include "src/objects/CMField/vertex.hpp"
+#include "src/objects/CMField/renormalization.hpp"
 #include "src/objects/CMField/self_energy.hpp"
 #include "src/objects/CMField/hamiltonian.hpp"
 #include "src/objects/CMField/base_data.hpp"
@@ -255,6 +256,16 @@ void Vertex_operator_export0(Vertex *obj, const float *point, int len, float w,
     complex<float> r = obj->operator()(v, w);
     *real_result = real(r);
     *imag_result = imag(r);
+}
+
+Renormalization *Renormalization_export0() {
+    ensure_cpp_config_loaded();
+    return new Renormalization();
+}
+
+float Renormalization_operator_export0(Renormalization *obj, const float *point, int len) {
+    Vec v(point, len);
+    return obj->operator()(v);
 }
 
 Self_Energy *Self_Energy_export0() {
@@ -811,6 +822,8 @@ void destroy_Field_CM(Field_CM *a) { delete a; }
 void destroy_Bands(Bands *a) { delete a; }
 
 void destroy_Vertex(Vertex *a) { delete a; }
+
+void destroy_Renormalization(Renormalization *a) { delete a; }
 
 void destroy_Self_Energy(Self_Energy *a) { delete a; }
 

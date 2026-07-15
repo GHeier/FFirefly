@@ -9,6 +9,7 @@ export epsilon,
        norm,
        Bands,
        Vertex,
+       Renormalization,
        Self_Energy,
        Hamiltonian,
        file_found,
@@ -239,7 +240,7 @@ end
 
 
 # Begin Functions
-export Field_C, Field_R, Field_RM, Field_CM, Vertex, epsilon
+export Field_C, Field_R, Field_RM, Field_CM, Vertex, Renormalization, epsilon
 
 function epsilon(arg0::Int, arg1::Vector{Float64})
     newarg1 = Float32.(arg1)
@@ -364,6 +365,35 @@ function (self::Vertex)(k::Vec, w=0f0)::ComplexF32
 end
 
 function Base.finalize(obj::Vertex)
+    destroy!(obj)
+end
+
+mutable struct Renormalization
+    ptr::Ptr{Cvoid}
+end
+
+function Renormalization()
+    ptr = ccall((:Renormalization_export0, libfly), Ptr{Cvoid}, ())
+    return Renormalization(ptr)
+end
+
+function (self::Renormalization)(k::Vector{Float64})::Float32
+    newk::Vector{Float32} = Float32.(k)
+    len = length(newk)
+    return ccall((:Renormalization_operator_export0, libfly), Cfloat, (Ptr{Cvoid}, Ptr{Float32}, Cint), self.ptr, newk, len)
+end
+
+function (self::Renormalization)(k::Vec)::Float32
+    newk::Vector{Float32} = [k.x, k.y, k.z]
+    len = length(newk)
+    return ccall((:Renormalization_operator_export0, libfly), Cfloat, (Ptr{Cvoid}, Ptr{Float32}, Cint), self.ptr, newk, len)
+end
+
+function destroy!(obj::Renormalization)
+    ccall((:destroy_Renormalization, libfly), Cvoid, (Ptr{Cvoid},), obj.ptr)
+end
+
+function Base.finalize(obj::Renormalization)
     destroy!(obj)
 end
 

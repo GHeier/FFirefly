@@ -42,9 +42,16 @@ float smearing;
 float mixing;
 int max_iters;
 float qp_weight;
+int recurse_level;
 
 //[HAMILTONIAN]
 string hamiltonian;
+float eps_dx2y2;
+float eps_dz2;
+float eps_px;
+float eps_py;
+float eps_pz;
+float delta_dp;
 
 //[HUBBARD]
 float U0;
@@ -81,6 +88,11 @@ float t7;
 float t8;
 float t9;
 float t10;
+float tz0;
+float tz1;
+float tz2;
+float tz3;
+float tz4;
 
 //[SUPERCONDUCTOR]
 bool FS_only;
@@ -129,9 +141,16 @@ extern "C" void load_cpp_config() {
     mixing = c_mixing;
     max_iters = c_max_iters;
     qp_weight = c_qp_weight;
+    recurse_level = c_recurse_level;
 
 //[HAMILTONIAN]
     hamiltonian = c_hamiltonian;
+    eps_dx2y2 = c_eps_dx2y2;
+    eps_dz2 = c_eps_dz2;
+    eps_px = c_eps_px;
+    eps_py = c_eps_py;
+    eps_pz = c_eps_pz;
+    delta_dp = c_delta_dp;
 
 //[HUBBARD]
     U0 = c_U0;
@@ -168,6 +187,11 @@ extern "C" void load_cpp_config() {
     t8 = c_t8;
     t9 = c_t9;
     t10 = c_t10;
+    tz0 = c_tz0;
+    tz1 = c_tz1;
+    tz2 = c_tz2;
+    tz3 = c_tz3;
+    tz4 = c_tz4;
 
 //[SUPERCONDUCTOR]
     FS_only = c_FS_only;
@@ -238,7 +262,7 @@ bool isDirectoryExisting(const std::string& path) {
 
 void ensure_cpp_config_loaded() {
     if (!cpp_config_loaded) {
-        read_c_config("/home/g/Research/FFirefly/build/bin/input.cfg");
+        read_c_config((get_loc() + "input.cfg").c_str());
         load_cpp_config();
     }
 }

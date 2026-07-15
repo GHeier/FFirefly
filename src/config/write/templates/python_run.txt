@@ -1,0 +1,12 @@
+import firefly as fly
+import firefly.config as cfg
+
+kmesh = cfg.k_mesh
+
+def run():
+    # Main function call goes here
+    print("Hello World! This is a Firefly run with k-mesh:", kmesh)
+    return 3.14
+
+if __name__ == "__main__":
+    run()

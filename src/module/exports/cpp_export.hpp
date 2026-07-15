@@ -2,6 +2,8 @@
 
 #include "src/objects/CMField/fields.hpp" // Include field class
 #include "src/objects/CMField/bands.hpp"
+#include "src/objects/CMField/vertex.hpp"
+#include "src/objects/CMField/renormalization.hpp"
 #include <complex>
 
 float epsilon_export(int n, float kx, float ky = 0, float kz = 0);
@@ -10,6 +12,16 @@ float Bands_operator_export0(Bands *obj, int n, const float *point, int len);
 void Bands_operator_export0_numpy(Bands *obj, int n, const float *points, int num_points, int len, float *output);
 float Bands_operator_export1(Bands *obj, int n, const float *point, int len);
 void Bands_operator_export1_numpy(Bands *obj, int n, const float *points, int num_points, int len, float *output);
+
+Vertex *Vertex_export0();
+void Vertex_operator_export0(Vertex *obj, const float *point, int len, float w,
+                             float *real_result, float *imag_result);
+void destroy_Vertex(Vertex *a);
+
+Renormalization *Renormalization_export0();
+float Renormalization_operator_export0(Renormalization *obj, const float *point, int len);
+void destroy_Renormalization(Renormalization *a);
+
 int Field_R_nbnd_export0(Field_R* a);
 int Field_C_nbnd_export0(Field_C* a);
 Field_R *Field_R_export0();

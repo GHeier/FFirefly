@@ -33,9 +33,16 @@ smearing::Float64 = cfg.smearing
 mixing::Float64 = cfg.mixing
 max_iters::Int = cfg.max_iters
 qp_weight::Float64 = cfg.qp_weight
+recurse_level::Int = cfg.recurse_level
 
 #[HAMILTONIAN]
 hamiltonian::String = cfg.hamiltonian
+eps_dx2y2::Float64 = cfg.eps_dx2y2
+eps_dz2::Float64 = cfg.eps_dz2
+eps_px::Float64 = cfg.eps_px
+eps_py::Float64 = cfg.eps_py
+eps_pz::Float64 = cfg.eps_pz
+delta_dp::Float64 = cfg.delta_dp
 
 #[HUBBARD]
 U0::Float64 = cfg.U0
@@ -72,6 +79,11 @@ t7::Float64 = cfg.t7
 t8::Float64 = cfg.t8
 t9::Float64 = cfg.t9
 t10::Float64 = cfg.t10
+tz0::Float64 = cfg.tz0
+tz1::Float64 = cfg.tz1
+tz2::Float64 = cfg.tz2
+tz3::Float64 = cfg.tz3
+tz4::Float64 = cfg.tz4
 
 #[SUPERCONDUCTOR]
 FS_only::Bool = cfg.FS_only

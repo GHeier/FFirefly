@@ -18,10 +18,10 @@ float run() {
 
 int main() {
     // Load configuration from the build directory
-    const char* config_path = "/home/g/Research/FFirefly/build/bin/input.cfg";
+    std::string config_path = get_loc() + "input.cfg";
 
     // Load configuration using existing infrastructure
-    read_c_config(config_path);
+    read_c_config(config_path.c_str());
     load_cpp_config();
 
     // Run the method

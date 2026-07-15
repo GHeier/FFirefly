@@ -411,6 +411,33 @@ lib.Field_R_get_dimension.restype = c_int
 
 #End Objects
 
+# Renormalization Object
+lib.Renormalization_export0.argtypes = []
+lib.Renormalization_export0.restype = c_void_p
+
+lib.Renormalization_operator_export0.argtypes = [c_void_p, POINTER(c_float), c_int]
+lib.Renormalization_operator_export0.restype = c_float
+
+lib.destroy_Renormalization.argtypes = [c_void_p]
+lib.destroy_Renormalization.restype = None
+
+class Renormalization:
+    def __init__(self):
+        self.ptr = lib.Renormalization_export0()
+        if not self.ptr:
+            raise RuntimeError("Failed to initialize Renormalization")
+
+    def __call__(self, k):
+        k_array = (c_float * len(k))(*[float(x) for x in k])
+        k_len = c_int(len(k))
+        return lib.Renormalization_operator_export0(self.ptr, k_array, k_len)
+
+    def __del__(self):
+        try:
+            lib.destroy_Renormalization(self.ptr)
+        except AttributeError:
+            pass
+
 lib.Field_C_export0.argtypes = []
 lib.Field_C_export0.restype = ctypes.c_void_p
 #lib.Field_C_export1.argtypes = [ctypes.c_char_p]
