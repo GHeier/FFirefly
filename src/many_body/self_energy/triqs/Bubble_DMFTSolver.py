@@ -1,13 +1,14 @@
 from triqs.gf import inverse, Gf
 from triqs.gf.meshes import MeshDLRImFreq
 from IPTSolver import IPTSolver
+from CTHYBSolver import CTHYBSolver
 from BubbleSolver import BubbleSolver
 import numpy as np
 
 from firefly.diagram import Diagram, dot_t, get_renorm
 
 class Bubble_DMFTSolver:
-    def __init__(self, H, G0, U=0.0, mix=0.2, n=None, mu=None):
+    def __init__(self, H, G0, U=0.0, mix=0.2, n=None, mu=None, impurity_solver='IPT'):
         self.U = U
         self.mix = mix
         self.n = n
@@ -30,11 +31,18 @@ class Bubble_DMFTSolver:
 
         self.Bubble = BubbleSolver(self.G0.obj_wk, U, mix=mix, n=n, mu=mu)
         mu = self.Bubble.find_mu_for_density(n)
-        self.IPT = IPTSolver(self.beta, H, mix=0.2, w_max=self.w_max, eps=self.eps, mu=mu, n_loops=200)
+        # Only the solver is chosen here -- IPTSolver and CTHYBSolver expose the same
+        # G_weiss/Sigma_imp/G_loc/.loop()/.solve()/.get_IPT_Sigma()/.set_G_loc()
+        # interface, so everything below (solve_Bubble_DMFT_*, loop_Bubble_DMFT) is
+        # written against self.DMFT generically and doesn't care which one it is.
+        if impurity_solver == 'CTHYB':
+            self.DMFT = CTHYBSolver(self.beta, H, mu=mu, mix=0.2, w_max=self.w_max, eps=self.eps, n_loops=200)
+        else:
+            self.DMFT = IPTSolver(self.beta, H, mix=0.2, w_max=self.w_max, eps=self.eps, mu=mu, n_loops=200)
 
         DLR_b = MeshDLRImFreq(beta=self.beta, statistic='Boson', w_max=self.w_max, eps=self.eps)
 
-        self.Sigma_loc = self.IPT.G_loc.copy()
+        self.Sigma_loc = self.DMFT.G_loc.copy()
         self.Sigma_loc.zero()
         self.Sigma_imp = self.Sigma_loc.copy()
         self.Sigma_SOPT = self.Sigma_loc.copy()  # Initialize to zero for first iteration
@@ -44,14 +52,14 @@ class Bubble_DMFTSolver:
 
         self.X_loc = Diagram(Gf(mesh=DLR_b, target_shape=(self.G0.obj_wk.target_shape)), 'Boson')
 
-    def solve_Bubble_DMFT_ave(self, Bubble, IPT):
+    def solve_Bubble_DMFT_ave(self, Bubble, DMFT):
 
-        IPT.loop(self.U)
+        DMFT.loop(self.U)
 
-        #self.Sigma_imp = IPT.get_IPT_Sigma(self.U, IPT.G_weiss)
+        #self.Sigma_imp = DMFT.get_IPT_Sigma(self.U, DMFT.G_weiss)
 
-        self.Sigma_imp = IPT.Sigma_imp.copy()
-        print("IPT) ", get_renorm(self.Sigma_imp.obj_w.data, self.Sigma_imp.w_points) - 1)
+        self.Sigma_imp = DMFT.Sigma_imp.copy()
+        print("DMFT) ", get_renorm(self.Sigma_imp.obj_w.data, self.Sigma_imp.w_points) - 1)
 
         new_sigma_k = add_local_to_nonlocal(self.Sigma_nonloc, self.Sigma_imp)
         self.Sigma_k.obj_wk.data[:] = self.mix * new_sigma_k.obj_wk.data + (1.0 - self.mix) * self.Sigma_k.obj_wk.data
@@ -74,9 +82,9 @@ class Bubble_DMFTSolver:
         self.Sigma_k.obj_wk.data[:] = self.mix * new_sigma_k.obj_wk.data + (1.0 - self.mix) * self.Sigma_k.obj_wk.data
         Bubble.Sigma = self.Sigma_k.copy()
 
-    def solve_Bubble_DMFT_base(self, Bubble, IPT):
+    def solve_Bubble_DMFT_base(self, Bubble, DMFT):
 
-        print("IPT) ", get_renorm(IPT.Sigma_imp.obj_w.data, IPT.Sigma_imp.w_points) - 1)
+        print("DMFT) ", get_renorm(DMFT.Sigma_imp.obj_w.data, DMFT.Sigma_imp.w_points) - 1)
 
         #mu = Bubble.find_mu_for_density(self.n)
         Bubble.make_G(self.mu)
@@ -89,15 +97,15 @@ class Bubble_DMFTSolver:
         print("SOPT) ", get_renorm(self.Sigma_loc.obj_w.data, self.Sigma_loc.w_points) - 1)
         self.Sigma_nonloc = subtract_local_from_nonlocal(Bubble.Sigma, self.Sigma_loc)
 
-        new_sigma_k = add_local_to_nonlocal(self.Sigma_nonloc, IPT.Sigma_imp)
+        new_sigma_k = add_local_to_nonlocal(self.Sigma_nonloc, DMFT.Sigma_imp)
         self.Sigma_k.obj_wk.data[:] = self.mix * new_sigma_k.obj_wk.data + (1.0 - self.mix) * self.Sigma_k.obj_wk.data
         Bubble.Sigma = self.Sigma_k.copy()
 
-    def solve_Bubble_DMFT_diag(self, Bubble, IPT):
+    def solve_Bubble_DMFT_diag(self, Bubble, DMFT):
         # Step 1 - solve impurity problem (DMFT)
-        IPT.loop(self.U)
-        # IPT.Sigma_imp now contains DMFT self-energy (get_IPT_Sigma no longer modifies in place)
-        self.Sigma_imp = IPT.Sigma_imp.copy()
+        DMFT.loop(self.U)
+        # DMFT.Sigma_imp now contains DMFT self-energy (get_IPT_Sigma no longer modifies in place)
+        self.Sigma_imp = DMFT.Sigma_imp.copy()
 
         # Step 2 - construct G(k,iw) using double-counting correction from previous iteration
         self.Sigma_loc.obj_w.data[:] = self.Sigma_imp.obj_w.data - self.Sigma_SOPT.obj_w.data
@@ -114,7 +122,7 @@ class Bubble_DMFTSolver:
 
         # Step 4 - Find Σ^(2)[G] (SOPT with updated G)
         Bubble.get_local_G()
-        self.Sigma_SOPT = IPT.get_IPT_Sigma(self.U, Bubble.G_loc)
+        self.Sigma_SOPT = DMFT.get_IPT_Sigma(self.U, Bubble.G_loc)
         #sopt_m_star = get_renorm(self.Sigma_SOPT.obj_w.data, self.Sigma_SOPT.w_points)
         #print("SOPT m*= ", sopt_m_star)
         # Update double-counting correction: Σ_DMFT - Σ_SOPT
@@ -130,27 +138,27 @@ class Bubble_DMFTSolver:
         self.mu = Bubble.find_mu_for_density(self.n)
         Bubble.make_G(self.mu)
         Bubble.get_local_G()
-        IPT.G_loc = Bubble.G_loc.copy()
-        IPT.set_Weiss()
+        DMFT.set_G_loc(Bubble.G_loc)
+        DMFT.set_Weiss()
 
 
     def loop_Bubble_DMFT(self, n_loops=50, mode='average'):
         self.Bubble.U = self.U
-        self.IPT.U = self.U
+        self.DMFT.U = self.U
         old_m_star = 0.0
 
         print("Beginning Bubble+DMFT Self-Consistent Loop")
         for i in range(n_loops):
             G_old = self.Bubble.G.obj_wk.copy()
             if mode == 'average':
-                self.solve_Bubble_DMFT_ave(self.Bubble, self.IPT)
+                self.solve_Bubble_DMFT_ave(self.Bubble, self.DMFT)
             elif mode == 'diagram':
-                self.solve_Bubble_DMFT_diag(self.Bubble, self.IPT)
+                self.solve_Bubble_DMFT_diag(self.Bubble, self.DMFT)
             elif mode == 'base':
                 if i == 0:
-                    self.IPT.loop(self.U)
-                    self.Sigma_k = add_local_to_nonlocal(self.Sigma_nonloc, self.IPT.Sigma_imp)
-                self.solve_Bubble_DMFT_base(self.Bubble, self.IPT)
+                    self.DMFT.loop(self.U)
+                    self.Sigma_k = add_local_to_nonlocal(self.Sigma_nonloc, self.DMFT.Sigma_imp)
+                self.solve_Bubble_DMFT_base(self.Bubble, self.DMFT)
 
             err = np.max(np.abs(self.Bubble.G.obj_wk.data - G_old.data))
             # Use the full DMFT self-energy for renormalization, not the double-counting correction
@@ -165,9 +173,9 @@ class Bubble_DMFTSolver:
             old_m_star = m_star
 
         if n_loops == 1:
-            self.Bubble.Sigma = add_local_to_nonlocal(self.Sigma_nonloc, self.IPT.Sigma_imp)
+            self.Bubble.Sigma = add_local_to_nonlocal(self.Sigma_nonloc, self.DMFT.Sigma_imp)
             #self.Bubble.Sigma = self.Sigma_nonloc.copy()
-        m_star_dmft = get_renorm(self.IPT.Sigma_imp.obj_w.data, self.IPT.Sigma_imp.w_points)
+        m_star_dmft = get_renorm(self.DMFT.Sigma_imp.obj_w.data, self.DMFT.Sigma_imp.w_points)
         print("DMFT Z = ", 1/m_star_dmft)
         if mode == 'base':
             return m_star_dmft

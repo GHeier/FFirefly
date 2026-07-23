@@ -118,27 +118,26 @@ vector<vector<float>> generate_equivalent_points(string& sym, vector<float> v0) 
     return equivalent_points;
 }
 
-// Scaled to be from -0.5 to 0.5, not -pi to pi
-// k = -0.5 + i / (nx - 1) for 0-based indexing
+// Scaled to be from -0.5 to 0.5 (half-open, [-0.5, 0.5)), not -pi to pi.
+// Matches the mesh convention used by get_fractional_mesh/get_kmesh
+// (response_utils.jl): k = -0.5 + i / nx for 0-based indexing.
 vector<float> ind_to_vec(vector<int> inds, vector<int> &grid) {
     int dim = grid.size();
     vector<float> v(dim);
     for (int i = 0; i < dim; i++) {
-        v[i] = -0.5 + (float)inds[i] / (grid[i] - 1);
+        v[i] = -0.5 + (float)inds[i] / grid[i];
     }
     return v;
 }
 
-// Scaled to be from -0.5 to 0.5, not -pi to pi
-// i = (k + 0.5) * (nx - 1) for 0-based indexing
+// Inverse of ind_to_vec: i = (k + 0.5) * nx for 0-based indexing.
+// Grid is periodic, so wrap out-of-range indices rather than clamping.
 vector<int> vec_to_ind(vector<float> &v, vector<int> &grid) {
     int dim = grid.size();
     vector<int> inds(dim);
     for (int i = 0; i < dim; i++) {
-        int idx = (int)round((v[i] + 0.5) * (grid[i] - 1));
-        // Clamp to valid range [0, grid[i]-1]
-        if (idx < 0) idx = 0;
-        if (idx >= grid[i]) idx = grid[i] - 1;
+        int idx = (int)round((v[i] + 0.5) * grid[i]);
+        idx = ((idx % grid[i]) + grid[i]) % grid[i];  // periodic wrap into [0, grid[i]-1]
         inds[i] = idx;
     }
     return inds;

@@ -7,6 +7,7 @@ from triqs.gf import Gf, inverse, SemiCircular
 from triqs_tprf.lattice import lattice_dyson_g0_wk
 from IPTSolver import IPTSolver
 from IPTSolver_real import IPTSolver_real
+from CTHYBSolver import CTHYBSolver, effective_mass
 from BubbleSolver import BubbleSolver
 from Bubble_DMFTSolver import Bubble_DMFTSolver
 from load_triqs_H import create_dlr_meshes, get_energy_mesh
@@ -18,6 +19,7 @@ prefix = cfg.prefix
 debug = cfg.debug
 
 interaction = cfg.interaction
+impurity_solver = cfg.impurity_solver
 scf = cfg.self_consistent
 mu = cfg.fermi_energy
 n = cfg.num_electrons
@@ -124,12 +126,37 @@ def run_DMFT():
         save_DMFT_real(S)
     else:
         print(f"Temperature = {T}: Using Matsubara IPT solver")
-        S = IPTSolver(beta, H=H, mix=mixing, mu=mu, n_loops=max_iters, w_max=1.2*D, eps=eps)
-        S.loop(U, bethe_lattice=False)
-        print(f"Final Sigma max: {np.max(np.abs(S.Sigma_imp.obj_w.data)):.4f}")
-        print(f"Final G max: {np.max(np.abs(S.G_loc.obj_w.data)):.4f}")
-        renorm = get_renorm(S.Sigma_imp.obj_w.data, S.Sigma_imp.w_points)
-        save_DMFT(S, D)
+        if impurity_solver == "IPT":
+            S = IPTSolver(beta, H=H, mix=mixing, mu=mu, n_loops=max_iters, w_max=1.2*D, eps=eps)
+            S.loop(U, bethe_lattice=False)
+            print(f"Final Sigma max: {np.max(np.abs(S.Sigma_imp.obj_w.data)):.4f}")
+            print(f"Final G max: {np.max(np.abs(S.G_loc.obj_w.data)):.4f}")
+            renorm = get_renorm(S.Sigma_imp.obj_w.data, S.Sigma_imp.w_points)
+            save_DMFT(S, D, renorm)
+        elif impurity_solver == "CTHYB":
+            # Only enable the live self-consistent mu-search when mu_from_n is set (same
+            # gate the cheaper non-interacting E(n) lookup above already uses) -- otherwise
+            # keep mu fixed, preserving existing fixed-mu configs' behavior unchanged.
+            # cfg.num_electrons is total filling (n=1 -> half filling); CTHYBSolver.n is
+            # per-spin (0.5 -> half filling), matching FLEXSolver's convention -- convert.
+            S = CTHYBSolver(beta, H=H, mu=mu, n_loops=max_iters, mix=mixing, w_max=1.2*D, eps=eps,
+                             n_cycles=200000, length_cycle=100, n_warmup_cycles=10000,
+                             n=(n / 2.0 if cfg.mu_from_n else None))
+            S.loop(U, bethe_lattice=False)
+            # S.Sigma_imp/S.G_loc are plain BlockGf on CTHYB's MeshImFreq (no Diagram/.obj_w here)
+            Sigma_data = S.Sigma_imp['up'].data
+            w_points = np.array([float(w.imag) for w in S.Sigma_imp['up'].mesh], dtype=np.float32)
+            print(f"Final Sigma max: {np.max(np.abs(Sigma_data)):.4f}")
+            print(f"Final G max: {np.max(np.abs(S.G_loc['up'].data)):.4f}")
+            # get_renorm()'s "first sign change" search is fine on a real-frequency axis
+            # (single physical crossing) but on the Matsubara axis the noisy high-frequency
+            # tail flips sign hundreds of times, so it grabs a spurious far-tail crossing
+            # instead of the physical one near iwn=0. Use the same two-lowest-positive-
+            # frequency slope (effective_mass) the per-iteration prints already use instead.
+            renorm = effective_mass(S.Sigma_imp['up'])
+            S.save_results(outdir + prefix, renorm)
+        else:
+            raise ValueError(f"Unknown impurity_solver: {impurity_solver}. Use 'IPT' or 'CTHYB'.")
 
     print(f"Quasiparticle Weight: {1/renorm:.4f}")
     print(f"m*/m: {renorm:.4f}")
@@ -202,13 +229,26 @@ def get_renorm_k(Ekw, wpts):
     return dEkw
 
 
-def save_DMFT(S, eps_range=0.0):
+def save_DMFT(S, eps_range=0.0, renorm=None):
     pref = outdir + prefix
     S.G_loc.save(pref + '_G_iw.h5')
     S.Sigma_imp.save(pref + '_self_energy.h5')
     S.Sigma_imp.save(pref + '_sigma_iw.h5')
     S.G_loc.save_spectral(pref + '_A_w.h5')
     save_G(S, eps_range)
+    if renorm is not None:
+        fly.save_data(pref + "_renormalization.h5", np.array([renorm]),
+                       mesh=None, domain=None, w_points=None)
+
+
+def save_CTHYB_DMFT(S):
+    """Save CTHYBSolver output (plain BlockGf on MeshImFreq, no Diagram wrapper)."""
+    from h5 import HDFArchive
+    pref = outdir + prefix
+    with HDFArchive(pref + '_cthyb_dmft.h5', 'w') as ar:
+        ar['G_weiss'] = S.G_weiss
+        ar['G_loc'] = S.G_loc
+        ar['Sigma_imp'] = S.Sigma_imp
 
 
 def save_Bubble(S, eps_range=0.0):

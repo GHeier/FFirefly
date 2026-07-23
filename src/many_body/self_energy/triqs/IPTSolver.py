@@ -38,6 +38,11 @@ class IPTSolver:
         Sigma.t_to_w()
         return Sigma
 
+    def set_G_loc(self, G_loc):
+        """Overwrite G_loc from an externally-computed source (e.g. a combined
+        Bubble+DMFT lattice update), bypassing solve()'s own Dyson step."""
+        self.G_loc = G_loc.copy()
+
     def set_Weiss(self):
         self.G_weiss_old = self.G_weiss.copy()
         self.G_weiss.obj_w << inverse(inverse(self.G_loc.obj_w) + self.Sigma_imp.obj_w)
