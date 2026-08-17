@@ -69,7 +69,7 @@ double rand_laplace(double lambda=1.0, double mu=0)
 // inefficient (pow, log very slow)
 double round_dec(double x, int n)
 {
-    double expon = floor(log10(fabs(x)));
+    double expon = floor(log10(abs(x)));
     double scale = pow(10.0, expon-n);
     double y = round(x/scale);
     return y*scale;
@@ -186,8 +186,8 @@ void collect_stats(const std::vector<double>& exact,
             count_incorrect++;
         } else {
             for(size_t j=0; j<numeric.size(); j++) {
-                double xerr = fabs(numeric[j]-exact[j]);
-                double yerr = fabs(f(a,b,c,numeric[j]));
+                double xerr = abs(numeric[j]-exact[j]);
+                double yerr = abs(f(a,b,c,numeric[j]));
                 sum_xerr += xerr;
                 sum_yerr += yerr;
                 count++;
@@ -200,7 +200,7 @@ void collect_stats(const std::vector<double>& exact,
     } else {
         // no information about exact roots
         for(size_t j=0; j<numeric.size(); j++) {
-            double yerr = fabs(f(a,b,c,numeric[j]));
+            double yerr = abs(f(a,b,c,numeric[j]));
             sum_yerr += yerr;
             count++;
             if(yerr>max_yerr)

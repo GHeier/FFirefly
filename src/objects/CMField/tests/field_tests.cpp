@@ -86,7 +86,7 @@ static bool field_r_1d_k() {
     Vec v(0.0);  // Centered at origin, corresponds to x=0.5 in [0,1]
     float result = field(v);
 
-    return fabs(result - 0.5) < 1e-6;
+    return abs(result - 0.5) < 1e-6;
 }
 
 static bool field_c_1d_k() {
@@ -99,7 +99,7 @@ static bool field_c_1d_k() {
     Vec v(0.0);
     cfloat result = field(v);
 
-    return fabs(result - cfloat(0.5, 0.05)) < 1e-6;
+    return abs(result - cfloat(0.5, 0.05)) < 1e-6;
 }
 
 static bool field_r_2d_k() {
@@ -112,7 +112,7 @@ static bool field_r_2d_k() {
     Vec v(0.0, 0.0);  // Center corresponds to (0.5, 0.5)
     float result = field(v);
 
-    return fabs(result - 1.0) < 1e-6;
+    return abs(result - 1.0) < 1e-6;
 }
 
 static bool field_c_2d_k() {
@@ -125,7 +125,7 @@ static bool field_c_2d_k() {
     Vec v(0.0, 0.0);
     cfloat result = field(v);
 
-    return fabs(result - cfloat(1.0, 0.1)) < 1e-6;
+    return abs(result - cfloat(1.0, 0.1)) < 1e-6;
 }
 
 static bool field_r_3d_k() {
@@ -138,7 +138,7 @@ static bool field_r_3d_k() {
     Vec v(0.0, 0.0, 0.0);  // Center corresponds to (0.5, 0.5, 0.5)
     float result = field(v);
 
-    return fabs(result - 1.5) < 1e-6;
+    return abs(result - 1.5) < 1e-6;
 }
 
 static bool field_c_3d_k() {
@@ -151,7 +151,7 @@ static bool field_c_3d_k() {
     Vec v(0.0, 0.0, 0.0);
     cfloat result = field(v);
 
-    return fabs(result - cfloat(1.5, 0.15)) < 1e-6;
+    return abs(result - cfloat(1.5, 0.15)) < 1e-6;
 }
 
 static bool field_r_1d_w() {
@@ -166,7 +166,7 @@ static bool field_r_1d_w() {
     float result = field(v, 1.5);
 
     // At centered v=0 (original 0.5), w=1.5: val = 0.5 + 1.5 = 2.0
-    return fabs(result - 2.0) < 1e-6;
+    return abs(result - 2.0) < 1e-6;
 }
 
 static bool field_c_1d_w() {
@@ -180,7 +180,7 @@ static bool field_c_1d_w() {
     Vec v(0.1);
     cfloat result = field(v, 1.5);
 
-    return fabs(result - cfloat(1.6, 0.16)) < 1e-6;
+    return abs(result - cfloat(1.6, 0.16)) < 1e-6;
 }
 
 static bool field_r_2d_w() {
@@ -194,7 +194,7 @@ static bool field_r_2d_w() {
     float result = field(v1, 1.5);
 
     // Original point at (0.6, 0.6): spatial = 1.2, w = 1.1, total = 2.3
-    return fabs(result - 1.9) < 1e-6;
+    return abs(result - 1.9) < 1e-6;
 }
 
 static bool field_c_2d_w() {
@@ -208,7 +208,7 @@ static bool field_c_2d_w() {
     Vec v(0.1, 0.1);
     cfloat result = field(v, 1.1);
 
-    return fabs(result - cfloat(2.3, 0.23)) < 1e-6;
+    return abs(result - cfloat(2.3, 0.23)) < 1e-6;
 }
 
 static bool field_r_3d_w() {
@@ -223,7 +223,7 @@ static bool field_r_3d_w() {
     float result = field(v, 1.5);
 
     // At (0.25, 0.25, 0.25), w=1.5: spatial = 0.75, w = 1.5, total = 2.25
-    return fabs(result - 2.25) < 1e-6;
+    return abs(result - 2.25) < 1e-6;
 }
 
 static bool field_c_3d_w() {
@@ -237,7 +237,7 @@ static bool field_c_3d_w() {
     Vec v(-0.25, -0.25, -0.25);
     cfloat result = field(v, 1.5);
 
-    return fabs(result - cfloat(2.25, 0.225)) < 1e-6;
+    return abs(result - cfloat(2.25, 0.225)) < 1e-6;
 }
 
 static bool create_destroy() {
@@ -256,7 +256,7 @@ static bool create_destroy() {
     cfloat result1 = field(v);
     cfloat result2 = loaded(v);
 
-    return fabs(result1 - result2) < 1e-6;
+    return abs(result1 - result2) < 1e-6;
 }
 
 // ============= Matrix Field Tests =============
@@ -341,7 +341,7 @@ static bool field_cm_1d_k() {
         return false;
     }
 
-    return fabs(result[0][0] - expected) < 1e-6;
+    return abs(result[0][0] - expected) < 1e-6;
 }
 
 static bool field_rm_1d_k() {
@@ -361,7 +361,7 @@ static bool field_rm_1d_k() {
         return false;
     }
 
-    return fabs(result[0][0] - expected_00) < 1e-6;
+    return abs(result[0][0] - expected_00) < 1e-6;
 }
 
 static bool field_cm_2d_k() {
@@ -381,7 +381,7 @@ static bool field_cm_2d_k() {
         return false;
     }
 
-    return fabs(result[0][0] - expected) < 1e-6;
+    return abs(result[0][0] - expected) < 1e-6;
 }
 
 static bool field_rm_2d_k() {
@@ -401,7 +401,7 @@ static bool field_rm_2d_k() {
         return false;
     }
 
-    return fabs(result[0][0] - expected_00) < 1e-6;
+    return abs(result[0][0] - expected_00) < 1e-6;
 }
 
 static bool field_cm_1d_w() {
@@ -422,7 +422,7 @@ static bool field_cm_1d_w() {
         return false;
     }
 
-    return fabs(result[0][0] - expected) < 1e-6;
+    return abs(result[0][0] - expected) < 1e-6;
 }
 
 static bool field_rm_1d_w() {
@@ -443,7 +443,7 @@ static bool field_rm_1d_w() {
         return false;
     }
 
-    return fabs(result[0][0] - expected_00) < 1e-6;
+    return abs(result[0][0] - expected_00) < 1e-6;
 }
 
 static bool field_cm_2d_w() {
@@ -464,7 +464,7 @@ static bool field_cm_2d_w() {
         return false;
     }
 
-    return fabs(result[0][0] - expected) < 1e-6;
+    return abs(result[0][0] - expected) < 1e-6;
 }
 
 static bool field_rm_2d_w() {
@@ -485,7 +485,7 @@ static bool field_rm_2d_w() {
         return false;
     }
 
-    return fabs(result[0][0] - expected_00) < 1e-6;
+    return abs(result[0][0] - expected_00) < 1e-6;
 }
 
 static bool field_cm_3d_w() {
@@ -506,7 +506,7 @@ static bool field_cm_3d_w() {
         return false;
     }
 
-    return fabs(result[0][0] - expected) < 1e-6;
+    return abs(result[0][0] - expected) < 1e-6;
 }
 
 static bool field_rm_3d_w() {
@@ -527,7 +527,7 @@ static bool field_rm_3d_w() {
         return false;
     }
 
-    return fabs(result[0][0] - expected_00) < 1e-6;
+    return abs(result[0][0] - expected_00) < 1e-6;
 }
 
 } // namespace field_tests_ns

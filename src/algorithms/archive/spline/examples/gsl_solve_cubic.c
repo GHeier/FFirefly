@@ -99,7 +99,7 @@ gsl_poly_solve_cubic (double a, double b, double c,
   else
     {
       double sgnR = (R >= 0 ? 1 : -1);
-      double A = -sgnR * pow (fabs (R) + sqrt (R2 - Q3), 1.0/3.0);
+      double A = -sgnR * pow (abs (R) + sqrt (R2 - Q3), 1.0/3.0);
       double B = Q / A ;
       *x0 = A + B - a / 3;
       return 1;
@@ -149,7 +149,7 @@ gsl_poly_solve_quadratic (double a, double b, double c,
     {
       if (b == 0)
         {
-          double r = fabs (0.5 * sqrt (disc) / a);
+          double r = abs (0.5 * sqrt (disc) / a);
           *x0 = -r;
           *x1 =  r;
         }

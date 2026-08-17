@@ -102,7 +102,7 @@ static bool field_cm_1d_k() {
         return false;
     }
 
-    return fabs(result[0][0] - expected) < 1e-6;
+    return abs(result[0][0] - expected) < 1e-6;
 }
 
 // Test Field_RM (real matrix) - 1D spatial
@@ -123,7 +123,7 @@ static bool field_rm_1d_k() {
         return false;
     }
 
-    return fabs(result[0][0] - expected) < 1e-6;
+    return abs(result[0][0] - expected) < 1e-6;
 }
 
 // Test Field_CM - 2D spatial
@@ -144,7 +144,7 @@ static bool field_cm_2d_k() {
         return false;
     }
 
-    return fabs(result[1][2] - expected) < 1e-6;
+    return abs(result[1][2] - expected) < 1e-6;
 }
 
 // Test Field_RM - 2D spatial
@@ -165,7 +165,7 @@ static bool field_rm_2d_k() {
         return false;
     }
 
-    return fabs(result[1][2] - expected) < 1e-6;
+    return abs(result[1][2] - expected) < 1e-6;
 }
 
 // Test Field_CM - 3D spatial
@@ -186,7 +186,7 @@ static bool field_cm_3d_k() {
         return false;
     }
 
-    return fabs(result[2][2] - expected) < 1e-6;
+    return abs(result[2][2] - expected) < 1e-6;
 }
 
 // Test Field_RM - 3D spatial
@@ -207,7 +207,7 @@ static bool field_rm_3d_k() {
         return false;
     }
 
-    return fabs(result[2][2] - expected) < 1e-6;
+    return abs(result[2][2] - expected) < 1e-6;
 }
 
 // Test Field_CM with frequency dependence
@@ -231,7 +231,7 @@ static bool field_cm_2d_w() {
         return false;
     }
 
-    return fabs(result[0][1] - expected) < 1e-5;  // Slightly looser tolerance due to interpolation
+    return abs(result[0][1] - expected) < 1e-5;  // Slightly looser tolerance due to interpolation
 }
 
 // Test Field_RM with frequency dependence
@@ -255,7 +255,7 @@ static bool field_rm_2d_w() {
         return false;
     }
 
-    return fabs(result[0][1] - expected) < 1e-5;
+    return abs(result[0][1] - expected) < 1e-5;
 }
 
 // Test save/load for Field_CM
@@ -278,7 +278,7 @@ static bool field_cm_save_load() {
     bool passed = true;
     for (int i = 0; i < mat_dim; i++) {
         for (int j = 0; j < mat_dim; j++) {
-            if (fabs(result1[i][j] - result2[i][j]) > 1e-6) {
+            if (abs(result1[i][j] - result2[i][j]) > 1e-6) {
                 passed = false;
             }
         }
@@ -308,7 +308,7 @@ static bool field_rm_save_load() {
     bool passed = true;
     for (int i = 0; i < mat_dim; i++) {
         for (int j = 0; j < mat_dim; j++) {
-            if (fabs(result1[i][j] - result2[i][j]) > 1e-6) {
+            if (abs(result1[i][j] - result2[i][j]) > 1e-6) {
                 passed = false;
             }
         }
@@ -335,7 +335,7 @@ static bool field_cm_copy() {
     bool passed = true;
     for (int i = 0; i < mat_dim; i++) {
         for (int j = 0; j < mat_dim; j++) {
-            if (fabs(result1[i][j] - result2[i][j]) > 1e-6) {
+            if (abs(result1[i][j] - result2[i][j]) > 1e-6) {
                 passed = false;
             }
         }
@@ -361,7 +361,7 @@ static bool field_rm_copy() {
     bool passed = true;
     for (int i = 0; i < mat_dim; i++) {
         for (int j = 0; j < mat_dim; j++) {
-            if (fabs(result1[i][j] - result2[i][j]) > 1e-6) {
+            if (abs(result1[i][j] - result2[i][j]) > 1e-6) {
                 passed = false;
             }
         }

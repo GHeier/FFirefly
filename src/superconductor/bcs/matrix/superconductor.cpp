@@ -37,6 +37,11 @@ float bcs() {
     cout << "Calculating Fermi Surface..." << endl;
     load_cpp_cfg();
 
+    Field_R N(outdir + prefix + "_E_vs_n.h5");
+    printf("\n------------ Original mu = %f ------------\n", mu);
+    mu = N(num_electrons);
+    printf("\n------------ Shifted mu = %f ------------\n", mu);
+
     vector<vector<Vec>> freq_FS;
     vector<Vec> FS;
     if (not FS_only) {
@@ -102,6 +107,7 @@ float bcs() {
     //    float proj = cos(k(0)) - cos(k(1));
     //    initial_guess.eigenvector[i] = proj;
     //}
+
     printf("Setting num_eigenvalues_to_save to 1 because power iteration is being used\n");
     num_eigenvalues_to_save = 1;
     printf("Number of Eigenvalues to Save: %d\n", num_eigenvalues_to_save);
@@ -157,6 +163,34 @@ float bcs() {
         //save(file_name, T, FS, temp);
     else
         save_with_freq(file_name, T, freq_FS, solutions);
+
+    // Save gap as HDF5
+    string h5_file_name = outdir + prefix + "_gap.h5";
+    vector<float> gap_data = solutions[0].eigenvector;
+    float max = -1, min = 1;
+    for (float x : gap_data) {
+        if (max < x) max = x;
+        if (min > x) min = x;
+    }
+    if (max * min < 0) printf("The dominant gap contains nodes.\n");
+    else printf("The dominant gap contains no nodes.\n");
+    vector<vector<float>> gap_points;
+    if (FS_only) {
+        gap_points.reserve(FS.size());
+        for (const Vec& k : FS) {
+            if (dimension == 3) gap_points.push_back({k.x, k.y, k.z});
+            else gap_points.push_back({k.x, k.y});
+        }
+    } else {
+        for (const auto& freq_slice : freq_FS) {
+            for (const Vec& k : freq_slice) {
+                if (dimension == 3) gap_points.push_back({k.x, k.y, k.z});
+                else gap_points.push_back({k.x, k.y});
+            }
+        }
+    }
+    save_data(h5_file_name, gap_data, {}, {}, cell, {}, gap_points);
+
     cout << "Eigenvectors Saved\n";
     delete[] solutions;
     return top_gap.eigenvalue;

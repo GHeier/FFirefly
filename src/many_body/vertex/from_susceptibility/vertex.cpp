@@ -74,7 +74,7 @@ void call_flex() {
     string filename = outdir + prefix + "_chi." + filetype;
     printf("Reading chi from %s\n", filename.c_str());
 
-    Field_R chi(filename);
+    Field_C chi(filename);
     float U = U0;
     int chidim = chi.get_data()->dimension;
 
@@ -95,7 +95,7 @@ void call_flex() {
             for (size_t l = 0; l < wpts.size(); l++) {
                 float w = wpts[l];
 
-                float X = chi(q, w);
+                float X = chi(q, w).real();
                 //float val = (U * U * X) / float(1.0f - U * X) + (U * U * U * X * X) / float(1.0f - U * U * X * X);
                 float val = 1.5 * (U * U * X) / float(1.0f - U * X) + 0.5 * U * U * X / (1 + U * X) - U * U * X;
                 vals.push_back(val);
@@ -128,7 +128,7 @@ void call_flex() {
                         Vec q = brillouin_zone * Vec(i / nx - 0.5, j / ny - 0.5, k / nz - 0.5);
                         q.dimension = chidim;
 
-                        float X = chi(q, w);
+                        float X = chi(q, w).real();
                         //float val = (U * U * X) / float(1.0f - U * X) + (U * U * U * X * X) / float(1.0f - U * U * X * X);
                         float val = 1.5 * (U * U * X) / float(1.0f - U * X) + 0.5 * U * U * X / (1 + U * X) - U * U * X;
                         vals.push_back(val);

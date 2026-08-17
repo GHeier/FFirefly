@@ -383,10 +383,10 @@ std::vector<double> solve_quadratic(double a, double b, double c,
     double q=a/c;
     double discr = p*p-q;
     const double eps=0.5*internal::get_eps();
-    double discr_err = (6.0*(p*p)+3.0*fabs(q)+fabs(discr))*eps;
+    double discr_err = (6.0*(p*p)+3.0*abs(q)+abs(discr))*eps;
 
     std::vector<double> x;      // roots
-    if(fabs(discr)<=discr_err) {
+    if(abs(discr)<=discr_err) {
         // discriminant is zero --> one root
         x.resize(1);
         x[0] = -p;
@@ -405,7 +405,7 @@ std::vector<double> solve_quadratic(double a, double b, double c,
             double f  = (c*x[i] + b)*x[i] + a;
             double f1 = 2.0*c*x[i] + b;
             // only adjust if slope is large enough
-            if(fabs(f1)>1e-8) {
+            if(abs(f1)>1e-8) {
                 x[i] -= f/f1;
             }
         }
@@ -450,17 +450,17 @@ std::vector<double> solve_cubic(double a, double b, double c, double d,
     //  - p_err << |p|, q_err << |q|, ... (this is violated in rare cases)
     // would be more elegant to use boost::numeric::interval<double>
     const double eps = internal::get_eps();
-    double p_err = eps*((3.0/3.0)*fabs(b)+(4.0/9.0)*(c*c)+fabs(p));
-    double r_err = eps*(6.0*(c*c)+18.0*fabs(b)+fabs(r));
-    double q_err = 0.5*fabs(a)*eps + (1.0/54.0)*fabs(c)*(r_err+fabs(r)*3.0*eps)
-                   + fabs(q)*eps;
-    double discr_err = (p*p) * (3.0*p_err + fabs(p)*2.0*eps)
-                       + fabs(q) * (2.0*q_err + fabs(q)*eps) + fabs(discr)*eps;
+    double p_err = eps*((3.0/3.0)*abs(b)+(4.0/9.0)*(c*c)+abs(p));
+    double r_err = eps*(6.0*(c*c)+18.0*abs(b)+abs(r));
+    double q_err = 0.5*abs(a)*eps + (1.0/54.0)*abs(c)*(r_err+abs(r)*3.0*eps)
+                   + abs(q)*eps;
+    double discr_err = (p*p) * (3.0*p_err + abs(p)*2.0*eps)
+                       + abs(q) * (2.0*q_err + abs(q)*eps) + abs(discr)*eps;
 
     // depending on the discriminant we get different solutions
-    if(fabs(discr)<=discr_err) {
+    if(abs(discr)<=discr_err) {
         // discriminant zero: one or two real roots
-        if(fabs(p)<=p_err) {
+        if(abs(p)<=p_err) {
             // p and q are zero: single root
             z.resize(1);
             z[0] = 0.0;             // triple root
@@ -481,7 +481,7 @@ std::vector<double> solve_cubic(double a, double b, double c, double d,
         // single real root: via Cardano's fromula
         z.resize(1);
         double sgnq = (q >= 0 ? 1 : -1);
-        double basis = fabs(q) + sqrt(-discr);
+        double basis = abs(q) + sqrt(-discr);
         double C = sgnq * pow(basis, 1.0/3.0); // c++11 has std::cbrt()
         z[0] = C + p/C;
     }
@@ -493,7 +493,7 @@ std::vector<double> solve_cubic(double a, double b, double c, double d,
             double f  = ((z[i] + c)*z[i] + b)*z[i] + a;
             double f1 = (3.0*z[i] + 2.0*c)*z[i] + b;
             // only adjust if slope is large enough
-            if(fabs(f1)>1e-8) {
+            if(abs(f1)>1e-8) {
                 z[i] -= f/f1;
             }
         }
@@ -502,11 +502,11 @@ std::vector<double> solve_cubic(double a, double b, double c, double d,
     // TODO: remove this fudge
     if(a==0.0) {
         assert(z.size()>0);     // cubic should always have at least one root
-        double xmin=fabs(z[0]);
+        double xmin=abs(z[0]);
         size_t imin=0;
         for(size_t i=1; i<z.size(); i++) {
-            if(xmin>fabs(z[i])) {
-                xmin=fabs(z[i]);
+            if(xmin>abs(z[i])) {
+                xmin=abs(z[i]);
                 imin=i;
             }
         }

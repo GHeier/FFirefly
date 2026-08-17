@@ -37,7 +37,7 @@ double stoptime(void)
 // inefficient (pow, log very slow)
 double round_dec(double x, int n)
 {
-    double expon = floor(log10(fabs(x)));
+    double expon = floor(log10(abs(x)));
     double scale = pow(10.0, expon-n);
     double y = round(x/scale);
     return y*scale;
@@ -171,7 +171,7 @@ public:
             double x=a+(b-a)*rand01();
             double y1=get_value(m1,x);
             double y2=get_value(m2,x);
-            double err=fabs(y1-y2);
+            double err=abs(y1-y2);
             l2+=err*err;
             linf=std::max(linf,err);
         }

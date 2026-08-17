@@ -22,7 +22,7 @@ bool epsilon_compare() {
     float epsilon_direct = epsilon(1, k);
 
     // Compare results
-    return fabs(epsilon_from_H - epsilon_direct) < 1e-6;
+    return abs(epsilon_from_H - epsilon_direct) < 1e-6;
 }
 
 bool hamiltonian_tests() {

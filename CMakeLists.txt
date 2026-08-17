@@ -24,14 +24,11 @@ find_package(FFTW3 QUIET)
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR})
 #include_directories(${CMAKE_SOURCE_DIR}/external/h2pack/include)
-include_directories(/usr/include/H2Lib/Library)
 include_directories(${HDF5_INCLUDE_DIRS})
-
-set(H2LIB /usr/include/H2Lib/libh2.a)
 
 # Libraries to link (removed -ljulia, Python linking handled separately below)
 #set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -lopenblas -lhdf5_cpp -lhdf5 -lfftw3 -lfftw3)
-set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -lopenblas -lfftw3 -lfftw3f ${HDF5_LIBRARIES} ${H2LIB} -fopenmp)
+set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -lopenblas -lfftw3 -lfftw3f ${HDF5_LIBRARIES} -fopenmp)
 #set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -lopenblas -lfftw3 -lfftw3f)
 
 # ---------------------------
@@ -42,61 +39,59 @@ set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -lopenblas -lfftw3 -l
 # Base library sources
 set(BASE_SOURCES
     src/algorithms/scf_interaction.c
-    src/algorithms/symmetry.cpp
-    src/algorithms/fft.cpp
-    src/algorithms/interpolate.cpp
-    src/algorithms/electron_number.cpp
-    src/algorithms/linear_algebra.cpp
     src/algorithms/integration.cpp
+    src/algorithms/linear_algebra.cpp
+    src/algorithms/fft.cpp
+    src/algorithms/symmetry.cpp
+    src/algorithms/electron_number.cpp
+    src/algorithms/interpolate.cpp
     src/algorithms/tests/linalg_tests.cpp
+    src/algorithms/tests/fft_tests.cpp
     src/algorithms/tests/sym_tests.cpp
     src/algorithms/tests/all.cpp
-    src/algorithms/tests/fft_tests.cpp
+    src/config/load/jl_interface_stub.c
     src/config/load/c_config.c
     src/config/load/py_interface_stub.c
-    src/config/load/jl_interface_stub.c
     src/config/load/cpp_config.cpp
-    src/config/load/tests/all.cpp
     src/config/load/tests/py_interface_bool_tests.cpp
-    src/config/load/tests/jl_interface_typed_tests.cpp
     src/config/load/tests/py_interface_typed_tests.cpp
+    src/config/load/tests/jl_interface_typed_tests.cpp
+    src/config/load/tests/all.cpp
     src/hamiltonian/node.cpp
-    src/hamiltonian/models/interaction.cpp
-    src/hamiltonian/models/preloaded_hamiltonians.cpp
     src/hamiltonian/models/band_structure.cpp
+    src/hamiltonian/models/preloaded_hamiltonians.cpp
+    src/hamiltonian/models/interaction.cpp
     src/module/exports/temp.cpp
     src/module/exports/cpp_export.cpp
-    src/objects/hmatrix.cpp
-    src/objects/matrix.cpp
     src/objects/array.cpp
-    src/objects/eigenvec.cpp
+    src/objects/matrix.cpp
     src/objects/surfaces.cpp
+    src/objects/eigenvec.cpp
     src/objects/vec.cpp
-    src/objects/tests/all.cpp
-    src/objects/tests/surface_tests.cpp
-    src/objects/tests/hmatrix_tests.cpp
-    src/objects/tests/array_tests.cpp
-    src/objects/CMField/bands.cpp
-    src/objects/CMField/fields.cpp
-    src/objects/CMField/field_funcs.cpp
-    src/objects/CMField/renormalization.cpp
     src/objects/CMField/field.cpp
-    src/objects/CMField/self_energy.cpp
-    src/objects/CMField/vertex.cpp
-    src/objects/CMField/data_evaluator.cpp
     src/objects/CMField/hamiltonian.cpp
+    src/objects/CMField/renormalization.cpp
     src/objects/CMField/base_data.cpp
+    src/objects/CMField/field_funcs.cpp
+    src/objects/CMField/self_energy.cpp
+    src/objects/CMField/data_evaluator.cpp
+    src/objects/CMField/bands.cpp
+    src/objects/CMField/vertex.cpp
+    src/objects/CMField/fields.cpp
+    src/objects/tests/array_tests.cpp
+    src/objects/tests/surface_tests.cpp
+    src/objects/tests/all.cpp
     src/objects/CMData/cmdata.cpp
     src/objects/CMData/tests/all.cpp
-    src/objects/CMField/tests/inds_field_tests.cpp
-    src/objects/CMField/tests/tensor_field_tests.cpp
-    src/objects/CMField/tests/band_tests.cpp
-    src/objects/CMField/tests/quad_field_tests.cpp
-    src/objects/CMField/tests/field_tests.cpp
     src/objects/CMField/tests/field_wrapper_tests.cpp
+    src/objects/CMField/tests/field_tests.cpp
     src/objects/CMField/tests/base_data_tests.cpp
-    src/objects/CMField/tests/matrix_field_tests.cpp
+    src/objects/CMField/tests/band_tests.cpp
     src/objects/CMField/tests/hamiltonian_tests.cpp
+    src/objects/CMField/tests/matrix_field_tests.cpp
+    src/objects/CMField/tests/tensor_field_tests.cpp
+    src/objects/CMField/tests/inds_field_tests.cpp
+    src/objects/CMField/tests/quad_field_tests.cpp
 )
 
 # END AUTO-GENERATED BASE LIBRARY SOURCES
@@ -240,8 +235,8 @@ set_target_properties(hamiltonian_DOS_tetrahedra PROPERTIES
 
 # hamiltonian/FS/tetrahedra
 add_executable(hamiltonian_FS_tetrahedra
-    src/hamiltonian/FS/tetrahedra/run.cpp
     src/hamiltonian/FS/tetrahedra/fs.cpp
+    src/hamiltonian/FS/tetrahedra/run.cpp
     src/hamiltonian/FS/tetrahedra/tests/test.cpp
 )
 target_link_libraries(hamiltonian_FS_tetrahedra PRIVATE base)
@@ -254,8 +249,8 @@ set_target_properties(hamiltonian_FS_tetrahedra PROPERTIES
 
 # many_body/vertex/from_susceptibility
 add_executable(many_body_vertex_from_susceptibility
-    src/many_body/vertex/from_susceptibility/vertex.cpp
     src/many_body/vertex/from_susceptibility/run.cpp
+    src/many_body/vertex/from_susceptibility/vertex.cpp
     src/many_body/vertex/from_susceptibility/tests/test.cpp
 )
 target_link_libraries(many_body_vertex_from_susceptibility PRIVATE base)
@@ -296,14 +291,14 @@ set_target_properties(many_body_renormalization_from_sigma PROPERTIES
 
 # superconductor/bcs/matrix
 add_executable(superconductor_bcs_matrix
-    src/superconductor/bcs/matrix/solver.cpp
-    src/superconductor/bcs/matrix/frequency_inclusion.cpp
-    src/superconductor/bcs/matrix/matrix_creation.cpp
     src/superconductor/bcs/matrix/save_data.cpp
-    src/superconductor/bcs/matrix/run.cpp
-    src/superconductor/bcs/matrix/cfg.cpp
-    src/superconductor/bcs/matrix/utilities.cpp
+    src/superconductor/bcs/matrix/frequency_inclusion.cpp
     src/superconductor/bcs/matrix/superconductor.cpp
+    src/superconductor/bcs/matrix/solver.cpp
+    src/superconductor/bcs/matrix/run.cpp
+    src/superconductor/bcs/matrix/utilities.cpp
+    src/superconductor/bcs/matrix/cfg.cpp
+    src/superconductor/bcs/matrix/matrix_creation.cpp
     src/superconductor/bcs/matrix/tests/test.cpp
 )
 target_link_libraries(superconductor_bcs_matrix PRIVATE base)

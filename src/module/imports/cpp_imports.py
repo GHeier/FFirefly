@@ -1573,6 +1573,14 @@ class Bands:
 
             return output
 
+        # Overload for (points: np.ndarray, w: float) - w ignored, bands have no frequency dependence
+        if len(args) == 2 and isinstance(args[0], np.ndarray) and isinstance(args[1], (int, float)):
+            return self(args[0])
+
+        # Overload for (n: int, points: np.ndarray, w: float) - w ignored
+        if len(args) == 3 and isinstance(args[0], int) and isinstance(args[1], np.ndarray) and isinstance(args[2], (int, float)):
+            return self(args[0], args[1])
+
         raise TypeError(f"Invalid arguments to Bands.__call__: {args}")
 
     def __del__(self):

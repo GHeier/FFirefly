@@ -73,7 +73,7 @@ static bool field_r_2d_k() {
     Field_C fsfield("testfield.h5");
     result = fsfield(v).real();
 
-    return fabs(result - expected) < 1e-5;
+    return abs(result - expected) < 1e-5;
 }
 
 static bool field_r_2d_k_fft() {
@@ -97,7 +97,7 @@ static bool field_r_2d_k_fft() {
     Field_C fsfield("testfield.h5");
     result = fsfield(v).real();
 
-    return fabs(result - expected) < 1e-5;
+    return abs(result - expected) < 1e-5;
 }
 
 

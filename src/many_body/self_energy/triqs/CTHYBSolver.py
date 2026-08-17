@@ -47,6 +47,16 @@ class ParamagBlockGf:
     def w_points(self):
         return np.array([complex(w).imag for w in self.block_gf['up'].mesh], dtype=np.float32)
 
+    def save(self, filename, force_real=False):
+        """Same format as Diagram.save's 'w'-space branch, so callers written
+        against IPTSolver's Diagram-wrapped G_loc/Sigma_imp/G_weiss can call
+        .save() on CTHYBSolver's equivalents without caring which is active."""
+        import firefly as fly
+        data = self.obj_w.data.real if force_real else self.obj_w.data
+        obj = np.reshape(data, (data.shape[0],))
+        fly.save_data(filename, obj, mesh=None, domain=None, w_points=self.w_points)
+        print(f"Diagram saved to {filename}")
+
 
 class CTHYBSolver:
     def __init__(self, beta, H, mu, n_loops=100, mix=0.10, tol=1e-2, w_max=1.2*6, eps=1e-14,
@@ -201,9 +211,11 @@ class CTHYBSolver:
             g << inverse(iOmega_n - t**2 * self.G_loc[block])
 
     def loop(self, U, bethe_lattice=False):
+        m_vals, mu_vals, errs = [], [], []
         old_m = {'up': 0.0, 'down': 0.0}
         break_cond = False
         for i in range(self.max_loops):
+            print("Iteration ", i)
             G_iw_prev = {block: g.data.copy() for block, g in self.G_weiss}
 
             if bethe_lattice:
@@ -213,6 +225,7 @@ class CTHYBSolver:
 
             err = max(abs(g.data - G_iw_prev[block]).max() for block, g in self.G_weiss)
             print("CTHYB loop %d, err = %.3e" % (i+1, err))
+            errs.append(err)
 
             for block, _ in self.Sigma_imp:
                 m = effective_mass(self.Sigma_imp[block])
@@ -222,6 +235,7 @@ class CTHYBSolver:
                 old_m[block] = m
                 if m_err < 1e-4:
                     break_cond = True
+            m_vals.append(old_m['up'])
 
             if self.n is None:
                 # mu is fixed (no mu_from_n target) -- read off the density this mu
@@ -231,9 +245,19 @@ class CTHYBSolver:
             else:
                 # mu_from_n target given -- read off the mu that was found for it.
                 print(f"    mu [n={self.n:.6f}] = {self.mu:.4f}")
+            mu_vals.append(self.mu)
 
-            if err < self.tol or break_cond:
+            if err < self.tol and abs(m_vals[-1] - m_vals[-2]) < self.tol and abs(mu_vals[-1] - mu_vals[-2]) < self.tol or break_cond:
                 break
+        print("Iterations: ", i)
+        self.print_cthyb_stats(m_vals, mu_vals, errs)
+
+    def print_cthyb_stats(self, m_vals, mu_vals, errs):
+        print("\n-------- CTHYB STATS --------")
+        print(f" m*/m's  |  mu's  |  errors")
+        for i in range(len(m_vals)):
+            print(f"{m_vals[i]:^9.4f} | {mu_vals[i]:^8.4f} | {errs[i]:^8.4e}")
+        print()
 
     def save_results(self, prefix, renorm=None):
         """Save G_loc/Sigma_imp/spectral function directly via fly.save_data, same

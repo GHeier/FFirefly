@@ -60,7 +60,7 @@ def get_H_debug():
     def dos_func(e):
         return debug_p(float(e))
 
-    dos_obj = DOSFromFunction(function=dos_func, x_min=eps_min, x_max=eps_max, n_pts=int(w_pts))
+    dos_obj = DOSFromFunction(function=dos_func, x_min=eps_min - margin, x_max=eps_max + margin, n_pts=int(w_pts))
     H = HilbertTransform(dos_obj)
     return H, eps_range
 
@@ -74,9 +74,12 @@ def get_H(N):
     margin = 0.1 * eps_range
 
     def dos_func(e):
-        return N(float(e))
+        e = float(e)
+        if e < eps_min or e > eps_max:
+            return 0.0
+        return N(e)
 
-    dos_obj = DOSFromFunction(function=dos_func, x_min=eps_min, x_max=eps_max, n_pts=int(w_pts))
+    dos_obj = DOSFromFunction(function=dos_func, x_min=eps_min - margin, x_max=eps_max + margin, n_pts=int(w_pts))
     H = HilbertTransform(dos_obj)
     return H, eps_range
 
@@ -140,8 +143,8 @@ def run_DMFT():
             # cfg.num_electrons is total filling (n=1 -> half filling); CTHYBSolver.n is
             # per-spin (0.5 -> half filling), matching FLEXSolver's convention -- convert.
             S = CTHYBSolver(beta, H=H, mu=mu, n_loops=max_iters, mix=mixing, w_max=1.2*D, eps=eps,
-                             n_cycles=200000, length_cycle=100, n_warmup_cycles=10000,
-                             n=(n / 2.0 if cfg.mu_from_n else None))
+                             n_cycles=80000, length_cycle=100, n_warmup_cycles=8000,
+                             n=(n / 2.0 if cfg.mu_from_n else None), tol=5e-3)
             S.loop(U, bethe_lattice=False)
             # S.Sigma_imp/S.G_loc are plain BlockGf on CTHYB's MeshImFreq (no Diagram/.obj_w here)
             Sigma_data = S.Sigma_imp['up'].data
@@ -198,12 +201,12 @@ def run_Bubble_DMFT():
     print(f"Temperature = {T}: Using Bubble+DMFT solver")
 
     if scf:
-        S = Bubble_DMFTSolver(H, G0=G0_wk, U=U, mix=mixing, n=n, mu=mu)
+        S = Bubble_DMFTSolver(H, G0=G0_wk, U=U, mix=mixing, n=n, mu=mu, impurity_solver=impurity_solver)
         renorm = S.loop_Bubble_DMFT(n_loops=max_iters, mode='diagram')
         print(f"Final Sigma max: {np.max(np.abs(S.Bubble.Sigma.obj_wk.data)):.4f}")
         print(f"Final G max: {np.max(np.abs(S.Bubble.G.obj_wk.data)):.4f}")
     else:
-        S = Bubble_DMFTSolver(H, G0=G0_wk, U=U, mix=1.0, n=n, mu=mu)
+        S = Bubble_DMFTSolver(H, G0=G0_wk, U=U, mix=1.0, n=n, mu=mu, impurity_solver=impurity_solver)
         renorm = S.loop_Bubble_DMFT(n_loops=1, mode='base')
 
 

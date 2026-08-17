@@ -133,53 +133,50 @@ float epsilon_LSCO(int n, Vec k) {
     val += -2 * t2 * (cos(2*k(0)) + cos(2*k(1)));
     val += -2 * t3 * (cos(2*k(0))*cos(k(1)) + cos(k(0))*cos(2*k(1)));
 // kz dispersion 
-    val += -2 * tz0 * pow((cos(k(0)) - cos(k(1))),2) * cos(k(0)/2) * cos(k(1)/2) * cos(k(2)/2 * c/a);
+    // Option 1 (suboptimal fit)
+    //val += -2 * tz0 * pow((cos(k(0)) - cos(k(1))),2) * cos(k(0)/2) * cos(k(1)/2) * cos(k(2)/2 * c/a);
+    // Option 2 (empirically better fit from https://arxiv.org/pdf/cond-mat/0503064)
+    float Sxy = cos(k(0)/2) * cos(k(1)/2);
+    float a0 = 0.083;
+    val += -2 * (tz0 * cos(k(2)/2) + tz1 * pow(cos(k(2)/2), 2)) * ((cos(k(0)) - cos(k(1))) * 2 + a0 * Sxy*Sxy) * Sxy;
     return val;
 }
 
 Vec fermi_velocity_LSCO(int n, Vec k) {
-
-    double a = cell[0][0];
-    double c = cell[2][2];
-
     double kx = k(0);
     double ky = k(1);
     double kz = k(2);
 
-    double A = cos(kx) - cos(ky);
-    double B = cos(kx/2);
-    double C = cos(ky/2);
-    double D = cos(kz*c/(2*a));
+    Vec v;
 
-    Vec v(3);
+    // 2D part (common to both kz options)
+    v(0) = 2*t0*sin(kx) + 4*t1*sin(kx)*cos(ky) + 4*t2*sin(2*kx)
+         + 4*t3*sin(2*kx)*cos(ky) + 2*t3*sin(kx)*cos(2*ky);
+    v(1) = 2*t0*sin(ky) + 4*t1*cos(kx)*sin(ky) + 4*t2*sin(2*ky)
+         + 2*t3*cos(2*kx)*sin(ky) + 4*t3*cos(kx)*sin(2*ky);
+    v(2) = 0;
 
-    // vx
-    v(0) =
-          2*t0*sin(kx)
-        + 4*t1*sin(kx)*cos(ky)
-        + 4*t2*sin(2*kx)
-        + 4*t3*sin(2*kx)*cos(ky)
-        + 2*t3*sin(kx)*cos(2*ky)
-        + 2*tz0*D*C*
-          ( 2*A*sin(kx)*B
-            + 0.5*A*A*sin(kx/2) );
+    // Option 1 (suboptimal fit)
+    // double a = cell[0][0];
+    // double c = cell[2][2];
+    // double A = cos(kx) - cos(ky);
+    // double B = cos(kx/2);
+    // double C = cos(ky/2);
+    // double D = cos(kz*c/(2*a));
+    // v(0) += 2*tz0*D*C * (2*A*sin(kx)*B + 0.5*A*A*sin(kx/2));
+    // v(1) -= 2*tz0*D*B * (2*A*sin(ky)*C - 0.5*A*A*sin(ky/2));
+    // v(2) += tz0*(c/a) * A*A*B*C * sin(kz*c/(2*a));
 
-    // vy
-    v(1) =
-          2*t0*sin(ky)
-        + 4*t1*cos(kx)*sin(ky)
-        + 4*t2*sin(2*ky)
-        + 2*t3*cos(2*kx)*sin(ky)
-        + 4*t3*cos(kx)*sin(2*ky)
-        - 2*tz0*D*B*
-          ( 2*A*sin(ky)*C
-            - 0.5*A*A*sin(ky/2) );
-
-    // vz
-    v(2) =
-          tz0*(c/a)
-          *A*A*B*C
-          *sin(kz*c/(2*a));
+    // Option 2 (empirically better fit from https://arxiv.org/pdf/cond-mat/0503064)
+    double a0    = 0.083;
+    double Sxy   = cos(kx/2) * cos(ky/2);
+    double A2    = cos(kx) - cos(ky);
+    double g     = 2*A2 + a0*Sxy*Sxy;
+    double F     = tz0 * cos(kz/2) + tz1 * cos(kz/2)*cos(kz/2);
+    double coeff = A2 + 1.5*a0*Sxy*Sxy;  // = a0*Sxy^2 + g/2
+    v(0) += 2*F * (2*sin(kx)*Sxy + coeff * sin(kx/2)*cos(ky/2));
+    v(1) += 2*F * (-2*sin(ky)*Sxy + coeff * sin(ky/2)*cos(kx/2));
+    v(2) += (tz0 + 2*tz1*cos(kz/2)) * sin(kz/2) * g * Sxy;
 
     return v;
 }

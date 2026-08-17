@@ -35,10 +35,12 @@ class Bubble_DMFTSolver:
         # G_weiss/Sigma_imp/G_loc/.loop()/.solve()/.get_IPT_Sigma()/.set_G_loc()
         # interface, so everything below (solve_Bubble_DMFT_*, loop_Bubble_DMFT) is
         # written against self.DMFT generically and doesn't care which one it is.
-        if impurity_solver == 'CTHYB':
+        if impurity_solver == 'IPT':
+            self.DMFT = IPTSolver(self.beta, H, mix=0.2, w_max=self.w_max, eps=self.eps, mu=mu, n_loops=200)
+        elif impurity_solver == 'CTHYB':
             self.DMFT = CTHYBSolver(self.beta, H, mu=mu, mix=0.2, w_max=self.w_max, eps=self.eps, n_loops=200)
         else:
-            self.DMFT = IPTSolver(self.beta, H, mix=0.2, w_max=self.w_max, eps=self.eps, mu=mu, n_loops=200)
+            raise ValueError(f"Unknown impurity_solver: {impurity_solver}. Use 'IPT' or 'CTHYB'.")
 
         DLR_b = MeshDLRImFreq(beta=self.beta, statistic='Boson', w_max=self.w_max, eps=self.eps)
 

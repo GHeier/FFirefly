@@ -403,7 +403,7 @@ bool spline::make_monotonic()
         } else if( (m_b[i]>=0.0 && m_b[i+1]>=0.0 && avg>0.0) ||
                    (m_b[i]<=0.0 && m_b[i+1]<=0.0 && avg<0.0) ) {
             // input data is monotonic
-            double r = sqrt(m_b[i]*m_b[i]+m_b[i+1]*m_b[i+1])/std::fabs(avg);
+            double r = sqrt(m_b[i]*m_b[i]+m_b[i+1]*m_b[i+1])/std::abs(avg);
             if(r>3.0) {
                 // sufficient criteria for monotonicity: r<=3
                 // adjust b[i] and b[i+1]

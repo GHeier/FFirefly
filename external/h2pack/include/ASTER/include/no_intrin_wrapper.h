@@ -185,14 +185,14 @@ static inline vec_s vec_abs_s(const vec_s a)
 {
     vec_s res;
     #pragma omp simd
-    for (int i = 0; i < SIMD_LEN_S; i++) res.f[i] = fabsf(a.f[i]);
+    for (int i = 0; i < SIMD_LEN_S; i++) res.f[i] = absf(a.f[i]);
     return res;
 }
 static inline vec_d vec_abs_d(const vec_d a)
 {
     vec_d res;
     #pragma omp simd
-    for (int i = 0; i < SIMD_LEN_D; i++) res.d[i] = fabs(a.d[i]);
+    for (int i = 0; i < SIMD_LEN_D; i++) res.d[i] = abs(a.d[i]);
     return res;
 }
 

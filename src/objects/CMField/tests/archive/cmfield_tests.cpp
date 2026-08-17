@@ -45,9 +45,9 @@ bool interp_test_2d() {
     float r2 = field(Vec(1.0, 1.0)).real()(0);
     float r3 = field(Vec(0.0, 0.0)).real()(0);
 
-    bool test1 = fabs(r1 - 1.0) < 1e-2;
-    bool test2 = fabs(r2 - 2.0) < 1e-2;
-    bool test3 = fabs(r3 - 0.0) < 1e-2;
+    bool test1 = abs(r1 - 1.0) < 1e-2;
+    bool test2 = abs(r2 - 2.0) < 1e-2;
+    bool test3 = abs(r3 - 0.0) < 1e-2;
 
     // printf("\nExpected: 1.0, 2.0, 0.0\n");
     // printf("Got: %f, %f, %f\n\n", r1, r2, r3);
@@ -88,9 +88,9 @@ bool interp_test_2d_complex() {
     complex<float> r2 = complex<float>(rv2(0), iv2(0));
     complex<float> r3 = complex<float>(rv3(0), iv3(0));
 
-    bool test1 = fabs(r1.real() - 1.0) < 1e-2;
-    bool test2 = fabs(r2.real() - 2.0) < 1e-2;
-    bool test3 = fabs(r3.real() - 0.0) < 1e-2;
+    bool test1 = abs(r1.real() - 1.0) < 1e-2;
+    bool test2 = abs(r2.real() - 2.0) < 1e-2;
+    bool test3 = abs(r3.real() - 0.0) < 1e-2;
 
     // printf("Expected: 1.0, 2.0, 0.0\n");
     // printf("Got: %f, %f, %f\n\n", r1.real(), r2.real(), r3.real());
@@ -130,9 +130,9 @@ bool interp_test_3d() {
     // printf("\nExpected: 1.5, 3.0, 0.0\n");
     // printf("Got: %f, %f, %f\n\n", r1, r2, r3);
 
-    bool test1 = fabs(r1 - 1.5) < 1e-2;
-    bool test2 = fabs(r2 - 3.0) < 1e-2;
-    bool test3 = fabs(r3 - 0.0) < 1e-2;
+    bool test1 = abs(r1 - 1.5) < 1e-2;
+    bool test2 = abs(r2 - 3.0) < 1e-2;
+    bool test3 = abs(r3 - 0.0) < 1e-2;
 
     return test1 && test2 && test3;
 }
@@ -174,9 +174,9 @@ bool interp_test_3d_complex() {
 
     // printf("Expected: 1.5, 3.0, 0.0\n");
 
-    bool test1 = fabs(r1.real() - 1.5) < 1e-2;
-    bool test2 = fabs(r2.real() - 3.0) < 1e-2;
-    bool test3 = fabs(r3.real() - 0.0) < 1e-2;
+    bool test1 = abs(r1.real() - 1.5) < 1e-2;
+    bool test2 = abs(r2.real() - 3.0) < 1e-2;
+    bool test3 = abs(r3.real() - 0.0) < 1e-2;
     // printf("Got: %f, %f, %f\n", r1.real(), r2.real(), r3.real());
 
     return test1 && test2 && test3;
@@ -210,9 +210,9 @@ bool interp_test_1d_with_w() {
     // printf("\nExpected: 1.0, 2.0, 0.0\n");
     // printf("Got: %f, %f, %f\n\n", r1, r2, r3);
 
-    bool test1 = fabs(r1 - 1.0) < 1e-2;
-    bool test2 = fabs(r2 - 2.0) < 1e-2;
-    bool test3 = fabs(r3 - 0.0) < 1e-2;
+    bool test1 = abs(r1 - 1.0) < 1e-2;
+    bool test2 = abs(r2 - 2.0) < 1e-2;
+    bool test3 = abs(r3 - 0.0) < 1e-2;
 
     return test1 && test2 && test3;
 }
@@ -248,9 +248,9 @@ bool interp_test_2d_with_w() {
     // printf("\nExpected: 1.5, 3.0, 0.0\n");
     // printf("Got: %f, %f, %f\n\n", r1, r2, r3);
 
-    bool test1 = fabs(r1 - 1.5) < 1e-2;
-    bool test2 = fabs(r2 - 3.0) < 1e-2;
-    bool test3 = fabs(r3 - 0.0) < 1e-2;
+    bool test1 = abs(r1 - 1.5) < 1e-2;
+    bool test2 = abs(r2 - 3.0) < 1e-2;
+    bool test3 = abs(r3 - 0.0) < 1e-2;
 
     return test1 && test2 && test3;
 }
@@ -289,9 +289,9 @@ bool interp_test_3d_with_w() {
     // printf("\nExpected: 1.0, 4.0, 0.0\n");
     // printf("Got: %f, %f, %f\n\n", r1, r2, r3);
 
-    bool test1 = fabs(r1 - 2.0) < 1e-2;
-    bool test2 = fabs(r2 - 4.0) < 1e-2;
-    bool test3 = fabs(r3 - 0.0) < 1e-2;
+    bool test1 = abs(r1 - 2.0) < 1e-2;
+    bool test2 = abs(r2 - 4.0) < 1e-2;
+    bool test3 = abs(r3 - 0.0) < 1e-2;
 
     return test1 && test2 && test3;
 }
@@ -321,9 +321,9 @@ bool interp_test_0d_with_w() {
     // printf("\nExpected: 0.5, 1.0, 0.0\n");
     // printf("Got: %f, %f, %f\n\n", r1, r2, r3);
 
-    bool test1 = fabs(r1 - 0.5) < 1e-2;
-    bool test2 = fabs(r2 - 1.0) < 1e-2;
-    bool test3 = fabs(r3 - 0.0) < 1e-2;
+    bool test1 = abs(r1 - 0.5) < 1e-2;
+    bool test2 = abs(r2 - 1.0) < 1e-2;
+    bool test3 = abs(r3 - 0.0) < 1e-2;
 
     return test1 && test2 && test3;
 }
@@ -356,9 +356,9 @@ bool interp_test_1d_with_n() {
     // printf("\nExpected: 0.5, 1.0, 0.0\n");
     // printf("Got: %f, %f, %f\n\n", r1, r2, r3);
 
-    bool test1 = fabs(r1 - 0.5) < 1e-2;
-    bool test2 = fabs(r2 - 1.0) < 1e-2;
-    bool test3 = fabs(r3 - 0.0) < 1e-2;
+    bool test1 = abs(r1 - 0.5) < 1e-2;
+    bool test2 = abs(r2 - 1.0) < 1e-2;
+    bool test3 = abs(r3 - 0.0) < 1e-2;
 
     return test1 && test2 && test3;
 }

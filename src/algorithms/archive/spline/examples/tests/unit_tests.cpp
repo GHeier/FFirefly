@@ -504,7 +504,7 @@ BOOST_AUTO_TEST_CASE( FunctionApproximation )
             double max = 0.0;
             for(size_t i=0; i<eval_grid.size(); i++) {
                 double x = eval_grid[i];
-                double err = std::fabs(myfunc(x)-s(x));
+                double err = std::abs(myfunc(x)-s(x));
                 avg += err;
                 if(err>max)
                     max=err;
@@ -678,9 +678,9 @@ BOOST_AUTO_TEST_CASE( CubicRootFinding )
             // check f(sol) = 0
             for(size_t j=0; j<sol.size(); j++) {
                 double y = f(c[0],c[1],c[2],c[3],sol[j]);
-                double y1 = fabs(f(c[0],c[1],c[2],c[3],sol[j]*(1.0-dx)));
-                double y2 = fabs(f(c[0],c[1],c[2],c[3],sol[j]*(1.0+dx)));
-                double noise = std::max(fabs(y-y1), fabs(y-y2));
+                double y1 = abs(f(c[0],c[1],c[2],c[3],sol[j]*(1.0-dx)));
+                double y2 = abs(f(c[0],c[1],c[2],c[3],sol[j]*(1.0+dx)));
+                double noise = std::max(abs(y-y1), abs(y-y2));
                 BOOST_CHECK_SMALL(y, max_func+noise);
             }
             // if exact roots are known check against them
@@ -718,7 +718,7 @@ BOOST_AUTO_TEST_CASE( SplineSolve )
                 double y0 = s(root[i]);
                 double y1 = s(root[i]*(1.0-dx));
                 double y2 = s(root[i]*(1.0+dx));
-                double noise = std::max(fabs(y0-y1), fabs(y0-y2));
+                double noise = std::max(abs(y0-y1), abs(y0-y2));
                 BOOST_CHECK_SMALL(y0-y, max_func+noise);
             }
         }

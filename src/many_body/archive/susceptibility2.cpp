@@ -34,7 +34,7 @@ complex<float> complex_susceptibility_integration(Vec q, float T, float fermi_en
         float e_kq = epsilon(k.n, k+q) - fermi_energy;
         float f_kq = fermi_dirac(e_kq, T);
         float f_k = fermi_dirac(e_k, T);
-        if (fabs(e_kq - e_k) < 0.0001 and fabs(w.imag()) < 0.0001 and fabs(w.real()) < 0.0001) {
+        if (abs(e_kq - e_k) < 0.0001 and abs(w.imag()) < 0.0001 and abs(w.real()) < 0.0001) {
             if (T == 0 or exp(e_k/T) > 1e6) return e_k < 0;
             return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
         }
@@ -45,7 +45,7 @@ complex<float> complex_susceptibility_integration(Vec q, float T, float fermi_en
         float e_kq = epsilon(k.n, k+q) - fermi_energy;
         float f_kq = fermi_dirac(e_kq, T);
         float f_k = fermi_dirac(e_k, T);
-        if (fabs(e_kq - e_k) < 0.0001 and fabs(w.imag()) < 0.0001 and fabs(w.real()) < 0.0001) {
+        if (abs(e_kq - e_k) < 0.0001 and abs(w.imag()) < 0.0001 and abs(w.real()) < 0.0001) {
             if (T == 0 or exp(e_k/T) > 1e6) return e_k < 0;
             return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
         }
@@ -57,7 +57,7 @@ complex<float> complex_susceptibility_integration(Vec q, float T, float fermi_en
         float e_kq = epsilon(k.n, k+q) - fermi_energy;
         float f_kq = fermi_dirac(e_kq, T);
         float f_k = fermi_dirac(e_k, T);
-        if (fabs(e_kq - e_k) < 0.0001 and fabs(w.imag()) < 0.0001 and fabs(w.real()) < 0.0001) {
+        if (abs(e_kq - e_k) < 0.0001 and abs(w.imag()) < 0.0001 and abs(w.real()) < 0.0001) {
             if (T == 0 or exp(e_k/T) > 1e6) return e_k < 0;
             return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
         }
@@ -234,11 +234,11 @@ float adaptive_trapezoidal(auto &f, float x0, float x1, float y0, float y1, floa
                 float t1 = trap_cube(f, x, x+dx, y, y+dy, z, z+dz);
                 float t2 = trap_8_cubes(f, x, x+dx, y, y+dy, z, z+dz);
 
-                if (fabs(t1 - t2) < error_relative * fabs(t2) or fabs(t1 - t2) < 0.0001) {
+                if (abs(t1 - t2) < error_relative * abs(t2) or abs(t1 - t2) < 0.0001) {
                     sum += t2;
                 }
                 else {
-//                    cout << t1 << " " << t2 << " " << fabs(t1 - t2) << " " << error_relative * fabs(t2) << endl;
+//                    cout << t1 << " " << t2 << " " << abs(t1 - t2) << " " << error_relative * abs(t2) << endl;
                     float new_zdiv = 2 * (dim % 2) + 1 * ((dim+1)%2);
                     sum += adaptive_trapezoidal(f, x, x+dx, y, y+dy, z, z+dz, 2, 2, new_zdiv, error_relative);
                 }
@@ -265,8 +265,8 @@ float iteratively_splitting_cubes(auto &f, float x0, float x1, float y0, float y
                 for (int l = 0; l < iters; l++) {
                     float t1 = trap_cube(f, x0+j*dx, x0+(j+1)*dx, y0+k*dx, y0+(k+1)*dx, z0+l*dx, z0+(l+1)*dx);
                     float t2 = trap_8_cubes(f, x0+j*dx, x0+(j+1)*dx, y0+k*dx, y0+(k+1)*dx, z0+l*dx, z0+(l+1)*dx); 
-                    float err = fabs(t2 - t1);
-                    if ( err > fabs(error_relative*t2) and err > error_total / pow(2,3*i) )
+                    float err = abs(t2 - t1);
+                    if ( err > abs(error_relative*t2) and err > error_total / pow(2,3*i) )
                         no_errors = false;
 
                     total_sum += t2;
@@ -332,12 +332,12 @@ int get_num_points_from_delta(float &delta) {
 }
 
 void sanitize_I_vals(float &V1, float &V2, float &V3, float &V4) {
-    if (fabs(V1 - V2) < 1e-3) V2 = V1;
-    if (fabs(V1 - V3) < 1e-3) V3 = V1;
-    if (fabs(V1 - V4) < 1e-3) V4 = V1;
-    if (fabs(V2 - V3) < 1e-3) V3 = V2;
-    if (fabs(V2 - V4) < 1e-3) V4 = V2;
-    if (fabs(V3 - V4) < 1e-3) V4 = V3;
+    if (abs(V1 - V2) < 1e-3) V2 = V1;
+    if (abs(V1 - V3) < 1e-3) V3 = V1;
+    if (abs(V1 - V4) < 1e-3) V4 = V1;
+    if (abs(V2 - V3) < 1e-3) V3 = V2;
+    if (abs(V2 - V4) < 1e-3) V4 = V2;
+    if (abs(V3 - V4) < 1e-3) V4 = V3;
 }
 
 vector<float> getUnique(float a, float b, float c, float d) {
@@ -367,30 +367,30 @@ float get_I(float D1, float D2, float D3, float V1, float V2, float V3, float V4
     }
     if (V.size() == 2 and check_two_equal(V1, V2, V3, V4)) {
         printf("Option 2\n");
-        float t1 = 2 * V[0] * V[1] / pow(V[0] - V[1], 3) * log(fabs(V[1] / V[0]));
+        float t1 = 2 * V[0] * V[1] / pow(V[0] - V[1], 3) * log(abs(V[1] / V[0]));
         float t2 = (V[0] + V[1]) / (pow(V[0] - V[1], 2));
         float r = 3 * (t1 + t2);
         return 3 * (t1 + t2);
     }
     else if (V.size() == 2) {
         printf("Option 3\n");
-        float t1 = V[1]*V[1] / (pow(V[0] - V[1],3)) * log(fabs(V[0]/V[1]));
+        float t1 = V[1]*V[1] / (pow(V[0] - V[1],3)) * log(abs(V[0]/V[1]));
         float t2 = (1.5 * V[1]*V[1] + 0.5 * V[0]*V[0] - 2 * V[0]*V[1]) / pow(V[0] - V[1],3);
         float r = 3 * (t1 + t2);
         return r;
     }
     if (V.size() == 3) {
         printf("Option 4\n");
-        float t1 = V[1] * V[1] / (pow(V[1] - V[0], 2) * (V[1] - V[2])) * log(fabs(V[1] / V[0]));
-        float t2 = V[2] * V[2] / (pow(V[2] - V[0], 2) * (V[2] - V[1])) * log(fabs(V[2] / V[0]));
+        float t1 = V[1] * V[1] / (pow(V[1] - V[0], 2) * (V[1] - V[2])) * log(abs(V[1] / V[0]));
+        float t2 = V[2] * V[2] / (pow(V[2] - V[0], 2) * (V[2] - V[1])) * log(abs(V[2] / V[0]));
         float t3 = V[0] / ((V[1] - V[0]) * (V[2] - V[0]));
         float r = 3 * (t1 + t2 + t3);
         return r;
     }
     printf("Option 5\n");
-    float t1 = (V1*V1/D1*log(fabs(V1/V4)));
-    float t2 = (V2*V2/D2*log(fabs(V2/V4)));
-    float t3 = (V3*V3/D3*log(fabs(V3/V4)));
+    float t1 = (V1*V1/D1*log(abs(V1/V4)));
+    float t2 = (V2*V2/D2*log(abs(V2/V4)));
+    float t3 = (V3*V3/D3*log(abs(V3/V4)));
     float r = 3 * (t1 + t2 + t3);
     return r;
 }

@@ -110,10 +110,10 @@ template<class Function>
 double fderiv(const Function& f, int order, double x)
 {
     if(order==1) {
-        double dx=2e-8*(1.0+fabs(x));
+        double dx=2e-8*(1.0+abs(x));
         return (f(x+dx)-f(x-dx)) / (2.0*dx);
     } else if(order==2) {
-        double dx=3e-6*(1.0+fabs(x));
+        double dx=3e-6*(1.0+abs(x));
         return (f(x-dx)-2.0*f(x)+f(x+dx)) / (dx*dx);
     } else {
         assert(false);

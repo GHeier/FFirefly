@@ -44,7 +44,7 @@ bool check_susceptibility_integration_methods_are_equivalent(Vec q, float T, flo
         float e_kq = epsilon(k+q) - mu;
         float f_kq = fermi_dirac(e_kq, T);
         float f_k = fermi_dirac(e_k, T);
-        if (fabs(e_kq - e_k) < 0.0001 and fabs(w) < 0.0001) {
+        if (abs(e_kq - e_k) < 0.0001 and abs(w) < 0.0001) {
             if (T == 0 or exp(e_k/T) > 1e6) return e_k < 0;
             return 1/T * exp(e_k/T) / pow( exp(e_k/T) + 1,2);
         }

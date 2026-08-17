@@ -23,7 +23,7 @@ bool test_vector(const vector<vector<vector<int>>> &vec, vector<int> &grid) {
         for (int j = 0; j < vec[i].size(); j++) {
             vector<float> v = ind_to_vec(vec[i][j], grid);
             curr_v = test_func(v);
-            if (j > 0 && fabs(curr_v - prev_v) > 1e-5) {
+            if (j > 0 && abs(curr_v - prev_v) > 1e-5) {
                 return false;
             }
             prev_v = curr_v;

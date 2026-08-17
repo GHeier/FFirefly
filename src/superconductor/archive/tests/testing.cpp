@@ -94,7 +94,7 @@ void test_cube_map() {
     for (int i = 0; i < cube.size(); i++) {
         for (int j = 0; j < cube[i].size(); j++) {
             for (int k = 0; k < cube[i][j].size(); k++) {
-                if (fabs(cube[i][j][k] - cube_freq_map.at(0.0)[i][j][k]) > 0.0001) {
+                if (abs(cube[i][j][k] - cube_freq_map.at(0.0)[i][j][k]) > 0.0001) {
                     printf("Cube values: %f %f\n", cube[i][j][k], cube_freq_map.at(0.0)[i][j][k]);
                 }
                 if (i == 0) cout << cube[i][j][k] << " " << cube_freq_map.at(0.0)[i][j][k] << endl;

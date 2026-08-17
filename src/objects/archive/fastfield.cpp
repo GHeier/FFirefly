@@ -53,7 +53,7 @@ vector<Vec> invertMatrix(vector<Vec>& matrix, int n) {
     for (size_t i = 0; i < n; ++i) {
         for (size_t j = 0; j < n; ++j) {
             augmented[i][j] = matrix[i](j);
-            if (fabs(augmented[i][j]) < 1e-5) augmented[i][j] = 0.0f;
+            if (abs(augmented[i][j]) < 1e-5) augmented[i][j] = 0.0f;
         }
         augmented[i][n + i] = 1.0f; // Identity matrix
     }
@@ -63,14 +63,14 @@ vector<Vec> invertMatrix(vector<Vec>& matrix, int n) {
         // Partial Pivoting
         size_t maxRow = i;
         for (size_t k = i + 1; k < n; ++k) {
-            if (std::fabs(augmented[k][i]) > std::fabs(augmented[maxRow][i])) {
+            if (std::abs(augmented[k][i]) > std::abs(augmented[maxRow][i])) {
                 maxRow = k;
             }
         }
         std::swap(augmented[i], augmented[maxRow]);
 
         // Check for singular matrix
-        if (std::fabs(augmented[i][i]) < 1e-6) {
+        if (std::abs(augmented[i][i]) < 1e-6) {
             throw std::runtime_error("vector<vector<float>> is singular and cannot be inverted.");
         }
 

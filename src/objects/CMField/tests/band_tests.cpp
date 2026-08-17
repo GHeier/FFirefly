@@ -34,11 +34,11 @@ bool test_3D_TB() {
     float e3 = band(1, k3);
     float e4 = band(1, k4);
 
-    return (fabs(e0 - test_3D_ek(k0)) < 1e-6 &&
-            fabs(e1 - test_3D_ek(k1)) < 1e-6 &&
-            fabs(e2 - test_3D_ek(k2)) < 1e-6 &&
-            fabs(e3 - test_3D_ek(k3)) < 1e-6 &&
-            fabs(e4 - test_3D_ek(k4)) < 1e-6);
+    return (abs(e0 - test_3D_ek(k0)) < 1e-6 &&
+            abs(e1 - test_3D_ek(k1)) < 1e-6 &&
+            abs(e2 - test_3D_ek(k2)) < 1e-6 &&
+            abs(e3 - test_3D_ek(k3)) < 1e-6 &&
+            abs(e4 - test_3D_ek(k4)) < 1e-6);
 }
 
 bool band_tests() {

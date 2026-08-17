@@ -19,7 +19,7 @@ bool surface_test_3D() {
     Surface surf = tetrahedron_surface(func, s_val);
     Vec temp = surf.faces[0];
     float E = epsilon(1, temp);
-    return fabs(E - s_val) < 1e-2;
+    return abs(E - s_val) < 1e-2;
 }
 
 bool surface_tests() { return surface_test_3D(); }

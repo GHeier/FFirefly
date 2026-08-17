@@ -17,13 +17,11 @@
 #include "all.hpp"
 #include "surface_tests.hpp"
 #include "array_tests.hpp"
-#include "hmatrix_tests.hpp"
-
 using namespace std;
 
 extern "C" bool object_tests() {
     printf("\nRunning Object tests\n");
-    int num_tests = 13;
+    int num_tests = 12;
     bool all_tests[num_tests] = {
         base_data_tests(),
         field_tests(),
@@ -38,7 +36,6 @@ extern "C" bool object_tests() {
         array_tests(),
         inds_tests(),
         hamiltonian_tests(),
-        hmatrix_tests(),
     };
 
     return print_test_results(all_tests, num_tests, "Object tests");

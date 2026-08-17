@@ -43,7 +43,7 @@ static bool test_jl_compute_sum() {
 // Float tests
 static bool test_jl_float_pi() {
     float result = call_julia_func_float("config/tests/", "test_typed_interface", "TestTypedInterface", "return_float_pi");
-    if (fabs(result - 3.14159f) > 0.0001f) {
+    if (abs(result - 3.14159f) > 0.0001f) {
         return false;
     }
     return true;
@@ -51,7 +51,7 @@ static bool test_jl_float_pi() {
 
 static bool test_jl_float_negative() {
     float result = call_julia_func_float("config/tests/", "test_typed_interface", "TestTypedInterface", "return_float_negative");
-    if (fabs(result - (-2.71828f)) > 0.0001f) {
+    if (abs(result - (-2.71828f)) > 0.0001f) {
         return false;
     }
     return true;
@@ -59,7 +59,7 @@ static bool test_jl_float_negative() {
 
 static bool test_jl_float_zero() {
     float result = call_julia_func_float("config/tests/", "test_typed_interface", "TestTypedInterface", "return_float_zero");
-    if (fabs(result - 0.0f) > 0.0001f) {
+    if (abs(result - 0.0f) > 0.0001f) {
         return false;
     }
     return true;
@@ -67,7 +67,7 @@ static bool test_jl_float_zero() {
 
 static bool test_jl_compute_product() {
     float result = call_julia_func_float("config/tests/", "test_typed_interface", "TestTypedInterface", "compute_product");
-    if (fabs(result - 10.0f) > 0.0001f) {
+    if (abs(result - 10.0f) > 0.0001f) {
         return false;
     }
     return true;
@@ -76,7 +76,7 @@ static bool test_jl_compute_product() {
 // Double tests
 static bool test_jl_double_large() {
     double result = call_julia_func_double("config/tests/", "test_typed_interface", "TestTypedInterface", "return_double_large");
-    if (fabs(result - 1.23456789012345) > 0.000000001) {
+    if (abs(result - 1.23456789012345) > 0.000000001) {
         return false;
     }
     return true;
@@ -84,7 +84,7 @@ static bool test_jl_double_large() {
 
 static bool test_jl_double_small() {
     double result = call_julia_func_double("config/tests/", "test_typed_interface", "TestTypedInterface", "return_double_small");
-    if (fabs(result - 0.00000123456) > 0.0000000001) {
+    if (abs(result - 0.00000123456) > 0.0000000001) {
         return false;
     }
     return true;

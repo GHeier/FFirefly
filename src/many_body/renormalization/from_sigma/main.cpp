@@ -31,10 +31,10 @@ float self_energy_renormalization() {
             float slope_r = real(sigma(kvec, 1e-4) - sigma(kvec, -1e-4)) / (2e-4);
             float slope_i = imag(sigma(kvec, 1e-4) - sigma(kvec, -1e-4)) / (2e-4);
             float slope = slope_r + slope_i;
-            if (maxval < fabs(slope))
-                maxval = fabs(slope);
+            if (maxval < abs(slope))
+                maxval = abs(slope);
             vals.push_back(cfloat(-slope_i, 0.0f));
-            ave += fabs(slope_i) / sigma.cmf.data.points.size();
+            ave += abs(slope_i) / sigma.cmf.data.points.size();
         }
     } else {
         // Loop over mesh
@@ -51,10 +51,10 @@ float self_energy_renormalization() {
                     float slope_r = real(sigma(kvec, 1e-4) - sigma(kvec, -1e-4)) / (2e-4);
                     float slope_i = imag(sigma(kvec, 1e-4) - sigma(kvec, -1e-4)) / (2e-4);
                     float slope = slope_r + slope_i;
-                    if (maxval < fabs(slope))
-                        maxval = fabs(slope);
+                    if (maxval < abs(slope))
+                        maxval = abs(slope);
                     vals.push_back(cfloat(-slope_i, 0.0f));
-                    ave += fabs(slope_i) / (kx * ky * kz);
+                    ave += abs(slope_i) / (kx * ky * kz);
                     if (dimension == 2)
                         break;
                 }
