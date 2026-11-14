@@ -9,7 +9,7 @@ extern "C" void many_body_wrapper() {
     printv("Running many_body_wrapper\n");
     if (calculation == "many_body" && method == "triqs") {
         if (debug) run_python_test("triqs");
-        else run_python_method("triqs");
+        else run_python_method("triqs", true);
     }
     else if (calculation == "many_body" && method == "sparse_ir") {
         if (debug) run_julia_test("sparse_ir");
@@ -21,7 +21,11 @@ extern "C" void many_body_wrapper() {
     }
     else if (calculation == "self_energy" && method == "triqs") {
         if (debug) run_python_test("triqs");
-        else run_python_method("triqs");
+        else run_python_method("triqs", true);
+    }
+    else if (calculation == "self_energy" && method == "from_vertex") {
+        if (debug) run_cpp_test("from_vertex");
+        else run_cpp_method("from_vertex");
     }
     else if (calculation == "vertex" && method == "from_susceptibility") {
         if (debug) run_cpp_test("from_susceptibility");

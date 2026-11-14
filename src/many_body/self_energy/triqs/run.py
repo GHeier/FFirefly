@@ -4,14 +4,29 @@ from firefly.diagram import Diagram
 import numpy as np
 from triqs.dos import DOSFromFunction, HilbertTransform
 from triqs.gf import Gf, inverse, SemiCircular
+from triqs.utility import mpi
 from triqs_tprf.lattice import lattice_dyson_g0_wk
 from IPTSolver import IPTSolver
 from IPTSolver_real import IPTSolver_real
-from CTHYBSolver import CTHYBSolver, effective_mass
+from CTHYBSolver import CTHYBSolver
 from BubbleSolver import BubbleSolver
 from Bubble_DMFTSolver import Bubble_DMFTSolver
 from load_triqs_H import create_dlr_meshes, get_energy_mesh
 from triqs.gf.meshes import MeshDLRImFreq, MeshDLRImTime
+
+# mpirun replicates this whole script onto every rank (SPMD) -- there's no way to
+# scope MPI to "just the CTHYB part" without TRIQS/cthyb supporting dynamic process
+# spawning, which it doesn't. cthyb's own internal solve()/progress output is
+# already rank-guarded (only rank 0 prints), and every .save()/fly.save_data() call
+# in this package is now guarded with mpi.is_master_node() too (see diagram.py,
+# CTHYBSolver.py) -- but the plain print() calls scattered through this driver
+# script and the solver modules it imports aren't, so every rank prints its own
+# copy. Silencing print() on non-master ranks here, before any of those run,
+# fixes that globally for anything imported below (builtins.print is a single
+# process-wide lookup, so this covers CTHYBSolver.py/Bubble_DMFTSolver.py/etc. too).
+if not mpi.is_master_node():
+    import builtins
+    builtins.print = lambda *args, **kwargs: None
 
 # Load relevant variables from the configuration
 outdir = cfg.outdir
@@ -91,12 +106,12 @@ def run():
 
     if interaction == "DMFT":
         return run_DMFT()
-    elif interaction == "Bubble":
+    elif interaction == "SOPT":
         return run_Bubble()
-    elif interaction == "Bubble+DMFT":
+    elif interaction == "DMFT+SOPT":
         return run_Bubble_DMFT()
     else:
-        raise ValueError(f"Unknown interaction: {interaction}. Use 'DMFT', 'Bubble', or 'Bubble+DMFT'.")
+        raise ValueError(f"Unknown interaction: {interaction}. Use 'DMFT', 'SOPT', or 'DMFT+SOPT'.")
 
 
 def get_G0_wk():
@@ -142,21 +157,19 @@ def run_DMFT():
             # keep mu fixed, preserving existing fixed-mu configs' behavior unchanged.
             # cfg.num_electrons is total filling (n=1 -> half filling); CTHYBSolver.n is
             # per-spin (0.5 -> half filling), matching FLEXSolver's convention -- convert.
+            len_cycles = cfg.len_cycles
+            warmup_cycles = cfg.warmup_cycles
+            n_cycles = cfg.n_cycles
             S = CTHYBSolver(beta, H=H, mu=mu, n_loops=max_iters, mix=mixing, w_max=1.2*D, eps=eps,
-                             n_cycles=80000, length_cycle=100, n_warmup_cycles=8000,
-                             n=(n / 2.0 if cfg.mu_from_n else None), tol=5e-3)
+                             n_cycles=n_cycles, length_cycle=len_cycles, n_warmup_cycles=warmup_cycles,
+                             n=(n / 2.0 if cfg.mu_from_n else None), tol=cfg.tol)
             S.loop(U, bethe_lattice=False)
-            # S.Sigma_imp/S.G_loc are plain BlockGf on CTHYB's MeshImFreq (no Diagram/.obj_w here)
-            Sigma_data = S.Sigma_imp['up'].data
-            w_points = np.array([float(w.imag) for w in S.Sigma_imp['up'].mesh], dtype=np.float32)
+            # S.Sigma_imp/S.G_loc are Diagram objects on the shared DLR mesh, same as IPTSolver's.
+            Sigma_data = S.Sigma_imp.obj_w.data
+            w_points = S.Sigma_imp.w_points
             print(f"Final Sigma max: {np.max(np.abs(Sigma_data)):.4f}")
-            print(f"Final G max: {np.max(np.abs(S.G_loc['up'].data)):.4f}")
-            # get_renorm()'s "first sign change" search is fine on a real-frequency axis
-            # (single physical crossing) but on the Matsubara axis the noisy high-frequency
-            # tail flips sign hundreds of times, so it grabs a spurious far-tail crossing
-            # instead of the physical one near iwn=0. Use the same two-lowest-positive-
-            # frequency slope (effective_mass) the per-iteration prints already use instead.
-            renorm = effective_mass(S.Sigma_imp['up'])
+            print(f"Final G max: {np.max(np.abs(S.G_loc.obj_w.data)):.4f}")
+            renorm = get_renorm(Sigma_data, w_points)
             S.save_results(outdir + prefix, renorm)
         else:
             raise ValueError(f"Unknown impurity_solver: {impurity_solver}. Use 'IPT' or 'CTHYB'.")
@@ -239,7 +252,7 @@ def save_DMFT(S, eps_range=0.0, renorm=None):
     S.Sigma_imp.save(pref + '_sigma_iw.h5')
     S.G_loc.save_spectral(pref + '_A_w.h5')
     save_G(S, eps_range)
-    if renorm is not None:
+    if renorm is not None and mpi.is_master_node():
         fly.save_data(pref + "_renormalization.h5", np.array([renorm]),
                        mesh=None, domain=None, w_points=None)
 
@@ -296,19 +309,26 @@ def save_DMFT_real(S):
 
 def get_renorm(loc_sigma, w_points):
     loc_sigma = loc_sigma[:, 0, 0]
-    signs = np.sign(loc_sigma.imag)
-    diff = np.diff(signs)
-    zero_crossings = np.where(diff != 0)[0]
+    # Use the two lowest POSITIVE Matsubara points, forward-difference slope of
+    # Im[Sigma] -- same convention as effective_mass() in CTHYBSolver.py, which is
+    # what the per-iteration m*/m stats printed during loop() already use. The old
+    # approach (first sign change of Im[Sigma] scanning from w_min) instead landed
+    # on whatever sign flip came first out in the DLR fit's least-constrained tail
+    # nodes -- here that was between the two most-negative frequencies, an artifact
+    # unrelated to the physical w->0 renormalization, giving a final number
+    # completely disconnected from the value the loop just converged to.
+    order = np.argsort(w_points)
+    w_sorted = w_points[order]
+    sigma_sorted = loc_sigma[order]
+    pos_idx = np.where(w_sorted > 0)[0]
 
-    if (len(zero_crossings) == 0):
-        print("Uncontrolled Self-Energy result, no zero crossing. Returning infinity")
+    if len(pos_idx) < 2:
+        print("Uncontrolled Self-Energy result, not enough positive-frequency points. Returning infinity")
         return float('inf')
 
-    ind = zero_crossings[0]
-    w_prev = w_points[ind]
-    w_next = w_points[ind+1]
-    sigma_prev = loc_sigma[ind]
-    sigma_next = loc_sigma[ind+1]
+    i0, i1 = pos_idx[0], pos_idx[1]
+    w_prev, w_next = w_sorted[i0], w_sorted[i1]
+    sigma_prev, sigma_next = sigma_sorted[i0], sigma_sorted[i1]
     renorm = 1.0 - (sigma_next.imag - sigma_prev.imag) / (w_next - w_prev)
     print("w prev, next: ", w_prev, w_next)
     print("Sigma prev, next: ", sigma_prev.imag, sigma_next.imag)

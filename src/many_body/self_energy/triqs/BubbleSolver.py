@@ -117,7 +117,7 @@ class BubbleSolver:
             #self.mu = brentq(density_error, mu_min, mu_max, xtol=1e-4)
             sol = root(density_error, self.mu, method='broyden1')
             #print("sol: ", sol.x)
-            self.mu = sol.x
+            self.mu = float(np.asarray(sol.x).ravel()[0])
         except ValueError:
             # Check achievable density range
             n_at_min = self.calc_electron_density(emin)

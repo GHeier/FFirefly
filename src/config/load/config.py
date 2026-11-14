@@ -12,6 +12,7 @@ verbosity = 'low'
 automatic_file_read = True
 write_result = True
 filetype = 'h5'
+mpi_procs = 0
 
 #[SYSTEM]
 interaction = 'none'
@@ -28,6 +29,7 @@ mixing = 0.02
 max_iters = 100
 qp_weight = 1.0
 recurse_level = 0
+tol = 0.0001
 
 #[HAMILTONIAN]
 hamiltonian = 'tight_binding'
@@ -91,6 +93,9 @@ dynamic = False
 #[MANY_BODY]
 self_consistent = False
 impurity_solver = 'IPT'
+n_cycles = 20000
+len_cycles = 200
+warmup_cycles = 8000
 ### End Variables ###
 nbnd += 1
 ### Functions ###
@@ -130,127 +135,133 @@ def load_config():
             # Set the variable
 
 #[CONTROL]
-            if "category" in key:
+            if key == "category":
                 global category
                 category = value
-            if "calculation" in key:
+            if key == "calculation":
                 global calculation
                 calculation = value
-            if "method" in key:
+            if key == "method":
                 global method
                 method = value
-            if "outdir" in key:
+            if key == "outdir":
                 global outdir
                 outdir = value
-            if "debug" in key:
+            if key == "debug":
                 global debug
                 debug = value == 'true'
-            if "prefix" in key:
+            if key == "prefix":
                 global prefix
                 prefix = value
-            if "verbosity" in key:
+            if key == "verbosity":
                 global verbosity
                 verbosity = value
-            if "automatic_file_read" in key:
+            if key == "automatic_file_read":
                 global automatic_file_read
                 automatic_file_read = value == 'true'
-            if "write_result" in key:
+            if key == "write_result":
                 global write_result
                 write_result = value == 'true'
-            if "filetype" in key:
+            if key == "filetype":
                 global filetype
                 filetype = value
+            if key == "mpi_procs":
+                global mpi_procs
+                mpi_procs = int(value)
 
 #[SYSTEM]
-            if "interaction" in key:
+            if key == "interaction":
                 global interaction
                 interaction = value
-            if "dimension" in key:
+            if key == "dimension":
                 global dimension
                 dimension = int(value)
                 got_dimension = True
-            if "celltype" in key:
+            if key == "celltype":
                 global celltype
                 celltype = value
-            if "nbnd" in key:
+            if key == "nbnd":
                 global nbnd
                 nbnd = int(value)
-            if "fermi_energy" in key:
+            if key == "fermi_energy":
                 global fermi_energy
                 fermi_energy = float(value)
-            if "num_electrons" in key:
+            if key == "num_electrons":
                 global num_electrons
                 num_electrons = float(value)
-            if "mu_from_n" in key:
+            if key == "mu_from_n":
                 global mu_from_n
                 mu_from_n = value == 'true'
-            if "Temperature" in key:
+            if key == "Temperature":
                 global Temperature
                 Temperature = float(value)
-            if "cutoff_energy" in key:
+            if key == "cutoff_energy":
                 global cutoff_energy
                 cutoff_energy = float(value)
-            if "smearing" in key:
+            if key == "smearing":
                 global smearing
                 smearing = float(value)
-            if "mixing" in key:
+            if key == "mixing":
                 global mixing
                 mixing = float(value)
-            if "max_iters" in key:
+            if key == "max_iters":
                 global max_iters
                 max_iters = int(value)
-            if "qp_weight" in key:
+            if key == "qp_weight":
                 global qp_weight
                 qp_weight = float(value)
-            if "recurse_level" in key:
+            if key == "recurse_level":
                 global recurse_level
                 recurse_level = int(value)
+            if key == "tol":
+                global tol
+                tol = float(value)
 
 #[HAMILTONIAN]
-            if "hamiltonian" in key:
+            if key == "hamiltonian":
                 global hamiltonian
                 hamiltonian = value
-            if "eps_dx2y2" in key:
+            if key == "eps_dx2y2":
                 global eps_dx2y2
                 eps_dx2y2 = float(value)
-            if "eps_dz2" in key:
+            if key == "eps_dz2":
                 global eps_dz2
                 eps_dz2 = float(value)
-            if "eps_px" in key:
+            if key == "eps_px":
                 global eps_px
                 eps_px = float(value)
-            if "eps_py" in key:
+            if key == "eps_py":
                 global eps_py
                 eps_py = float(value)
-            if "eps_pz" in key:
+            if key == "eps_pz":
                 global eps_pz
                 eps_pz = float(value)
-            if "delta_dp" in key:
+            if key == "delta_dp":
                 global delta_dp
                 delta_dp = float(value)
 
 #[HUBBARD]
-            if "U0" in key:
+            if key == "U0":
                 global U0
                 U0 = float(value)
-            if "U1" in key:
+            if key == "U1":
                 global U1
                 U1 = float(value)
-            if "J0" in key:
+            if key == "J0":
                 global J0
                 J0 = float(value)
-            if "J1" in key:
+            if key == "J1":
                 global J1
                 J1 = float(value)
 
 #[MESH]
-            if "k_mesh" in key:
+            if key == "k_mesh":
                 global k_mesh
                 k_mesh = [int(value.split()[i]) for i in range(3)]
-            if "q_mesh" in key:
+            if key == "q_mesh":
                 global q_mesh
                 q_mesh = [int(value.split()[i]) for i in range(3)]
-            if "w_pts" in key:
+            if key == "w_pts":
                 global w_pts
                 w_pts = int(value)
 
@@ -267,7 +278,7 @@ def load_config():
                 index += 1
 
 #[BASIS]
-            if "states" in key:
+            if key == "states":
                 global states
                 states = [value.split()[i] for i in range(3)]
             if section == "BASIS" and index < 3:
@@ -276,87 +287,96 @@ def load_config():
                 index += 1
 
 #[BANDS]
-            if "band" in key:
+            if key == "band":
                 global band
                 band = value
-            if "eff_mass" in key:
+            if key == "eff_mass":
                 global eff_mass
                 eff_mass = float(value)
-            if "t0" in key:
+            if key == "t0":
                 global t0
                 t0 = float(value)
-            if "t1" in key:
+            if key == "t1":
                 global t1
                 t1 = float(value)
-            if "t2" in key:
+            if key == "t2":
                 global t2
                 t2 = float(value)
-            if "t3" in key:
+            if key == "t3":
                 global t3
                 t3 = float(value)
-            if "t4" in key:
+            if key == "t4":
                 global t4
                 t4 = float(value)
-            if "t5" in key:
+            if key == "t5":
                 global t5
                 t5 = float(value)
-            if "t6" in key:
+            if key == "t6":
                 global t6
                 t6 = float(value)
-            if "t7" in key:
+            if key == "t7":
                 global t7
                 t7 = float(value)
-            if "t8" in key:
+            if key == "t8":
                 global t8
                 t8 = float(value)
-            if "t9" in key:
+            if key == "t9":
                 global t9
                 t9 = float(value)
-            if "t10" in key:
+            if key == "t10":
                 global t10
                 t10 = float(value)
-            if "tz0" in key:
+            if key == "tz0":
                 global tz0
                 tz0 = float(value)
-            if "tz1" in key:
+            if key == "tz1":
                 global tz1
                 tz1 = float(value)
-            if "tz2" in key:
+            if key == "tz2":
                 global tz2
                 tz2 = float(value)
-            if "tz3" in key:
+            if key == "tz3":
                 global tz3
                 tz3 = float(value)
-            if "tz4" in key:
+            if key == "tz4":
                 global tz4
                 tz4 = float(value)
 
 #[SUPERCONDUCTOR]
-            if "FS_only" in key:
+            if key == "FS_only":
                 global FS_only
                 FS_only = value == 'true'
-            if "num_eigenvalues_to_save" in key:
+            if key == "num_eigenvalues_to_save":
                 global num_eigenvalues_to_save
                 num_eigenvalues_to_save = int(value)
-            if "frequency_pts" in key:
+            if key == "frequency_pts":
                 global frequency_pts
                 frequency_pts = int(value)
-            if "projections" in key:
+            if key == "projections":
                 global projections
                 projections = value
 
 #[RESPONSE]
-            if "dynamic" in key:
+            if key == "dynamic":
                 global dynamic
                 dynamic = value == 'true'
 
 #[MANY_BODY]
-            if "self_consistent" in key:
+            if key == "self_consistent":
                 global self_consistent
                 self_consistent = value == 'true'
-            if "impurity_solver" in key:
+            if key == "impurity_solver":
                 global impurity_solver
                 impurity_solver = value
+            if key == "n_cycles":
+                global n_cycles
+                n_cycles = int(value)
+            if key == "len_cycles":
+                global len_cycles
+                len_cycles = int(value)
+            if key == "warmup_cycles":
+                global warmup_cycles
+                warmup_cycles = int(value)
             # Finished setting variables
         if not brillouin_zone:
             print("Error: Brillouin zone not specified.")

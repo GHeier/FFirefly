@@ -18,6 +18,7 @@ extern char* c_verbosity; char* get_verbosity();
 extern bool c_automatic_file_read;
 extern bool c_write_result;
 extern char* c_filetype; char* get_filetype();
+extern int c_mpi_procs;
 
 //[SYSTEM]
 extern char* c_interaction; char* get_interaction();
@@ -34,6 +35,7 @@ extern float c_mixing;
 extern int c_max_iters;
 extern float c_qp_weight;
 extern int c_recurse_level;
+extern float c_tol;
 
 //[HAMILTONIAN]
 extern char* c_hamiltonian; char* get_hamiltonian();
@@ -97,6 +99,9 @@ extern bool c_dynamic;
 //[MANY_BODY]
 extern bool c_self_consistent;
 extern char* c_impurity_solver; char* get_impurity_solver();
+extern int c_n_cycles;
+extern int c_len_cycles;
+extern int c_warmup_cycles;
 // End of Global Variables
 
 void get_dimensions();

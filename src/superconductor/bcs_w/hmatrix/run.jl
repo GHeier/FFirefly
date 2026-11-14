@@ -133,7 +133,6 @@ end
 function create_hmatrices(V, dos_weights, kpoints, frequencies)
     # Create kernel function V(k-k') for k-k' only
     kernel = make_vertex_kernel(V, dos_weights, frequencies, false)
-    kernel_ptb = make_vertex_kernel(V, dos_weights, frequencies, true)
 
     # Build HMatrix for k-k' points only (no frequency dependence)
     println("\n" * "="^60)
@@ -141,6 +140,16 @@ function create_hmatrices(V, dos_weights, kpoints, frequencies)
     t_hmat = @elapsed H_matrix = HMatrixHelper.build_hmatrix(kpoints, kernel; atol=1e-4, rank=30)
     @printf("HMatrix built in %.3f seconds\n", t_hmat)
     @printf("Compression ratio: %.2f\n", (compression_ratio(H_matrix)))
+
+    if w_pts == 1
+        # Single frequency point (static pairing): the perturbative
+        # (frequency-dependent) matrix has no meaning and is skipped entirely.
+        println("\nw_pts == 1: skipping BCS+w perturbative HMatrix")
+        return H_matrix, nothing
+    end
+
+    kernel_ptb = make_vertex_kernel(V, dos_weights, frequencies, true)
+
     println("\n" * "="^60)
     println("\nBuilding HMatrix for V(k-k') Perturbation...")
     t_hmat_ptb = @elapsed H_matrix_ptb = HMatrixHelper.build_hmatrix(kpoints, kernel_ptb; atol=1e-4, rank=30)
@@ -245,9 +254,9 @@ function find_top_eig(vals_hmat, vecs_hmat, vals_ptb, vecs_ptb)
     for i in 1:length(eff_lambdas)
         v0 = real.(vecs_hmat[i])  # snapshot BEFORE mutation
         if Z_const
-            eff_lambdas[i] = l0[i] * (1 - mu_star) / (1 / Z + l1[i])
+            eff_lambdas[i] = l0[i] * (1 - mu_star) / (1 / Z + abs(l1[i]))
         else
-            eff_lambdas[i] = l0[i] * (1 - mu_star) / (1 + l1[i])
+            eff_lambdas[i] = l0[i] * (1 - mu_star) / (1 + abs(l1[i]))
         end
         eff_vecs[i] .+= vecs_ptb[i]
         vptb = vecs_ptb[i]
@@ -325,15 +334,22 @@ function run()
 
     # Load Vertex
     println("\nLoading Vertex...")
-    V = Firefly.Field_R(outdir * prefix * "_vertex_singlet.h5")
+    # Vertex is complex on the real axis; the kernel takes its real part
+    V = Firefly.Field_C(outdir * prefix * "_vertex_singlet.h5")
     println("Vertex loaded.")
 
     H_matrix, H_matrix_ptb = create_hmatrices(V, dos_weights, kpoints, w_points)
     println("Created HMatrix")
     vals_hmat, vecs_hmat, info_hmat, t_lanczos_hmat = lanczos_solve(H_matrix, kpoints)
     #println(sort(real.(vals_hmat), rev=true))
-    println("Performing BCS+w perturbation")
-    ptb_eigs, ptb_vecs = perturb_solve(H_matrix_ptb, vals_hmat, vecs_hmat)
+    if H_matrix_ptb === nothing
+        println("Skipping BCS+w perturbation (w_pts == 1)")
+        ptb_eigs = zeros(Float64, length(vals_hmat))
+        ptb_vecs = [zeros(Float64, length(v)) for v in vecs_hmat]
+    else
+        println("Performing BCS+w perturbation")
+        ptb_eigs, ptb_vecs = perturb_solve(H_matrix_ptb, vals_hmat, vecs_hmat)
+    end
 
     @printf("Time: %.3f seconds\n", t_lanczos_hmat)
     @printf("Number of eigenvalues computed: %d\n", length(vals_hmat))

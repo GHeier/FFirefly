@@ -247,6 +247,20 @@ set_target_properties(hamiltonian_FS_tetrahedra PROPERTIES
     INSTALL_RPATH "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
 )
 
+# many_body/self_energy/from_vertex
+add_executable(many_body_self_energy_from_vertex
+    src/many_body/self_energy/from_vertex/self_energy.cpp
+    src/many_body/self_energy/from_vertex/run.cpp
+    src/many_body/self_energy/from_vertex/tests/test.cpp
+)
+target_link_libraries(many_body_self_energy_from_vertex PRIVATE base)
+set_target_properties(many_body_self_energy_from_vertex PROPERTIES
+    OUTPUT_NAME "many_body_self_energy_from_vertex.exe"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    BUILD_RPATH "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
+    INSTALL_RPATH "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}"
+)
+
 # many_body/vertex/from_susceptibility
 add_executable(many_body_vertex_from_susceptibility
     src/many_body/vertex/from_susceptibility/run.cpp

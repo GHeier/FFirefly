@@ -9,6 +9,8 @@
 #include <sys/wait.h>
 #include <linux/limits.h>
 #include <unistd.h>
+#include <thread>
+#include <algorithm>
 #include "cpp_config.hpp"
 #include "c_config.h"
 
@@ -27,6 +29,7 @@ string verbosity;
 bool automatic_file_read;
 bool write_result;
 string filetype;
+int mpi_procs;
 
 //[SYSTEM]
 string interaction;
@@ -43,6 +46,7 @@ float mixing;
 int max_iters;
 float qp_weight;
 int recurse_level;
+float tol;
 
 //[HAMILTONIAN]
 string hamiltonian;
@@ -106,6 +110,9 @@ bool dynamic;
 //[MANY_BODY]
 bool self_consistent;
 string impurity_solver;
+int n_cycles;
+int len_cycles;
+int warmup_cycles;
 // End of Global Variables
 
 // Track if config has been loaded
@@ -126,6 +133,7 @@ extern "C" void load_cpp_config() {
     automatic_file_read = c_automatic_file_read;
     write_result = c_write_result;
     filetype = c_filetype;
+    mpi_procs = c_mpi_procs;
 
 //[SYSTEM]
     interaction = c_interaction;
@@ -142,6 +150,7 @@ extern "C" void load_cpp_config() {
     max_iters = c_max_iters;
     qp_weight = c_qp_weight;
     recurse_level = c_recurse_level;
+    tol = c_tol;
 
 //[HAMILTONIAN]
     hamiltonian = c_hamiltonian;
@@ -205,6 +214,9 @@ extern "C" void load_cpp_config() {
 //[MANY_BODY]
     self_consistent = c_self_consistent;
     impurity_solver = c_impurity_solver;
+    n_cycles = c_n_cycles;
+    len_cycles = c_len_cycles;
+    warmup_cycles = c_warmup_cycles;
     // End of Global Functions 
     if (!isDirectoryExisting(outdir)) {
         if (fs::create_directory(outdir)) {
@@ -349,7 +361,34 @@ static int run_and_pipe_output(const string& cmd) {
     return WEXITSTATUS(status);
 }
 
-int run_python_method(const string& method_name) {
+// Wraps a python3 invocation in mpirun for MPI-capable methods (set
+// mpi_capable=true at the call site). TRIQS solvers (e.g. CTHYB) pick up the
+// MPI world transparently and distribute their Monte Carlo walkers across
+// ranks; scripts that aren't MPI-aware would just run redundant copies, so
+// only pass mpi_capable=true for methods that are actually MPI-parallel.
+//
+// [CONTROL] mpi_procs controls the rank count: 0 (default) auto-detects
+// nproc-1, mirroring the `omp_set_num_threads(num_procs - 1)` policy used
+// for the OpenMP path in main.c; 1 disables mpirun entirely; >1 is used as-is.
+static string build_python_command(const string& script_path, bool mpi_capable) {
+    if (!mpi_capable) {
+        return "python3 " + script_path;
+    }
+    int procs = mpi_procs;
+    if (procs <= 0) {
+        unsigned int hw = std::thread::hardware_concurrency();
+        procs = hw > 1 ? static_cast<int>(hw) - 1 : 1;
+    }
+    if (procs > 1) {
+        // --use-hwthread-cpus: rank counts above are based on logical cores
+        // (std::thread::hardware_concurrency()), but PRRTE's default slot count
+        // is physical cores only, and rejects oversubscription otherwise.
+        return "mpirun -n " + std::to_string(procs) + " --use-hwthread-cpus python3 " + script_path;
+    }
+    return "python3 " + script_path;
+}
+
+int run_python_method(const string& method_name, bool mpi_capable) {
     string loc = get_loc();
     string config_path = loc + "input.cfg";
     // Go up from build/bin/ to project root, then to src/
@@ -358,7 +397,7 @@ int run_python_method(const string& method_name) {
         // Found build/bin/, go to project root
         string src_dir = loc.substr(0, build_pos) + "/src/";
         string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.py";
-        string exe = "python3 " + script_path;
+        string exe = build_python_command(script_path, mpi_capable);
         int result = std::system(exe.c_str());
         return result;
     }
@@ -367,7 +406,7 @@ int run_python_method(const string& method_name) {
     if (bin_pos != string::npos) {
         string src_dir = loc.substr(0, bin_pos) + "/src/";
         string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.py";
-        string exe = "python3 " + script_path;
+        string exe = build_python_command(script_path, mpi_capable);
         int result = std::system(exe.c_str());
         return result;
     }

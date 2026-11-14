@@ -1,4 +1,4 @@
-from firefly.diagram import Diagram, dot_tr, dot_t
+from firefly.diagram import Diagram, dot_tr, dot_t, get_renorm
 from triqs.gf.meshes import MeshDLRImFreq, MeshDLRImTime
 from triqs.gf import Gf, inverse, iOmega_n
 import numpy as np
@@ -46,7 +46,7 @@ class IPTSolver:
     def set_Weiss(self):
         self.G_weiss_old = self.G_weiss.copy()
         self.G_weiss.obj_w << inverse(inverse(self.G_loc.obj_w) + self.Sigma_imp.obj_w)
-        self.G_weiss.obj_w << self.mix * self.G_weiss_old.obj_w + (1.0 - self.mix) * self.G_weiss.obj_w
+        self.G_weiss.obj_w << self.mix * self.G_weiss.obj_w + (1.0 - self.mix) * self.G_weiss_old.obj_w
 
     def solve(self, U):
         self.Sigma_imp = self.get_IPT_Sigma(U, self.G_weiss)
@@ -65,6 +65,7 @@ class IPTSolver:
 
     def loop(self, U, bethe_lattice=False):
         err_history = []
+        m_stars = [0.0]
         for i in range(self.max_loops):
             G_iw_prev = self.G_weiss.obj_w.data.copy()  # Save for averaging
 
@@ -74,9 +75,11 @@ class IPTSolver:
                 self.solve(U)
 
             err = abs(self.G_weiss.obj_w.data - G_iw_prev).max()
-            print("IPT loop %d, err = %.3e" % (i+1, err))
+            m_star = get_renorm(self.Sigma_imp.obj_w.data, self.Sigma_imp.w_points)
+            print("IPT loop %d, err = %.3e, m*/m = %.4f" % (i+1, err, m_star))
+            m_stars.append(m_star)
 
-            if err < self.tol:
+            if err < self.tol or abs(np.max(m_stars[-10:]) - np.min(m_stars[-10:])) < 1e-4:
                 break
 
             # Detect two-cycle oscillation

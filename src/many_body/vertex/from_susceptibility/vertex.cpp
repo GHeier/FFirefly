@@ -82,8 +82,8 @@ void call_flex() {
     if (wpts.size() == 0) {
         wpts.push_back(0.0);
     }
-    vector<float> vals;
-    vector<float> singlet_vals;
+    vector<cfloat> vals;
+    vector<cfloat> singlet_vals;
     float max_chi = 0.0;
 
     if (!chi.get_data()->as_mesh) {
@@ -95,20 +95,20 @@ void call_flex() {
             for (size_t l = 0; l < wpts.size(); l++) {
                 float w = wpts[l];
 
-                float X = chi(q, w).real();
-                //float val = (U * U * X) / float(1.0f - U * X) + (U * U * U * X * X) / float(1.0f - U * U * X * X);
-                float val = 1.5 * (U * U * X) / float(1.0f - U * X) + 0.5 * U * U * X / (1 + U * X) - U * U * X;
+                cfloat X = chi(q, w);
+                //cfloat val = (U * U * X) / cfloat(1.0f - U * X) + (U * U * U * X * X) / cfloat(1.0f - U * U * X * X);
+                cfloat val = 1.5f * (U * U * X) / (1.0f - U * X) + 0.5f * U * U * X / (1.0f + U * X) - U * U * X;
                 vals.push_back(val);
 
-                float singlet_val = 1.5 * (U * U * X) / float(1.0f - U * X) - 0.5 * U * U * X / (1 + U * X);
+                cfloat singlet_val = 1.5f * (U * U * X) / (1.0f - U * X) - 0.5f * U * U * X / (1.0f + U * X);
                 if (interaction == "SOPT")
                     singlet_vals.push_back(U*U*X);
                 else
                     singlet_vals.push_back(singlet_val);
 
-                if (X > max_chi) max_chi = X;
+                if (X.real() > max_chi) max_chi = X.real();
                 if (abs(U * X) >= 1) {
-                    printf("Geometric series not convergent: U*X = %f\n", U * X);
+                    printf("Geometric series not convergent: U*X = %f\n", abs(U * X));
                     exit(1);
                 }
             }
@@ -128,20 +128,20 @@ void call_flex() {
                         Vec q = brillouin_zone * Vec(i / nx - 0.5, j / ny - 0.5, k / nz - 0.5);
                         q.dimension = chidim;
 
-                        float X = chi(q, w).real();
-                        //float val = (U * U * X) / float(1.0f - U * X) + (U * U * U * X * X) / float(1.0f - U * U * X * X);
-                        float val = 1.5 * (U * U * X) / float(1.0f - U * X) + 0.5 * U * U * X / (1 + U * X) - U * U * X;
+                        cfloat X = chi(q, w);
+                        //cfloat val = (U * U * X) / cfloat(1.0f - U * X) + (U * U * U * X * X) / cfloat(1.0f - U * U * X * X);
+                        cfloat val = 1.5f * (U * U * X) / (1.0f - U * X) + 0.5f * U * U * X / (1.0f + U * X) - U * U * X;
                         vals.push_back(val);
 
-                        float singlet_val = 1.5 * (U * U * X) / float(1.0f - U * X) - 0.5 * U * U * X / (1 + U * X);
+                        cfloat singlet_val = 1.5f * (U * U * X) / (1.0f - U * X) - 0.5f * U * U * X / (1.0f + U * X);
                         if (interaction == "SOPT")
                             singlet_vals.push_back(U*U*X);
                         else
                             singlet_vals.push_back(singlet_val);
 
-                        if (X > max_chi) max_chi = X;
+                        if (X.real() > max_chi) max_chi = X.real();
                         if (0 && abs(U * X) >= 1.0) {
-                            printf("Geometric series not convergent: U*X = %f\n", U * X);
+                            printf("Geometric series not convergent: U*X = %f\n", abs(U * X));
                             exit(1);
                         }
                     }

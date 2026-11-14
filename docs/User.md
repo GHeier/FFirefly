@@ -66,6 +66,10 @@
 
 
 
+
+
+
+
 #### 🔸 `hamiltonian`
 
 - **DOS**
@@ -92,6 +96,7 @@
   - [sparse_ir](src/many_body/response/sparse_ir/README.md) - Computes the non-interacting response function by via Green's function convolution
   - [tetrahedra](src/many_body/response/tetrahedra/README.md) - Calculates non-interacting response function chi0(w,q) using recursive tetrahedron integration
 - **self_energy**
+  - [from_vertex](src/many_body/self_energy/from_vertex/README.md) - Computes the complex self-energy Sigma(k,w) at T=0 from the vertex V(q,w)
   - [sparse_ir](src/many_body/self_energy/sparse_ir/README.md) - Calculates Self-Energy from given Vertex and non-interacting green's function
   - [triqs](src/many_body/self_energy/triqs/README.md) - Calculates the self-energy using Iterated Perturbation Theory (IPT) on the imaginary axis.
 - **vertex**

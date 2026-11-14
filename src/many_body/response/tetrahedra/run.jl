@@ -133,7 +133,7 @@ Calculate response for all ω at a single q-group.
 """
 function calculate_qw_response(igroup, unique_to_qindices, qpts, w_pts,
                                Ek_grid, Ek_grids, Zk_mesh, Zk_grid, k, l, dos, mu, kmesh, dim, iter)
-    results = Dict{Tuple{Int,Int}, Float64}()
+    results = Dict{Tuple{Int,Int}, ComplexF64}()
 
     # Get representative q-point
     iq_rep = unique_to_qindices[igroup][1]
@@ -184,7 +184,7 @@ function calculate_band_pair_response(i, j, k, l, Ek_grids, Zk_mesh, Zk_grid, w_
     Ek_grid = evaluate_grid_for_dimension(Ek_grids[i, j], kmesh, dim)
 
     # Allocate result array for this band pair
-    chi_band = zeros(Float64, nw, nqpts)
+    chi_band = zeros(ComplexF64, nw, nqpts)
 
     # Parallelize over unique q-groups
     Threads.@threads for igroup in 1:nqpts_unique
@@ -232,7 +232,7 @@ function calculate_response_grid(Ek_grids, Uk_grids, Zk_grid, w_pts, kmesh, qmes
     unique_to_qindices, nqpts_unique, nqpts = setup_symmetry_reduction(qmesh, celltype, dim)
 
     # Initialize susceptibility
-    chi = zeros(Float64, nw, nqpts, nbnd, nbnd, nbnd, nbnd)
+    chi = zeros(ComplexF64, nw, nqpts, nbnd, nbnd, nbnd, nbnd)
 
     # Setup progress tracking
     total_iterations = nbnd^4 * nqpts_unique * nw
@@ -303,6 +303,7 @@ function setup_hamiltonian_eigenvalues(kmesh, BZ, dim)
     # Quasiparticle renormalization Z(k), defaults to 1.0 if no field is found
     Z = Firefly.Renormalization()
     Zk_array = [Z(kpts[ik, :]) for ik in 1:nkpts]
+    Zk_array = [cfg.qp_weight for ik in 1:nkpts]
     #Z_ave = mean(Zk_array)
     #println("  Z_ave along Fermi Surface: $(Z_ave)") 
 
@@ -394,7 +395,8 @@ end
     mirror_to_negative_frequencies(chi_pos, w_pos, wpts_total)
 
 Mirror response function from positive frequencies to negative frequencies.
-Uses symmetry: χ(q, -ω) = χ(q, ω) for real systems.
+Uses causality/Hermitian symmetry: χ(q, -ω) = χ(q, ω)* — Re χ is even in ω,
+Im χ is odd in ω.
 
 # Arguments
 - `chi_pos`: Response function computed for w >= 0, shape (n_pos, nqpts, nbnd, nbnd, nbnd, nbnd)
@@ -412,7 +414,7 @@ function mirror_to_negative_frequencies(chi_pos, w_pos, wpts_total)
     nbnd_dims = dims[3:end]
 
     # Create full chi array
-    chi_full = zeros(Float64, wpts_total, nqpts, nbnd_dims...)
+    chi_full = zeros(ComplexF64, wpts_total, nqpts, nbnd_dims...)
 
     # Create full frequency list
     w_max = w_pos[end]
@@ -424,10 +426,10 @@ function mirror_to_negative_frequencies(chi_pos, w_pos, wpts_total)
         i_zero = div(wpts_total, 2) + 1
         chi_full[i_zero:end, :, fill(:, length(nbnd_dims))...] = chi_pos
 
-        # Mirror to negative frequencies (skip zero)
+        # Mirror to negative frequencies (skip zero), conjugating so Im χ is odd in ω
         for i in 1:(i_zero-1)
             i_mirror = wpts_total - i + 1
-            chi_full[i, :, fill(:, length(nbnd_dims))...] = chi_pos[i_mirror - i_zero + 1, :, fill(:, length(nbnd_dims))...]
+            chi_full[i, :, fill(:, length(nbnd_dims))...] = conj.(chi_pos[i_mirror - i_zero + 1, :, fill(:, length(nbnd_dims))...])
         end
     else
         # Even number of points: w = [..., -dw, dw, ...]
@@ -435,10 +437,10 @@ function mirror_to_negative_frequencies(chi_pos, w_pos, wpts_total)
         i_mid = div(wpts_total, 2)
         chi_full[(i_mid+1):end, :, fill(:, length(nbnd_dims))...] = chi_pos
 
-        # Mirror to negative frequencies
+        # Mirror to negative frequencies, conjugating so Im χ is odd in ω
         for i in 1:i_mid
             i_mirror = wpts_total - i + 1
-            chi_full[i, :, fill(:, length(nbnd_dims))...] = chi_pos[i_mirror - i_mid, :, fill(:, length(nbnd_dims))...]
+            chi_full[i, :, fill(:, length(nbnd_dims))...] = conj.(chi_pos[i_mirror - i_mid, :, fill(:, length(nbnd_dims))...])
         end
     end
 

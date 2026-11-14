@@ -42,6 +42,8 @@ module ffirefly
     logical(c_bool), bind(C, name="c_write_result") :: c_write_result
     logical :: write_result
     character(len=50) :: filetype
+    integer(c_int), bind(C, name="c_mpi_procs") :: c_mpi_procs
+    integer :: mpi_procs
 
 ![SYSTEM]
     character(len=50) :: interaction
@@ -70,6 +72,8 @@ module ffirefly
     real :: qp_weight
     integer(c_int), bind(C, name="c_recurse_level") :: c_recurse_level
     integer :: recurse_level
+    real(c_float), bind(C, name="c_tol") :: c_tol
+    real :: tol
 
 ![HAMILTONIAN]
     character(len=50) :: hamiltonian
@@ -171,6 +175,12 @@ module ffirefly
     logical(c_bool), bind(C, name="c_self_consistent") :: c_self_consistent
     logical :: self_consistent
     character(len=50) :: impurity_solver
+    integer(c_int), bind(C, name="c_n_cycles") :: c_n_cycles
+    integer :: n_cycles
+    integer(c_int), bind(C, name="c_len_cycles") :: c_len_cycles
+    integer :: len_cycles
+    integer(c_int), bind(C, name="c_warmup_cycles") :: c_warmup_cycles
+    integer :: warmup_cycles
     ! End of global variables
 
     interface
@@ -209,6 +219,7 @@ module ffirefly
             type(c_ptr) :: get_filetype
     end function get_filetype
 
+
 ![SYSTEM]
         function get_interaction() bind(C)
             use iso_c_binding
@@ -219,6 +230,7 @@ module ffirefly
             use iso_c_binding
             type(c_ptr) :: get_celltype
     end function get_celltype
+
 
 
 
@@ -308,6 +320,9 @@ module ffirefly
             use iso_c_binding
             type(c_ptr) :: get_impurity_solver
     end function get_impurity_solver
+
+
+
     ! End of global functions
 
     end interface
@@ -374,6 +389,7 @@ contains
         automatic_file_read = c_automatic_file_read
         write_result = c_write_result
         filetype = get_string(get_filetype())
+        mpi_procs = c_mpi_procs
 
 ![SYSTEM]
         interaction = get_string(get_interaction())
@@ -390,6 +406,7 @@ contains
         max_iters = c_max_iters
         qp_weight = c_qp_weight
         recurse_level = c_recurse_level
+        tol = c_tol
 
 ![HAMILTONIAN]
         hamiltonian = get_string(get_hamiltonian())
@@ -459,6 +476,9 @@ contains
 ![MANY_BODY]
         self_consistent = c_self_consistent
         impurity_solver = get_string(get_impurity_solver())
+        n_cycles = c_n_cycles
+        len_cycles = c_len_cycles
+        warmup_cycles = c_warmup_cycles
         ! End of loading variables
     end subroutine load_f90_config
 

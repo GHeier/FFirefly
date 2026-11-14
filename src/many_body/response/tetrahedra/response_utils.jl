@@ -169,12 +169,19 @@ end
 """
     calculate_response_bzintegral_2(w, Ek_mesh, Ekq_mesh, Zk_mesh, Zkq_mesh, mu, iter=2)
 
-Calculate response function using BZIntegral tetrahedron method, including the
-quasiparticle renormalization Z(k).
+Calculate the complex response function χ₀(q,ω) using BZIntegral's analytic
+tetrahedron method, including the quasiparticle renormalization Z(k).
 
 χ₀(q,ω) = -∫dk Z(k)Z(k+q) [f(ε(k+q)) - f(ε(k))] / [ω + ε(k) - ε(k+q) + iη]
 
-For the integrand F(k) = 1/[ω + ε(k) - ε(k+q) + iη], we compute:
+Using 1/(D+iη) = PV(1/D) - iπδ(D):
+- Re χ₀ comes from BZIntegral's analytic principal-value tetrahedron rule (Θ𝔇),
+  same as before.
+- Im χ₀ comes from BZIntegral's analytic delta-function tetrahedron rule (Θδ),
+  which resolves δ(ω+ε(k)-ε(k+q)) exactly within each tetrahedron — no finite
+  broadening η is needed (or wanted) for this part.
+
+For each part we compute:
   ∫ Θ(-ε(k+q)) * F(k) dk  -  ∫ Θ(-ε(k)) * F(k) dk
 and weight each k-point's contribution by Z(k)Z(k+q) before summing.
 
@@ -191,16 +198,23 @@ and weight each k-point's contribution by Z(k)Z(k+q) before summing.
 - Complex susceptibility value at (q, ω)
 """
 function calculate_response_bzintegral_2(w, Ek_mesh, Ekq_mesh, Zk_mesh, Zkq_mesh, mu, iter=2)
-    # Denominator: ω + ε(k) - ε(k+q) + small eta to avoid division by zero
+    # Denominator for the PV (real) part: ω + ε(k) - ε(k+q) + small eta to avoid
+    # division by zero at degenerate mesh points.
     eta = 1e-2  # Small broadening parameter
     denom = w .+ Ek_mesh .- Ekq_mesh .+ eta
+
+    # Denominator for the δ-function (imaginary) part: no broadening needed, the
+    # analytic tetrahedron rule resolves the delta function exactly.
+    denom_im = w .+ Ek_mesh .- Ekq_mesh
 
     dim = ndims(Ek_mesh)
 
     if dim == 2
-        Wmesh = Quad2DRuleΘ𝔇(Ek_mesh, mu, denom, iter) - Quad2DRuleΘ𝔇(Ekq_mesh, mu, denom, iter)
+        Wmesh_re = Quad2DRuleΘ𝔇(Ek_mesh, mu, denom, iter) - Quad2DRuleΘ𝔇(Ekq_mesh, mu, denom, iter)
+        Wmesh_im = Quad2DRuleΘδ(Ek_mesh, mu, denom_im, iter) - Quad2DRuleΘδ(Ekq_mesh, mu, denom_im, iter)
     elseif dim == 3
-        Wmesh = Quad3DRuleΘ𝔇(Ek_mesh, mu, denom, iter) - Quad3DRuleΘ𝔇(Ekq_mesh, mu, denom, iter)
+        Wmesh_re = Quad3DRuleΘ𝔇(Ek_mesh, mu, denom, iter) - Quad3DRuleΘ𝔇(Ekq_mesh, mu, denom, iter)
+        Wmesh_im = Quad3DRuleΘδ(Ek_mesh, mu, denom_im, iter) - Quad3DRuleΘδ(Ekq_mesh, mu, denom_im, iter)
     else
         error("Dimension must be 2 or 3")
     end
@@ -208,8 +222,10 @@ function calculate_response_bzintegral_2(w, Ek_mesh, Ekq_mesh, Zk_mesh, Zkq_mesh
     # Numerator weight Z(k)Z(k+q), applied per-k-point before summing
     Fmesh = Zk_mesh .* Zkq_mesh
 
-    out = -1.0 * sum(Fmesh .* Wmesh)  # Don't include -2 spin factor
-    return out
+    re_part = -1.0 * sum(Fmesh .* Wmesh_re)  # Don't include -2 spin factor
+    im_part = pi * sum(Fmesh .* Wmesh_im)    # sign fixed to match re_part's convention
+
+    return complex(re_part, im_part)
 end
 
 """

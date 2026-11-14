@@ -1700,7 +1700,7 @@ def load_config(path: str) -> None:
 # Save data functions
 def save_data(filename: str, data: np.ndarray, mesh=None, domain=None,
               w_points=None, inds=None, n_indices=None, dim_indices=None,
-              centered: bool = True):
+              centered: bool = True, is_complex: bool = None):
     """Save data to HDF5 file with automatic dispatch based on data type.
 
     Args:
@@ -1713,6 +1713,8 @@ def save_data(filename: str, data: np.ndarray, mesh=None, domain=None,
         n_indices: DEPRECATED - Number of band indices (for backward compatibility)
         dim_indices: DEPRECATED - Dimension of indices (for backward compatibility)
         centered: Whether coordinates are centered (default True)
+        is_complex: Override the complex/real dtype inferred from data (default:
+            inferred via np.iscomplexobj)
     """
     # Set defaults
     if mesh is None:
@@ -1722,7 +1724,8 @@ def save_data(filename: str, data: np.ndarray, mesh=None, domain=None,
     if w_points is None:
         w_points = np.array([], dtype=np.float32)
 
-    is_complex = np.iscomplexobj(data)
+    if is_complex is None:
+        is_complex = np.iscomplexobj(data)
 
     # Handle legacy API (n_indices, dim_indices) - convert to inds
     if inds is None and n_indices is not None:

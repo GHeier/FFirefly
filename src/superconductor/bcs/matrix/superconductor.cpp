@@ -37,10 +37,12 @@ float bcs() {
     cout << "Calculating Fermi Surface..." << endl;
     load_cpp_cfg();
 
-    Field_R N(outdir + prefix + "_E_vs_n.h5");
     printf("\n------------ Original mu = %f ------------\n", mu);
-    mu = N(num_electrons);
-    printf("\n------------ Shifted mu = %f ------------\n", mu);
+    if (mu_from_n) {
+        Field_R N(outdir + prefix + "_E_vs_n.h5");
+        mu = N(num_electrons);
+        printf("\n------------ Shifted mu = %f ------------\n", mu);
+    }
 
     vector<vector<Vec>> freq_FS;
     vector<Vec> FS;

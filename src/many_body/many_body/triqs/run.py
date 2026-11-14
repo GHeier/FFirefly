@@ -147,14 +147,22 @@ def save_FLEX_DMFT(S):
 
 def get_renorm(loc_sigma, w_points):
     loc_sigma = loc_sigma[:, 0, 0]
-    signs = np.sign(loc_sigma.imag)
-    diff = np.diff(signs)
-    zero_crossings = np.where(diff != 0)[0]
-    ind = zero_crossings[0]
-    w_prev = w_points[ind]
-    w_next = w_points[ind+1]
-    sigma_prev = loc_sigma[ind]
-    sigma_next = loc_sigma[ind+1]
+    # Use the two lowest POSITIVE Matsubara points, forward-difference slope of
+    # Im[Sigma] -- same convention as effective_mass() in CTHYBSolver.py. The old
+    # approach (first sign change of Im[Sigma] scanning from w_min) instead landed
+    # on whatever sign flip came first out in the DLR fit's least-constrained tail
+    # nodes, giving a renorm unrelated to the physical w->0 value. See the matching
+    # fix on get_renorm() in src/many_body/self_energy/triqs/run.py and
+    # src/objects/diagram.py -- this was yet another copy of the same function/bug.
+    order = np.argsort(w_points)
+    w_sorted = w_points[order]
+    sigma_sorted = loc_sigma[order]
+    pos_idx = np.where(w_sorted > 0)[0]
+    i0, i1 = pos_idx[0], pos_idx[1]
+    w_prev = w_sorted[i0]
+    w_next = w_sorted[i1]
+    sigma_prev = sigma_sorted[i0]
+    sigma_next = sigma_sorted[i1]
     renorm = 1.0 - (sigma_next.imag - sigma_prev.imag) / (w_next - w_prev)
     print("w prev, next: ", w_prev, w_next)
     print("Sigma prev, next: ", sigma_prev.imag, sigma_next.imag)

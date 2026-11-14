@@ -18,6 +18,7 @@ verbosity::String = cfg.verbosity
 automatic_file_read::Bool = cfg.automatic_file_read
 write_result::Bool = cfg.write_result
 filetype::String = cfg.filetype
+mpi_procs::Int = cfg.mpi_procs
 
 #[SYSTEM]
 interaction::String = cfg.interaction
@@ -34,6 +35,7 @@ mixing::Float64 = cfg.mixing
 max_iters::Int = cfg.max_iters
 qp_weight::Float64 = cfg.qp_weight
 recurse_level::Int = cfg.recurse_level
+tol::Float64 = cfg.tol
 
 #[HAMILTONIAN]
 hamiltonian::String = cfg.hamiltonian
@@ -97,6 +99,9 @@ dynamic::Bool = cfg.dynamic
 #[MANY_BODY]
 self_consistent::Bool = cfg.self_consistent
 impurity_solver::String = cfg.impurity_solver
+n_cycles::Int = cfg.n_cycles
+len_cycles::Int = cfg.len_cycles
+warmup_cycles::Int = cfg.warmup_cycles
 # End variable definitions
 
 end

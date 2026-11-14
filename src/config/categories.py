@@ -32,6 +32,7 @@ CATEGORIES = {
         "self_energy": {
             "sparse_ir": "julia",
             "triqs": "python",
+            "from_vertex": "c++",
         },
         "vertex": {
             "from_susceptibility": "c++"

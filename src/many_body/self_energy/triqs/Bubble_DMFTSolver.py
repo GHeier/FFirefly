@@ -6,13 +6,15 @@ from BubbleSolver import BubbleSolver
 import numpy as np
 
 from firefly.diagram import Diagram, dot_t, get_renorm
+import firefly.config as cfg
 
 class Bubble_DMFTSolver:
-    def __init__(self, H, G0, U=0.0, mix=0.2, n=None, mu=None, impurity_solver='IPT'):
+    def __init__(self, H, G0, U=0.0, mix=0.2, n=None, mu=None, impurity_solver='IPT', damp=True):
         self.U = U
         self.mix = mix
         self.n = n
         self.mu = mu
+        self.damp = damp
 
         if G0 is None:
             raise ValueError("Must provide G0 triqs object")
@@ -35,10 +37,28 @@ class Bubble_DMFTSolver:
         # G_weiss/Sigma_imp/G_loc/.loop()/.solve()/.get_IPT_Sigma()/.set_G_loc()
         # interface, so everything below (solve_Bubble_DMFT_*, loop_Bubble_DMFT) is
         # written against self.DMFT generically and doesn't care which one it is.
+        #
+        # The impurity solver's own internal self-consistency (G_weiss <-> Sigma_imp <->
+        # G_loc, iterated up to n_loops times inside DMFT.loop()) always needs damping to
+        # be numerically stable -- that's independent of `mix`, which here controls the
+        # OUTER lattice/Bubble combination and is deliberately 1.0 in the non-scf ('base')
+        # case for a single-shot lattice solve. Feeding that undamped mix into the impurity
+        # solver's own multi-iteration loop causes noise to compound unchecked across QMC
+        # solves until CTHYB's hybridization becomes pathological (singular determinant).
+        # So the impurity solver always uses cfg.mixing, never the possibly-1.0 outer mix.
+        dmft_mix = cfg.mixing
         if impurity_solver == 'IPT':
-            self.DMFT = IPTSolver(self.beta, H, mix=0.2, w_max=self.w_max, eps=self.eps, mu=mu, n_loops=200)
+            self.DMFT = IPTSolver(self.beta, H, mix=dmft_mix, w_max=self.w_max, eps=self.eps, mu=self.mu, n_loops=cfg.max_iters)
         elif impurity_solver == 'CTHYB':
-            self.DMFT = CTHYBSolver(self.beta, H, mu=mu, mix=0.2, w_max=self.w_max, eps=self.eps, n_loops=200)
+            # self.n (from the caller) is total filling; CTHYBSolver's own `n` is per-spin
+            # (0.5 -> half filling), same convention run.py's standalone DMFT path uses.
+            # Without this, CTHYBSolver's mu stays frozen at the Sigma=0 lattice-level mu
+            # found above (via Bubble.find_mu_for_density), which drifts far from the target
+            # density once U turns on -- CTHYB's own per-iteration mu-search (solve() ->
+            # shift_mu_to_target_density) never activates unless n is passed here.
+            cthyb_n = self.n / 2.0 if self.n is not None else None
+            self.DMFT = CTHYBSolver(self.beta, H=H, mu=self.mu, n_loops=cfg.max_iters, mix=dmft_mix, w_max=self.w_max, eps=self.eps,
+                             n_cycles=cfg.n_cycles, length_cycle=cfg.len_cycles, n_warmup_cycles=cfg.warmup_cycles, tol=cfg.tol, n=cthyb_n, damp=self.damp)
         else:
             raise ValueError(f"Unknown impurity_solver: {impurity_solver}. Use 'IPT' or 'CTHYB'.")
 
@@ -163,8 +183,13 @@ class Bubble_DMFTSolver:
                 self.solve_Bubble_DMFT_base(self.Bubble, self.DMFT)
 
             err = np.max(np.abs(self.Bubble.G.obj_wk.data - G_old.data))
-            # Use the full DMFT self-energy for renormalization, not the double-counting correction
-            m_star = get_renorm(self.Sigma_loc.obj_w.data, self.Sigma_loc.w_points)
+            # Use the full combined (local+nonlocal, mixed) self-energy actually being fed
+            # back into G -- self.Sigma_k, local-averaged -- for renormalization, not
+            # self.Sigma_loc: that attribute is left holding mode-dependent scratch values
+            # by solve_Bubble_DMFT_* (the bare SOPT self-energy alone in 'average'/'base'
+            # mode, the DMFT/SOPT double-counting correction in 'diagram' mode), neither of
+            # which is "the" total self-energy this print is meant to report.
+            m_star = get_renorm(make_local(self.Sigma_k.obj_wk.data), self.Sigma_k.w_points)
             print(f"Iteration {i+1}, m*/m = {m_star}, Max change in G: {err:.3e}")
 
             if err < 1e-4 or abs(old_m_star - m_star) < 1e-5:
@@ -177,6 +202,19 @@ class Bubble_DMFTSolver:
         if n_loops == 1:
             self.Bubble.Sigma = add_local_to_nonlocal(self.Sigma_nonloc, self.DMFT.Sigma_imp)
             #self.Bubble.Sigma = self.Sigma_nonloc.copy()
+
+        # Leave the impurity solver's own local Weiss field/self-energy behind at full
+        # native-mesh resolution -- G_weiss_full.h5 is what CTHYBSolver.__init__
+        # actually warm-starts from (see the note there for why G_weiss rather than
+        # Sigma_imp); self_energy_full.h5 is kept alongside for diagnostics/other
+        # consumers. Otherwise a later run of this same config finds nothing usable
+        # (our own outdir+prefix+"_self_energy.h5" is the combined k-dependent lattice
+        # self-energy save_Bubble_DMFT() writes below, a different/incompatible field
+        # the loader now refuses). IPTSolver has no such native-mesh solve to save.
+        if hasattr(self.DMFT, "save_full_g_weiss"):
+            self.DMFT.save_full_g_weiss(cfg.outdir + cfg.prefix + "_G_weiss_full.h5")
+            self.DMFT.save_full_self_energy(cfg.outdir + cfg.prefix + "_self_energy_full.h5")
+
         m_star_dmft = get_renorm(self.DMFT.Sigma_imp.obj_w.data, self.DMFT.Sigma_imp.w_points)
         print("DMFT Z = ", 1/m_star_dmft)
         if mode == 'base':

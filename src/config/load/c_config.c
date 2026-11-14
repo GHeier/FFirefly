@@ -30,6 +30,7 @@ bool c_automatic_file_read = true;
 bool c_write_result = true;
 char* c_filetype = "h5";
 char* get_filetype() {return c_filetype;}
+int c_mpi_procs = 0;
 
 //[SYSTEM]
 char* c_interaction = "none";
@@ -48,6 +49,7 @@ float c_mixing = 0.02;
 int c_max_iters = 100;
 float c_qp_weight = 1.0;
 int c_recurse_level = 0;
+float c_tol = 0.0001;
 
 //[HAMILTONIAN]
 char* c_hamiltonian = "tight_binding";
@@ -116,6 +118,9 @@ bool c_dynamic = false;
 bool c_self_consistent = false;
 char* c_impurity_solver = "IPT";
 char* get_impurity_solver() {return c_impurity_solver;}
+int c_n_cycles = 20000;
+int c_len_cycles = 200;
+int c_warmup_cycles = 8000;
 // End of Global Variables
 
 void get_dimensions() {
@@ -301,19 +306,19 @@ void read_c_config(const char *path) {
             // Read in variable values from the config file
 
 //[CONTROL]
-            if (strstr(key, "category") != NULL) {
+            if (strcmp(key, "category") == 0) {
                 set_string(&c_category, value);
             }
-            else if (strstr(key, "calculation") != NULL) {
+            else if (strcmp(key, "calculation") == 0) {
                 set_string(&c_calculation, value);
             }
-            else if (strstr(key, "method") != NULL) {
+            else if (strcmp(key, "method") == 0) {
                 set_string(&c_method, value);
             }
-            else if (strstr(key, "outdir") != NULL) {
+            else if (strcmp(key, "outdir") == 0) {
                 set_string(&c_outdir, value);
             }
-            else if (strstr(key, "debug") != NULL) {
+            else if (strcmp(key, "debug") == 0) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
                     c_debug = true;
@@ -321,13 +326,13 @@ void read_c_config(const char *path) {
                     c_debug = false;
                 }
             }
-            else if (strstr(key, "prefix") != NULL) {
+            else if (strcmp(key, "prefix") == 0) {
                 set_string(&c_prefix, value);
             }
-            else if (strstr(key, "verbosity") != NULL) {
+            else if (strcmp(key, "verbosity") == 0) {
                 set_string(&c_verbosity, value);
             }
-            else if (strstr(key, "automatic_file_read") != NULL) {
+            else if (strcmp(key, "automatic_file_read") == 0) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
                     c_automatic_file_read = true;
@@ -335,7 +340,7 @@ void read_c_config(const char *path) {
                     c_automatic_file_read = false;
                 }
             }
-            else if (strstr(key, "write_result") != NULL) {
+            else if (strcmp(key, "write_result") == 0) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
                     c_write_result = true;
@@ -343,32 +348,35 @@ void read_c_config(const char *path) {
                     c_write_result = false;
                 }
             }
-            else if (strstr(key, "filetype") != NULL) {
+            else if (strcmp(key, "filetype") == 0) {
                 set_string(&c_filetype, value);
+            }
+            else if (strcmp(key, "mpi_procs") == 0) {
+                c_mpi_procs = atoi(value);
             }
 
 //[SYSTEM]
-            else if (strstr(key, "interaction") != NULL) {
+            else if (strcmp(key, "interaction") == 0) {
                 set_string(&c_interaction, value);
             }
-            else if (strstr(key, "dimension") != NULL) {
+            else if (strcmp(key, "dimension") == 0) {
                 c_dimension = atoi(value);
                  got_dimension = true;
             }
-            else if (strstr(key, "celltype") != NULL) {
+            else if (strcmp(key, "celltype") == 0) {
                 set_string(&c_celltype, value);
             }
-            else if (strstr(key, "nbnd") != NULL) {
+            else if (strcmp(key, "nbnd") == 0) {
                 c_nbnd = atoi(value);
                  got_nbnd = true;
             }
-            else if (strstr(key, "fermi_energy") != NULL) {
+            else if (strcmp(key, "fermi_energy") == 0) {
                 c_fermi_energy = atof(value);
             }
-            else if (strstr(key, "num_electrons") != NULL) {
+            else if (strcmp(key, "num_electrons") == 0) {
                 c_num_electrons = atof(value);
             }
-            else if (strstr(key, "mu_from_n") != NULL) {
+            else if (strcmp(key, "mu_from_n") == 0) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
                     c_mu_from_n = true;
@@ -376,73 +384,76 @@ void read_c_config(const char *path) {
                     c_mu_from_n = false;
                 }
             }
-            else if (strstr(key, "Temperature") != NULL) {
+            else if (strcmp(key, "Temperature") == 0) {
                 c_Temperature = atof(value);
             }
-            else if (strstr(key, "cutoff_energy") != NULL) {
+            else if (strcmp(key, "cutoff_energy") == 0) {
                 c_cutoff_energy = atof(value);
             }
-            else if (strstr(key, "smearing") != NULL) {
+            else if (strcmp(key, "smearing") == 0) {
                 c_smearing = atof(value);
             }
-            else if (strstr(key, "mixing") != NULL) {
+            else if (strcmp(key, "mixing") == 0) {
                 c_mixing = atof(value);
             }
-            else if (strstr(key, "max_iters") != NULL) {
+            else if (strcmp(key, "max_iters") == 0) {
                 c_max_iters = atoi(value);
             }
-            else if (strstr(key, "qp_weight") != NULL) {
+            else if (strcmp(key, "qp_weight") == 0) {
                 c_qp_weight = atof(value);
             }
-            else if (strstr(key, "recurse_level") != NULL) {
+            else if (strcmp(key, "recurse_level") == 0) {
                 c_recurse_level = atoi(value);
+            }
+            else if (strcmp(key, "tol") == 0) {
+                c_tol = atof(value);
             }
 
 //[HAMILTONIAN]
-            else if (strstr(key, "hamiltonian") != NULL) {
+            else if (strcmp(key, "hamiltonian") == 0) {
                 set_string(&c_hamiltonian, value);
             }
-            else if (strstr(key, "eps_dx2y2") != NULL) {
+            else if (strcmp(key, "eps_dx2y2") == 0) {
                 c_eps_dx2y2 = atof(value);
             }
-            else if (strstr(key, "eps_dz2") != NULL) {
+            else if (strcmp(key, "eps_dz2") == 0) {
                 c_eps_dz2 = atof(value);
             }
-            else if (strstr(key, "eps_px") != NULL) {
+            else if (strcmp(key, "eps_px") == 0) {
                 c_eps_px = atof(value);
             }
-            else if (strstr(key, "eps_py") != NULL) {
+            else if (strcmp(key, "eps_py") == 0) {
                 c_eps_py = atof(value);
             }
-            else if (strstr(key, "eps_pz") != NULL) {
+            else if (strcmp(key, "eps_pz") == 0) {
                 c_eps_pz = atof(value);
             }
-            else if (strstr(key, "delta_dp") != NULL) {
+            else if (strcmp(key, "delta_dp") == 0) {
                 c_delta_dp = atof(value);
             }
 
 //[HUBBARD]
-            else if (strstr(key, "U0") != NULL) {
+            else if (strcmp(key, "U0") == 0) {
                 c_U0 = atof(value);
             }
-            else if (strstr(key, "U1") != NULL) {
+            else if (strcmp(key, "U1") == 0) {
                 c_U1 = atof(value);
             }
-            else if (strstr(key, "J0") != NULL) {
+            else if (strcmp(key, "J0") == 0) {
                 c_J0 = atof(value);
             }
-            else if (strstr(key, "J1") != NULL) {
+            else if (strcmp(key, "J1") == 0) {
                 c_J1 = atof(value);
             }
 
 //[MESH]
-            else if (strstr(key, "k_mesh") != NULL) {
+            else if (strcmp(key, "k_mesh") == 0) {
                 sscanf(line, " k_mesh = %d %d %d", &c_k_mesh[0], &c_k_mesh[1], &c_k_mesh[2]);
             }
-            else if (strstr(key, "q_mesh") != NULL) {
+            else if (strcmp(key, "q_mesh") == 0) {
                 sscanf(line, " q_mesh = %d %d %d", &c_q_mesh[0], &c_q_mesh[1], &c_q_mesh[2]);
             }
-            else if (strstr(key, "w_pts") != NULL) {
+            else if (strcmp(key, "w_pts") == 0) {
                 c_w_pts = atoi(value);
             }
 
@@ -453,63 +464,63 @@ void read_c_config(const char *path) {
 //[BASIS]
 
 //[BANDS]
-            else if (strstr(key, "band") != NULL) {
+            else if (strcmp(key, "band") == 0) {
                 set_string(&c_band, value);
             }
-            else if (strstr(key, "eff_mass") != NULL) {
+            else if (strcmp(key, "eff_mass") == 0) {
                 c_eff_mass = atof(value);
             }
-            else if (strstr(key, "t0") != NULL) {
+            else if (strcmp(key, "t0") == 0) {
                 c_t0 = atof(value);
             }
-            else if (strstr(key, "t1") != NULL) {
+            else if (strcmp(key, "t1") == 0) {
                 c_t1 = atof(value);
             }
-            else if (strstr(key, "t2") != NULL) {
+            else if (strcmp(key, "t2") == 0) {
                 c_t2 = atof(value);
             }
-            else if (strstr(key, "t3") != NULL) {
+            else if (strcmp(key, "t3") == 0) {
                 c_t3 = atof(value);
             }
-            else if (strstr(key, "t4") != NULL) {
+            else if (strcmp(key, "t4") == 0) {
                 c_t4 = atof(value);
             }
-            else if (strstr(key, "t5") != NULL) {
+            else if (strcmp(key, "t5") == 0) {
                 c_t5 = atof(value);
             }
-            else if (strstr(key, "t6") != NULL) {
+            else if (strcmp(key, "t6") == 0) {
                 c_t6 = atof(value);
             }
-            else if (strstr(key, "t7") != NULL) {
+            else if (strcmp(key, "t7") == 0) {
                 c_t7 = atof(value);
             }
-            else if (strstr(key, "t8") != NULL) {
+            else if (strcmp(key, "t8") == 0) {
                 c_t8 = atof(value);
             }
-            else if (strstr(key, "t9") != NULL) {
+            else if (strcmp(key, "t9") == 0) {
                 c_t9 = atof(value);
             }
-            else if (strstr(key, "t10") != NULL) {
+            else if (strcmp(key, "t10") == 0) {
                 c_t10 = atof(value);
             }
-            else if (strstr(key, "tz0") != NULL) {
+            else if (strcmp(key, "tz0") == 0) {
                 c_tz0 = atof(value);
             }
-            else if (strstr(key, "tz1") != NULL) {
+            else if (strcmp(key, "tz1") == 0) {
                 c_tz1 = atof(value);
             }
-            else if (strstr(key, "tz2") != NULL) {
+            else if (strcmp(key, "tz2") == 0) {
                 c_tz2 = atof(value);
             }
-            else if (strstr(key, "tz3") != NULL) {
+            else if (strcmp(key, "tz3") == 0) {
                 c_tz3 = atof(value);
             }
-            else if (strstr(key, "tz4") != NULL) {
+            else if (strcmp(key, "tz4") == 0) {
                 c_tz4 = atof(value);
             }
 
 //[SUPERCONDUCTOR]
-            else if (strstr(key, "FS_only") != NULL) {
+            else if (strcmp(key, "FS_only") == 0) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
                     c_FS_only = true;
@@ -517,18 +528,18 @@ void read_c_config(const char *path) {
                     c_FS_only = false;
                 }
             }
-            else if (strstr(key, "num_eigenvalues_to_save") != NULL) {
+            else if (strcmp(key, "num_eigenvalues_to_save") == 0) {
                 c_num_eigenvalues_to_save = atoi(value);
             }
-            else if (strstr(key, "frequency_pts") != NULL) {
+            else if (strcmp(key, "frequency_pts") == 0) {
                 c_frequency_pts = atoi(value);
             }
-            else if (strstr(key, "projections") != NULL) {
+            else if (strcmp(key, "projections") == 0) {
                 set_string(&c_projections, value);
             }
 
 //[RESPONSE]
-            else if (strstr(key, "dynamic") != NULL) {
+            else if (strcmp(key, "dynamic") == 0) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
                     c_dynamic = true;
@@ -538,7 +549,7 @@ void read_c_config(const char *path) {
             }
 
 //[MANY_BODY]
-            else if (strstr(key, "self_consistent") != NULL) {
+            else if (strcmp(key, "self_consistent") == 0) {
                 strip_single_quotes(value);
                 if (strcmp(value, "true") == 0) {
                     c_self_consistent = true;
@@ -546,8 +557,17 @@ void read_c_config(const char *path) {
                     c_self_consistent = false;
                 }
             }
-            else if (strstr(key, "impurity_solver") != NULL) {
+            else if (strcmp(key, "impurity_solver") == 0) {
                 set_string(&c_impurity_solver, value);
+            }
+            else if (strcmp(key, "n_cycles") == 0) {
+                c_n_cycles = atoi(value);
+            }
+            else if (strcmp(key, "len_cycles") == 0) {
+                c_len_cycles = atoi(value);
+            }
+            else if (strcmp(key, "warmup_cycles") == 0) {
+                c_warmup_cycles = atoi(value);
             }
             // End of variable reading
             else {

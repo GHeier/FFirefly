@@ -24,25 +24,29 @@ def format_init_line(key, value, section):
     return f"placeholder.{key} = config.{key}"
 
 def format_set_line(key, value, section):
+    # NOTE: must be an exact key match (`key == "..."`), not substring containment
+    # (`"..." in key`) -- containment let one key's line silently overwrite another
+    # whenever one name is a substring of another (e.g. "n_cycles" is a substring of
+    # "len_cycles", so parsing "len_cycles" also clobbered "n_cycles"). See git history.
     if type(value) == str:
-        return f"            if \"{key}\" in key:\n                global {key}\n                {key} = value"
+        return f"            if key == \"{key}\":\n                global {key}\n                {key} = value"
     if type(value) == int:
         if key == 'dimension':
-            return f"            if \"{key}\" in key:\n                global {key}\n                {key} = int(value)\n                got_dimension = True"
-        return f"            if \"{key}\" in key:\n                global {key}\n                {key} = int(value)"
+            return f"            if key == \"{key}\":\n                global {key}\n                {key} = int(value)\n                got_dimension = True"
+        return f"            if key == \"{key}\":\n                global {key}\n                {key} = int(value)"
     if type(value) == float:
-        return f"            if \"{key}\" in key:\n                global {key}\n                {key} = float(value)"
+        return f"            if key == \"{key}\":\n                global {key}\n                {key} = float(value)"
     if type(value) == bool:
-        return f"            if \"{key}\" in key:\n                global {key}\n                {key} = value == 'true'"
+        return f"            if key == \"{key}\":\n                global {key}\n                {key} = value == 'true'"
     if type(value) == list:
         if type(value[0]) == str:
-            return f"            if \"{key}\" in key:\n                global {key}\n                {key} = [value.split()[i] for i in range(3)]"
+            return f"            if key == \"{key}\":\n                global {key}\n                {key} = [value.split()[i] for i in range(3)]"
         if type(value[0]) == int:
-            return f"            if \"{key}\" in key:\n                global {key}\n                {key} = [int(value.split()[i]) for i in range(3)]"
+            return f"            if key == \"{key}\":\n                global {key}\n                {key} = [int(value.split()[i]) for i in range(3)]"
         if type(value[0]) == float:
-            return f"            if \"{key}\" in key:\n                global {key}\n                {key} = [float(value.split()[i]) for i in range(3)]"
+            return f"            if key == \"{key}\":\n                global {key}\n                {key} = [float(value.split()[i]) for i in range(3)]"
         if type(value[0]) == bool:
-            return f"            if \"{key}\" in key:\n                global {key}\n                {key} = [value.split()[i] == 'true' for i in range(3)]"
+            return f"            if key == \"{key}\":\n                global {key}\n                {key} = [value.split()[i] == 'true' for i in range(3)]"
         if type(value[0]) == list:
             return f"            if section == \"{section}\" and index < 3:\n                global {key}\n                {key}.append([float(line.split()[i]) for i in range(3)])\n                index += 1"
     print(f"Error: {key} has an unsupported type.")

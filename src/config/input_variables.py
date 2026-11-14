@@ -21,6 +21,7 @@ ALL = {
         "automatic_file_read": True,
         "write_result": True,
         "filetype": 'h5',
+        "mpi_procs": 0,  # 0 = auto-detect (nproc - 1); only used by MPI-capable python methods (e.g. triqs/CTHYB)
     },
     "SYSTEM": {
         "interaction": "none",
@@ -37,6 +38,7 @@ ALL = {
         "max_iters": 100,
         "qp_weight": 1.0,
         "recurse_level": 0,
+        "tol": 1e-4,
     },
     "HAMILTONIAN": {"hamiltonian": "tight_binding",
                     "eps_dx2y2": 0.0,
@@ -86,7 +88,10 @@ ALL = {
     "RESPONSE": {"dynamic": False},
     "MANY_BODY": {
         "self_consistent": False,
-        "impurity_solver": "IPT"
+        "impurity_solver": "IPT",
+        "n_cycles": 20000,
+        "len_cycles": 200,
+        "warmup_cycles": 8000,
     },
 }
 

@@ -3,6 +3,7 @@ from triqs.gf.meshes import MeshDLRImFreq, MeshDLRImTime, MeshImFreq, MeshReFreq
 from triqs.gf import MeshProduct, MeshBrillouinZone, make_gf_dlr, make_gf_dlr_imtime, make_gf_dlr_imfreq
 from triqs.lattice import BrillouinZone, BravaisLattice
 from triqs_tprf.lattice import fourier_tr_to_wr, fourier_wk_to_wr, fourier_wr_to_tr, fourier_wr_to_wk, chi_wr_from_chi_tr, chi_wk_from_chi_wr, chi_tr_from_chi_wr, chi_wr_from_chi_wk
+from triqs.utility import mpi
 import numpy as np
 
 import firefly as fly
@@ -118,6 +119,11 @@ class Diagram:
         self.obj_k.data[:] = np.reshape(k_data, self.shape)
 
     def save(self, filename, force_real=False):
+        # Under mpirun, every rank reaches this call (the QMC/lattice solve is
+        # collective) but only rank 0 should write -- concurrent ranks writing
+        # the same HDF5 file race and throw H5::FileIException.
+        if not mpi.is_master_node():
+            return
         if self.varspace in ['wk', 'tr']:
             mesh, BZ = extract_mesh_and_bz(self.obj_wk)
             # mesh is (nw, nkx, nky, nkz) for k-space dimensions only
@@ -166,12 +172,16 @@ class Diagram:
         print(f"Diagram loaded from field")
 
     def save_as_w(self, filename):
+        if not mpi.is_master_node():
+            return
         obj_w = np.sum(self.obj_wk.data, axis=1) / self.nk  # Sum over k-points
         obj_w = np.reshape(obj_w, (self.nw, ))
         fly.save_data(filename, obj_w, mesh=None, domain=None, w_points=self.w_points)
         print(f"Diagram(w) saved to {filename}")
 
     def save_spectral(self, filename):
+        if not mpi.is_master_node():
+            return
         beta = self.obj_w.mesh.beta
         wmin, wmax, nw = -5.0, 5.0, 500
         obj_w = iw_dlr_to_w(self.obj_w, beta, w_min=wmin, w_max=wmax, n_w=nw).data
@@ -240,22 +250,28 @@ def make_local(data):
 
 def get_renorm(loc_sigma, w_points):
     loc_sigma = loc_sigma[:, 0, 0]
-    signs = np.sign(loc_sigma.imag)
-    diff = np.diff(signs)
-    zero_crossings = np.where(diff != 0)[0]
+    # Use the two lowest POSITIVE Matsubara points, forward-difference slope of
+    # Im[Sigma] -- same convention as effective_mass() in CTHYBSolver.py. The old
+    # approach (first sign change of Im[Sigma] scanning from w_min) instead landed
+    # on whatever sign flip came first out in the DLR fit's least-constrained tail
+    # nodes, giving a renorm unrelated to the physical w->0 value. See the matching
+    # fix/note on get_renorm() in run.py -- this was a second, separate copy of the
+    # same function with the same bug.
+    order = np.argsort(w_points)
+    w_sorted = w_points[order]
+    sigma_sorted = loc_sigma[order]
+    pos_idx = np.where(w_sorted > 0)[0]
 
-    if (len(zero_crossings) == 0):
-        print("Uncontrolled Self-Energy result, no zero crossing. Returning infinity")
+    if len(pos_idx) < 2:
+        print("Uncontrolled Self-Energy result, not enough positive-frequency points. Returning infinity")
         print(loc_sigma)
         return float('inf')
 
-    ind = zero_crossings[0]
-    w_prev = w_points[ind]
-    w_next = w_points[ind+1]
-    sigma_prev = loc_sigma[ind]
-    sigma_next = loc_sigma[ind+1]
+    i0, i1 = pos_idx[0], pos_idx[1]
+    w_prev, w_next = w_sorted[i0], w_sorted[i1]
+    sigma_prev, sigma_next = sigma_sorted[i0], sigma_sorted[i1]
     renorm = 1.0 - (sigma_next.imag - sigma_prev.imag) / (w_next - w_prev)
-    print("w-cross: ", w_prev)
+    #print("w-cross: ", w_prev)
 
     return renorm
 

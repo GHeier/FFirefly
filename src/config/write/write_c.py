@@ -85,6 +85,11 @@ def format_var_line(key, value, section):
 
 
 def format_func_line(key, value, section):
+    # NOTE: must be an exact key match (`strcmp(key, "...") == 0`), not substring
+    # containment (`strstr(key, "...") != NULL`) -- containment let one key's line
+    # silently set/overwrite another whenever one name is a substring of another
+    # (e.g. "n_cycles" is a substring of "len_cycles"). See git history and the
+    # matching note in write_py.py.
     el = "else "
     if key == "category":
         el = ""
@@ -100,21 +105,21 @@ def format_func_line(key, value, section):
 
     if type(value) == str:
         if key == "state":
-            return f'            {el}if (strstr(key, "{key}") != NULL) {{\n                n = atoi(key + 4)-1;\n                set_string(&c_{key}{index}, value);\n            }}'
-        return f'            {el}if (strstr(key, "{key}") != NULL) {{\n                set_string(&c_{key}, value);\n            }}'
+            return f'            {el}if (strcmp(key, "{key}") == 0) {{\n                n = atoi(key + 4)-1;\n                set_string(&c_{key}{index}, value);\n            }}'
+        return f'            {el}if (strcmp(key, "{key}") == 0) {{\n                set_string(&c_{key}, value);\n            }}'
     elif type(value) == int:
         if key == "dimension":
-            return f'            {el}if (strstr(key, "{key}") != NULL) {{\n                c_{key}{index} = atoi(value);\n                 got_dimension = true;\n            }}'
+            return f'            {el}if (strcmp(key, "{key}") == 0) {{\n                c_{key}{index} = atoi(value);\n                 got_dimension = true;\n            }}'
         if key == "nbnd":
-            return f'            {el}if (strstr(key, "{key}") != NULL) {{\n                c_{key}{index} = atoi(value);\n                 got_nbnd = true;\n            }}'
-        return f'            {el}if (strstr(key, "{key}") != NULL) {{\n                c_{key}{index} = atoi(value);\n            }}'
+            return f'            {el}if (strcmp(key, "{key}") == 0) {{\n                c_{key}{index} = atoi(value);\n                 got_nbnd = true;\n            }}'
+        return f'            {el}if (strcmp(key, "{key}") == 0) {{\n                c_{key}{index} = atoi(value);\n            }}'
     elif type(value) == float:
-        return f'            {el}if (strstr(key, "{key}") != NULL) {{\n                c_{key}{index} = atof(value);\n            }}'
+        return f'            {el}if (strcmp(key, "{key}") == 0) {{\n                c_{key}{index} = atof(value);\n            }}'
     elif type(value) == bool:
-        return f'            {el}if (strstr(key, "{key}") != NULL) {{\n                strip_single_quotes(value);\n                if (strcmp(value, "true") == 0) {{\n                    c_{key}{index} = true;\n                }} else {{\n                    c_{key}{index} = false;\n                }}\n            }}'
+        return f'            {el}if (strcmp(key, "{key}") == 0) {{\n                strip_single_quotes(value);\n                if (strcmp(value, "true") == 0) {{\n                    c_{key}{index} = true;\n                }} else {{\n                    c_{key}{index} = false;\n                }}\n            }}'
     elif type(value) == list:
         if type(value[0]) == int:
-            return f'            {el}if (strstr(key, "{key}") != NULL) {{\n                sscanf(line, " {key} = %d %d %d", &c_{key}[0], &c_{key}[1], &c_{key}[2]);\n            }}'
+            return f'            {el}if (strcmp(key, "{key}") == 0) {{\n                sscanf(line, " {key} = %d %d %d", &c_{key}[0], &c_{key}[1], &c_{key}[2]);\n            }}'
         else:
             print("Key, value, section: ", key, value, section)
             print("Error: Unsupported type in config file (list section)")

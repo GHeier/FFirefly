@@ -13,7 +13,7 @@ vector<string> get_point_group_symmetries_from_lattice(string& lattice) {
     //    "R" Reflection
     //    "I" Inversion
 
-    if (lattice == "SC") {
+    if (lattice == "SC" || lattice == "LSCO") {
         return {"C4", "R", "I"};
     }
     else if (lattice == "BCC") {

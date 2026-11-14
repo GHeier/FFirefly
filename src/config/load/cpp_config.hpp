@@ -18,6 +18,7 @@ extern string verbosity;
 extern bool automatic_file_read;
 extern bool write_result;
 extern string filetype;
+extern int mpi_procs;
 
 //[SYSTEM]
 extern string interaction;
@@ -34,6 +35,7 @@ extern float mixing;
 extern int max_iters;
 extern float qp_weight;
 extern int recurse_level;
+extern float tol;
 
 //[HAMILTONIAN]
 extern string hamiltonian;
@@ -97,6 +99,9 @@ extern bool dynamic;
 //[MANY_BODY]
 extern bool self_consistent;
 extern string impurity_solver;
+extern int n_cycles;
+extern int len_cycles;
+extern int warmup_cycles;
 // End of Global Variables
 
 
@@ -149,7 +154,7 @@ std::string get_loc();
 
 // Run method executables (used by category node.cpp files)
 int run_cpp_method(const std::string& method_name);
-int run_python_method(const std::string& method_name);
+int run_python_method(const std::string& method_name, bool mpi_capable = false);
 int run_julia_method(const std::string& method_name);
 
 int run_cpp_test(const std::string& test_name);
