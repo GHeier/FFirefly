@@ -10,7 +10,7 @@ static Vec get_kvec(int i, int j, int k) {
         1.0 * k / k_mesh[2] - 0.5,
         3
     );
-    Vec newv = brillouin_zone * v;
+    Vec newv = frac_to_cart(brillouin_zone, v);
     return newv;
 }
 

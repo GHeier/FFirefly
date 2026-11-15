@@ -21,7 +21,7 @@ def get_e_mesh():
                              np.arange(nz) / nz,
                              indexing='ij')
     kpts = np.stack([kx.ravel(), ky.ravel(), kz.ravel()], axis=-1)
-    kpts = kpts @ BZ.T
+    kpts = kpts @ BZ
 
     e_mesh = band(kpts).ravel()
     return e_mesh

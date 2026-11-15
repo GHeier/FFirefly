@@ -122,6 +122,20 @@ void write_points(H5File& file, const std::vector<std::vector<float>>& points) {
     ds.write(flat.data(), PredType::NATIVE_FLOAT);
 }
 
+int infer_dimension(const vector<int>& mesh, const vector<vector<float>>& points) {
+    if (mesh.empty())
+        return points.empty() ? 0 : points[0].size();
+    int dim = mesh.size();
+    while (dim > 1 && mesh[dim - 1] == 1) dim--;
+    return dim;
+}
+
+static bool domain_is_empty(const std::vector<std::vector<float>>& domain) {
+    for (auto const& row : domain)
+        if (!row.empty()) return false;
+    return true;
+}
+
 void write_domain(H5File& file, const std::vector<std::vector<float>>& domain) {
     hsize_t dims[2] = { domain.size(), domain[0].size() };
     DataSpace space(2, dims);
@@ -243,6 +257,11 @@ void store_domain(DataSet& ds_domain, BaseData& field) {
     }
     hsize_t dims[2];
     space_domain.getSimpleExtentDims(dims);
+    if (dims[0] == 0 || dims[1] == 0) {
+        // Legacy files may store the default {{}} domain as a 1x0 dataset
+        field.domain.clear();
+        return;
+    }
     // Read into flat buffer first, then populate 2D structure
     std::vector<float> domain_flat(dims[0] * dims[1]);
     ds_domain.read(domain_flat.data(), PredType::NATIVE_FLOAT);
@@ -295,7 +314,7 @@ BaseData load_data_from_hdf5(const std::string& filename) {
     load_metadata(field, file);
 
     // -- Domain (optional) --
-    if (field.with_k && field.as_mesh) {
+    if (field.with_k && field.as_mesh && file.nameExists("/domain")) {
         try {
             DataSet ds_domain = file.openDataSet("/domain");
             store_domain(ds_domain, field);
@@ -378,7 +397,7 @@ void save_data_to_hdf5(const std::string& filename,
     write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
 
     if (!points.empty()) write_points(file, points);
-    if (!domain.empty()) write_domain(file, domain);
+    if (!domain_is_empty(domain)) write_domain(file, domain);
     if (!w_points.empty()) write_w_points(file, w_points);
 
     std::vector<float> real_flat, imag_flat;
@@ -419,7 +438,7 @@ void save_data_to_hdf5(const std::string& filename,
     write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
 
     if (!points.empty()) write_points(file, points);
-    if (!domain.empty()) write_domain(file, domain);
+    if (!domain_is_empty(domain)) write_domain(file, domain);
     if (!w_points.empty()) write_w_points(file, w_points);
 
     std::vector<float> real_flat, imag_flat;
@@ -460,7 +479,7 @@ void save_data_to_hdf5(const std::string& filename,
     write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
 
     if (!points.empty()) write_points(file, points);
-    if (!domain.empty()) write_domain(file, domain);
+    if (!domain_is_empty(domain)) write_domain(file, domain);
     if (!w_points.empty()) write_w_points(file, w_points);
 
     std::vector<float> real_flat, imag_flat;
@@ -501,7 +520,7 @@ void save_data_to_hdf5(const std::string& filename,
     write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
 
     if (!points.empty()) write_points(file, points);
-    if (!domain.empty()) write_domain(file, domain);
+    if (!domain_is_empty(domain)) write_domain(file, domain);
     if (!w_points.empty()) write_w_points(file, w_points);
 
     std::vector<float> real_flat, imag_flat;
@@ -542,7 +561,7 @@ void save_data_to_hdf5(const std::string& filename,
     write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
 
     if (!points.empty()) write_points(file, points);
-    if (!domain.empty()) write_domain(file, domain);
+    if (!domain_is_empty(domain)) write_domain(file, domain);
     if (!w_points.empty()) write_w_points(file, w_points);
 
     std::vector<float> real_flat;
@@ -577,7 +596,7 @@ void save_data_to_hdf5(const std::string& filename,
     write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
 
     if (!points.empty()) write_points(file, points);
-    if (!domain.empty()) write_domain(file, domain);
+    if (!domain_is_empty(domain)) write_domain(file, domain);
     if (!w_points.empty()) write_w_points(file, w_points);
 
     std::vector<float> real_flat;
@@ -612,7 +631,7 @@ void save_data_to_hdf5(const std::string& filename,
     write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
 
     if (!points.empty()) write_points(file, points);
-    if (!domain.empty()) write_domain(file, domain);
+    if (!domain_is_empty(domain)) write_domain(file, domain);
     if (!w_points.empty()) write_w_points(file, w_points);
 
     std::vector<float> real_flat;
@@ -647,7 +666,7 @@ void save_data_to_hdf5(const std::string& filename,
     write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
 
     if (!points.empty()) write_points(file, points);
-    if (!domain.empty()) write_domain(file, domain);
+    if (!domain_is_empty(domain)) write_domain(file, domain);
     if (!w_points.empty()) write_w_points(file, w_points);
 
     std::vector<float> real_flat = data;
@@ -681,7 +700,7 @@ void save_data_to_hdf5(const std::string& filename,
     write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
 
     if (!points.empty()) write_points(file, points);
-    if (!domain.empty()) write_domain(file, domain);
+    if (!domain_is_empty(domain)) write_domain(file, domain);
     if (!w_points.empty()) write_w_points(file, w_points);
 
     std::vector<float> real_flat, imag_flat;
@@ -718,42 +737,42 @@ void save_data_to_hdf5(BaseData& field, const std::string& filename) {
 
 void save_data(string filename, vector<vector<vector<vector<cfloat>>>>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
     bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, true, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, mesh.size(), w_points, points, data);
+    save_data_to_hdf5(filename, true, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
 }
 
 void save_data(string filename, vector<vector<vector<cfloat>>>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
     bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, true, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, mesh.size(), w_points, points, data);
+    save_data_to_hdf5(filename, true, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
 }
 
 void save_data(string filename, vector<vector<cfloat>>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
     bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, true, false, true, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, mesh.size(), w_points, points, data);
+    save_data_to_hdf5(filename, true, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
 }
 
 void save_data(string filename, vector<cfloat>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
     bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, true, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, mesh.size(), w_points, points, data);
+    save_data_to_hdf5(filename, true, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
 }
 
 void save_data(string filename, vector<vector<vector<vector<float>>>>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
     bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, false, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, mesh.size(), w_points, points, data);
+    save_data_to_hdf5(filename, false, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
 }
 
 void save_data(string filename, vector<vector<vector<float>>>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
     bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, false, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, mesh.size(), w_points, points, data);
+    save_data_to_hdf5(filename, false, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
 }
 
 void save_data(string filename, vector<vector<float>>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
     bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, false, false, true, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, mesh.size(), w_points, points, data);
+    save_data_to_hdf5(filename, false, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
 }
 
 void save_data(string filename, vector<float>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
     bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, false, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, mesh.size(), w_points, points, data);
+    save_data_to_hdf5(filename, false, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
 }
 
 void save_data(string filename, vector<float>& data, vector<float> w_points, bool centered) {

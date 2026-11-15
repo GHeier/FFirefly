@@ -60,7 +60,7 @@ void get_surface_transformed_bounds(float &upper, float &lower, function<float(V
     for (float i = 0; i < pts; i++) {
         for (float j = 0; j < pts; j++) {
             for (float k = 0; k < pts * (dimension%2) + 1 * ((dimension+1)%2); k++) {
-                Vec k_val = brillouin_zone * Vec(i / (pts-1), j / (pts-1), k / (pts-1));
+                Vec k_val = frac_to_cart(brillouin_zone, Vec(i / (pts-1), j / (pts-1), k / (pts-1)));
                 float val = func(k_val);
                 if (val > upper) upper = val;
                 if (val < lower) lower = val;

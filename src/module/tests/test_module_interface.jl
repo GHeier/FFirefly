@@ -160,7 +160,7 @@ function test_save_read_scalar_real()
         tolerance = 1e-3
         for i in [2, 4, 6, 8]
             for j in [2, 4, 6, 8]
-                k_point = Float64[(i-1)/(nk1-1) - 0.5, (j-1)/(nk2-1) - 0.5, 0.0]
+                k_point = Float64[(i-1)/nk1 - 0.5, (j-1)/nk2 - 0.5, 0.0]
                 value = field(k_point)
                 expected = data[i, j]
                 if abs(value - expected) > tolerance
@@ -207,7 +207,7 @@ function test_save_read_scalar_complex()
         tolerance = 1e-3
         for i in [2, 4, 6]
             for j in [2, 4, 6]
-                k_point = Float64[(i-1)/(nk1-1) - 0.5, (j-1)/(nk2-1) - 0.5, 0.0]
+                k_point = Float64[(i-1)/nk1 - 0.5, (j-1)/nk2 - 0.5, 0.0]
                 value = field(k_point)
                 expected = data[i, j]
                 if abs(real(value) - real(expected)) > tolerance || abs(imag(value) - imag(expected)) > tolerance
@@ -260,7 +260,7 @@ function test_save_read_with_frequency()
         for i in [2, 3, 4]
             for j in [2, 3, 4]
                 for w in [2, 4, 6]
-                    k_point = Float64[(i-1)/(nk1-1) - 0.5, (j-1)/(nk2-1) - 0.5, 0.0]
+                    k_point = Float64[(i-1)/nk1 - 0.5, (j-1)/nk2 - 0.5, 0.0]
                     value = field(k_point, Float64(w-1))
                     expected = data[w, i, j]  # Changed from data[i,j,w] to match (nw,nx,ny) layout
                     if abs(value - expected) > tolerance
@@ -307,7 +307,7 @@ function test_save_data_dispatcher_real()
         tolerance = 1e-3
         for i in [2, 3, 4, 5]
             for j in [2, 3, 4, 5]
-                k_point = Float64[(i-1)/(nk1-1) - 0.5, (j-1)/(nk2-1) - 0.5, 0.0]
+                k_point = Float64[(i-1)/nk1 - 0.5, (j-1)/nk2 - 0.5, 0.0]
                 value = field(k_point)
                 expected = data[i, j]
                 if abs(value - expected) > tolerance
@@ -353,7 +353,7 @@ function test_save_data_dispatcher_complex()
         tolerance = 1e-3
         for i in [2, 3, 4, 5]
             for j in [2, 3, 4, 5]
-                k_point = Float64[(i-1)/(nk1-1) - 0.5, (j-1)/(nk2-1) - 0.5, 0.0]
+                k_point = Float64[(i-1)/nk1 - 0.5, (j-1)/nk2 - 0.5, 0.0]
                 value = field(k_point)
                 expected = data[i, j]
                 if abs(real(value) - real(expected)) > tolerance || abs(imag(value) - imag(expected)) > tolerance

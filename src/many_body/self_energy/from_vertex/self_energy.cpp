@@ -354,7 +354,7 @@ void call_flex_self_energy() {
     for (int i = 0; i < (int)nkx; i++) {
         for (int j = 0; j < (int)nky; j++) {
             for (int k = 0; k < (int)nkz; k++) {
-                Vec kp = brillouin_zone * Vec(i / nkx - 0.5f, j / nky - 0.5f, k / nkz - 0.5f);
+                Vec kp = frac_to_cart(brillouin_zone, Vec(i / nkx - 0.5f, j / nky - 0.5f, k / nkz - 0.5f));
                 kp.dimension = chidim;
                 kpts.push_back(kp);
             }
@@ -380,7 +380,7 @@ void call_flex_self_energy() {
         for (int i = 0; i < (int)nqx; i++) {
             for (int j = 0; j < (int)nqy; j++) {
                 for (int k = 0; k < (int)nqz; k++) {
-                    Vec qp = brillouin_zone * Vec(i / nqx - 0.5f, j / nqy - 0.5f, k / nqz - 0.5f);
+                    Vec qp = frac_to_cart(brillouin_zone, Vec(i / nqx - 0.5f, j / nqy - 0.5f, k / nqz - 0.5f));
                     qp.dimension = chidim;
                     qpts.push_back(qp);
                 }
@@ -561,7 +561,7 @@ void call_flex_self_energy_fft() {
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
             for (int k = 0; k < nz; k++) {
-                Vec kp = brillouin_zone * Vec((float)i / nx - 0.5f, (float)j / ny - 0.5f, (float)k / nz - 0.5f);
+                Vec kp = frac_to_cart(brillouin_zone, Vec((float)i / nx - 0.5f, (float)j / ny - 0.5f, (float)k / nz - 0.5f));
                 kp.dimension = chidim;
                 kpts.push_back(kp);
             }

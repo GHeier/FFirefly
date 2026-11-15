@@ -188,6 +188,9 @@ public:
   Field();
   Field(const string& filename);
   ~Field();
+  // Owns raw pointers to the typed field; copying would double-free
+  Field(const Field&) = delete;
+  Field& operator=(const Field&) = delete;
 
   // Generate plot labels from filename
   void generate_plot_labels(const string& filename);

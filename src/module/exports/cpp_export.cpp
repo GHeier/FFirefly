@@ -851,12 +851,8 @@ void save_data_with_points(const char* filename, BaseData::DataVariant& data_var
     bd.with_w = !w_points.empty();
     bd.as_mesh = !mesh.empty();
     bd.centered = centered;
-    // Use domain size for dimension if available, as mesh may have trailing singleton dims (e.g., [24,24,1] for 2D)
-    bd.dimension = mesh.size();
-    if (bd.dimension == 0 && points.size() > 0)
-        bd.dimension = points[0].size();
-    else if (mesh.size() > 0 && mesh[mesh.size() - 1] == 1)
-        bd.dimension -= 1;
+    // Mesh may have trailing singleton dims (e.g., [24,24,1] for 2D)
+    bd.dimension = infer_dimension(mesh, points);
     save_data_to_hdf5(bd, string(filename));
 }
 
@@ -910,7 +906,7 @@ void save_data_scalar_export0(const char *filename, const float *data_interleave
     save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec, centered);
 }
 
-// For vector fields (rank = 0, but is_vector = true, inds = {})
+// For vector fields (rank = 1, inds = {vec_len})
 void save_data_vector_export0(const char *filename, const float *data_interleaved,
                                int nk, int vec_len, bool is_complex,
                                const int *mesh, int mesh_size,
@@ -961,7 +957,7 @@ void save_data_vector_export0(const char *filename, const float *data_interleave
 
     // Create DataVariant and call save_data_with_points
     BaseData::DataVariant data = data_vec;
-    vector<int> inds = {};  // Vector field has empty inds (vec_len is handled separately)
+    vector<int> inds = {vec_len};  // Rank-1 indexed field (e.g. one value per band)
     save_data_with_points(filename, data, is_complex, mesh_vec, domain_vec, w_vec, inds, points_vec, centered);
 }
 

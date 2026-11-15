@@ -58,7 +58,7 @@ static vector<vector<vector<vector<cfloat>>>> create_tensor4(Vec p, int dim, int
 }
 
 static float get_pnt(int i, int pnts) {
-    return 1.0 * i / (pnts - 1);
+    return 1.0 * i / pnts;  // periodic grid: sample i at i/n
 }
 
 static Vec get_vec(int i, int j, int k, int pnts) {

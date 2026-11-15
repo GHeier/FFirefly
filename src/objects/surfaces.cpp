@@ -44,30 +44,30 @@ float triangle_area_from_points(Vec k1, Vec k2, Vec k3) {
 
 vector<Vec> points_from_indices(function<float(Vec)> func, int i, int j, int k,
                                 vector<int> k_mesh) {
-    Vec p1 = brillouin_zone * Vec(1.0 * i / k_mesh[0] - 0.5,
+    Vec p1 = frac_to_cart(brillouin_zone, Vec(1.0 * i / k_mesh[0] - 0.5,
                                   1.0 * j / k_mesh[1] - 0.5,
-                                  1.0 * k / k_mesh[2] - 0.5);
-    Vec p2 = brillouin_zone * Vec(1.0 * (i + 1) / k_mesh[0] - 0.5,
+                                  1.0 * k / k_mesh[2] - 0.5));
+    Vec p2 = frac_to_cart(brillouin_zone, Vec(1.0 * (i + 1) / k_mesh[0] - 0.5,
                                   1.0 * j / k_mesh[1] - 0.5,
-                                  1.0 * k / k_mesh[2] - 0.5);
-    Vec p3 = brillouin_zone * Vec(1.0 * (i + 1) / k_mesh[0] - 0.5,
+                                  1.0 * k / k_mesh[2] - 0.5));
+    Vec p3 = frac_to_cart(brillouin_zone, Vec(1.0 * (i + 1) / k_mesh[0] - 0.5,
                                   1.0 * (j + 1) / k_mesh[1] - 0.5,
-                                  1.0 * k / k_mesh[2] - 0.5);
-    Vec p4 = brillouin_zone * Vec(1.0 * i / k_mesh[0] - 0.5,
+                                  1.0 * k / k_mesh[2] - 0.5));
+    Vec p4 = frac_to_cart(brillouin_zone, Vec(1.0 * i / k_mesh[0] - 0.5,
                                   1.0 * (j + 1) / k_mesh[1] - 0.5,
-                                  1.0 * k / k_mesh[2] - 0.5);
-    Vec p5 = brillouin_zone * Vec(1.0 * i / k_mesh[0] - 0.5,
+                                  1.0 * k / k_mesh[2] - 0.5));
+    Vec p5 = frac_to_cart(brillouin_zone, Vec(1.0 * i / k_mesh[0] - 0.5,
                                   1.0 * j / k_mesh[1] - 0.5,
-                                  1.0 * (k + 1) / k_mesh[2] - 0.5);
-    Vec p6 = brillouin_zone * Vec(1.0 * (i + 1) / k_mesh[0] - 0.5,
+                                  1.0 * (k + 1) / k_mesh[2] - 0.5));
+    Vec p6 = frac_to_cart(brillouin_zone, Vec(1.0 * (i + 1) / k_mesh[0] - 0.5,
                                   1.0 * j / k_mesh[1] - 0.5,
-                                  1.0 * (k + 1) / k_mesh[2] - 0.5);
-    Vec p7 = brillouin_zone * Vec(1.0 * (i + 1) / k_mesh[0] - 0.5,
+                                  1.0 * (k + 1) / k_mesh[2] - 0.5));
+    Vec p7 = frac_to_cart(brillouin_zone, Vec(1.0 * (i + 1) / k_mesh[0] - 0.5,
                                   1.0 * (j + 1) / k_mesh[1] - 0.5,
-                                  1.0 * (k + 1) / k_mesh[2] - 0.5);
-    Vec p8 = brillouin_zone * Vec(1.0 * i / k_mesh[0] - 0.5,
+                                  1.0 * (k + 1) / k_mesh[2] - 0.5));
+    Vec p8 = frac_to_cart(brillouin_zone, Vec(1.0 * i / k_mesh[0] - 0.5,
                                   1.0 * (j + 1) / k_mesh[1] - 0.5,
-                                  1.0 * (k + 1) / k_mesh[2] - 0.5);
+                                  1.0 * (k + 1) / k_mesh[2] - 0.5));
 
     p1.w = func(p1);
     p2.w = func(p2);
@@ -84,14 +84,11 @@ vector<Vec> points_from_indices(function<float(Vec)> func, int i, int j, int k,
 
 vector<Vec> points_from_indices_2d(function<float(Vec)> func, int i, int j,
                                    int k, vector<int> k_mesh) {
-    Vec p1 = brillouin_zone *
-             Vec(1.0 * i / k_mesh[0] - 0.5, 1.0 * j / k_mesh[1] - 0.5);
-    Vec p2 = brillouin_zone *
-             Vec(1.0 * (i + 1) / k_mesh[0] - 0.5, 1.0 * j / k_mesh[1] - 0.5);
-    Vec p3 = brillouin_zone * Vec(1.0 * (i + 1) / k_mesh[0] - 0.5,
-                                  1.0 * (j + 1) / k_mesh[1] - 0.5);
-    Vec p4 = brillouin_zone *
-             Vec(1.0 * i / k_mesh[0] - 0.5, 1.0 * (j + 1) / k_mesh[1] - 0.5);
+    Vec p1 = frac_to_cart(brillouin_zone, Vec(1.0 * i / k_mesh[0] - 0.5, 1.0 * j / k_mesh[1] - 0.5));
+    Vec p2 = frac_to_cart(brillouin_zone, Vec(1.0 * (i + 1) / k_mesh[0] - 0.5, 1.0 * j / k_mesh[1] - 0.5));
+    Vec p3 = frac_to_cart(brillouin_zone, Vec(1.0 * (i + 1) / k_mesh[0] - 0.5,
+                                  1.0 * (j + 1) / k_mesh[1] - 0.5));
+    Vec p4 = frac_to_cart(brillouin_zone, Vec(1.0 * i / k_mesh[0] - 0.5, 1.0 * (j + 1) / k_mesh[1] - 0.5));
 
     p1.w = func(p1);
     p2.w = func(p2);

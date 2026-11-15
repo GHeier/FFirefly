@@ -88,9 +88,9 @@ def test_scalar_real_basic(result):
 
         # Verify data at sample points
         tolerance = 1e-3
-        # Test at interior points (index 2 -> k = 2/(nk-1) - 0.5)
+        # Test at grid points (index 2 -> k = 2/nk - 0.5)
         for idx in [2, 4, 6, 8]:
-            k_val = float(idx) / (nk - 1) - 0.5  # Convert index to k-space coord
+            k_val = float(idx)/nk - 0.5  # Convert index to k-space coord
             k_point = [k_val, 0.0, 0.0]
             value = field(k_point)
             expected = data[idx]
@@ -149,7 +149,7 @@ def test_scalar_complex_basic(result):
         tolerance = 1e-3
         for i in [1, 3, 5]:
             for j in [1, 3, 5]:
-                k_point = [float(i)/(nk1-1) - 0.5, float(j)/(nk2-1) - 0.5, 0.0]
+                k_point = [float(i)/nk1 - 0.5, float(j)/nk2 - 0.5, 0.0]
                 value = field(k_point)
                 expected = data[i, j]
                 if abs(value.real - expected.real) > tolerance or abs(value.imag - expected.imag) > tolerance:
@@ -311,7 +311,7 @@ def test_frequency_dependent(result):
         for i in [1, 2, 3]:
             for j in [1, 2, 3]:
                 for w in [0, 2, 4]:
-                    k_point = [float(i)/(nk1-1) - 0.5, float(j)/(nk2-1) - 0.5, 0.0]
+                    k_point = [float(i)/nk1 - 0.5, float(j)/nk2 - 0.5, 0.0]
                     value = field(k_point, float(w))
                     expected = data[w, i, j]
                     if abs(value - expected) > tolerance:
@@ -575,7 +575,7 @@ def test_large_data(result):
         for _ in range(10):
             i = np.random.randint(1, nk1-1)
             j = np.random.randint(1, nk2-1)
-            k_point = [float(i)/(nk1-1) - 0.5, float(j)/(nk2-1) - 0.5, 0.0]
+            k_point = [float(i)/nk1 - 0.5, float(j)/nk2 - 0.5, 0.0]
             value = field(k_point)
             expected = data[i, j]
             tolerance = 1e-2  # Looser tolerance for interpolated values

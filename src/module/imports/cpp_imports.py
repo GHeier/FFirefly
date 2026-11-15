@@ -1794,8 +1794,8 @@ def save_data_scalar(filename: str, data: np.ndarray,
         w_points = np.array([], dtype=np.float32)
 
     # Flatten and interleave data
-    # Use C order (row-major) for w-k ordering where w varies slowest
-    # For (nw, nky, nkx) array, C order gives correct w-k ordering
+    # Use C order (row-major) for w-k ordering where w varies slowest:
+    # shape (nw, nkx, nky, nkz), with the last spatial axis varying fastest
     data_flat = data.ravel(order='C')
     if is_complex or np.iscomplexobj(data):
         data_interleaved = interleave_complex(data_flat)
@@ -1871,8 +1871,37 @@ def save_data_vector(filename: str, data: np.ndarray,
     else:
         raise ValueError("Invalid arguments to save_data_vector")
 
-    # Use same save mechanism as scalar - vectors are saved as scalars
-    save_data_scalar(filename, data, is_complex, mesh, domain, w_points, centered)
+    if w_points is None:
+        w_points = np.array([], dtype=np.float32)
+    if inds is None or len(inds) != 1:
+        raise ValueError("save_data_vector requires inds with 1 dimension")
+    vec_len = int(inds[0])
+
+    # Use C order (row-major): [w][k][index], w varies slowest
+    data_flat = np.asarray(data).ravel(order='C')
+    if is_complex or np.iscomplexobj(data):
+        data_interleaved = interleave_complex(data_flat)
+        is_complex = True
+    else:
+        data_interleaved = np.asarray(data_flat, dtype=np.float32)
+    nk = data_flat.size // vec_len
+
+    mesh = np.asarray(mesh, dtype=np.int32)
+    domain = np.asarray(domain, dtype=np.float32)
+    domain_rows, domain_cols = domain.shape
+    w_points = np.asarray(w_points, dtype=np.float32)
+    domain_flat = domain.flatten()
+
+    lib.save_data_vector_export0(
+        filename.encode('utf-8'),
+        data_interleaved.ctypes.data_as(POINTER(c_float)),
+        c_int(nk), c_int(vec_len), c_bool(is_complex),
+        mesh.ctypes.data_as(POINTER(c_int)), c_int(len(mesh)),
+        domain_flat.ctypes.data_as(POINTER(c_float)),
+        c_int(domain_rows), c_int(domain_cols),
+        w_points.ctypes.data_as(POINTER(c_float)), c_int(len(w_points)),
+        None, c_int(0), c_int(0), c_bool(centered)
+    )
 
 lib.save_data_matrix_export0.argtypes = [
     c_char_p, POINTER(c_float), c_int, c_int, c_bool,

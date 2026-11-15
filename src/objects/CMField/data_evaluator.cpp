@@ -9,6 +9,32 @@
 using namespace std;
 // Note: ResultVariant and DataVariant are defined in data_evaluator.hpp
 
+// Number of spatial samples stored per frequency
+static int spatial_count(const BaseData& f) {
+    if (!f.mesh.empty()) {
+        int n = 1;
+        for (int m : f.mesh) n *= m;
+        return n;
+    }
+    if (f.with_k && !f.points.empty()) return f.points.size();
+    return 1;
+}
+
+// A domain is usable if it has at least `dim` rows of at least `dim` entries.
+// The legacy default {{}} (one empty row) counts as "no domain".
+static bool domain_usable(const vector<vector<float>>& domain, int dim) {
+    if (dim <= 0 || (int)domain.size() < dim) return false;
+    for (int i = 0; i < dim; i++)
+        if ((int)domain[i].size() < dim) return false;
+    return true;
+}
+
+static bool domain_absent(const vector<vector<float>>& domain) {
+    for (auto& row : domain)
+        if (!row.empty()) return false;
+    return true;
+}
+
 DataEvaluator::DataEvaluator(BaseData& f) {
     dimension = f.dimension;
     mesh = f.mesh;
@@ -17,11 +43,12 @@ DataEvaluator::DataEvaluator(BaseData& f) {
     w_points = f.w_points;
     with_w = w_points.size() > 0;
     inds = f.inds;
+    scattered = f.with_k && !f.as_mesh && f.mesh.empty() && !f.points.empty();
 
-    if (!f.domain.empty()) {
+    if (domain_usable(f.domain, dimension)) {
         // Validate domain before conversion and inversion
-        for (size_t i = 0; i < f.domain.size(); i++) {
-            for (size_t j = 0; j < f.domain[i].size(); j++) {
+        for (int i = 0; i < dimension; i++) {
+            for (int j = 0; j < dimension; j++) {
                 if (std::isnan(f.domain[i][j]) || std::isinf(f.domain[i][j])) {
                     throw std::runtime_error("Domain matrix contains NaN or Inf in DataEvaluator constructor at ["
                                            + std::to_string(i) + "][" + std::to_string(j) + "]. "
@@ -31,8 +58,16 @@ DataEvaluator::DataEvaluator(BaseData& f) {
         }
 
         domain = float_matrix_to_vec(f.domain);
-        inv_domain = invertMatrix2(domain, f.dimension);
-    } else {
+        // Rows of the domain are the basis vectors b_i, so a point is
+        // k = sum_i p_i b_i = B^T p. Fractional coordinates are p = (B^T)^-1 k.
+        vector<Vec> domain_T(dimension);
+        for (int i = 0; i < dimension; i++) {
+            domain_T[i].dimension = dimension;
+            for (int j = 0; j < dimension; j++)
+                domain_T[i](j) = f.domain[j][i];
+        }
+        inv_domain = invertMatrix2(domain_T, dimension);
+    } else if (domain_absent(f.domain)) {
         // Empty domain - create identity matrices
         domain.resize(dimension);
         inv_domain.resize(dimension);
@@ -44,6 +79,9 @@ DataEvaluator::DataEvaluator(BaseData& f) {
                 inv_domain[i](j) = (i == j) ? 1.0f : 0.0f;
             }
         }
+    } else {
+        throw std::runtime_error("Domain matrix is smaller than the field dimension ("
+                                 + std::to_string(dimension) + ")");
     }
 
     int rank = f.rank();
@@ -72,10 +110,7 @@ void DataEvaluator::load_indexed_data(BaseData& f) {
     // Where idx iterates over all tensor indices in row-major order
 
     // Determine spatial dimensions
-    int n_spatial = 1;
-    if (f.with_k) {
-        for (int m : f.mesh) n_spatial *= m;
-    }
+    int n_spatial = spatial_count(f);
     int n_w = f.with_w ? f.w_points.size() : 1;
     int rank = f.rank();
 
@@ -179,10 +214,7 @@ void DataEvaluator::load_indexed_data_from_variant(BaseData& f) {
     // For rank=4: vector<vector<vector<vector<vector<cfloat>>>>> where [w/spatial][i][j][k][l]
 
     // Determine spatial dimensions
-    int n_spatial = 1;
-    if (f.with_k) {
-        for (int m : f.mesh) n_spatial *= m;
-    }
+    int n_spatial = spatial_count(f);
     int n_w = f.with_w ? f.w_points.size() : 1;
     int rank = f.rank();
 
@@ -249,6 +281,7 @@ void DataEvaluator::load_indexed_data_from_variant(BaseData& f) {
     }
 }
 
+
 ResultVariant DataEvaluator::convert(complex<Vec>& answer) {
     if (is_complex) {
         if (is_vector) {
@@ -265,11 +298,15 @@ vector<Vec> invertMatrix2(vector<Vec> &matrix, int n) {
     for (size_t i = 0; i < n; ++i) {
         for (size_t j = 0; j < n; ++j) {
             augmented[i][j] = matrix[i](j);
-            if (abs(augmented[i][j]) < 1e-5)
-                augmented[i][j] = 0.0f;
         }
         augmented[i][n + i] = 1.0f; // Identity matrix
     }
+    // Scale-aware singularity threshold
+    float scale = 0.0f;
+    for (size_t i = 0; i < n; ++i)
+        for (size_t j = 0; j < n; ++j)
+            scale = std::max(scale, std::abs(augmented[i][j]));
+    float tol = 1e-6f * (scale > 0.0f ? scale : 1.0f);
     // Gaussian Elimination
     for (size_t i = 0; i < n; ++i) {
         // Partial Pivoting
@@ -282,7 +319,7 @@ vector<Vec> invertMatrix2(vector<Vec> &matrix, int n) {
         std::swap(augmented[i], augmented[maxRow]);
 
         // Check for singular matrix
-        if (std::abs(augmented[i][i]) < 1e-6) {
+        if (std::abs(augmented[i][i]) < tol) {
             std::string error_msg = "Matrix is singular and cannot be inverted.\n";
             error_msg += "Matrix after partial pivoting at step " + std::to_string(i) + ":\n";
             for (size_t row = 0; row < n; ++row) {
@@ -294,7 +331,7 @@ vector<Vec> invertMatrix2(vector<Vec> &matrix, int n) {
                 error_msg += "]\n";
             }
             error_msg += "Pivot element [" + std::to_string(i) + "][" + std::to_string(i) + "] = "
-                       + std::to_string(augmented[i][i]) + " (too small, threshold = 1e-6)";
+                       + std::to_string(augmented[i][i]) + " (too small, threshold = " + std::to_string(tol) + ")";
             throw std::runtime_error(error_msg);
         }
 
@@ -318,6 +355,7 @@ vector<Vec> invertMatrix2(vector<Vec> &matrix, int n) {
     // Extract the inverted matrix
     vector<Vec> inv(n);
     for (size_t i = 0; i < n; ++i) {
+        inv[i].dimension = n;
         for (size_t j = 0; j < n; ++j) {
             inv[i](j) = augmented[i][n + j];
         }
@@ -326,367 +364,253 @@ vector<Vec> invertMatrix2(vector<Vec> &matrix, int n) {
     return inv;
 }
 
-double fold2(double x) {
-    // return x;
-    double decimal = x - std::floor(x);
-    return decimal;
+// ============================================================================
+// Grid interpolation
+//
+// Spatial axes are periodic: an axis with n samples stores sample i at
+// fractional coordinate i/n, and interpolation between sample n-1 and the
+// next period's sample 0 wraps around. Flat spatial index is row-major over
+// mesh (last axis fastest). The frequency axis is non-periodic, varies
+// slowest, and must contain the requested w (within a small tolerance).
+// ============================================================================
+
+namespace {
+
+struct Stencil {
+    int i0 = 0, i1 = 0;
+    float r = 0.0f;  // weight of i1
+};
+
+Stencil periodic_stencil(float x, int n) {
+    Stencil s;
+    if (n <= 1) return s;
+    float t = x * n;
+    float fl = std::floor(t);
+    s.r = t - fl;
+    long base = (long)fl;
+    s.i0 = (int)(((base % n) + n) % n);
+    if (s.r >= 1.0f) {  // guard against float rounding
+        s.r = 0.0f;
+        s.i0 = (s.i0 + 1) % n;
+    }
+    s.i1 = (s.i0 + 1) % n;
+    return s;
 }
 
-void fold_to_first_BZ2(Vec &p) {
-    p.x = fold2(p.x);
-    p.y = fold2(p.y);
-    p.z = fold2(p.z);
+Stencil frequency_stencil(float w, vector<float>& w_points) {
+    Stencil s;
+    int n = w_points.size();
+    if (n <= 1) return s;
+    float w_min = w_points[0], w_max = w_points[n - 1];
+    w = sanitize_within_bounds(w, w_min, w_max);
+    if (w < w_min || w > w_max)
+        throw out_of_range("w=" + std::to_string(w) + " outside frequency range ["
+                           + std::to_string(w_min) + ", " + std::to_string(w_max) + "]");
+    int i = binary_search(w, w_points);
+    if (i < 0) i = 0;
+    if (i >= n - 1) i = n - 2;
+    s.i0 = i;
+    s.i1 = i + 1;
+    s.r = (w - w_points[i]) / (w_points[i + 1] - w_points[i]);
+    return s;
+}
+
+// zero_like / axpy work on scalars, complex<Vec>, and nested vectors of them
+inline cfloat zero_like(const cfloat&) { return cfloat(0.0f, 0.0f); }
+inline complex<Vec> zero_like(const complex<Vec>& v) {
+    Vec z = v.real();
+    z.x = z.y = z.z = z.w = 0.0f;
+    return complex<Vec>(z, z);
+}
+template <typename U> vector<U> zero_like(const vector<U>& v) {
+    vector<U> out;
+    out.reserve(v.size());
+    for (auto& e : v) out.push_back(zero_like(e));
+    return out;
+}
+
+inline void axpy(cfloat& acc, float wt, const cfloat& v) { acc += wt * v; }
+inline void axpy(complex<Vec>& acc, float wt, const complex<Vec>& v) { acc = acc + wt * v; }
+template <typename U> void axpy(vector<U>& acc, float wt, const vector<U>& v) {
+    if (acc.size() != v.size())
+        throw std::runtime_error("Inconsistent tensor shapes in field data");
+    for (size_t i = 0; i < acc.size(); i++) axpy(acc[i], wt, v[i]);
+}
+
+// Multilinear interpolation over the spatial mesh at fractional point p.
+// get(spatial_index) returns the stored value at that grid point.
+template <typename T, typename Get>
+T interpolate_mesh(const vector<int>& mesh, const Vec& p, Get get) {
+    int naxes = std::min<int>(mesh.size(), 3);
+    if ((int)mesh.size() > 3)
+        throw std::runtime_error("Meshes with more than 3 spatial axes are not supported");
+    Stencil st[3];
+    int stride[3] = {1, 1, 1};
+    for (int d = naxes - 1; d >= 0; d--) {
+        st[d] = periodic_stencil(p(d), mesh[d]);
+        if (d < naxes - 1) stride[d] = stride[d + 1] * mesh[d + 1];
+    }
+
+    const T& first = get(0);
+    T acc = zero_like(first);
+    for (int corner = 0; corner < (1 << naxes); corner++) {
+        float weight = 1.0f;
+        int idx = 0;
+        for (int d = 0; d < naxes; d++) {
+            bool upper = (corner >> d) & 1;
+            weight *= upper ? st[d].r : 1.0f - st[d].r;
+            idx += (upper ? st[d].i1 : st[d].i0) * stride[d];
+        }
+        if (weight == 0.0f) continue;
+        axpy(acc, weight, get(idx));
+    }
+    return acc;
+}
+
+} // namespace
+
+int DataEvaluator::n_spatial() const {
+    int n = 1;
+    for (int m : mesh) n *= m;
+    if (n <= 0) throw std::runtime_error("Field mesh has a zero-length axis");
+    return n;
+}
+
+Vec DataEvaluator::to_fractional(const Vec& point) const {
+    Vec p;
+    p.dimension = dimension;
+    bool identity = (int)inv_domain.size() < dimension;
+    for (int i = 0; i < dimension && i < 3; i++) {
+        p(i) = 0;
+        for (int j = 0; j < dimension && j < 3; j++) {
+            float a = identity ? (i == j ? 1.0f : 0.0f) : inv_domain[i](j);
+            p(i) += a * point(j);
+        }
+        p(i) -= std::floor(p(i));  // fold into first zone [0, 1)
+    }
+    return p;
+}
+
+// src(w_idx, spatial_idx) -> const T&
+template <typename T, typename Src>
+T DataEvaluator::evaluate(const Vec& p, float w, Src src) const {
+    auto at_w = [&](int wi) {
+        return interpolate_mesh<T>(mesh, p, [&](int s) -> const T& { return src(wi, s); });
+    };
+    if (!with_w) return at_w(0);
+    Stencil fs = frequency_stencil(w, const_cast<vector<float>&>(w_points));
+    T v0 = at_w(fs.i0);
+    if (fs.r == 0.0f) return v0;
+    T acc = zero_like(v0);
+    axpy(acc, 1.0f - fs.r, v0);
+    axpy(acc, fs.r, at_w(fs.i1));
+    return acc;
+}
+
+// Frequency-only evaluation of a k-dependent field: average over all k
+template <typename T, typename Src>
+T DataEvaluator::evaluate_k_average(float w, Src src) const {
+    int nk = n_spatial();
+    auto avg_at_w = [&](int wi) {
+        T acc = zero_like(src(wi, 0));
+        for (int s = 0; s < nk; s++) axpy(acc, 1.0f / nk, src(wi, s));
+        return acc;
+    };
+    if (!with_w) return avg_at_w(0);
+    Stencil fs = frequency_stencil(w, const_cast<vector<float>&>(w_points));
+    T v0 = avg_at_w(fs.i0);
+    if (fs.r == 0.0f) return v0;
+    T acc = zero_like(v0);
+    axpy(acc, 1.0f - fs.r, v0);
+    axpy(acc, fs.r, avg_at_w(fs.i1));
+    return acc;
+}
+
+static void require(bool ok, const string& msg) {
+    if (!ok) throw std::runtime_error(msg);
 }
 
 ResultVariant DataEvaluator::operator()(float w) {
-    // If there's no frequency data, just return the first element
-    if (!with_w || w_points.empty()) {
-        if (!data.empty()) {
-            complex<Vec> answer = data[0];
-            return convert(answer);
-        }
-        throw std::runtime_error("Cannot evaluate field: no frequency data and no scalar data available");
-    }
-
-    complex<Vec> answer = CMF_search_1d(w, w_points, data);
-    return convert(answer);
-}
-
-Vec vec_matrix_multiplication2(vector<Vec> &matrix, Vec &vec, int n) {
-    Vec result;
-    result.dimension = n;
-    for (int i = 0; i < n; i++) {
-        result(i) = 0;
-        for (int j = 0; j < n; j++) {
-            result(i) += matrix[i](j) * vec(j);
-        }
-    }
-    return result;
-}
-
-ResultVariant DataEvaluator::operator()(Vec point, float w) {
-    Vec p = vec_matrix_multiplication2(inv_domain, point, dimension);
-    fold_to_first_BZ2(p);
-    p.w = w;
-
-    complex<Vec> ans;
-
-    if (!with_w) {
-        if (dimension == 1)
-            ans = interpolate_1D(p.x, 0, 1, data);
-        else if (dimension == 2)
-            ans = interpolate_2D(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], data);
-        else if (dimension == 3)
-            ans = interpolate_3D(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2],
-                                  data);
-    } else {
-        if (dimension == 1)
-            ans = CMF_search_2d(p.x, w, mesh[0], w_points, data);
-        else if (dimension == 2)
-            ans = CMF_search_3d(p.x, p.y, w, mesh[0], mesh[1], w_points, data);
-        else if (dimension == 3)
-            ans = CMF_search_4d(p.x, p.y, p.z, w, mesh[0], mesh[1], mesh[2], w_points,
-                                 data);
-    }
+    require(!data.empty(), "Cannot evaluate field: no scalar data available");
+    int nk = n_spatial();
+    int nw = with_w ? w_points.size() : 1;
+    require((int)data.size() >= nk * nw, "Field data size (" + to_string(data.size())
+            + ") smaller than mesh x frequency points (" + to_string(nk * nw) + ")");
+    auto src = [&](int wi, int s) -> const complex<Vec>& { return data[wi * nk + s]; };
+    complex<Vec> ans = evaluate_k_average<complex<Vec>>(w, src);
     return convert(ans);
 }
 
-ResultVariant DataEvaluator::get_array(Vec point, float w) {
+ResultVariant DataEvaluator::operator()(Vec point, float w) {
+    require(!scattered, "Evaluating fields stored on scattered k-points (as_mesh=false) is not supported");
+    require(!data.empty(), "Cannot evaluate field: no scalar data available");
+    int nk = n_spatial();
+    int nw = with_w ? w_points.size() : 1;
+    require((int)data.size() >= nk * nw, "Field data size (" + to_string(data.size())
+            + ") smaller than mesh x frequency points (" + to_string(nk * nw) + ")");
+
+    Vec p = to_fractional(point);
+    auto src = [&](int wi, int s) -> const complex<Vec>& { return data[wi * nk + s]; };
+    complex<Vec> ans = evaluate<complex<Vec>>(p, w, src);
+    return convert(ans);
+}
+
+static float real_part(const cfloat& v) { return v.real(); }
+static vector<float> real_part(const vector<cfloat>& v) {
+    vector<float> out(v.size());
+    for (size_t i = 0; i < v.size(); i++) out[i] = v[i].real();
+    return out;
+}
+template <typename U> static auto real_part(const vector<vector<U>>& v) {
+    vector<decltype(real_part(v[0]))> out;
+    out.reserve(v.size());
+    for (auto& e : v) out.push_back(real_part(e));
+    return out;
+}
+
+template <typename T> static ResultVariant as_result(T&& v, bool is_complex) {
+    if (is_complex) return ResultVariant(std::forward<T>(v));
+    return ResultVariant(real_part(v));
+}
+
+ResultVariant DataEvaluator::get_array_impl(const Vec* point, float w) {
     int rank = inds.size();
-
     if (rank == 0) {
-        // No indices - just return the scalar value
-        return (*this)(point, w);
+        return point ? (*this)(*point, w) : (*this)(w);
     }
+    require(rank <= 4, "Tensor rank > 4 not yet supported");
+    require(!scattered, "Evaluating fields stored on scattered k-points (as_mesh=false) is not supported");
 
-    // Check if data is empty
-    if ((rank == 1 && indexed_data_1d.empty()) ||
-        (rank == 2 && indexed_data_2d.empty()) ||
-        (rank == 3 && indexed_data_3d.empty()) ||
-        (rank == 4 && indexed_data_4d.empty())) {
-        // Return empty array
-        if (rank == 1) {
-            if (is_complex) return vector<cfloat>();
-            else return vector<float>();
-        } else if (rank == 2) {
-            if (is_complex) return vector<vector<cfloat>>();
-            else return vector<vector<float>>();
-        } else if (rank == 3) {
-            if (is_complex) return vector<vector<vector<cfloat>>>();
-            else return vector<vector<vector<float>>>();
-        } else if (rank == 4) {
-            if (is_complex) return vector<vector<vector<vector<cfloat>>>>();
-            else return vector<vector<vector<vector<float>>>>();
-        }
+    int nk = n_spatial();
+    int nw = with_w ? w_points.size() : 1;
+    Vec p = point ? to_fractional(*point) : Vec();
+
+    auto run = [&](auto& store) -> ResultVariant {
+        using T = std::decay_t<decltype(store[0][0])>;
+        require((int)store.size() >= nw, "Indexed field has fewer frequency slices than w_points");
+        for (int wi = 0; wi < nw; wi++)
+            require((int)store[wi].size() >= nk, "Indexed field has fewer spatial points than mesh");
+        auto src = [&](int wi, int s) -> const T& { return store[wi][s]; };
+        T v = point ? evaluate<T>(p, w, src) : evaluate_k_average<T>(w, src);
+        return as_result(std::move(v), is_complex);
+    };
+
+    if ((rank == 1 && indexed_data_1d.empty()) || (rank == 2 && indexed_data_2d.empty()) ||
+        (rank == 3 && indexed_data_3d.empty()) || (rank == 4 && indexed_data_4d.empty())) {
+        // No data - return an empty array of the right type
+        if (rank == 1) return as_result(vector<cfloat>(), is_complex);
+        if (rank == 2) return as_result(vector<vector<cfloat>>(), is_complex);
+        if (rank == 3) return as_result(vector<vector<vector<cfloat>>>(), is_complex);
+        return as_result(vector<vector<vector<vector<cfloat>>>>(), is_complex);
     }
+    if (rank == 1) return run(indexed_data_1d);
+    if (rank == 2) return run(indexed_data_2d);
+    if (rank == 3) return run(indexed_data_3d);
+    return run(indexed_data_4d);
+}
 
-    // Transform point to normalized coordinates
-    Vec p = vec_matrix_multiplication2(inv_domain, point, dimension);
-    fold_to_first_BZ2(p);
-
-    if (rank == 1) {
-        // Return 1D array (vector)
-        vector<cfloat> result;
-
-        if (!with_w) {
-            // Spatial interpolation only - use w=0 data
-            if (dimension == 1) {
-                result = interpolate_1D_vec(p.x, 0, 1, mesh[0], indexed_data_1d[0]);
-            } else if (dimension == 2) {
-                // indexed_data_1d[0] contains all spatial points for w=0
-                result = interpolate_2D_vec(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_1d[0]);
-            } else if (dimension == 3) {
-                result = interpolate_3D_vec(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_1d[0]);
-            }
-        } else {
-            // With frequency dimension - find nearest w point and use its spatial data
-            int w_idx = 0;
-            for (size_t i = 0; i < w_points.size(); i++) {
-                if (w >= w_points[i]) w_idx = i;
-            }
-
-            if (dimension == 1) {
-                result = interpolate_1D_vec(p.x, 0, 1, mesh[0], indexed_data_1d[w_idx]);
-            } else if (dimension == 2) {
-                // indexed_data_1d[w_idx] contains all spatial points for this frequency
-                result = interpolate_2D_vec(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_1d[w_idx]);
-            } else if (dimension == 3) {
-                result = interpolate_3D_vec(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_1d[w_idx]);
-            }
-        }
-
-        // Convert to real if needed
-        if (!is_complex) {
-            vector<float> real_result(result.size());
-            for (size_t i = 0; i < result.size(); i++) {
-                real_result[i] = result[i].real();
-            }
-            return real_result;
-        }
-        return result;
-
-    } else if (rank == 2) {
-        // Return 2D array (matrix)
-        vector<vector<cfloat>> result;
-
-        if (!with_w) {
-            // Spatial interpolation only - use w=0 data (indexed_data_2d[0] contains all spatial points)
-            if (dimension == 1) {
-                result = interpolate_1D_mat(p.x, 0, 1, mesh[0], indexed_data_2d[0]);
-            } else if (dimension == 2) {
-                result = interpolate_2D_mat(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_2d[0]);
-            } else if (dimension == 3) {
-                result = interpolate_3D_mat(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_2d[0]);
-            }
-        } else {
-            // With frequency dimension - interpolate in frequency
-            // Find the two w points to interpolate between
-            int w_idx = 0;
-            for (size_t i = 0; i < w_points.size(); i++) {
-                if (w >= w_points[i]) w_idx = i;
-            }
-            if (w_idx >= w_points.size() - 1) w_idx = w_points.size() - 2;
-
-            // Linear interpolation weight in frequency
-            float w_weight = 0.0;
-            if (w_points.size() > 1 && w_idx < w_points.size() - 1) {
-                w_weight = (w - w_points[w_idx]) / (w_points[w_idx + 1] - w_points[w_idx]);
-            }
-
-            // Get results at both w points
-            // indexed_data_2d[w_idx] contains all spatial data for frequency w_idx
-            vector<vector<cfloat>> result_w0, result_w1;
-
-            if (dimension == 1) {
-                result_w0 = interpolate_1D_mat(p.x, 0, 1, mesh[0], indexed_data_2d[w_idx]);
-                result_w1 = interpolate_1D_mat(p.x, 0, 1, mesh[0], indexed_data_2d[w_idx + 1]);
-            } else if (dimension == 2) {
-                result_w0 = interpolate_2D_mat(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_2d[w_idx]);
-                result_w1 = interpolate_2D_mat(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_2d[w_idx + 1]);
-            } else if (dimension == 3) {
-                result_w0 = interpolate_3D_mat(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_2d[w_idx]);
-                result_w1 = interpolate_3D_mat(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_2d[w_idx + 1]);
-            }
-
-            // Interpolate between the two frequency points
-            int rows = result_w0.size();
-            int cols = result_w0.empty() ? 0 : result_w0[0].size();
-            result.resize(rows, vector<cfloat>(cols));
-            for (int i = 0; i < rows; i++) {
-                for (int j = 0; j < cols; j++) {
-                    result[i][j] = (1.0f - w_weight) * result_w0[i][j] + w_weight * result_w1[i][j];
-                }
-            }
-        }
-
-        // Convert to real if needed
-        if (!is_complex) {
-            if (result.empty() || result[0].empty()) {
-                return vector<vector<float>>();
-            }
-            vector<vector<float>> real_result(result.size(), vector<float>(result[0].size()));
-            for (size_t i = 0; i < result.size(); i++) {
-                for (size_t j = 0; j < result[i].size(); j++) {
-                    real_result[i][j] = result[i][j].real();
-                }
-            }
-            return real_result;
-        }
-        return result;
-    } else if (rank == 3) {
-        // Return 3D array (3-index tensor)
-        vector<vector<vector<cfloat>>> result;
-
-        if (!with_w) {
-            // Spatial interpolation only - use w=0 data
-            if (dimension == 1) {
-                result = interpolate_1D_ten3(p.x, 0, 1, mesh[0], indexed_data_3d[0]);
-            } else if (dimension == 2) {
-                result = interpolate_2D_ten3(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_3d[0]);
-            } else if (dimension == 3) {
-                result = interpolate_3D_ten3(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_3d[0]);
-            }
-        } else {
-            // With frequency dimension - interpolate in frequency
-            int w_idx = 0;
-            for (size_t i = 0; i < w_points.size(); i++) {
-                if (w >= w_points[i]) w_idx = i;
-            }
-            if (w_idx >= w_points.size() - 1) w_idx = w_points.size() - 2;
-
-            float w_weight = 0.0;
-            if (w_points.size() > 1 && w_idx < w_points.size() - 1) {
-                w_weight = (w - w_points[w_idx]) / (w_points[w_idx + 1] - w_points[w_idx]);
-            }
-
-            vector<vector<vector<cfloat>>> result_w0, result_w1;
-
-            if (dimension == 1) {
-                result_w0 = interpolate_1D_ten3(p.x, 0, 1, mesh[0], indexed_data_3d[w_idx]);
-                result_w1 = interpolate_1D_ten3(p.x, 0, 1, mesh[0], indexed_data_3d[w_idx + 1]);
-            } else if (dimension == 2) {
-                result_w0 = interpolate_2D_ten3(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_3d[w_idx]);
-                result_w1 = interpolate_2D_ten3(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_3d[w_idx + 1]);
-            } else if (dimension == 3) {
-                result_w0 = interpolate_3D_ten3(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_3d[w_idx]);
-                result_w1 = interpolate_3D_ten3(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_3d[w_idx + 1]);
-            }
-
-            // Interpolate between the two frequency points
-            int d1 = result_w0.size();
-            int d2 = result_w0.empty() ? 0 : result_w0[0].size();
-            int d3 = (result_w0.empty() || result_w0[0].empty()) ? 0 : result_w0[0][0].size();
-            result.resize(d1, vector<vector<cfloat>>(d2, vector<cfloat>(d3)));
-            for (int i = 0; i < d1; i++) {
-                for (int j = 0; j < d2; j++) {
-                    for (int k = 0; k < d3; k++) {
-                        result[i][j][k] = (1.0f - w_weight) * result_w0[i][j][k] + w_weight * result_w1[i][j][k];
-                    }
-                }
-            }
-        }
-
-        // Convert to real if needed
-        if (!is_complex) {
-            if (result.empty() || result[0].empty() || result[0][0].empty()) {
-                return vector<vector<vector<float>>>();
-            }
-            int d1 = result.size();
-            int d2 = result[0].size();
-            int d3 = result[0][0].size();
-            vector<vector<vector<float>>> real_result(d1, vector<vector<float>>(d2, vector<float>(d3)));
-            for (int i = 0; i < d1; i++) {
-                for (int j = 0; j < d2; j++) {
-                    for (int k = 0; k < d3; k++) {
-                        real_result[i][j][k] = result[i][j][k].real();
-                    }
-                }
-            }
-            return real_result;
-        }
-        return result;
-
-    } else if (rank == 4) {
-        // Return 4D array (4-index tensor)
-        vector<vector<vector<vector<cfloat>>>> result;
-
-        if (!with_w) {
-            // Spatial interpolation only - use w=0 data
-            if (dimension == 1) {
-                result = interpolate_1D_ten4(p.x, 0, 1, mesh[0], indexed_data_4d[0]);
-            } else if (dimension == 2) {
-                result = interpolate_2D_ten4(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_4d[0]);
-            } else if (dimension == 3) {
-                result = interpolate_3D_ten4(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_4d[0]);
-            }
-        } else {
-            // With frequency dimension - interpolate in frequency
-            int w_idx = 0;
-            for (size_t i = 0; i < w_points.size(); i++) {
-                if (w >= w_points[i]) w_idx = i;
-            }
-            if (w_idx >= w_points.size() - 1) w_idx = w_points.size() - 2;
-
-            float w_weight = 0.0;
-            if (w_points.size() > 1 && w_idx < w_points.size() - 1) {
-                w_weight = (w - w_points[w_idx]) / (w_points[w_idx + 1] - w_points[w_idx]);
-            }
-
-            vector<vector<vector<vector<cfloat>>>> result_w0, result_w1;
-
-            if (dimension == 1) {
-                result_w0 = interpolate_1D_ten4(p.x, 0, 1, mesh[0], indexed_data_4d[w_idx]);
-                result_w1 = interpolate_1D_ten4(p.x, 0, 1, mesh[0], indexed_data_4d[w_idx + 1]);
-            } else if (dimension == 2) {
-                result_w0 = interpolate_2D_ten4(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_4d[w_idx]);
-                result_w1 = interpolate_2D_ten4(p.x, p.y, 0, 1, 0, 1, mesh[0], mesh[1], indexed_data_4d[w_idx + 1]);
-            } else if (dimension == 3) {
-                result_w0 = interpolate_3D_ten4(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_4d[w_idx]);
-                result_w1 = interpolate_3D_ten4(p.x, p.y, p.z, 0, 1, 0, 1, 0, 1, mesh[0], mesh[1], mesh[2], indexed_data_4d[w_idx + 1]);
-            }
-
-            // Interpolate between the two frequency points
-            int d1 = result_w0.size();
-            int d2 = result_w0.empty() ? 0 : result_w0[0].size();
-            int d3 = (result_w0.empty() || result_w0[0].empty()) ? 0 : result_w0[0][0].size();
-            int d4 = (result_w0.empty() || result_w0[0].empty() || result_w0[0][0].empty()) ? 0 : result_w0[0][0][0].size();
-            result.resize(d1, vector<vector<vector<cfloat>>>(d2, vector<vector<cfloat>>(d3, vector<cfloat>(d4))));
-            for (int i = 0; i < d1; i++) {
-                for (int j = 0; j < d2; j++) {
-                    for (int k = 0; k < d3; k++) {
-                        for (int l = 0; l < d4; l++) {
-                            result[i][j][k][l] = (1.0f - w_weight) * result_w0[i][j][k][l] + w_weight * result_w1[i][j][k][l];
-                        }
-                    }
-                }
-            }
-        }
-
-        // Convert to real if needed
-        if (!is_complex) {
-            if (result.empty() || result[0].empty() || result[0][0].empty() || result[0][0][0].empty()) {
-                return vector<vector<vector<vector<float>>>>();
-            }
-            int d1 = result.size();
-            int d2 = result[0].size();
-            int d3 = result[0][0].size();
-            int d4 = result[0][0][0].size();
-            vector<vector<vector<vector<float>>>> real_result(d1, vector<vector<vector<float>>>(d2, vector<vector<float>>(d3, vector<float>(d4))));
-            for (int i = 0; i < d1; i++) {
-                for (int j = 0; j < d2; j++) {
-                    for (int k = 0; k < d3; k++) {
-                        for (int l = 0; l < d4; l++) {
-                            real_result[i][j][k][l] = result[i][j][k][l].real();
-                        }
-                    }
-                }
-            }
-            return real_result;
-        }
-        return result;
-    } else {
-        throw std::runtime_error("Tensor rank > 4 not yet supported");
-    }
+ResultVariant DataEvaluator::get_array(Vec point, float w) {
+    return get_array_impl(&point, w);
 }
 
 ResultVariant DataEvaluator::operator()(Vec point, vector<int> indices, float w) {
@@ -709,23 +633,25 @@ ResultVariant DataEvaluator::operator()(Vec point, vector<int> indices, float w)
         }
     }
 
-    // For now, just evaluate the point normally and return a placeholder
-    // Full implementation requires storing data[k_idx][w_idx][index_0][index_1]...
-    auto base_result = (*this)(point, w);
-
-    // Convert to array result
-    if (is_complex) {
-        vector<cfloat> result(1);
-        if (auto* val = std::get_if<cfloat>(&base_result)) {
-            result[0] = *val;
+    // Evaluate the full tensor and pick out the requested element
+    ResultVariant full = get_array(point, w);
+    auto pick = [&](auto& arr) -> ResultVariant {
+        using A = std::decay_t<decltype(arr)>;
+        if constexpr (std::is_same_v<A, vector<cfloat>> || std::is_same_v<A, vector<float>>) {
+            return vector<typename A::value_type>{arr[indices[0]]};
+        } else if constexpr (std::is_same_v<A, vector<vector<cfloat>>> || std::is_same_v<A, vector<vector<float>>>) {
+            return vector<typename A::value_type::value_type>{arr[indices[0]][indices[1]]};
+        } else if constexpr (std::is_same_v<A, vector<vector<vector<cfloat>>>> || std::is_same_v<A, vector<vector<vector<float>>>>) {
+            return vector<typename A::value_type::value_type::value_type>{arr[indices[0]][indices[1]][indices[2]]};
+        } else if constexpr (std::is_same_v<A, vector<vector<vector<vector<cfloat>>>>> || std::is_same_v<A, vector<vector<vector<vector<float>>>>>) {
+            return vector<typename A::value_type::value_type::value_type::value_type>{arr[indices[0]][indices[1]][indices[2]][indices[3]]};
+        } else {
+            throw std::runtime_error("Indexed evaluation returned a non-array result");
         }
-        return result;
-    } else {
-        vector<float> result(1);
-        if (auto* val = std::get_if<float>(&base_result)) {
-            result[0] = *val;
-        }
-        return result;
-    }
+    };
+    return std::visit(pick, full);
 }
 
+ResultVariant DataEvaluator::get_array(float w) {
+    return get_array_impl(nullptr, w);
+}

@@ -56,7 +56,7 @@ if bcs_debug
 end
 
 function get_kvec(i, j, k)
-    temp = BZ * [i / nx - 0.0, j / ny - 0.0, k / nz - 0.0]
+    temp = BZ' * [i / nx - 0.0, j / ny - 0.0, k / nz - 0.0]
     return temp[1:dim]
 end
 

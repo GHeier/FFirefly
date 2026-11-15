@@ -17,7 +17,7 @@ def get_bandwidth():
         nk3 = 1
     k1, k2, k3 = np.meshgrid(np.arange(nk1)/nk1, np.arange(nk2)/nk2, np.arange(nk3)/nk3)
     k_points = np.stack((k1.ravel(), k2.ravel(), k3.ravel()), axis=-1)
-    k_points = k_points @ BZ.T
+    k_points = k_points @ BZ
 
     band = firefly.Bands()
 

@@ -11,7 +11,7 @@
 using namespace std;
 
 Hamiltonian::Hamiltonian() {
-    string fname = outdir + prefix + "_hamiltonian.h5";
+    string fname = outdir + prefix + "_Hk.h5";
     file_found = false;
 
     ifstream file(fname.c_str());

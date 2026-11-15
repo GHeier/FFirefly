@@ -22,10 +22,10 @@ def generate_hamiltonian():
 
     t0 = cfg.t0
 
-    # Create Mesh
-    kx = (np.arange(nx) + 0.5) / nx
-    ky = (np.arange(ny) + 0.5) / ny
-    kz = (np.arange(nz) + 0.5) / nz
+    # Create Mesh (periodic grid k_i = i/n, as the field evaluator expects)
+    kx = np.arange(nx) / nx
+    ky = np.arange(ny) / ny
+    kz = np.arange(nz) / nz
     KX, KY, KZ = np.meshgrid(kx, ky, kz, indexing="ij")
 
     if dim == 2:
@@ -51,7 +51,8 @@ def generate_hamiltonian():
             model.add_hop(-t0, 0, 0, R[i])
 
         Hk = model.hamilton(k=kpts).reshape((nx, ny, nz, nstates, nstates))
-        fly.save_data_matrix(outdir + prefix + "_Hk.h5", Hk, nstates, nstates, True, [nx, ny, nz], BZ)
+        fly.save_data(outdir + prefix + "_Hk.h5", Hk, [nx, ny, nz], BZ,
+                      inds=[nstates, nstates], centered=False)
         print(f"Hamiltonian saved to {outdir}{prefix}_Hk.h5")
 
 

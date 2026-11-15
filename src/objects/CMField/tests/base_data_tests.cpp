@@ -17,7 +17,7 @@ cfloat func_linear(Vec p, int dim) {
 }
 
 float get_pnt(int i, int pnts) {
-    return 1.0 * i / (pnts - 1);
+    return 1.0 * i / pnts;  // periodic grid: sample i at i/n
 }
 
 Vec get_vec(int i, int j, int k, int pnts) {

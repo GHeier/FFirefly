@@ -74,8 +74,9 @@ public:
         if (!with_w) return 1;
         // If w_points is provided, use its size
         if (!w_points.empty()) return w_points.size();
-        // Otherwise use mesh dimensions (legacy behavior)
-        if (as_mesh) return with_k ? mesh[1] : mesh[0];
+        // Otherwise use mesh dimensions (legacy behavior: mesh[0] is nw,
+        // matching nk() which skips mesh[0] in this case)
+        if (as_mesh && !mesh.empty()) return mesh[0];
         return 1;
     }
     int vec_len() const { return is_vector ? dimension : 1; }
@@ -108,6 +109,10 @@ inline const std::vector<std::vector<float>>& ep() {
     static const std::vector<std::vector<float>> e;
     return e;
 }
+// Spatial dimension implied by a mesh (trailing singleton axes dropped, e.g.
+// {24, 24, 1} -> 2) or, without a mesh, by the length of the k-points.
+int infer_dimension(const vector<int>& mesh, const vector<vector<float>>& points);
+
 // Save overloads
 void save_data_to_hdf5(BaseData& data, const std::string& filename);
 void save_data(string filename, vector<vector<vector<vector<cfloat>>>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep(), bool centered = true);

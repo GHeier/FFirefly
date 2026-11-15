@@ -1,6 +1,8 @@
 #include "src/objects/CMField/fields.hpp"
+#include "src/objects/CMField/field.hpp"
 #include <filesystem>
 #include <iostream>
+#include <cmath>
 
 #include "src/config/load/c_config.h"
 
@@ -18,7 +20,7 @@ static cfloat func_linear(Vec p, int dim) {
 }
 
 static float get_pnt(int i, int pnts) {
-    return 1.0 * i / (pnts - 1);
+    return 1.0 * i / pnts;  // periodic grid: sample i at i/n
 }
 
 static Vec get_vec(int i, int j, int k, int pnts) {
@@ -530,11 +532,137 @@ static bool field_rm_3d_w() {
     return abs(result[0][0] - expected_00) < 1e-6;
 }
 
+
+// ============= Regression Tests =============
+
+// Non-cubic 3D mesh: flat index must use (i*ny + j)*nz + k
+static bool regression_noncubic_3d() {
+    int nx = 4, ny = 3, nz = 2;
+    vector<cfloat> data;
+    for (int i = 0; i < nx; i++)
+        for (int j = 0; j < ny; j++)
+            for (int k = 0; k < nz; k++)
+                data.push_back(cfloat(1.0f * i / nx + 10.0f * j / ny, 0));
+    vector<vector<float>> domain = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    Field_R field(data, {nx, ny, nz}, domain, {}, false);
+    float result = field(Vec(0.5, 0.2, 0.7));
+    return abs(result - 2.5f) < 1e-5;
+}
+
+// Periodic grid: between the last sample and the next period's first
+static bool regression_periodic_wrap() {
+    int n = 4;
+    vector<cfloat> data;
+    for (int i = 0; i < n; i++) data.push_back(cfloat(cos(2 * M_PI * i / n), 0));
+    Field_R field(data, {n}, {{1.0}}, {}, false);
+    // x = 0.875 lies halfway between x=3/4 (f=0) and x=1~0 (f=1)
+    bool wrap = abs(field(Vec(0.875)) - 0.5f) < 1e-5;
+    // Grid points are reproduced exactly, including outside the first zone
+    bool exact = abs(field(Vec(0.25)) - 0.0f) < 1e-5 && abs(field(Vec(-1.0)) - 1.0f) < 1e-5;
+    return wrap && exact;
+}
+
+// Non-orthogonal (hexagonal) basis: fractional coords are (B^T)^-1 k
+static bool regression_hex_domain() {
+    int n = 4;
+    vector<vector<float>> B = {{1.0f, 0.0f}, {-0.5f, (float)(sqrt(3.0) / 2)}};
+    vector<cfloat> data;
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            data.push_back(cfloat(1.0f * i / n, 1.0f * j / n));
+    Field_C uncentered(data, {n, n}, B, {}, false);
+    Field_C centered(data, {n, n}, B, {}, true);
+    Vec f(0.3, 0.6);
+    f.dimension = 2;
+    Vec k = frac_to_cart(B, f);
+    // Centered: sample i sits at fractional coordinate i/n - 1/2
+    Vec fc(0.3 - 0.5, 0.6 - 0.5);
+    fc.dimension = 2;
+    Vec kc = frac_to_cart(B, fc);
+    return abs(uncentered(k) - cfloat(0.3, 0.6)) < 1e-5 && abs(centered(kc) - cfloat(0.3, 0.6)) < 1e-5;
+}
+
+// Matrix field with a single frequency point used to index w_idx = -1
+static bool regression_single_w_matrix() {
+    vector<vector<vector<cfloat>>> data(4, vector<vector<cfloat>>(2, vector<cfloat>(2, cfloat(1.5, 0))));
+    Field_CM field(data, {2, 2}, {4}, {{1.0}}, {0.0});
+    auto m = field(Vec(0.1), 0.0);
+    return m.size() == 2 && abs(m[1][1] - cfloat(1.5, 0)) < 1e-6;
+}
+
+// Frequency-only real matrix field: used to crash, and Field_RM(w) always
+// returned an empty matrix
+static bool regression_w_only_real_matrix() {
+    vector<float> w_points = {-1.0, -0.5, 0.0, 0.5, 1.0};
+    vector<vector<vector<cfloat>>> data;
+    for (float w : w_points) data.push_back(vector<vector<cfloat>>(2, vector<cfloat>(2, cfloat(w, 0))));
+    Field_RM field(data, {2, 2}, {}, {}, w_points);
+    auto m = field(0.2f);
+    auto mk = field(Vec(0.3), 0.2f);
+    return m.size() == 2 && abs(m[0][1] - 0.2f) < 1e-6 && mk.size() == 2 && abs(mk[1][0] - 0.2f) < 1e-6;
+}
+
+// Frequency-only evaluation of a k-dependent field averages over k
+static bool regression_k_average() {
+    int n = 4;
+    vector<float> w_points = {0.0, 1.0};
+    vector<cfloat> data;
+    for (float w : w_points)
+        for (int i = 0; i < n; i++) data.push_back(cfloat(i + w, 0));
+    Field_C field(data, {n}, {{1.0}}, w_points);
+    // mean_k(i) = 1.5, plus w = 0.5
+    return abs(field(0.5f) - cfloat(2.0, 0)) < 1e-5;
+}
+
+// Rank-1 (band vector) fields round-trip through HDF5 and load as Field_CM
+static bool regression_rank1_save_load() {
+    int n = 4;
+    vector<vector<cfloat>> data;
+    for (int i = 0; i < n; i++) data.push_back({cfloat(i, 0), cfloat(10 + i, 0)});
+    Field_CM field(data, {2}, {n}, {{1.0}}, {}, false);
+    field.save("testfield_rank1.h5");
+    Field_CM loaded("testfield_rank1.h5");
+    filesystem::remove("testfield_rank1.h5");
+    auto m = loaded(Vec(0.5));
+    return m.size() == 2 && m[0].size() == 1 && abs(m[0][0] - cfloat(2, 0)) < 1e-5
+        && abs(m[1][0] - cfloat(12, 0)) < 1e-5;
+}
+
+// save_data's default domain {{}} used to be written as a 1x0 dataset that
+// crashed on reload
+static bool regression_default_domain_roundtrip() {
+    int n = 4;
+    vector<cfloat> data;
+    for (int i = 0; i < n; i++) data.push_back(cfloat(1.0f * i / n, 0));
+    save_data("testfield_domain.h5", data, {}, {n});
+    Field_C loaded("testfield_domain.h5");
+    filesystem::remove("testfield_domain.h5");
+    // centered by default: physical x = 0 is grid x = 1/2
+    return abs(loaded(Vec(0.0)) - cfloat(0.5, 0)) < 1e-5;
+}
+
+// Indexed evaluation returns the requested tensor element
+static bool regression_indexed_element() {
+    vector<vector<vector<cfloat>>> data(3, {{cfloat(1, 0), cfloat(2, 0)}, {cfloat(3, 0), cfloat(4, 0)}});
+    FieldImpl field(data, true, false, {3}, {{1.0}}, {}, {2, 2});
+    auto r = field(Vec(0.0), {1, 0});
+    auto* v = std::get_if<vector<cfloat>>(&r);
+    return v && v->size() == 1 && abs((*v)[0] - cfloat(3, 0)) < 1e-6;
+}
+
+// Vec constructed from fewer than 4 values zero-fills the rest
+static bool regression_vec_init() {
+    Vec a(vector<float>{1.0f});
+    float pts[2] = {1.0f, 2.0f};
+    Vec b(pts, 2);
+    return a.y == 0 && a.z == 0 && a.w == 0 && b.z == 0 && b.w == 0;
+}
+
 } // namespace field_tests_ns
 
 bool field_tests() {
     using namespace field_tests_ns;
-    int num_tests = 23;
+    int num_tests = 33;
     bool all_tests[num_tests] = {
         create_destroy(),
         field_r_1d_k(),
@@ -559,6 +687,16 @@ bool field_tests() {
         field_rm_2d_w(),
         field_cm_3d_w(),
         field_rm_3d_w(),
+        regression_noncubic_3d(),
+        regression_periodic_wrap(),
+        regression_hex_domain(),
+        regression_single_w_matrix(),
+        regression_w_only_real_matrix(),
+        regression_k_average(),
+        regression_rank1_save_load(),
+        regression_default_domain_roundtrip(),
+        regression_indexed_element(),
+        regression_vec_init(),
     };
     filesystem::remove("testfield.h5");
     return print_test_results(all_tests, num_tests, "Field tests");

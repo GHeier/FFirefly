@@ -32,8 +32,9 @@ static void validate_field_type(const BaseData& data, const string& filename,
         exit(1);
     }
 
-    // Check matrix vs scalar (based on inds rank)
-    bool is_matrix = (data.rank() >= 2);
+    // Check matrix vs scalar (based on inds rank). Indexed fields of any rank
+    // (including rank-1 band vectors) are evaluated through the matrix types.
+    bool is_matrix = (data.rank() >= 1);
     if (is_matrix != expected_matrix) {
         cerr << "Error: Type mismatch loading '" << filename << "'" << endl;
         cerr << "  File has rank=" << data.rank()
@@ -46,6 +47,48 @@ static void validate_field_type(const BaseData& data, const string& filename,
         }
         exit(1);
     }
+}
+
+
+// Convert any array-valued ResultVariant of element type T (float or cfloat)
+// to a matrix: scalars -> 1x1, rank-1 -> column, rank-3 -> [d1*d2][d3],
+// rank-4 -> [d1*d2][d3*d4]. Returns an empty matrix if no T-typed result.
+template <typename T>
+static vector<vector<T>> result_to_matrix(const ResultVariant& result) {
+    if (auto* scalar = std::get_if<T>(&result)) {
+        return vector<vector<T>>(1, vector<T>(1, *scalar));
+    }
+    if (auto* vec = std::get_if<vector<T>>(&result)) {
+        vector<vector<T>> mat(vec->size(), vector<T>(1));
+        for (size_t i = 0; i < vec->size(); i++) mat[i][0] = (*vec)[i];
+        return mat;
+    }
+    if (auto* mat = std::get_if<vector<vector<T>>>(&result)) {
+        return *mat;
+    }
+    if (auto* ten3 = std::get_if<vector<vector<vector<T>>>>(&result)) {
+        if (ten3->empty() || (*ten3)[0].empty()) return {};
+        int d1 = ten3->size(), d2 = (*ten3)[0].size(), d3 = (*ten3)[0][0].size();
+        vector<vector<T>> mat(d1 * d2, vector<T>(d3));
+        for (int i = 0; i < d1; i++)
+            for (int j = 0; j < d2; j++)
+                for (int k = 0; k < d3; k++)
+                    mat[i * d2 + j][k] = (*ten3)[i][j][k];
+        return mat;
+    }
+    if (auto* ten4 = std::get_if<vector<vector<vector<vector<T>>>>>(&result)) {
+        if (ten4->empty() || (*ten4)[0].empty() || (*ten4)[0][0].empty()) return {};
+        int d1 = ten4->size(), d2 = (*ten4)[0].size();
+        int d3 = (*ten4)[0][0].size(), d4 = (*ten4)[0][0][0].size();
+        vector<vector<T>> mat(d1 * d2, vector<T>(d3 * d4));
+        for (int i = 0; i < d1; i++)
+            for (int j = 0; j < d2; j++)
+                for (int k = 0; k < d3; k++)
+                    for (int l = 0; l < d4; l++)
+                        mat[i * d2 + j][k * d4 + l] = (*ten4)[i][j][k][l];
+        return mat;
+    }
+    return {};
 }
 
 // Field_C implementation
@@ -213,68 +256,7 @@ void Field_CM::save(const string& filename) {
 }
 
 vector<vector<cfloat>> Field_CM::operator()(Vec point, float w) {
-    auto result = cmf.get_array(point, w);
-
-    // Try scalar (rank=0) - wrap as 1x1 matrix
-    if (auto* scalar = std::get_if<cfloat>(&result)) {
-        return vector<vector<cfloat>>(1, vector<cfloat>(1, *scalar));
-    }
-
-    // Try 1D vector (rank=1) - wrap as column matrix
-    if (auto* vec = std::get_if<vector<cfloat>>(&result)) {
-        vector<vector<cfloat>> mat(vec->size(), vector<cfloat>(1));
-        for (size_t i = 0; i < vec->size(); i++) {
-            mat[i][0] = (*vec)[i];
-        }
-        return mat;
-    }
-
-    // Try 2D matrix (rank=2)
-    if (auto* mat = std::get_if<vector<vector<cfloat>>>(&result)) {
-        return *mat;
-    }
-
-    // Try 3D tensor (rank=3) - flatten to matrix by combining first two indices
-    if (auto* ten3 = std::get_if<vector<vector<vector<cfloat>>>>(&result)) {
-        if (ten3->empty()) return vector<vector<cfloat>>();
-        int d1 = ten3->size();
-        int d2 = (*ten3)[0].size();
-        int d3 = (*ten3)[0][0].size();
-        // Flatten [d1][d2][d3] to [d1*d2][d3]
-        vector<vector<cfloat>> mat(d1 * d2, vector<cfloat>(d3));
-        for (int i = 0; i < d1; i++) {
-            for (int j = 0; j < d2; j++) {
-                for (int k = 0; k < d3; k++) {
-                    mat[i * d2 + j][k] = (*ten3)[i][j][k];
-                }
-            }
-        }
-        return mat;
-    }
-
-    // Try 4D tensor (rank=4) - flatten to matrix by combining indices pairwise
-    if (auto* ten4 = std::get_if<vector<vector<vector<vector<cfloat>>>>>(&result)) {
-        if (ten4->empty()) return vector<vector<cfloat>>();
-        int d1 = ten4->size();
-        int d2 = (*ten4)[0].size();
-        int d3 = (*ten4)[0][0].size();
-        int d4 = (*ten4)[0][0][0].size();
-        // Flatten [d1][d2][d3][d4] to [d1*d2][d3*d4]
-        vector<vector<cfloat>> mat(d1 * d2, vector<cfloat>(d3 * d4));
-        for (int i = 0; i < d1; i++) {
-            for (int j = 0; j < d2; j++) {
-                for (int k = 0; k < d3; k++) {
-                    for (int l = 0; l < d4; l++) {
-                        mat[i * d2 + j][k * d4 + l] = (*ten4)[i][j][k][l];
-                    }
-                }
-            }
-        }
-        return mat;
-    }
-
-    // Return empty matrix on error
-    return vector<vector<cfloat>>();
+    return result_to_matrix<cfloat>(cmf.get_array(point, w));
 }
 
 vector<float> Field_CM::diag(Vec point, float w) {
@@ -369,70 +351,9 @@ vector<vector<vector<cfloat>>> Field_CM::operator()(const vector<Vec>& points, f
 }
 
 vector<vector<cfloat>> Field_CM::operator()(float w) {
-    // For matrix fields that are k-independent (or we want k-averaged result),
-    // evaluate at the origin point
-    Vec origin;
-    origin.x = 0;
-    origin.y = 0;
-    origin.z = 0;
-    origin.w = 0;
-    origin.area = 0;
-    origin.dimension = cmf.data.dimension;
-    origin.n = 1;
-    auto result = cmf.get_array(origin, w);
-
-    // Try 1D vector (rank=1) - wrap as column matrix
-    if (auto* vec = std::get_if<vector<cfloat>>(&result)) {
-        vector<vector<cfloat>> mat(vec->size(), vector<cfloat>(1));
-        for (size_t i = 0; i < vec->size(); i++) {
-            mat[i][0] = (*vec)[i];
-        }
-        return mat;
-    }
-
-    // Try 2D matrix (rank=2)
-    if (auto* mat = std::get_if<vector<vector<cfloat>>>(&result)) {
-        return *mat;
-    }
-
-    // Try 3D tensor (rank=3) - flatten to matrix by combining first two indices
-    if (auto* ten3 = std::get_if<vector<vector<vector<cfloat>>>>(&result)) {
-        if (ten3->empty()) return vector<vector<cfloat>>();
-        int d1 = ten3->size();
-        int d2 = (*ten3)[0].size();
-        int d3 = (*ten3)[0][0].size();
-        vector<vector<cfloat>> mat(d1 * d2, vector<cfloat>(d3));
-        for (int i = 0; i < d1; i++) {
-            for (int j = 0; j < d2; j++) {
-                for (int k = 0; k < d3; k++) {
-                    mat[i * d2 + j][k] = (*ten3)[i][j][k];
-                }
-            }
-        }
-        return mat;
-    }
-
-    // Try 4D tensor (rank=4) - flatten to matrix
-    if (auto* ten4 = std::get_if<vector<vector<vector<vector<cfloat>>>>>(&result)) {
-        if (ten4->empty()) return vector<vector<cfloat>>();
-        int d1 = ten4->size();
-        int d2 = (*ten4)[0].size();
-        int d3 = (*ten4)[0][0].size();
-        int d4 = (*ten4)[0][0][0].size();
-        vector<vector<cfloat>> mat(d1 * d2, vector<cfloat>(d3 * d4));
-        for (int i = 0; i < d1; i++) {
-            for (int j = 0; j < d2; j++) {
-                for (int k = 0; k < d3; k++) {
-                    for (int l = 0; l < d4; l++) {
-                        mat[i * d2 + j][k * d4 + l] = (*ten4)[i][j][k][l];
-                    }
-                }
-            }
-        }
-        return mat;
-    }
-
-    return vector<vector<cfloat>>();
+    // k-independent fields are evaluated directly; k-dependent fields are
+    // averaged over the mesh
+    return result_to_matrix<cfloat>(cmf.get_array(w));
 }
 
 vector<vector<vector<cfloat>>> Field_CM::operator()(const vector<float>& w_points) {
@@ -478,12 +399,7 @@ void Field_RM::save(const string& filename) {
 }
 
 vector<vector<float>> Field_RM::operator()(Vec point, float w) {
-    auto result = cmf.get_array(point, w);
-    if (auto* mat = std::get_if<vector<vector<float>>>(&result)) {
-        return *mat;
-    }
-    // Return empty matrix on error
-    return vector<vector<float>>();
+    return result_to_matrix<float>(cmf.get_array(point, w));
 }
 
 vector<float> Field_RM::diag(Vec point, float w) {
@@ -569,76 +485,9 @@ vector<vector<vector<float>>> Field_RM::operator()(const vector<Vec>& points, fl
 }
 
 vector<vector<float>> Field_RM::operator()(float w) {
-    // For matrix fields that are k-independent (or we want k-averaged result),
-    // evaluate at the origin point
-    Vec origin;
-    origin.x = 0;
-    origin.y = 0;
-    origin.z = 0;
-    origin.w = 0;
-    origin.area = 0;
-    origin.dimension = cmf.data.dimension;
-    origin.n = 1;
-    auto result = cmf.get_array(origin, w);
-
-    // Try 1D vector (rank=1) - wrap as column matrix
-    if (auto* vec = std::get_if<vector<cfloat>>(&result)) {
-        vector<vector<float>> mat(vec->size(), vector<float>(1));
-        for (size_t i = 0; i < vec->size(); i++) {
-            mat[i][0] = (*vec)[i].real();
-        }
-        return mat;
-    }
-
-    // Try 2D matrix (rank=2)
-    if (auto* mat = std::get_if<vector<vector<cfloat>>>(&result)) {
-        vector<vector<float>> real_mat(mat->size(), vector<float>((*mat)[0].size()));
-        for (size_t i = 0; i < mat->size(); i++) {
-            for (size_t j = 0; j < (*mat)[i].size(); j++) {
-                real_mat[i][j] = (*mat)[i][j].real();
-            }
-        }
-        return real_mat;
-    }
-
-    // Try 3D tensor (rank=3) - flatten to matrix by combining first two indices
-    if (auto* ten3 = std::get_if<vector<vector<vector<cfloat>>>>(&result)) {
-        if (ten3->empty()) return vector<vector<float>>();
-        int d1 = ten3->size();
-        int d2 = (*ten3)[0].size();
-        int d3 = (*ten3)[0][0].size();
-        vector<vector<float>> mat(d1 * d2, vector<float>(d3));
-        for (int i = 0; i < d1; i++) {
-            for (int j = 0; j < d2; j++) {
-                for (int k = 0; k < d3; k++) {
-                    mat[i * d2 + j][k] = (*ten3)[i][j][k].real();
-                }
-            }
-        }
-        return mat;
-    }
-
-    // Try 4D tensor (rank=4) - flatten to matrix
-    if (auto* ten4 = std::get_if<vector<vector<vector<vector<cfloat>>>>>(&result)) {
-        if (ten4->empty()) return vector<vector<float>>();
-        int d1 = ten4->size();
-        int d2 = (*ten4)[0].size();
-        int d3 = (*ten4)[0][0].size();
-        int d4 = (*ten4)[0][0][0].size();
-        vector<vector<float>> mat(d1 * d2, vector<float>(d3 * d4));
-        for (int i = 0; i < d1; i++) {
-            for (int j = 0; j < d2; j++) {
-                for (int k = 0; k < d3; k++) {
-                    for (int l = 0; l < d4; l++) {
-                        mat[i * d2 + j][k * d4 + l] = (*ten4)[i][j][k][l].real();
-                    }
-                }
-            }
-        }
-        return mat;
-    }
-
-    return vector<vector<float>>();
+    // k-independent fields are evaluated directly; k-dependent fields are
+    // averaged over the mesh
+    return result_to_matrix<float>(cmf.get_array(w));
 }
 
 vector<vector<vector<float>>> Field_RM::operator()(const vector<float>& w_points) {
@@ -803,7 +652,7 @@ Field::Field(const string& filename) {
     BaseData base = load_data_from_hdf5(filename);
     is_complex = base.is_complex;
     is_vector = base.is_vector;
-    is_matrix = (base.rank() >= 2);  // Infer from rank: matrices have 2+ tensor indices
+    is_matrix = (base.rank() >= 1);  // Any indexed field uses the matrix types
 
     field_c = nullptr;
     field_r = nullptr;

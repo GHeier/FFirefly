@@ -17,11 +17,11 @@ void get_energy_max_min(float& E_min, float& E_max) {
     for (int i = 0; i < k_mesh[0]; i++) {
         for (int j = 0; j < k_mesh[1]; j++) {
             for (int k = 0; k < k_mesh[2]; k++) {
-                Vec q = brillouin_zone * Vec(
+                Vec q = frac_to_cart(brillouin_zone, Vec(
                     (float)i / k_mesh[0] - 0.5f,
                     (float)j / k_mesh[1] - 0.5f,
                     (float)k / k_mesh[2] - 0.5f
-                );
+                ));
                 for (int n = 1; n <= nbnd; n++) {
                     float E = epsilon(n, q);
                     if (E < E_min) E_min = E;

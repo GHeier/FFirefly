@@ -7,12 +7,12 @@ using namespace std;
 
 bool field_wrapper_basic_test() {
     // Create simple 1D k-space data
-    // Data represents points at x=0, 0.5, 1.0 in DataEvaluator
-    // Field centers this to x=-0.5, 0, 0.5
+    // f(x) = x sampled on the periodic grid x = 0, 1/3, 2/3 in DataEvaluator
+    // Field centers this to x=-1/2, -1/6, 1/6
     vector<cfloat> data = {
         cfloat(0.0, 0.0),
-        cfloat(0.5, 0.05),
-        cfloat(1.0, 0.1)
+        cfloat(1.0 / 3, 0.1 / 3),
+        cfloat(2.0 / 3, 0.2 / 3)
     };
 
     vector<int> mesh = {3};
@@ -38,12 +38,12 @@ bool field_wrapper_with_w_test() {
     vector<float> w_points = {1.0, 2.0, 3.0};
 
     // Generate data: w-k ordering (frequency varies slowest)
-    // Data at points (0,0), (0.5,0), (1,0), (0,0.5), etc. in [0,1]x[0,1]
+    // Data on the periodic grid (0,0), (1/3,0), (2/3,0), (0,1/3), etc.
     for (int w = 0; w < 3; w++) {
         for (int i = 0; i < mpts; i++) {
             for (int j = 0; j < mpts; j++) {
-                float x = 1.0 * i / (mpts - 1);
-                float y = 1.0 * j / (mpts - 1);
+                float x = 1.0 * i / mpts;
+                float y = 1.0 * j / mpts;
                 float w_val = w_points[w];
                 float val = x + y + w_val;
                 data.push_back(cfloat(val, val / 10));

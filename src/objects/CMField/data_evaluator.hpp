@@ -147,9 +147,19 @@ struct DataEvaluator {
     ResultVariant operator()(Vec point, float w = 0);
     ResultVariant operator()(Vec point, vector<int> indices, float w = 0);
     ResultVariant get_array(Vec point, float w = 0);
+    ResultVariant get_array(float w);  // k-averaged for k-dependent fields
 
 private:
+    // Scattered k-points (as_mesh == false) cannot be interpolated on a grid
+    bool scattered = false;
+
     void load_indexed_data(BaseData& f);           // From flat arrays (after HDF5 load)
     void load_indexed_data_from_variant(BaseData& f);  // From data variant (programmatic creation)
+
+    int n_spatial() const;
+    Vec to_fractional(const Vec& point) const;
+    template <typename T, typename Src> T evaluate(const Vec& p, float w, Src src) const;
+    template <typename T, typename Src> T evaluate_k_average(float w, Src src) const;
+    ResultVariant get_array_impl(const Vec* p, float w);
 };
 

@@ -5,6 +5,7 @@
 #include "src/objects/vec.hpp"
 #include "src/objects/eigenvec.hpp"
 
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -44,34 +45,44 @@ Bands::Bands(Field_CM &H) {
 }
 
 void Bands::fill_grid(Field_CM &H) {
+    // Pad the mesh to three axes so 1D/2D Hamiltonians work too
     vector<int> nk = H.cmf.data.mesh;
+    while (nk.size() < 3) nk.push_back(1);
+    int npts = nk[0] * nk[1] * nk[2];
     nbands = H.cmf.data.inds[0];  // First dimension of matrix (number of bands)
-    vector<vector<cfloat>> eigs(nbands, vector<cfloat>(nk[0] * nk[1] * nk[2]));
-    vector<vector<eigvec>> eigenvectors(nbands, vector<eigvec>(nk[0] * nk[1] * nk[2], eigvec(0)));
+    vector<vector<cfloat>> eigs(nbands, vector<cfloat>(npts));
+    vector<vector<eigvec>> eigenvectors(nbands, vector<eigvec>(npts, eigvec(0)));
+    // Same periodic, centered grid as the evaluator: sample i at i/n - 1/2,
+    // in the basis of H's own domain (which the band fields inherit)
+    const vector<vector<float>>& domain = H.cmf.data.domain;
     int ind = 0;
     for (int i = 0; i < nk[0]; i++) {
-        float x = (nk[0] > 1) ? (float)i / (float)(nk[0] - 1) - 0.5 : 0.0f;
+        float x = (float)i / nk[0] - 0.5f;
         for (int j = 0; j < nk[1]; j++) {
-            float y = (nk[1] > 1) ? (float)j / (float)(nk[1] - 1) - 0.5 : 0.0f;
-            for (int k = 0; k < nk[2]; k++) {
-                float z = (nk[2] > 1) ? (float)k / (float)(nk[2] - 1) - 0.5 : 0.0f;
-                Vec kpoint = brillouin_zone * Vec(x, y, z);
+            float y = (float)j / nk[1] - 0.5f;
+            for (int k = 0; k < nk[2]; k++, ind++) {
+                float z = (float)k / nk[2] - 0.5f;
+                Vec frac(x, y, z);
+                Vec kpoint = (domain.empty() || domain[0].empty()) ? frac : frac_to_cart(domain, frac);
+                kpoint.dimension = H.cmf.data.dimension;
                 auto eigvals_and_vecs = H.fulldiag(kpoint, 0.0);
-                if (eigvals_and_vecs.empty()) {
+                if ((int)eigvals_and_vecs.size() < nbands) {
                     printf("Error: diagonalization failed at k-point (%f, %f, %f)\n",
                            kpoint.x, kpoint.y, kpoint.z);
+                    for (int n = 0; n < nbands; n++)
+                        eigs[n][ind] = cfloat(NAN, 0.0f);
                     continue;
                 }
                 for (int n = 0; n < nbands; n++) {
                     eigs[n][ind] = eigvals_and_vecs[n].eigenvalue;
                     eigenvectors[n][ind] = eigvals_and_vecs[n];
                 }
-                ind++;
             }
         }
     }
     for (int n = 0; n < nbands; n++) {
-        band_fields.push_back(Field_R(eigs[n], nk, H.cmf.data.domain, H.cmf.data.w_points));
+        // Bands are frequency independent, so no w_points
+        band_fields.push_back(Field_R(eigs[n], H.cmf.data.mesh, H.cmf.data.domain, {}));
         // wavefunctions ... to be implemented when Field_RV is implemented.
     }
 }

@@ -27,7 +27,7 @@ def get_k_mesh():
                              np.arange(nz) / nz,
                              indexing='ij')
     kpts = np.stack([kx.ravel(), ky.ravel(), kz.ravel()], axis=-1)
-    kpts = kpts @ BZ.T
+    kpts = kpts @ BZ
     return kpts
 
 def save_hamiltonian(H, kpts):

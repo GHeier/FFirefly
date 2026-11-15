@@ -86,7 +86,7 @@ function get_kmesh(BZ::AbstractMatrix{<:Real}, n; centered=true)
                 vec(repeat(ys, inner=(nz,), outer=(nx))),
                 vec(repeat(zs, outer=(nx*ny))))'
     # Cartesian k-points: 3 × Nk
-    kpts = BZ * frac
+    kpts = BZ' * frac
     # Return as Nk × 3 matrix (transpose from 3 × Nk)
     return Matrix{Float64}(kpts')
 end

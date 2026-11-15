@@ -224,7 +224,7 @@ function eigenvalue_computation()
 end
 
 function get_kvec(i, j, k)
-    temp = BZ * [i / nx - 0.5, j / ny - 0.5, k / nz - 0.5]
+    temp = BZ' * [i / nx - 0.5, j / ny - 0.5, k / nz - 0.5]
     return temp[1:dim]
 end
 

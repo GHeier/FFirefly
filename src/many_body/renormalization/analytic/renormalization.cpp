@@ -10,7 +10,7 @@ static Vec get_kvec(int i, int j, int k) {
         1.0 * k / k_mesh[2] - 0.5,
         3
     );
-    Vec newv = brillouin_zone * v;
+    Vec newv = frac_to_cart(brillouin_zone, v);
     return newv;
 }
 
@@ -59,7 +59,7 @@ float FLEX_renormalization() {
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < ny; j++) {
                 for (int k = 0; k < nz; k++) {
-                    Vec q = brillouin_zone * Vec(i / nx - 0.5, j / ny - 0.5, k / nz - 0.5);
+                    Vec q = frac_to_cart(brillouin_zone, Vec(i / nx - 0.5, j / ny - 0.5, k / nz - 0.5));
                     q.dimension = chidim;
 
                     float X = chi(q);

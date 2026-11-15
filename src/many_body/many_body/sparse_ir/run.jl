@@ -87,7 +87,7 @@ function get_kvec(ix, iy, iz, nx, ny, nz)
     elseif dim < 2
         kvec[2] = 0.0
     end
-    kvec = BZ * kvec
+    kvec = BZ' * kvec
     return kvec
 end
 

@@ -125,7 +125,7 @@ void call_flex() {
             for (int i = 0; i < nx; i++) {
                 for (int j = 0; j < ny; j++) {
                     for (int k = 0; k < nz; k++) {
-                        Vec q = brillouin_zone * Vec(i / nx - 0.5, j / ny - 0.5, k / nz - 0.5);
+                        Vec q = frac_to_cart(brillouin_zone, Vec(i / nx - 0.5, j / ny - 0.5, k / nz - 0.5));
                         q.dimension = chidim;
 
                         cfloat X = chi(q, w);

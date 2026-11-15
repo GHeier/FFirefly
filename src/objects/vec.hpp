@@ -19,10 +19,10 @@ using namespace std;
 
 class Vec {
   public:
-    float x;
-    float y;
-    float z;
-    float w;
+    float x = 0;
+    float y = 0;
+    float z = 0;
+    float w = 0;
     float area = 0;
     int dimension = 3;
     int n = 1;
@@ -55,6 +55,9 @@ Vec operator*(const Vec &input, double multiple);
 /// Dot product of two vectors.
 float operator*(const Vec &left, const Vec &right);
 Vec operator*(vector<vector<float>> &left, Vec right);
+/// Fractional -> Cartesian: returns sum_i f(i) * basis[i], where the rows of
+/// basis are the lattice (or reciprocal lattice) vectors.
+Vec frac_to_cart(const vector<vector<float>> &basis, const Vec &f);
 Vec operator/(int multiple, const Vec &input);
 Vec operator/(const Vec &input, int multiple);
 Vec operator/(float multiple, const Vec &input);

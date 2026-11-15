@@ -31,13 +31,15 @@ interaction = cfg.interaction
 
 
 function get_kvec(ix, iy, iz, nx, ny, nz)
-    kvec = [ix / (nx - 1) - 0.5, iy / (ny - 1) - 0.5, iz / (nz - 1) - 0.5] 
+    # Periodic, centered grid: sample i at i/n - 1/2
+    kvec = [ix / nx - 0.5, iy / ny - 0.5, iz / nz - 0.5]
     if dim < 3
         kvec[3] = 0.0
-    elseif dim < 2
+    end
+    if dim < 2
         kvec[2] = 0.0
     end
-    kvec = BZ * kvec
+    kvec = BZ' * kvec
     return kvec
 end
 

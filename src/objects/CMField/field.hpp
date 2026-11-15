@@ -19,39 +19,32 @@ public:
 
 private:
     DataEvaluator evaluator;
-    vector<Vec> shift_vectors;  // Store shift for each dimension
+    Vec shift;      // Cartesian offset from centered coordinates to the grid origin
     int dimension;
 
-    // Helper function to shift point to centered coordinates
-    Vec shift_to_centered(Vec point) const {
+    static bool has_domain(const BaseData& d) {
+        for (auto& row : d.domain)
+            if (!row.empty()) return true;
+        return false;
+    }
+
+    // Map a (possibly centered) Cartesian point into the evaluator's frame.
+    // Periodicity is handled by the evaluator in fractional coordinates.
+    Vec to_grid_frame(Vec point) const {
         Vec shifted = point;
-        for (int i = 0; i < dimension; i++) {
-            shifted(i) = point(i) - shift_vectors[0](i);
+        for (int i = 0; i < dimension && i < 3; i++) {
+            shifted(i) = point(i) + shift(i);
         }
         return shifted;
     }
 
-    // Helper function to apply periodic boundary conditions
-    Vec apply_periodic_bc(Vec point) const {
-        Vec wrapped = point;
-        for (int i = 0; i < dimension; i++) {
-            // Get the domain extent for this dimension (i-th diagonal element)
-            float extent = data.domain[i][i];
-
-            // Wrap to [-extent/2, extent/2]
-            while (wrapped(i) > extent / 2.0) wrapped(i) -= extent;
-            while (wrapped(i) < -extent / 2.0) wrapped(i) += extent;
-        }
-        return wrapped;
-    }
-
-    // Helper to initialize shift vectors and evaluator
+    // Helper to initialize shift vector and evaluator
     void initialize() {
         // Prioritize stored dimension, then infer from domain or mesh
         if (data.dimension > 0) {
             // Use stored dimension (e.g., from HDF5 file)
             dimension = data.dimension;
-        } else if (!data.domain.empty()) {
+        } else if (has_domain(data)) {
             // Infer from domain matrix size
             dimension = data.domain.size();
             data.dimension = dimension;
@@ -67,22 +60,21 @@ private:
             dimension = 1;
             data.dimension = dimension;
         }
+        data.centered = centered;
 
-        // Create shift vectors for centering
-        shift_vectors.resize(1);
-        shift_vectors[0].dimension = dimension;
-
-        // Only calculate shift if centered mode is enabled
-        if (centered && !data.domain.empty()) {
-            for (int i = 0; i < dimension; i++) {
-                // Calculate shift to center the domain
-                // Use only the diagonal element (i-th component of i-th basis vector)
-                shift_vectors[0](i) = data.domain[i][i] * 0.5;
-            }
-        } else {
-            // No centering - zero shift
-            for (int i = 0; i < dimension; i++) {
-                shift_vectors[0](i) = 0.0;
+        // Centered coordinates put the grid origin at -(b_1 + ... + b_d)/2,
+        // i.e. fractional coordinate -1/2 along every basis vector.
+        shift = Vec();
+        shift.dimension = dimension;
+        if (centered) {
+            Vec half;
+            half.dimension = dimension;
+            for (int i = 0; i < dimension && i < 3; i++) half(i) = 0.5f;
+            if (has_domain(data)) {
+                shift = frac_to_cart(data.domain, half);
+                shift.dimension = dimension;
+            } else {
+                shift = half;
             }
         }
 
@@ -108,6 +100,7 @@ public:
         data.domain = domain;
         data.w_points = w_points;
         data.inds = inds;
+        data.centered = centered_coords;
         centered = centered_coords;
 
         // Infer with_w based on w_points
@@ -137,52 +130,30 @@ public:
     // Operator for spatial evaluation with optional frequency
     ResultVariant operator()(Vec point, float w = 0) {
         if (!data.with_k) return evaluator(w);
-        // Apply periodic boundary conditions
-        Vec periodic_point = apply_periodic_bc(point);
-
-        // Shift to DataEvaluator's coordinate system (which starts at 0)
-        Vec shifted_point = periodic_point;
-        for (int i = 0; i < dimension; i++) {
-            shifted_point(i) = periodic_point(i) + shift_vectors[0](i);
-        }
-
-        return evaluator(shifted_point, w);
+        return evaluator(to_grid_frame(point), w);
     }
 
     // Operator for indexed spatial evaluation (e.g., matrix elements H_ab(k))
     ResultVariant operator()(Vec point, vector<int> indices, float w = 0) {
-        if (!data.with_k) return evaluator(w);
-        // Apply periodic boundary conditions
-        Vec periodic_point = apply_periodic_bc(point);
-
-        // Shift to DataEvaluator's coordinate system (which starts at 0)
-        Vec shifted_point = periodic_point;
-        for (int i = 0; i < dimension; i++) {
-            shifted_point(i) = periodic_point(i) + shift_vectors[0](i);
-        }
-
-        return evaluator(shifted_point, indices, w);
+        return evaluator(to_grid_frame(point), indices, w);
     }
 
     // Get full array at point (e.g., H(k) returns full matrix)
     ResultVariant get_array(Vec point, float w = 0) {
-        // Apply periodic boundary conditions
-        Vec periodic_point = apply_periodic_bc(point);
+        return evaluator.get_array(to_grid_frame(point), w);
+    }
 
-        // Shift to DataEvaluator's coordinate system (which starts at 0)
-        Vec shifted_point = periodic_point;
-        for (int i = 0; i < dimension; i++) {
-            shifted_point(i) = periodic_point(i) + shift_vectors[0](i);
-        }
-
-        return evaluator.get_array(shifted_point, w);
+    // Full array as a function of frequency only (k-averaged if k-dependent)
+    ResultVariant get_array(float w) {
+        return evaluator.get_array(w);
     }
 
     // Copy assignment operator
     FieldImpl& operator=(const FieldImpl& other) {
         if (this != &other) {
             data = other.data;
-            shift_vectors = other.shift_vectors;
+            centered = other.centered;
+            shift = other.shift;
             dimension = other.dimension;
             evaluator = DataEvaluator(data);
         }

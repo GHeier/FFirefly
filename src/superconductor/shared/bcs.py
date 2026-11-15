@@ -39,7 +39,7 @@ def get_k_mesh(BZ, nx, ny, nz):
     F = np.stack(np.meshgrid(fx, fy, fz, indexing='ij'), axis=-1)  # (nx,ny,nz,3)
 
     # convert to Cartesian k = f1*b1 + f2*b2 + f3*b3
-    K = F @ BZ.T                          # shape (nx,ny,nz,3)
+    K = F @ BZ                          # shape (nx,ny,nz,3)
 
     return K.reshape(-1, 3)           # full grid, flattened grid
 

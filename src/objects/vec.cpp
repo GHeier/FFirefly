@@ -232,6 +232,21 @@ Vec operator*(vector<vector<float>> &left, Vec right) { // Matrix multiplication
     return result;
 }
 
+Vec frac_to_cart(const vector<vector<float>> &basis, const Vec &f) {
+    int dim = basis.size() > f.dimension ? f.dimension : basis.size();
+    Vec result;
+    result.dimension = f.dimension;
+    result.n = f.n;
+    result.area = f.area;
+    for (int i = 0; i < dim; i++) {
+        int len = basis[i].size() > dim ? dim : basis[i].size();
+        for (int j = 0; j < len; j++) {
+            result(j) += f(i) * basis[i][j];
+        }
+    }
+    return result;
+}
+
 Vec operator/(const Vec &input, float multiple) {
     return Vec(input.x / multiple, input.y / multiple, input.z / multiple,
                input.w / multiple, input.area, input.dimension, input.n);

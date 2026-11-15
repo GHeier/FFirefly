@@ -125,8 +125,9 @@ bool test_scalar_1d_w() {
     // Evaluate at point
     Vec v(0.0);  // Center of BZ
     cfloat result = field(v, 0.0);
-    // At k=0.5 (interpolates between i=4 and i=5), w=0.0 (j=2): cfloat(0.45, 0.4)
-    cfloat expected(0.45, 0.4);
+    // Data is f(k) = k on the periodic grid k_i = i/10; at k=0.5 (grid point
+    // i=5), w=0.0 (j=2): cfloat(0.5, 0.4)
+    cfloat expected(0.5, 0.4);
     if (abs(result - expected) > tol) {
         cout << "test_scalar_1d_w FAILED: result=" << result << " expected=" << expected << endl;
         return false;
