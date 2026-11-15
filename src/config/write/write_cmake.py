@@ -4,6 +4,7 @@ CMake code generator for FFirefly categories.
 Generates CMakeLists.txt sections for:
 1. base.so shared library source lists
 2. C++ method executable targets
+3. Category list used to keep method sources out of fly.x
 """
 
 from pathlib import Path
@@ -57,7 +58,7 @@ def get_base_library_sources():
 
         # Find all C/C++ source files, excluding archive directories and Fortran files
         for ext in ["*.c", "*.cpp"]:
-            for file in dir_path.rglob(ext):
+            for file in sorted(dir_path.rglob(ext)):
                 # Skip Fortran files (they're in a separate library)
                 if file.suffix == '.f90':
                     continue
@@ -129,7 +130,7 @@ def get_cpp_method_executables(categories):
                 # Find all source files in method directory (including tests/)
                 sources = []
                 for ext in ["*.c", "*.cpp"]:
-                    for file in method_dir.rglob(ext):
+                    for file in sorted(method_dir.rglob(ext)):
                         rel_path = file.relative_to(project_root)
                         sources.append(str(rel_path))
 
@@ -157,6 +158,27 @@ def get_cpp_method_executables(categories):
     return "\n".join(cmake_code)
 
 
+def get_category_regex(categories):
+    """
+    Generate the CMake regex alternation of category directory names, used to
+    strip src/{category}/{calculation}/{method}/ sources out of fly.x (each C++
+    method is its own executable with its own main()).
+    """
+    regex = "|".join(sorted(categories.keys()))
+    print(f"   Generated category list: {regex}")
+    return f'set(FLY_CATEGORY_REGEX "{regex}")'
+
+
+def replace_section(content, marker_start, marker_end, body):
+    """Replace the text between two marker comments, keeping the markers."""
+    if marker_start not in content or marker_end not in content:
+        print(f"Warning: '{marker_start}' markers not found in CMakeLists.txt")
+        return content
+    start_idx = content.find(marker_start)
+    end_idx = content.find(marker_end) + len(marker_end)
+    return content[:start_idx] + f"{marker_start}\n{body}\n{marker_end}" + content[end_idx:]
+
+
 def update_cmakelists(categories):
     """
     Update CMakeLists.txt with auto-generated sections.
@@ -166,6 +188,8 @@ def update_cmakelists(categories):
     - # END AUTO-GENERATED BASE LIBRARY SOURCES
     - # BEGIN AUTO-GENERATED CPP METHOD EXECUTABLES
     - # END AUTO-GENERATED CPP METHOD EXECUTABLES
+    - # BEGIN AUTO-GENERATED CATEGORY LIST
+    - # END AUTO-GENERATED CATEGORY LIST
     """
     cmake_path = Path(__file__).parent / "../../../CMakeLists.txt"
     cmake_path = cmake_path.resolve()
@@ -181,31 +205,18 @@ def update_cmakelists(categories):
     base_sources = get_base_library_sources()
     cpp_executables = get_cpp_method_executables(categories)
 
-    # Replace base library sources section
-    base_marker_start = "# BEGIN AUTO-GENERATED BASE LIBRARY SOURCES"
-    base_marker_end = "# END AUTO-GENERATED BASE LIBRARY SOURCES"
-
-    if base_marker_start in content and base_marker_end in content:
-        start_idx = content.find(base_marker_start)
-        end_idx = content.find(base_marker_end) + len(base_marker_end)
-
-        new_section = f"{base_marker_start}\n{base_sources}\n{base_marker_end}"
-        content = content[:start_idx] + new_section + content[end_idx:]
-    else:
-        print(f"Warning: Base library source markers not found in CMakeLists.txt")
-
-    # Replace C++ executables section
-    exe_marker_start = "# BEGIN AUTO-GENERATED CPP METHOD EXECUTABLES"
-    exe_marker_end = "# END AUTO-GENERATED CPP METHOD EXECUTABLES"
-
-    if exe_marker_start in content and exe_marker_end in content:
-        start_idx = content.find(exe_marker_start)
-        end_idx = content.find(exe_marker_end) + len(exe_marker_end)
-
-        new_section = f"{exe_marker_start}\n{cpp_executables}\n{exe_marker_end}"
-        content = content[:start_idx] + new_section + content[end_idx:]
-    else:
-        print(f"Warning: C++ executable markers not found in CMakeLists.txt")
+    content = replace_section(content,
+                              "# BEGIN AUTO-GENERATED BASE LIBRARY SOURCES",
+                              "# END AUTO-GENERATED BASE LIBRARY SOURCES",
+                              base_sources)
+    content = replace_section(content,
+                              "# BEGIN AUTO-GENERATED CPP METHOD EXECUTABLES",
+                              "# END AUTO-GENERATED CPP METHOD EXECUTABLES",
+                              cpp_executables)
+    content = replace_section(content,
+                              "# BEGIN AUTO-GENERATED CATEGORY LIST",
+                              "# END AUTO-GENERATED CATEGORY LIST",
+                              get_category_regex(categories))
 
     # Write back
     with open(cmake_path, 'w') as f:

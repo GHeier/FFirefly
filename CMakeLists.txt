@@ -39,59 +39,59 @@ set(LIBS -llapacke -llapack -lblas -lgfortran -lm -lstdc++ -lopenblas -lfftw3 -l
 # Base library sources
 set(BASE_SOURCES
     src/algorithms/scf_interaction.c
-    src/algorithms/integration.cpp
-    src/algorithms/linear_algebra.cpp
-    src/algorithms/fft.cpp
-    src/algorithms/symmetry.cpp
     src/algorithms/electron_number.cpp
+    src/algorithms/fft.cpp
+    src/algorithms/integration.cpp
     src/algorithms/interpolate.cpp
-    src/algorithms/tests/linalg_tests.cpp
-    src/algorithms/tests/fft_tests.cpp
-    src/algorithms/tests/sym_tests.cpp
+    src/algorithms/linear_algebra.cpp
+    src/algorithms/symmetry.cpp
     src/algorithms/tests/all.cpp
-    src/config/load/jl_interface_stub.c
+    src/algorithms/tests/fft_tests.cpp
+    src/algorithms/tests/linalg_tests.cpp
+    src/algorithms/tests/sym_tests.cpp
     src/config/load/c_config.c
+    src/config/load/jl_interface_stub.c
     src/config/load/py_interface_stub.c
     src/config/load/cpp_config.cpp
+    src/config/load/tests/all.cpp
+    src/config/load/tests/jl_interface_typed_tests.cpp
     src/config/load/tests/py_interface_bool_tests.cpp
     src/config/load/tests/py_interface_typed_tests.cpp
-    src/config/load/tests/jl_interface_typed_tests.cpp
-    src/config/load/tests/all.cpp
-    src/hamiltonian/node.cpp
     src/hamiltonian/models/band_structure.cpp
-    src/hamiltonian/models/preloaded_hamiltonians.cpp
     src/hamiltonian/models/interaction.cpp
-    src/module/exports/temp.cpp
+    src/hamiltonian/models/preloaded_hamiltonians.cpp
+    src/hamiltonian/node.cpp
     src/module/exports/cpp_export.cpp
-    src/objects/array.cpp
-    src/objects/matrix.cpp
-    src/objects/surfaces.cpp
-    src/objects/eigenvec.cpp
-    src/objects/vec.cpp
-    src/objects/CMField/field.cpp
-    src/objects/CMField/hamiltonian.cpp
-    src/objects/CMField/renormalization.cpp
-    src/objects/CMField/base_data.cpp
-    src/objects/CMField/field_funcs.cpp
-    src/objects/CMField/self_energy.cpp
-    src/objects/CMField/data_evaluator.cpp
-    src/objects/CMField/bands.cpp
-    src/objects/CMField/vertex.cpp
-    src/objects/CMField/fields.cpp
-    src/objects/tests/array_tests.cpp
-    src/objects/tests/surface_tests.cpp
-    src/objects/tests/all.cpp
+    src/module/exports/temp.cpp
     src/objects/CMData/cmdata.cpp
     src/objects/CMData/tests/all.cpp
-    src/objects/CMField/tests/field_wrapper_tests.cpp
-    src/objects/CMField/tests/field_tests.cpp
-    src/objects/CMField/tests/base_data_tests.cpp
+    src/objects/CMField/bands.cpp
+    src/objects/CMField/base_data.cpp
+    src/objects/CMField/data_evaluator.cpp
+    src/objects/CMField/field.cpp
+    src/objects/CMField/field_funcs.cpp
+    src/objects/CMField/fields.cpp
+    src/objects/CMField/hamiltonian.cpp
+    src/objects/CMField/renormalization.cpp
+    src/objects/CMField/self_energy.cpp
     src/objects/CMField/tests/band_tests.cpp
+    src/objects/CMField/tests/base_data_tests.cpp
+    src/objects/CMField/tests/field_tests.cpp
+    src/objects/CMField/tests/field_wrapper_tests.cpp
     src/objects/CMField/tests/hamiltonian_tests.cpp
-    src/objects/CMField/tests/matrix_field_tests.cpp
-    src/objects/CMField/tests/tensor_field_tests.cpp
     src/objects/CMField/tests/inds_field_tests.cpp
+    src/objects/CMField/tests/matrix_field_tests.cpp
     src/objects/CMField/tests/quad_field_tests.cpp
+    src/objects/CMField/tests/tensor_field_tests.cpp
+    src/objects/CMField/vertex.cpp
+    src/objects/array.cpp
+    src/objects/eigenvec.cpp
+    src/objects/matrix.cpp
+    src/objects/surfaces.cpp
+    src/objects/tests/all.cpp
+    src/objects/tests/array_tests.cpp
+    src/objects/tests/surface_tests.cpp
+    src/objects/vec.cpp
 )
 
 # END AUTO-GENERATED BASE LIBRARY SOURCES
@@ -119,15 +119,20 @@ foreach(file IN LISTS BASE_SOURCES)
     list(REMOVE_ITEM ALL_SOURCES ${CMAKE_SOURCE_DIR}/${file})
 endforeach()
 
+# Category directories (from src/config/categories.py)
+# BEGIN AUTO-GENERATED CATEGORY LIST
+set(FLY_CATEGORY_REGEX "hamiltonian|many_body|superconductor")
+# END AUTO-GENERATED CATEGORY LIST
+
 # Remove C++ method implementation files (they'll be separate executables)
 # This removes src/{category}/{calculation}/{method}/*.cpp for C++ methods
 foreach(file IN LISTS ALL_SOURCES)
     # Skip files that are in method directories (3+ levels deep in category dirs)
     # This pattern matches: src/{category}/{calculation}/{method}/file.cpp
     # and also: src/{category}/{calculation}/{method}/tests/file.cpp
-    if(file MATCHES "src/(hamiltonian|superconductor|many_body)/[^/]+/[^/]+/")
+    if(file MATCHES "src/(${FLY_CATEGORY_REGEX})/[^/]+/[^/]+/")
         # Check if it's not a node.cpp file at the category level
-        if(NOT file MATCHES "src/(hamiltonian|superconductor|many_body)/node\\.cpp$")
+        if(NOT file MATCHES "src/(${FLY_CATEGORY_REGEX})/node\\.cpp$")
             list(REMOVE_ITEM ALL_SOURCES ${file})
         endif()
     endif()
@@ -249,8 +254,8 @@ set_target_properties(hamiltonian_FS_tetrahedra PROPERTIES
 
 # many_body/self_energy/from_vertex
 add_executable(many_body_self_energy_from_vertex
-    src/many_body/self_energy/from_vertex/self_energy.cpp
     src/many_body/self_energy/from_vertex/run.cpp
+    src/many_body/self_energy/from_vertex/self_energy.cpp
     src/many_body/self_energy/from_vertex/tests/test.cpp
 )
 target_link_libraries(many_body_self_energy_from_vertex PRIVATE base)
@@ -264,8 +269,8 @@ set_target_properties(many_body_self_energy_from_vertex PROPERTIES
 # many_body/vertex/from_susceptibility
 add_executable(many_body_vertex_from_susceptibility
     src/many_body/vertex/from_susceptibility/run.cpp
-    src/many_body/vertex/from_susceptibility/vertex.cpp
     src/many_body/vertex/from_susceptibility/tests/test.cpp
+    src/many_body/vertex/from_susceptibility/vertex.cpp
 )
 target_link_libraries(many_body_vertex_from_susceptibility PRIVATE base)
 set_target_properties(many_body_vertex_from_susceptibility PROPERTIES
@@ -305,15 +310,15 @@ set_target_properties(many_body_renormalization_from_sigma PROPERTIES
 
 # superconductor/bcs/matrix
 add_executable(superconductor_bcs_matrix
-    src/superconductor/bcs/matrix/save_data.cpp
-    src/superconductor/bcs/matrix/frequency_inclusion.cpp
-    src/superconductor/bcs/matrix/superconductor.cpp
-    src/superconductor/bcs/matrix/solver.cpp
-    src/superconductor/bcs/matrix/run.cpp
-    src/superconductor/bcs/matrix/utilities.cpp
     src/superconductor/bcs/matrix/cfg.cpp
+    src/superconductor/bcs/matrix/frequency_inclusion.cpp
     src/superconductor/bcs/matrix/matrix_creation.cpp
+    src/superconductor/bcs/matrix/run.cpp
+    src/superconductor/bcs/matrix/save_data.cpp
+    src/superconductor/bcs/matrix/solver.cpp
+    src/superconductor/bcs/matrix/superconductor.cpp
     src/superconductor/bcs/matrix/tests/test.cpp
+    src/superconductor/bcs/matrix/utilities.cpp
 )
 target_link_libraries(superconductor_bcs_matrix PRIVATE base)
 set_target_properties(superconductor_bcs_matrix PROPERTIES
