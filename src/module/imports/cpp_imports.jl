@@ -2,7 +2,8 @@
 module Imports
 
 # Get the project root directory (FFirefly/)
-const libfly = split(abspath(@__FILE__), "FFirefly")[1] * "FFirefly/build/lib/libfly.so"
+# Repo root from src/module/imports/; realpath follows the jlpkg symlink
+const libfly = joinpath(dirname(dirname(dirname(dirname(realpath(@__FILE__))))), "build", "lib", "libfly.so")
 #const libfly = joinpath(dirname(dirname(dirname(dirname(abspath(@__FILE__))))), "build", "lib", "libfly.so")
 export load_config!, Vec, Surface, get_faces, get_faces_and_areas, get_reduced_grid
 export epsilon,
@@ -22,6 +23,10 @@ export epsilon,
        destroy!,
        save_field_to_file!,
        save_data!,
+       set_attrs!,
+       read_attrs,
+       BaseData,
+       save!,
        data_save!,
        save_field!,
        save_data_scalar,
@@ -1351,7 +1356,10 @@ function save_data!(
     dim_indices::Union{Integer, Nothing} = nothing,
     points = nothing,
     centered::Bool = true,
+    attrs = nothing,
 )
+    # attrs: optional Dict of metadata stored as HDF5 string attributes, e.g.
+    # Dict("quantity" => "Sigma", "units" => "eV", "frequency_axis" => "matsubara")
     # Handle positional vs keyword arguments
     # Positional args take precedence over keyword args
     if mesh_arg !== nothing
@@ -1441,7 +1449,22 @@ function save_data!(
         # Scalar data (rank == 0)
         save_data_scalar(path, data, is_complex, mesh, domain, w_points, points, centered)
     end
+    if attrs !== nothing && !isempty(attrs)
+        set_attrs!(path, attrs)
+    end
 end
+
+"""Add or replace metadata attributes on an existing field file."""
+function set_attrs!(path::String, attrs)
+    for (key, value) in attrs
+        status = ccall((:field_attribute_set_export0, libfly), Cint,
+                       (Cstring, Cstring, Cstring), path, string(key), string(value))
+        status == 0 || error("Could not set attribute $(key) on $(path)")
+    end
+end
+
+"""Metadata attributes stored in a field file, as a Dict{String, String}."""
+read_attrs(path::String) = BaseData(path).attrs
 
 function data_save!(path::String, points, data, dimension, with_w, is_complex, is_vector)
     # Calculate actual number of points (not flattened length)
@@ -2024,7 +2047,8 @@ function save!(obj::BaseData, filename::String, ordering::String="k-w")
     data = get_data(obj, as_row_major=true)
 
     save_data!(filename, data, mesh=obj.mesh, domain=obj.domain,
-               w_points=obj.w_points, inds=obj.inds)
+               w_points=obj.w_points, inds=obj.inds,
+               centered=obj.centered, attrs=obj.attrs)
 end
 
 function get_data(obj::BaseData; as_row_major::Bool=false)
@@ -2178,6 +2202,15 @@ end
 function Base.getproperty(obj::BaseData, sym::Symbol)
     if sym === :data
         return get_data(obj)
+    elseif sym === :attrs
+        ptr = getfield(obj, :ptr)
+        n = ccall((:BaseData_get_attr_count, libfly), Cint, (Ptr{Cvoid},), ptr)
+        return Dict{String, String}(
+            unsafe_string(ccall((:BaseData_get_attr_key, libfly), Cstring, (Ptr{Cvoid}, Cint), ptr, i)) =>
+            unsafe_string(ccall((:BaseData_get_attr_value, libfly), Cstring, (Ptr{Cvoid}, Cint), ptr, i))
+            for i in 0:n-1)
+    elseif sym === :format_version
+        return Int(ccall((:BaseData_get_format_version, libfly), Cint, (Ptr{Cvoid},), getfield(obj, :ptr)))
     else
         return getfield(obj, sym)
     end

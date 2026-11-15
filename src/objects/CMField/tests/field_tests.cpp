@@ -1,6 +1,7 @@
 #include "src/objects/CMField/fields.hpp"
 #include "src/objects/CMField/field.hpp"
 #include <filesystem>
+#include <H5Cpp.h>
 #include <iostream>
 #include <cmath>
 
@@ -658,11 +659,106 @@ static bool regression_vec_init() {
     return a.y == 0 && a.z == 0 && a.w == 0 && b.z == 0 && b.w == 0;
 }
 
+
+// A field loaded from HDF5 keeps its values when saved again
+static bool regression_load_then_save() {
+    int n = 4;
+    vector<cfloat> data;
+    for (int i = 0; i < n; i++) data.push_back(cfloat(i, -i));
+    save_data("testfield_resave_a.h5", data, {}, {n}, {{1.0}}, {}, ep(), false);
+    Field_C loaded("testfield_resave_a.h5");
+    loaded.save("testfield_resave_b.h5");
+    Field_C again("testfield_resave_b.h5");
+    filesystem::remove("testfield_resave_a.h5");
+    filesystem::remove("testfield_resave_b.h5");
+    return abs(again(Vec(0.5)) - cfloat(2, -2)) < 1e-5;
+}
+
+// Vector fields read from HDF5 keep their components per grid point
+static bool regression_vector_field_from_file() {
+    int n = 4;
+    BaseData f;
+    f.is_complex = true;
+    f.is_vector = true;
+    f.with_k = f.as_mesh = true;
+    f.centered = false;
+    f.mesh = {n, n};
+    f.dimension = 2;
+    vector<vector<cfloat>> data;
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++) data.push_back({cfloat(i, 0), cfloat(j, 1)});
+    f.data = data;
+    save_data_to_hdf5(f, "testfield_vector.h5");
+    FieldImpl loaded("testfield_vector.h5");
+    filesystem::remove("testfield_vector.h5");
+    auto r = loaded(Vec(0.25, 0.5));
+    auto* v = std::get_if<complex<Vec>>(&r);
+    return v && abs(v->real().x - 1) < 1e-5 && abs(v->real().y - 2) < 1e-5
+        && abs(v->imag().y - 1) < 1e-5;
+}
+
+// Fields built in code expose their values through get_data()
+static bool regression_programmatic_get_data() {
+    vector<cfloat> data = {cfloat(1, 0), cfloat(2, 0), cfloat(3, 0)};
+    Field_C field(data, {3}, {{1.0}});
+    BaseData* d = field.get_data();
+    return d->real_values.size() == 3 && abs(d->real_values[2] - 3) < 1e-6;
+}
+
+// Attributes and the format version round-trip; files without a version read as 1
+static bool regression_attributes() {
+    BaseData f;
+    f.is_complex = false;
+    f.real_values = {1, 2, 3};
+    f.attrs = {{"quantity", "Sigma"}, {"units", "eV"}};
+    save_data_to_hdf5(f, "testfield_attrs.h5");
+    write_field_attributes("testfield_attrs.h5", {{"temperature", "0.01"}});
+    BaseData loaded = load_data_from_hdf5("testfield_attrs.h5");
+    auto attrs = read_field_attributes("testfield_attrs.h5");
+    filesystem::remove("testfield_attrs.h5");
+    bool ok = loaded.format_version == BaseData::FORMAT_VERSION
+        && loaded.attr("quantity") == "Sigma" && loaded.attr("units") == "eV"
+        && loaded.attr("temperature") == "0.01" && attrs.size() == 3
+        && loaded.attr("missing", "none") == "none";
+
+    // Legacy file: same layout, no format_version attribute
+    {
+        H5::H5File file("testfield_legacy.h5", H5F_ACC_TRUNC);
+        auto scalar = [&](const char* name, int v) {
+            H5::DataSet ds = file.createDataSet(name, H5::PredType::NATIVE_INT, H5::DataSpace(H5S_SCALAR));
+            ds.write(&v, H5::PredType::NATIVE_INT);
+        };
+        scalar("/is_complex", 0); scalar("/is_vector", 0); scalar("/with_k", 0);
+        scalar("/with_w", 0); scalar("/dimension", 0); scalar("/as_mesh", 0);
+        hsize_t zero[1] = {0}, three[1] = {3};
+        file.createDataSet("/inds", H5::PredType::NATIVE_INT, H5::DataSpace(1, zero));
+        H5::Group g = file.createGroup("/values");
+        float vals[3] = {1, 2, 3};
+        g.createDataSet("real", H5::PredType::NATIVE_FLOAT, H5::DataSpace(1, three))
+            .write(vals, H5::PredType::NATIVE_FLOAT);
+    }
+    BaseData legacy = load_data_from_hdf5("testfield_legacy.h5");
+    filesystem::remove("testfield_legacy.h5");
+    return ok && legacy.format_version == 1 && legacy.attrs.empty();
+}
+
+
+// Plot labels use the stored quantity, units and frequency axis
+static bool regression_attribute_labels() {
+    vector<cfloat> data = {cfloat(1, 0), cfloat(2, 0)};
+    save_data("testfield_sigma_w.h5", data, {}, {}, {{}}, {0.0f, 1.0f});
+    write_field_attributes("testfield_sigma_w.h5",
+                           {{"quantity", "\\Sigma"}, {"units", "eV"}, {"frequency_axis", "matsubara"}});
+    Field field("testfield_sigma_w.h5");
+    filesystem::remove("testfield_sigma_w.h5");
+    return field.y_label == "$\\Sigma(\\omega)$ [eV]" && field.x_label == "$i\\omega_n$";
+}
+
 } // namespace field_tests_ns
 
 bool field_tests() {
     using namespace field_tests_ns;
-    int num_tests = 33;
+    int num_tests = 38;
     bool all_tests[num_tests] = {
         create_destroy(),
         field_r_1d_k(),
@@ -697,6 +793,11 @@ bool field_tests() {
         regression_default_domain_roundtrip(),
         regression_indexed_element(),
         regression_vec_init(),
+        regression_load_then_save(),
+        regression_vector_field_from_file(),
+        regression_programmatic_get_data(),
+        regression_attributes(),
+        regression_attribute_labels(),
     };
     filesystem::remove("testfield.h5");
     return print_test_results(all_tests, num_tests, "Field tests");

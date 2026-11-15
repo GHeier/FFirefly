@@ -114,6 +114,8 @@ void load_default_band_values();
 
 void make_save_file();
 void load_c_config();
+// Load config from a file (NULL = stdin if not a terminal, "" = defaults)
+void load_c_config_from(const char *source);
 extern void unload_c_config();
 
 #ifdef __cplusplus
@@ -132,6 +134,16 @@ typedef enum {
 } Color;
 
 void read_c_config(const char *path);
+
+// The config file the C/C++ side uses, first match wins:
+//   1. the file last read by read_c_config()
+//   2. $FIREFLY_CONFIG
+//   3. input.cfg next to the running executable (fly.x, method .exe files)
+//   4. build/bin/input.cfg found from libbase.so's location (Python/Julia hosts)
+// Returns NULL if none exists.
+const char *firefly_config_path(void);
+// True once read_c_config() has succeeded
+bool c_config_was_read(void);
 void printcolor(Color color, const char *format, ...);
 bool print_test_results(bool all_tests[], int num_tests, const char *test_name);
 void load_cpp_config();

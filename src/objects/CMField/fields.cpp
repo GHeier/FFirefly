@@ -517,7 +517,11 @@ Field::Field() {
     y_label = "";
 }
 
-void Field::generate_plot_labels(const string& filename) {
+void Field::generate_plot_labels(const string& filename, const map<string, string>& attrs) {
+    auto attr = [&](const char* key) {
+        auto it = attrs.find(key);
+        return it == attrs.end() ? string() : it->second;
+    };
     // Reset labels
     title = "";
     x_label = "";
@@ -563,6 +567,9 @@ void Field::generate_plot_labels(const string& filename) {
         field_name = prefix_and_field;
         prefix = "";
     }
+
+    // A stored quantity names the field better than the filename does
+    if (!attr("quantity").empty()) field_name = attr("quantity");
 
     // Map field names to LaTeX
     string field_latex = "";
@@ -615,9 +622,12 @@ void Field::generate_plot_labels(const string& filename) {
         y_label = "$" + field_latex + "$";
     }
 
+    string units = attr("units");
+    if (!units.empty() && !y_label.empty()) y_label += " [" + units + "]";
+
     // Create x_label (prioritize: w > k > q)
     if (has_w) {
-        x_label = "$\\omega$";
+        x_label = attr("frequency_axis") == "matsubara" ? "$i\\omega_n$" : "$\\omega$";
     } else if (has_k) {
         x_label = "$k$";
     } else if (has_q) {
@@ -670,8 +680,8 @@ Field::Field(const string& filename) {
         field_r = new Field_R(filename);
     }
 
-    // Generate plot labels from filename
-    generate_plot_labels(filename);
+    // Generate plot labels from filename and stored attributes
+    generate_plot_labels(filename, base.attrs);
 }
 
 Field::~Field() {

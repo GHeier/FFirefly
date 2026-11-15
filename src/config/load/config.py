@@ -110,17 +110,33 @@ def BZ_from_cell(cell):
     b3 = 2*np.pi*np.cross(a1, a2) / np.dot(a3, np.cross(a1, a2))
     return [b1, b2, b3]
 
-def load_config():
-    import sys
+def config_path():
+    """Config file the Python side reads: $FIREFLY_CONFIG, else build/bin/input.cfg
+    (written by fly.x). Matches the C loader's firefly_config_path()."""
+    import os
+    env = os.environ.get("FIREFLY_CONFIG")
+    if env:
+        return env
+    # realpath: this file is also reached through the pypkg/firefly/src symlink
+    here = os.path.dirname(os.path.realpath(__file__))
+    root = os.path.dirname(os.path.dirname(os.path.dirname(here)))
+    return os.path.join(root, "build", "bin", "input.cfg")
+
+def load_config(path=None):
+    """Read config values from `path` (default: config_path()). A missing file
+    leaves the defaults in place. Returns the path that was used."""
+    import io
     import os
 
-    current_file = os.path.abspath(__file__)
-    input_file = current_file[:-39] + "build/bin/input.cfg"
+    input_file = path if path else config_path()
     key, value, section = "", "", ""
     got_dimension = False
     index = 0
-    with open(input_file, 'r') as f:
+    exists = os.path.exists(input_file)
+    with (open(input_file, 'r') if exists else io.StringIO("")) as f:
         for line in f:
+            if line.lstrip().startswith(("#", ";", "!")):
+                continue  # comment line (matches the C loader)
             if "=" not in line and "[" in line and "]" in line:
                 section = line.strip()[1:-1]
                 index = 0

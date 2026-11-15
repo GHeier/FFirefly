@@ -17,14 +17,13 @@ import os
 import re
 import subprocess
 
-file = config.load_config()
+file = config.config_path()
 if os.path.exists(file):
     load_config(file)
 else:
-    printv("No .cfg file found. Run fly.x to load in values")
+    config.printv("No .cfg file found. Run fly.x or set FIREFLY_CONFIG to load in values")
 
-current_file = os.path.abspath(__file__)
-folder = current_file[:-25] + "build/bin/"
+folder = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), "build", "bin") + "/"
 
 
 

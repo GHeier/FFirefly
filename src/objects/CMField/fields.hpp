@@ -193,7 +193,9 @@ public:
   Field& operator=(const Field&) = delete;
 
   // Generate plot labels from filename
-  void generate_plot_labels(const string& filename);
+  // Labels come from the filename pattern prefix_field_vars.h5; the file's
+  // quantity, units and frequency_axis attributes override the guesses.
+  void generate_plot_labels(const string& filename, const map<string, string>& attrs = {});
 
   // Save to file
   void save(const string& filename);

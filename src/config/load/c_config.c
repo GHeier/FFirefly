@@ -1,3 +1,5 @@
+#define _GNU_SOURCE  // dladdr
+#include <dlfcn.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdbool.h>
@@ -217,32 +219,137 @@ void load_default_band_values() {
     // This function is kept for compatibility but does nothing
 }
 
-void make_save_file() {
-    char path[PATH_MAX]; // Buffer to hold the executable path
+// Directory of the running executable, with trailing '/'
+static void exe_dir(char *path, size_t size) {
+    ssize_t len = readlink("/proc/self/exe", path, size - 1);
+    if (len <= 0) {
+        strcpy(path, "./");
+        return;
+    }
+    path[len] = '\0';
+    char *slash = strrchr(path, '/');
+    if (slash) slash[1] = '\0';
+}
 
-    // Read the symbolic link for the executable
-    ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
-    path[len - 5] = '\0';      // Remove the executable name
-    strcat(path, "input.cfg"); // Append the input file name
+static void input_cfg_path(char *path, size_t size) {
+    exe_dir(path, size);
+    strncat(path, "input.cfg", size - strlen(path) - 1);
+}
+
+// Path of the config last read by read_c_config ("" = none yet)
+static char loaded_config_path[PATH_MAX] = "";
+
+bool c_config_was_read(void) {
+    return loaded_config_path[0] != '\0';
+}
+
+static bool readable(const char *path) {
+    return access(path, R_OK) == 0;
+}
+
+// Directory of the binary or library this code was linked into, with trailing '/'
+static bool library_dir(char *path, size_t size) {
+    Dl_info info;
+    if (!dladdr((void *)&firefly_config_path, &info) || info.dli_fname == NULL) return false;
+    char resolved[PATH_MAX];
+    if (realpath(info.dli_fname, resolved) == NULL) return false;
+    char *slash = strrchr(resolved, '/');
+    if (slash == NULL) return false;
+    slash[1] = '\0';
+    snprintf(path, size, "%s", resolved);
+    return true;
+}
+
+const char *firefly_config_path(void) {
+    static char path[PATH_MAX];
+    if (c_config_was_read()) return loaded_config_path;
+    const char *env = getenv("FIREFLY_CONFIG");
+    if (env && env[0] != '\0') return env;
+    input_cfg_path(path, sizeof(path));
+    if (readable(path)) return path;
+    if (library_dir(path, sizeof(path))) {
+        strncat(path, "../bin/input.cfg", sizeof(path) - strlen(path) - 1);
+        if (readable(path)) return path;
+    }
+    return NULL;
+}
+
+// Name of the config as the user gave it, for error messages (NULL = path read)
+static const char *config_display_name = NULL;
+
+// Copy the run configuration into input.cfg next to the executable, which is
+// where method executables and the Python/Julia loaders read it from.
+//   source == NULL : read from stdin (if it is not a terminal)
+//   source == ""   : write an empty config (all defaults)
+//   otherwise      : copy the named file
+static void write_input_cfg(const char *source) {
+    char path[PATH_MAX];
+    input_cfg_path(path, sizeof(path));
+    FILE *src = NULL;
+    if (source && source[0] != '\0') {
+        src = fopen(source, "r");
+        if (src == NULL) {
+            fprintf(stderr, "Error: cannot open config file '%s': %s\n", source, strerror(errno));
+            exit(1);
+        }
+    } else if (source == NULL && !isatty(fileno(stdin))) {
+        src = stdin;
+    }
+    config_display_name = (source && source[0] != '\0') ? source : (src == stdin ? "<stdin>" : NULL);
     FILE *file = fopen(path, "w");
     if (file == NULL) {
-        printf("Error opening file!\n");
+        fprintf(stderr, "Error: cannot write '%s': %s\n", path, strerror(errno));
         exit(1);
     }
     char line[256];
-    // Check if stdin is a terminal
-    if (!isatty(fileno(stdin))) {
-        while (fgets(line, sizeof(line), stdin) != NULL) {
+    if (src) {
+        while (fgets(line, sizeof(line), src) != NULL) {
             fputs(line, file);
         }
+        if (src != stdin) fclose(src);
     }
     fclose(file);
 }
 
+void make_save_file() {
+    write_input_cfg(NULL);
+}
+
+// True for blank lines and comment lines ('#', ';' or '!' first)
+static bool is_comment_or_blank(const char *line) {
+    while (*line == ' ' || *line == '\t') line++;
+    return *line == '#' || *line == ';' || *line == '!' || *line == '\n' || *line == '\r' || *line == '\0';
+}
+
+// Split "key = value ..." into key and the first token of value. Spaces
+// around '=' are optional. Returns false if the line has no key.
+static bool split_key_value(const char *line, char *key, size_t key_size,
+                            char *value, size_t value_size) {
+    const char *eq = strchr(line, '=');
+    if (!eq) return false;
+    const char *k0 = line;
+    while (k0 < eq && (*k0 == ' ' || *k0 == '\t')) k0++;
+    const char *k1 = eq;
+    while (k1 > k0 && (k1[-1] == ' ' || k1[-1] == '\t')) k1--;
+    size_t klen = k1 - k0;
+    if (klen == 0 || klen >= key_size) return false;
+    memcpy(key, k0, klen);
+    key[klen] = '\0';
+    value[0] = '\0';
+    // First whitespace-delimited token, bounded by value_size
+    const char *v = eq + 1;
+    while (*v == ' ' || *v == '\t') v++;
+    size_t vlen = strcspn(v, " \t\r\n");
+    if (vlen >= value_size) vlen = value_size - 1;
+    memcpy(value, v, vlen);
+    value[vlen] = '\0';
+    return true;
+}
+
 void read_c_config(const char *path) {
     char line[256];
-    char key[50];
-    char value[50];
+    char key[256];
+    char value[256];
     char section[50];
     int row = 0;
     int n = 0;
@@ -253,10 +360,15 @@ void read_c_config(const char *path) {
     int nbnd = 0;
     FILE *file = fopen(path, "r");
     if (file == NULL) {
-        printf("Error opening file!\n");
+        fprintf(stderr, "Error: cannot open config file '%s': %s\n", path, strerror(errno));
         exit(1);
     }
+    if (realpath(path, loaded_config_path) == NULL)
+        snprintf(loaded_config_path, sizeof(loaded_config_path), "%s", path);
+    int line_no = 0;
     while (fgets(line, sizeof(line), file) != NULL) {
+        line_no++;
+        if (is_comment_or_blank(line)) continue;
         if (strstr(line, "[CELL]") != NULL) {
             set_section(section, "CELL");
             continue; // Skip to the next file line
@@ -301,7 +413,11 @@ void read_c_config(const char *path) {
             }
         }
         if (strstr(line, "=") != NULL) {
-            sscanf(line, " %s = %s", key, value);
+            if (!split_key_value(line, key, sizeof(key), value, sizeof(value))) {
+                fprintf(stderr, "Error: %s:%d: cannot parse line: %s",
+                        config_display_name ? config_display_name : path, line_no, line);
+                exit(1);
+            }
 
             // Read in variable values from the config file
 
@@ -571,8 +687,9 @@ void read_c_config(const char *path) {
             }
             // End of variable reading
             else {
-                printf("%s = %s\n", key, value);
-                printf("Invalid key: %s\n", key);
+                fprintf(stderr, "Error: %s:%d: unknown config variable '%s'\n",
+                        config_display_name ? config_display_name : path, line_no, key);
+                fprintf(stderr, "  Valid variables are listed in src/config/input_variables.py\n");
                 exit(1);
             }
         }
@@ -612,13 +729,17 @@ void read_c_config(const char *path) {
         printf("Could not make outdir directory\n");
 }
 
-void load_c_config() {
-    char path[PATH_MAX]; // Buffer to hold the executable path
-    ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
-    path[len - 5] = '\0';      // Remove the executable name
-    strcat(path, "input.cfg"); // Append the input file name
-    make_save_file();
+void load_c_config_from(const char *source) {
+    char path[PATH_MAX];
+    input_cfg_path(path, sizeof(path));
+    write_input_cfg(source);
     read_c_config(path);
+    // Child processes (method executables, Python and Julia methods) read the same file
+    setenv("FIREFLY_CONFIG", path, 1);
+}
+
+void load_c_config() {
+    load_c_config_from(NULL);
 }
 
 void unload_c_config() {

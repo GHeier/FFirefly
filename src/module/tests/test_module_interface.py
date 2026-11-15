@@ -513,3 +513,56 @@ def test_unified_field_matrix_complex():
         import traceback
         traceback.print_exc()
         return False
+
+# Metadata attributes (#10): save_data(attrs=...), read_attrs, BaseData.save keeps them
+def test_field_attributes():
+    import shutil
+    tmpdir = tempfile.mkdtemp()
+    try:
+        filename = os.path.join(tmpdir, "test_attrs.h5")
+        data = np.arange(4, dtype=np.float32)
+        ff.save_data(filename, data, mesh=[4], domain=np.array([[1.0]], dtype=np.float32),
+                     centered=False, attrs={"quantity": "Sigma", "temperature": 0.01})
+        attrs = ff.read_attrs(filename)
+        if attrs != {"quantity": "Sigma", "temperature": "0.01"}:
+            print(f"read_attrs returned {attrs}")
+            return False
+        bd = ff.BaseData(filename)
+        if bd.format_version != 2:
+            print(f"format_version = {bd.format_version}")
+            return False
+        copy = os.path.join(tmpdir, "test_attrs_copy.h5")
+        bd.save(copy)
+        again = ff.BaseData(copy)
+        if again.attrs != attrs or again.centered:
+            print(f"BaseData.save lost metadata: attrs={again.attrs}, centered={again.centered}")
+            return False
+        return bool(np.allclose(np.ravel(again.data), data))
+    except Exception as e:
+        print(f"test_field_attributes error: {e}")
+        return False
+    finally:
+        shutil.rmtree(tmpdir)
+
+# Config resolution (#11): the Python side honours FIREFLY_CONFIG
+def test_config_path_env():
+    import importlib.util
+    path = os.path.join(os.path.dirname(os.path.realpath(ff.__file__)), "..", "..", "config", "load", "config.py")
+    spec = importlib.util.spec_from_file_location("firefly_config_probe", path)
+    cfg = importlib.util.module_from_spec(spec)
+    old = os.environ.get("FIREFLY_CONFIG")
+    with tempfile.NamedTemporaryFile("w", suffix=".cfg", delete=False) as f:
+        f.write("[CONTROL]\n    prefix = 'probe'\n")
+    try:
+        os.environ["FIREFLY_CONFIG"] = f.name
+        spec.loader.exec_module(cfg)
+        return cfg.config_path() == f.name and cfg.prefix == "probe"
+    except Exception as e:
+        print(f"test_config_path_env error: {e}")
+        return False
+    finally:
+        os.unlink(f.name)
+        if old is None:
+            os.environ.pop("FIREFLY_CONFIG", None)
+        else:
+            os.environ["FIREFLY_CONFIG"] = old

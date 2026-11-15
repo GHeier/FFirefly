@@ -36,70 +36,6 @@ using ResultVariant = variant<
 >;
 
 
-inline int get_size(DataVariant &f) {
-    return visit([](const auto& val) -> size_t {
-        return val.size();  // Works for both vector<cfloat> and vector<vector<cfloat>>
-    }, f);
-}
-
-
-inline vector<complex<Vec>> transform_data(DataVariant& f, int dim) {
-    vector<complex<Vec>> result;
-
-    visit([&](auto const& container) {
-        using T = decay_t<decltype(container)>;
-
-        if constexpr (is_same_v<T, vector<cfloat>>) {
-            // 1D vector of cfloat
-            result.reserve(container.size());
-            for (auto const& val : container) {
-                Vec v1(val.real()); v1.dimension = dim;
-                Vec v2(val.imag()); v2.dimension = dim;
-                result.emplace_back(complex<Vec>(v1, v2));
-            }
-        } else if constexpr (is_same_v<T, vector<vector<cfloat>>>) {
-            // 2D vector of cfloat
-            size_t total = 0;
-            size_t size = 0;
-            for (auto const& row : container) {
-                size = row.size();
-                total += size;
-            }
-            result.reserve(total);
-
-            for (auto const& row : container) {
-                Vec v1; v1.dimension = dim;
-                Vec v2; v2.dimension = dim;
-                int ind2 = 0;
-                for (auto const& val : row) {
-                    v1(ind2) = (val.real());
-                    v2(ind2) = (val.imag());
-                    ind2++;
-                }
-                result.emplace_back(complex<Vec>(v1, v2));
-            }
-        }
-    }, f);
-
-    return result;
-}
-
-// Transform flat real_values/imag_values arrays to vector<complex<Vec>>
-inline vector<complex<Vec>> transform_data_from_flat(const vector<float>& real_vals,
-                                                      const vector<float>& imag_vals,
-                                                      int dim, bool is_complex) {
-    vector<complex<Vec>> result;
-    result.reserve(real_vals.size());
-
-    for (size_t i = 0; i < real_vals.size(); i++) {
-        Vec v1(real_vals[i]); v1.dimension = dim;
-        Vec v2(is_complex && i < imag_vals.size() ? imag_vals[i] : 0.0f); v2.dimension = dim;
-        result.emplace_back(complex<Vec>(v1, v2));
-    }
-
-    return result;
-}
-
 vector<Vec> invertMatrix2(vector<Vec> &matrix, int n);
 
 inline vector<Vec> float_matrix_to_vec(vector<vector<float>> a) {
@@ -113,17 +49,13 @@ inline vector<Vec> float_matrix_to_vec(vector<vector<float>> a) {
 }
 
 struct DataEvaluator {
-    // For scalar/vector fields (rank = 0, inds = {})
-    vector<complex<Vec>> data;
-
-    // For indexed fields (rank > 0)
-    // Storage layout (w-k ordering): indexed_data[w_idx][spatial_idx][indices...]
-    // For example, rank=2: indexed_data_2d[w_idx][spatial_idx][i][j] where i ∈ [0, inds[0]), j ∈ [0, inds[1])
-    //              rank=4: indexed_data_4d[w_idx][spatial_idx][i][j][k][l] where i ∈ [0, inds[0]), etc.
-    vector<vector<vector<cfloat>>> indexed_data_1d;                         // rank=1: [w][spatial][i]
-    vector<vector<vector<vector<cfloat>>>> indexed_data_2d;                 // rank=2: [w][spatial][i][j]
-    vector<vector<vector<vector<vector<cfloat>>>>> indexed_data_3d;         // rank=3: [w][spatial][i][j][k]
-    vector<vector<vector<vector<vector<vector<cfloat>>>>>> indexed_data_4d; // rank=4: [w][spatial][i][j][k][l]
+    // All values in one contiguous array, w-major like the HDF5 file:
+    //   values[(w_idx * nk + spatial_idx) * block + element]
+    // block is the number of values stored per grid point: the product of
+    // inds for tensor fields, the vector length for vector fields, else 1.
+    // Tensor elements are row-major over inds.
+    vector<cfloat> values;
+    int block = 1;
 
     vector<float> w_points;
     bool is_complex;
@@ -142,7 +74,6 @@ struct DataEvaluator {
 
     DataEvaluator(BaseData& f);
 
-    ResultVariant convert(complex<Vec>& answer);
     ResultVariant operator()(float w);
     ResultVariant operator()(Vec point, float w = 0);
     ResultVariant operator()(Vec point, vector<int> indices, float w = 0);
@@ -152,14 +83,17 @@ struct DataEvaluator {
 private:
     // Scattered k-points (as_mesh == false) cannot be interpolated on a grid
     bool scattered = false;
+    int n_points = 1;  // spatial samples per frequency
 
-    void load_indexed_data(BaseData& f);           // From flat arrays (after HDF5 load)
-    void load_indexed_data_from_variant(BaseData& f);  // From data variant (programmatic creation)
+    // (grid point, weight) pairs; a grid point indexes values in units of block
+    using Taps = vector<pair<long, float>>;
 
     int n_spatial() const;
+    int n_freq() const;
     Vec to_fractional(const Vec& point) const;
-    template <typename T, typename Src> T evaluate(const Vec& p, float w, Src src) const;
-    template <typename T, typename Src> T evaluate_k_average(float w, Src src) const;
-    ResultVariant get_array_impl(const Vec* p, float w);
+    Taps taps(const Vec* point, float w) const;   // nullptr point = k-average
+    vector<cfloat> combine(const Taps& t, int offset, int count) const;
+    ResultVariant scalar_result(const vector<cfloat>& v) const;
+    ResultVariant tensor_result(const vector<cfloat>& v) const;
 };
 

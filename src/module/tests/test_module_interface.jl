@@ -372,4 +372,39 @@ function test_save_data_dispatcher_complex()
     end
 end
 
+# Metadata attributes: save_data!(attrs=...), read_attrs, save! keeps them
+function test_field_attributes()
+    tmpdir = mktempdir()
+    try
+        filename = joinpath(tmpdir, "test_attrs.h5")
+        data = Float32[0, 1, 2, 3]
+        Firefly.save_data!(filename, data; mesh=[4], domain=reshape(Float32[1.0], 1, 1),
+                           centered=false, attrs=Dict("quantity" => "Sigma", "temperature" => 0.01))
+        attrs = Firefly.read_attrs(filename)
+        if attrs != Dict("quantity" => "Sigma", "temperature" => "0.01")
+            println("read_attrs returned ", attrs)
+            return false
+        end
+        bd = Firefly.BaseData(filename)
+        if bd.format_version != 2
+            println("format_version = ", bd.format_version)
+            return false
+        end
+        copy = joinpath(tmpdir, "test_attrs_copy.h5")
+        Firefly.save!(bd, copy)
+        again = Firefly.BaseData(copy)
+        if again.attrs != attrs || again.centered
+            println("save! lost metadata: attrs=", again.attrs, " centered=", again.centered)
+            return false
+        end
+        return true
+    catch e
+        println("test_field_attributes error: ", e)
+        Base.show_backtrace(stdout, catch_backtrace())
+        return false
+    finally
+        rm(tmpdir, recursive=true)
+    end
+end
+
 end  # module

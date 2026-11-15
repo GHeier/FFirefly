@@ -52,26 +52,89 @@ void print_banner_bottom(time_t now) {
     printf("╚══════════════════════════════════════╝\n");
 }
 
+// Process exit status: nonzero if any requested test suite failed
+static int exit_status = 0;
+
+// Test suite selected with --test (default: all)
+static const char *test_suite = "all";
+
 // Global test calls
 void test() {
     printf("Starting Test Calculations\n");
 
-    int num_tests = 2;
+    bool run_objects = !strcmp(test_suite, "all") || !strcmp(test_suite, "objects");
+    bool run_algorithms = !strcmp(test_suite, "all") || !strcmp(test_suite, "algorithms");
 
-    bool all_tests[num_tests];
-    all_tests[0] = object_tests();
-    all_tests[1] = algorithm_tests();
-    //all_tests[2] = module_tests();
+    int num_tests = 0;
+    bool all_tests[2];
+    if (run_objects) all_tests[num_tests++] = object_tests();
+    if (run_algorithms) all_tests[num_tests++] = algorithm_tests();
+    // module_tests() is a stub: the Python/Julia suites run as scripts
+    // (see scripts/test-all.sh)
 
     printf("\n");
-    print_test_results(all_tests, num_tests, "Test Categories");
+    if (!print_test_results(all_tests, num_tests, "Test Categories"))
+        exit_status = 1;
 }
 
-int main() {
+static void print_usage(const char *prog) {
+    printf("Usage:\n");
+    printf("  %s <config.cfg>          Run the calculation described by a config file\n", prog);
+    printf("  %s < <config.cfg>        Same, reading the config from stdin\n", prog);
+    printf("  %s --test [SUITE]        Run C++ unit tests (SUITE: all, objects, algorithms)\n", prog);
+    printf("  %s -h | --help           Show this help\n", prog);
+    printf("\nThe config is copied to input.cfg next to %s, where method\n", prog);
+    printf("executables and the Python/Julia loaders read it.\n");
+    printf("Run every test suite (C++, Python, Julia) with scripts/test-all.sh\n");
+}
+
+int main(int argc, char **argv) {
+    // Parse command line: a config file, --test [suite], or --help
+    const char *config_source = NULL;  // NULL = stdin
+    bool test_mode = false;
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
+            print_usage(argv[0]);
+            return 0;
+        } else if (!strcmp(argv[i], "--test")) {
+            test_mode = true;
+            if (i + 1 < argc && argv[i + 1][0] != '-') {
+                test_suite = argv[++i];
+                if (strcmp(test_suite, "all") && strcmp(test_suite, "objects") &&
+                    strcmp(test_suite, "algorithms")) {
+                    fprintf(stderr, "Unknown test suite '%s' (expected all, objects or algorithms)\n", test_suite);
+                    return 2;
+                }
+            }
+        } else if (argv[i][0] == '-' && argv[i][1] != '\0') {
+            fprintf(stderr, "Unknown option '%s'\n\n", argv[i]);
+            print_usage(argv[0]);
+            return 2;
+        } else if (config_source == NULL) {
+            config_source = argv[i];
+        } else {
+            fprintf(stderr, "Only one config file may be given\n");
+            return 2;
+        }
+    }
+    if (test_mode && config_source) {
+        fprintf(stderr, "--test does not take a config file\n");
+        return 2;
+    }
+    if (config_source && !strcmp(config_source, "-"))
+        config_source = NULL;  // explicit stdin
+
     time_t start = time(NULL);
     print_banner_top();
 
-    load_c_config();           // Read input to load global c variables
+    // Read input to load global c variables. Tests run on the defaults and
+    // never wait on stdin.
+    load_c_config_from(test_mode ? "" : config_source);
+    if (test_mode) {
+        c_category = "test";
+        c_calculation = "";
+        c_method = "";
+    }
 
     // Handling '+' separated categories for sequential runs
     char str_copy[MAX_LENGTH];
@@ -164,5 +227,5 @@ int main() {
     printf("║         🏁 FFirefly Landed.          ║\n");
     printf("║          Runtime: %02d:%02d:%02d           ║\n", hours, minutes, seconds);
     printf("╚══════════════════════════════════════╝\n");
-    return 0;
+    return exit_status;
 }

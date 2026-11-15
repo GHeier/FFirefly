@@ -3,6 +3,7 @@
 #include <complex>
 #include <string>
 #include <variant>
+#include <map>
 #include <cmath>
 #include <stdexcept>
 #include "src/objects/vec.hpp"
@@ -39,12 +40,36 @@ public:
     vector<float> w_points;  // Frequency points (if with_w==true)
     vector<vector<float>> points;  // k-point data storage when as_mesh = false
 
-    // Flat value arrays (populated when loading from HDF5)
+    // Flat value arrays, w-major: [(w_idx * nk + k_idx) * block + element].
+    // Filled when loading from HDF5, and by flatten_variant() for fields
+    // built from `data`. These are what evaluation and saving read.
     vector<float> real_values;
     vector<float> imag_values;
 
-    // Structured data variant (used for saving, may be empty after loading)
+    // Structured data variant (programmatic creation; empty after loading)
     DataVariant data;
+
+    // Free-form metadata, stored as string attributes on the HDF5 root group.
+    // Conventional keys: quantity, units, frequency_axis (real | matsubara),
+    // temperature, created_by. See docs in CLAUDE.md (HDF5 Data Format).
+    map<string, string> attrs;
+
+    // HDF5 layout version. Files written before versioning are read as 1.
+    static constexpr int FORMAT_VERSION = 2;
+    int format_version = FORMAT_VERSION;
+
+    // Values as flat real/imag arrays (imag is empty for real fields). The
+    // variant `data` is used when it holds values, otherwise real_values/imag_values.
+    void flat_values(vector<float>& re, vector<float>& im) const;
+
+    // Copy `data` into real_values/imag_values if they are still empty
+    void flatten_variant();
+
+    // Value of attrs[key], or `fallback` when it is not set
+    string attr(const string& key, const string& fallback = "") const {
+        auto it = attrs.find(key);
+        return it == attrs.end() ? fallback : it->second;
+    }
 
     // Calculate total number of tensor elements
     int total_index_size() const {
@@ -60,9 +85,8 @@ public:
         if (!with_k) return 1;
         if (as_mesh) {
             int total = 1;
-            // Skip first element if with_w AND w_points is empty (legacy: mesh[0] is nw in that case)
-            // But if w_points is provided separately, don't skip - mesh contains only spatial dims
-            int start_idx = (with_w && w_points.empty()) ? 1 : 0;
+            // Version 1 files with with_w but no w_points stored nw in mesh[0]
+            int start_idx = (format_version < 2 && with_w && w_points.empty()) ? 1 : 0;
             for (int i = start_idx; i < mesh.size(); i++) {
                 total *= mesh[i];
             }
@@ -74,9 +98,8 @@ public:
         if (!with_w) return 1;
         // If w_points is provided, use its size
         if (!w_points.empty()) return w_points.size();
-        // Otherwise use mesh dimensions (legacy behavior: mesh[0] is nw,
-        // matching nk() which skips mesh[0] in this case)
-        if (as_mesh && !mesh.empty()) return mesh[0];
+        // Version 1 files stored nw in mesh[0] (matching nk(), which skips it)
+        if (format_version < 2 && as_mesh && !mesh.empty()) return mesh[0];
         return 1;
     }
     int vec_len() const { return is_vector ? dimension : 1; }
@@ -115,6 +138,10 @@ int infer_dimension(const vector<int>& mesh, const vector<vector<float>>& points
 
 // Save overloads
 void save_data_to_hdf5(BaseData& data, const std::string& filename);
+
+// Read or add metadata attributes on an existing field file (see BaseData::attrs)
+map<string, string> read_field_attributes(const std::string& filename);
+void write_field_attributes(const std::string& filename, const map<string, string>& attrs);
 void save_data(string filename, vector<vector<vector<vector<cfloat>>>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep(), bool centered = true);
 void save_data(string filename, vector<vector<vector<cfloat>>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep(), bool centered = true);
 void save_data(string filename, vector<vector<cfloat>>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep(), bool centered = true);
@@ -126,4 +153,3 @@ void save_data(string filename, vector<vector<float>>& data, vector<int> inds = 
 void save_data(string filename, vector<float>& data, vector<int> inds = {}, vector<int> mesh = {}, vector<vector<float>> domain = {{}}, vector<float> w_points = {}, const vector<vector<float>>& points = ep(), bool centered = true);
 void save_data(string filename, vector<float>& data, vector<float> w_points, bool centered = true);
 
-//void save_data_to_hdf5(std::string& filename, bool is_complex, bool is_vector, bool with_k, bool with_w, bool as_mesh, const vector<int>& inds, vector<int> &mesh, vector<vector<float>> &domain, int dimension, vector<float> &w_points, vector<vector<float>> &points, const BaseData::DataVariant& data);

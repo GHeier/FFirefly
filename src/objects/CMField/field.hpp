@@ -78,7 +78,8 @@ private:
             }
         }
 
-        // Initialize evaluator
+        // Keep the flat arrays filled so get_data() works for fields built in code
+        data.flatten_variant();
         evaluator = DataEvaluator(data);
     }
 

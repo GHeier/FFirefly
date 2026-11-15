@@ -1174,6 +1174,30 @@ extern "C" void BaseData_save(BaseData *data, const char *filename) {
     save_data_to_hdf5(*data, filename);
 }
 
+// Metadata attributes (BaseData::attrs). Returns 0 on success, 1 on error.
+extern "C" int field_attribute_set_export0(const char *filename, const char *key, const char *value) {
+    try {
+        write_field_attributes(filename, {{key, value}});
+        return 0;
+    } catch (std::exception& e) {
+        fprintf(stderr, "Error: cannot set attribute '%s' on %s: %s\n", key, filename, e.what());
+        return 1;
+    }
+}
+
+extern "C" int BaseData_get_format_version(BaseData *data) { return data->format_version; }
+
+extern "C" int BaseData_get_attr_count(BaseData *data) { return data->attrs.size(); }
+
+// Pointers stay valid while the BaseData is alive and its attrs are unchanged
+extern "C" const char* BaseData_get_attr_key(BaseData *data, int i) {
+    return std::next(data->attrs.begin(), i)->first.c_str();
+}
+
+extern "C" const char* BaseData_get_attr_value(BaseData *data, int i) {
+    return std::next(data->attrs.begin(), i)->second.c_str();
+}
+
 extern "C" void destroy_BaseData(BaseData *data) {
     delete data;
 }

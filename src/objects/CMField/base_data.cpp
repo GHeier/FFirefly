@@ -7,6 +7,8 @@
 
 using namespace H5;
 
+static map<string, string> read_attributes(Group& root, int& format_version);
+
 void read_vector(vector<int> &vec, DataSet &ds) {
     try {
         DataSpace space = ds.getSpace();
@@ -55,12 +57,11 @@ void load_metadata(BaseData &field, H5File &file) {
     field.as_mesh = temp_as_mesh;
 
     // Read centered (with fallback for legacy files)
-    try {
+    field.centered = true;  // Default for legacy files
+    if (file.nameExists("/centered")) {
         int temp_centered;
         file.openDataSet("/centered").read(&temp_centered, PredType::NATIVE_INT);
         field.centered = temp_centered;
-    } catch (...) {
-        field.centered = true;  // Default for legacy files
     }
 
     // Read inds (tensor indices)
@@ -157,93 +158,6 @@ void write_w_points(H5File& file, const std::vector<float>& w_points) {
     ds.write(w_points.data(), PredType::NATIVE_FLOAT);
 }
 
-// Flatten functions for complex types
-void flatten(const vector<vector<vector<vector<cfloat>>>>& tensor, vector<float>& real_flat, vector<float>& imag_flat, bool is_complex) {
-    for (auto& vol : tensor) {
-        for (auto& plane : vol) {
-            for (auto& row : plane) {
-                for (auto& v : row) {
-                    real_flat.push_back(v.real());
-                    if (is_complex) imag_flat.push_back(v.imag());
-                }
-            }
-        }
-    }
-}
-
-void flatten(const vector<vector<vector<cfloat>>>& tensor, vector<float>& real_flat, vector<float>& imag_flat, bool is_complex) {
-    for (auto& plane : tensor) {
-        for (auto& row : plane) {
-            for (auto& v : row) {
-                real_flat.push_back(v.real());
-                if (is_complex) imag_flat.push_back(v.imag());
-            }
-        }
-    }
-}
-
-void flatten(const vector<vector<cfloat>>& tensor, vector<float>& real_flat, vector<float>& imag_flat, bool is_complex) {
-    for (auto& row : tensor) {
-        for (auto& v : row) {
-            real_flat.push_back(v.real());
-            if (is_complex) imag_flat.push_back(v.imag());
-        }
-    }
-}
-
-void flatten(const vector<cfloat>& tensor, vector<float>& real_flat, vector<float>& imag_flat, bool is_complex) {
-    for (auto& v : tensor) {
-        real_flat.push_back(v.real());
-        if (is_complex) imag_flat.push_back(v.imag());
-    }
-}
-
-void flatten(const vector<vector<vector<vector<vector<cfloat>>>>>& tensor, vector<float>& real_flat, vector<float>& imag_flat, bool is_complex) {
-    for (auto& hyper : tensor) {
-        for (auto& vol : hyper) {
-            for (auto& plane : vol) {
-                for (auto& row : plane) {
-                    for (auto& v : row) {
-                        real_flat.push_back(v.real());
-                        if (is_complex) imag_flat.push_back(v.imag());
-                    }
-                }
-            }
-        }
-    }
-}
-
-// Flatten functions for float types (no .real() needed)
-void flatten(const vector<vector<vector<vector<float>>>>& tensor, vector<float>& real_flat) {
-    for (auto& vol : tensor) {
-        for (auto& plane : vol) {
-            for (auto& row : plane) {
-                for (auto& v : row) {
-                    real_flat.push_back(v);
-                }
-            }
-        }
-    }
-}
-
-void flatten(const vector<vector<vector<float>>>& tensor, vector<float>& real_flat) {
-    for (auto& plane : tensor) {
-        for (auto& row : plane) {
-            for (auto& v : row) {
-                real_flat.push_back(v);
-            }
-        }
-    }
-}
-
-void flatten(const vector<vector<float>>& tensor, vector<float>& real_flat) {
-    for (auto& row : tensor) {
-        for (auto& v : row) {
-            real_flat.push_back(v);
-        }
-    }
-}
-
 // ============================================================================
 // Reading functions
 // ============================================================================
@@ -312,6 +226,10 @@ BaseData load_data_from_hdf5(const std::string& filename) {
 
     // -- Metadata --
     load_metadata(field, file);
+    {
+        Group root = file.openGroup("/");
+        field.attrs = read_attributes(root, field.format_version);
+    }
 
     // -- Domain (optional) --
     if (field.with_k && field.as_mesh && file.nameExists("/domain")) {
@@ -374,409 +292,188 @@ BaseData load_data_from_hdf5(const std::string& filename, const std::string& ord
     return load_data_from_hdf5(filename);
 }
 
+
 // ============================================================================
-// Saving functions
+// Flattening
 // ============================================================================
 
-void save_data_to_hdf5(const std::string& filename,
-                        bool is_complex,
-                        bool is_vector,
-                        bool with_k,
-                        bool with_w,
-                        bool as_mesh,
-                        bool centered,
-                        const std::vector<int>& inds,
-                        const std::vector<int>& mesh,
-                        const std::vector<std::vector<float>>& domain,
-                        int dimension,
-                        const std::vector<float>& w_points,
-                        const std::vector<std::vector<float>>& points,
-                        const vector<vector<vector<vector<cfloat>>>>& data) {
+namespace {
 
-    H5File file(filename, H5F_ACC_TRUNC);
-    write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
+void append(const cfloat& v, vector<float>& re, vector<float>& im) {
+    re.push_back(v.real());
+    im.push_back(v.imag());
+}
+void append(float v, vector<float>& re, vector<float>& im) {
+    re.push_back(v);
+    im.push_back(0.0f);
+}
+template <typename T>
+void append(const vector<T>& v, vector<float>& re, vector<float>& im) {
+    for (auto& e : v) append(e, re, im);
+}
 
-    if (!points.empty()) write_points(file, points);
-    if (!domain_is_empty(domain)) write_domain(file, domain);
-    if (!w_points.empty()) write_w_points(file, w_points);
+bool variant_empty(const BaseData::DataVariant& d) {
+    return std::visit([](auto& v) { return v.empty(); }, d);
+}
 
-    std::vector<float> real_flat, imag_flat;
-    flatten(data, real_flat, imag_flat, is_complex);
+} // namespace
 
-    // -- Write datasets under /values --
-    hsize_t dims[1] = { real_flat.size() };
-    DataSpace space(1, dims);
+// The structured variant wins when it holds data (it is what programmatic
+// callers set); otherwise the flat arrays from HDF5 are used.
+void BaseData::flat_values(vector<float>& re, vector<float>& im) const {
+    const BaseData& f = *this;
+    re.clear();
+    im.clear();
+    if (!variant_empty(f.data)) {
+        std::visit([&](auto& d) { append(d, re, im); }, f.data);
+    } else {
+        re = f.real_values;
+        im = f.imag_values;
+        im.resize(re.size(), 0.0f);
+    }
+    if (!f.is_complex) im.clear();
+}
 
-    Group values_group = file.createGroup("/values");
-    // Real part
-    DataSet ds_real = values_group.createDataSet("real", PredType::NATIVE_FLOAT, space);
-    ds_real.write(real_flat.data(), PredType::NATIVE_FLOAT);
+void BaseData::flatten_variant() {
+    if (!real_values.empty() || variant_empty(data)) return;
+    flat_values(real_values, imag_values);
+}
 
-    // Imag part
-    if (is_complex) {
-        DataSet ds_imag = values_group.createDataSet("imag", PredType::NATIVE_FLOAT, space);
-        ds_imag.write(imag_flat.data(), PredType::NATIVE_FLOAT);
+// ============================================================================
+// Attributes
+// ============================================================================
+
+static void write_string_attribute(Group& root, const string& key, const string& value) {
+    StrType type(PredType::C_S1, H5T_VARIABLE);
+    if (root.attrExists(key)) root.removeAttr(key);
+    Attribute attr = root.createAttribute(key, type, DataSpace(H5S_SCALAR));
+    attr.write(type, value);
+}
+
+// Reads string, integer and float attributes; numbers are converted to text
+static map<string, string> read_attributes(Group& root, int& format_version) {
+    map<string, string> out;
+    format_version = 1;
+    int n = root.getNumAttrs();
+    for (int i = 0; i < n; i++) {
+        Attribute attr = root.openAttribute((unsigned)i);
+        string name = attr.getName();
+        H5T_class_t cls = attr.getTypeClass();
+        if (name == "format_version" && cls == H5T_INTEGER) {
+            attr.read(PredType::NATIVE_INT, &format_version);
+        } else if (cls == H5T_STRING) {
+            string value;
+            attr.read(attr.getStrType(), value);
+            out[name] = value;
+        } else if (cls == H5T_INTEGER && attr.getSpace().getSimpleExtentNpoints() == 1) {
+            long long value;
+            attr.read(PredType::NATIVE_LLONG, &value);
+            out[name] = std::to_string(value);
+        } else if (cls == H5T_FLOAT && attr.getSpace().getSimpleExtentNpoints() == 1) {
+            double value;
+            attr.read(PredType::NATIVE_DOUBLE, &value);
+            char buf[64];
+            snprintf(buf, sizeof(buf), "%.9g", value);
+            out[name] = buf;
+        }
+    }
+    return out;
+}
+
+map<string, string> read_field_attributes(const std::string& filename) {
+    H5File file(filename, H5F_ACC_RDONLY);
+    Group root = file.openGroup("/");
+    int version;
+    return read_attributes(root, version);
+}
+
+void write_field_attributes(const std::string& filename, const map<string, string>& attrs) {
+    H5File file(filename, H5F_ACC_RDWR);
+    Group root = file.openGroup("/");
+    for (auto& [key, value] : attrs) {
+        if (key == "format_version")
+            throw std::runtime_error("format_version is set by the library and cannot be overridden");
+        write_string_attribute(root, key, value);
     }
 }
 
-void save_data_to_hdf5(const std::string& filename,
-                        bool is_complex,
-                        bool is_vector,
-                        bool with_k,
-                        bool with_w,
-                        bool as_mesh,
-                        bool centered,
-                        const std::vector<int>& inds,
-                        const std::vector<int>& mesh,
-                        const std::vector<std::vector<float>>& domain,
-                        int dimension,
-                        const std::vector<float>& w_points,
-                        const std::vector<std::vector<float>>& points,
-                        const vector<vector<vector<cfloat>>>& data) {
-
-    H5File file(filename, H5F_ACC_TRUNC);
-    write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
-
-    if (!points.empty()) write_points(file, points);
-    if (!domain_is_empty(domain)) write_domain(file, domain);
-    if (!w_points.empty()) write_w_points(file, w_points);
-
-    std::vector<float> real_flat, imag_flat;
-    flatten(data, real_flat, imag_flat, is_complex);
-
-    // -- Write datasets under /values --
-    hsize_t dims[1] = { real_flat.size() };
-    DataSpace space(1, dims);
-
-    Group values_group = file.createGroup("/values");
-    // Real part
-    DataSet ds_real = values_group.createDataSet("real", PredType::NATIVE_FLOAT, space);
-    ds_real.write(real_flat.data(), PredType::NATIVE_FLOAT);
-
-    // Imag part
-    if (is_complex) {
-        DataSet ds_imag = values_group.createDataSet("imag", PredType::NATIVE_FLOAT, space);
-        ds_imag.write(imag_flat.data(), PredType::NATIVE_FLOAT);
-    }
-}
-
-void save_data_to_hdf5(const std::string& filename,
-                        bool is_complex,
-                        bool is_vector,
-                        bool with_k,
-                        bool with_w,
-                        bool as_mesh,
-                        bool centered,
-                        const std::vector<int>& inds,
-                        const std::vector<int>& mesh,
-                        const std::vector<std::vector<float>>& domain,
-                        int dimension,
-                        const std::vector<float>& w_points,
-                        const std::vector<std::vector<float>>& points,
-                        const vector<vector<cfloat>>& data) {
-
-    H5File file(filename, H5F_ACC_TRUNC);
-    write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
-
-    if (!points.empty()) write_points(file, points);
-    if (!domain_is_empty(domain)) write_domain(file, domain);
-    if (!w_points.empty()) write_w_points(file, w_points);
-
-    std::vector<float> real_flat, imag_flat;
-    flatten(data, real_flat, imag_flat, is_complex);
-
-    // -- Write datasets under /values --
-    hsize_t dims[1] = { real_flat.size() };
-    DataSpace space(1, dims);
-
-    Group values_group = file.createGroup("/values");
-    // Real part
-    DataSet ds_real = values_group.createDataSet("real", PredType::NATIVE_FLOAT, space);
-    ds_real.write(real_flat.data(), PredType::NATIVE_FLOAT);
-
-    // Imag part
-    if (is_complex) {
-        DataSet ds_imag = values_group.createDataSet("imag", PredType::NATIVE_FLOAT, space);
-        ds_imag.write(imag_flat.data(), PredType::NATIVE_FLOAT);
-    }
-}
-
-void save_data_to_hdf5(const std::string& filename,
-                        bool is_complex,
-                        bool is_vector,
-                        bool with_k,
-                        bool with_w,
-                        bool as_mesh,
-                        bool centered,
-                        const std::vector<int>& inds,
-                        const std::vector<int>& mesh,
-                        const std::vector<std::vector<float>>& domain,
-                        int dimension,
-                        const std::vector<float>& w_points,
-                        const std::vector<std::vector<float>>& points,
-                        const vector<cfloat>& data) {
-
-    H5File file(filename, H5F_ACC_TRUNC);
-    write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
-
-    if (!points.empty()) write_points(file, points);
-    if (!domain_is_empty(domain)) write_domain(file, domain);
-    if (!w_points.empty()) write_w_points(file, w_points);
-
-    std::vector<float> real_flat, imag_flat;
-    flatten(data, real_flat, imag_flat, is_complex);
-
-    // -- Write datasets under /values --
-    hsize_t dims[1] = { real_flat.size() };
-    DataSpace space(1, dims);
-
-    Group values_group = file.createGroup("/values");
-    // Real part
-    DataSet ds_real = values_group.createDataSet("real", PredType::NATIVE_FLOAT, space);
-    ds_real.write(real_flat.data(), PredType::NATIVE_FLOAT);
-
-    // Imag part
-    if (is_complex) {
-        DataSet ds_imag = values_group.createDataSet("imag", PredType::NATIVE_FLOAT, space);
-        ds_imag.write(imag_flat.data(), PredType::NATIVE_FLOAT);
-    }
-}
-
-void save_data_to_hdf5(const std::string& filename,
-                        bool is_complex,
-                        bool is_vector,
-                        bool with_k,
-                        bool with_w,
-                        bool as_mesh,
-                        bool centered,
-                        const std::vector<int>& inds,
-                        const std::vector<int>& mesh,
-                        const std::vector<std::vector<float>>& domain,
-                        int dimension,
-                        const std::vector<float>& w_points,
-                        const std::vector<std::vector<float>>& points,
-                        const vector<vector<vector<vector<float>>>>& data) {
-
-    H5File file(filename, H5F_ACC_TRUNC);
-    write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
-
-    if (!points.empty()) write_points(file, points);
-    if (!domain_is_empty(domain)) write_domain(file, domain);
-    if (!w_points.empty()) write_w_points(file, w_points);
-
-    std::vector<float> real_flat;
-    flatten(data, real_flat);
-
-    // -- Write datasets under /values --
-    hsize_t dims[1] = { real_flat.size() };
-    DataSpace space(1, dims);
-
-    Group values_group = file.createGroup("/values");
-    // Real part
-    DataSet ds_real = values_group.createDataSet("real", PredType::NATIVE_FLOAT, space);
-    ds_real.write(real_flat.data(), PredType::NATIVE_FLOAT);
-}
-
-void save_data_to_hdf5(const std::string& filename,
-                        bool is_complex,
-                        bool is_vector,
-                        bool with_k,
-                        bool with_w,
-                        bool as_mesh,
-                        bool centered,
-                        const std::vector<int>& inds,
-                        const std::vector<int>& mesh,
-                        const std::vector<std::vector<float>>& domain,
-                        int dimension,
-                        const std::vector<float>& w_points,
-                        const std::vector<std::vector<float>>& points,
-                        const vector<vector<vector<float>>>& data) {
-
-    H5File file(filename, H5F_ACC_TRUNC);
-    write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
-
-    if (!points.empty()) write_points(file, points);
-    if (!domain_is_empty(domain)) write_domain(file, domain);
-    if (!w_points.empty()) write_w_points(file, w_points);
-
-    std::vector<float> real_flat;
-    flatten(data, real_flat);
-
-    // -- Write datasets under /values --
-    hsize_t dims[1] = { real_flat.size() };
-    DataSpace space(1, dims);
-
-    Group values_group = file.createGroup("/values");
-    // Real part
-    DataSet ds_real = values_group.createDataSet("real", PredType::NATIVE_FLOAT, space);
-    ds_real.write(real_flat.data(), PredType::NATIVE_FLOAT);
-}
-
-void save_data_to_hdf5(const std::string& filename,
-                        bool is_complex,
-                        bool is_vector,
-                        bool with_k,
-                        bool with_w,
-                        bool as_mesh,
-                        bool centered,
-                        const std::vector<int>& inds,
-                        const std::vector<int>& mesh,
-                        const std::vector<std::vector<float>>& domain,
-                        int dimension,
-                        const std::vector<float>& w_points,
-                        const std::vector<std::vector<float>>& points,
-                        const vector<vector<float>>& data) {
-
-    H5File file(filename, H5F_ACC_TRUNC);
-    write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
-
-    if (!points.empty()) write_points(file, points);
-    if (!domain_is_empty(domain)) write_domain(file, domain);
-    if (!w_points.empty()) write_w_points(file, w_points);
-
-    std::vector<float> real_flat;
-    flatten(data, real_flat);
-
-    // -- Write datasets under /values --
-    hsize_t dims[1] = { real_flat.size() };
-    DataSpace space(1, dims);
-
-    Group values_group = file.createGroup("/values");
-    // Real part
-    DataSet ds_real = values_group.createDataSet("real", PredType::NATIVE_FLOAT, space);
-    ds_real.write(real_flat.data(), PredType::NATIVE_FLOAT);
-}
-
-void save_data_to_hdf5(const std::string& filename,
-                        bool is_complex,
-                        bool is_vector,
-                        bool with_k,
-                        bool with_w,
-                        bool as_mesh,
-                        bool centered,
-                        const std::vector<int>& inds,
-                        const std::vector<int>& mesh,
-                        const std::vector<std::vector<float>>& domain,
-                        int dimension,
-                        const std::vector<float>& w_points,
-                        const std::vector<std::vector<float>>& points,
-                        const vector<float>& data) {
-
-    H5File file(filename, H5F_ACC_TRUNC);
-    write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
-
-    if (!points.empty()) write_points(file, points);
-    if (!domain_is_empty(domain)) write_domain(file, domain);
-    if (!w_points.empty()) write_w_points(file, w_points);
-
-    std::vector<float> real_flat = data;
-
-    // -- Write datasets under /values --
-    hsize_t dims[1] = { real_flat.size() };
-    DataSpace space(1, dims);
-
-    Group values_group = file.createGroup("/values");
-    // Real part
-    DataSet ds_real = values_group.createDataSet("real", PredType::NATIVE_FLOAT, space);
-    ds_real.write(real_flat.data(), PredType::NATIVE_FLOAT);
-}
-
-void save_data_to_hdf5(const std::string& filename,
-                        bool is_complex,
-                        bool is_vector,
-                        bool with_k,
-                        bool with_w,
-                        bool as_mesh,
-                        bool centered,
-                        const std::vector<int>& inds,
-                        const std::vector<int>& mesh,
-                        const std::vector<std::vector<float>>& domain,
-                        int dimension,
-                        const std::vector<float>& w_points,
-                        const std::vector<std::vector<float>>& points,
-                        const vector<vector<vector<vector<vector<cfloat>>>>>& data) {
-
-    H5File file(filename, H5F_ACC_TRUNC);
-    write_metadata(file, is_complex, is_vector, with_k, with_w, as_mesh, centered, dimension, inds, mesh);
-
-    if (!points.empty()) write_points(file, points);
-    if (!domain_is_empty(domain)) write_domain(file, domain);
-    if (!w_points.empty()) write_w_points(file, w_points);
-
-    std::vector<float> real_flat, imag_flat;
-    flatten(data, real_flat, imag_flat, is_complex);
-
-    // -- Write datasets under /values --
-    hsize_t dims[1] = { real_flat.size() };
-    DataSpace space(1, dims);
-
-    Group values_group = file.createGroup("/values");
-    // Real part
-    DataSet ds_real = values_group.createDataSet("real", PredType::NATIVE_FLOAT, space);
-    ds_real.write(real_flat.data(), PredType::NATIVE_FLOAT);
-
-    // Imag part
-    if (is_complex) {
-        DataSet ds_imag = values_group.createDataSet("imag", PredType::NATIVE_FLOAT, space);
-        ds_imag.write(imag_flat.data(), PredType::NATIVE_FLOAT);
-    }
-}
+// ============================================================================
+// Saving
+// ============================================================================
 
 void save_data_to_hdf5(BaseData& field, const std::string& filename) {
-    std::visit([&](auto& data) {
-        save_data_to_hdf5(filename, field.is_complex, field.is_vector,
-                          field.with_k, field.with_w, field.as_mesh,
-                          field.centered, field.inds, field.mesh, field.domain,
-                          field.dimension, field.w_points, field.points, data);
-    }, field.data);
+    vector<float> real_flat, imag_flat;
+    field.flat_values(real_flat, imag_flat);
+
+    H5File file(filename, H5F_ACC_TRUNC);
+    write_metadata(file, field.is_complex, field.is_vector, field.with_k, field.with_w,
+                   field.as_mesh, field.centered, field.dimension, field.inds, field.mesh);
+
+    if (!field.points.empty()) write_points(file, field.points);
+    if (!domain_is_empty(field.domain)) write_domain(file, field.domain);
+    if (!field.w_points.empty()) write_w_points(file, field.w_points);
+
+    hsize_t dims[1] = { real_flat.size() };
+    DataSpace space(1, dims);
+    Group values_group = file.createGroup("/values");
+    DataSet ds_real = values_group.createDataSet("real", PredType::NATIVE_FLOAT, space);
+    ds_real.write(real_flat.data(), PredType::NATIVE_FLOAT);
+    if (field.is_complex) {
+        DataSet ds_imag = values_group.createDataSet("imag", PredType::NATIVE_FLOAT, space);
+        ds_imag.write(imag_flat.data(), PredType::NATIVE_FLOAT);
+    }
+
+    Group root = file.openGroup("/");
+    int version = BaseData::FORMAT_VERSION;
+    Attribute va = root.createAttribute("format_version", PredType::NATIVE_INT, DataSpace(H5S_SCALAR));
+    va.write(PredType::NATIVE_INT, &version);
+    for (auto& [key, value] : field.attrs)
+        if (key != "format_version") write_string_attribute(root, key, value);
 }
 
 // ============================================================================
 // Convenience save_data wrappers
 // ============================================================================
 
-void save_data(string filename, vector<vector<vector<vector<cfloat>>>>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
-    bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, true, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
+template <typename T>
+static void save_nested(const string& filename, const T& data, bool is_complex,
+                        const vector<int>& inds, const vector<int>& mesh,
+                        const vector<vector<float>>& domain, const vector<float>& w_points,
+                        const vector<vector<float>>& points, bool centered) {
+    BaseData f;
+    f.is_complex = is_complex;
+    f.with_k = points.size() > 0 || mesh.size() > 0;
+    f.with_w = w_points.size() > 0;
+    f.as_mesh = mesh.size() > 0;
+    f.centered = centered;
+    f.inds = inds;
+    f.mesh = mesh;
+    f.domain = domain;
+    f.w_points = w_points;
+    f.points = points;
+    f.dimension = infer_dimension(mesh, points);
+    append(data, f.real_values, f.imag_values);
+    if (!is_complex) f.imag_values.clear();
+    save_data_to_hdf5(f, filename);
 }
 
-void save_data(string filename, vector<vector<vector<cfloat>>>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
-    bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, true, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
-}
+#define FIREFLY_SAVE_DATA(TYPE, IS_COMPLEX)                                                     \
+    void save_data(string filename, TYPE& data, vector<int> inds, vector<int> mesh,             \
+                   vector<vector<float>> domain, vector<float> w_points,                         \
+                   const vector<vector<float>>& points, bool centered) {                         \
+        save_nested(filename, data, IS_COMPLEX, inds, mesh, domain, w_points, points, centered); \
+    }
 
-void save_data(string filename, vector<vector<cfloat>>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
-    bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, true, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
-}
-
-void save_data(string filename, vector<cfloat>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
-    bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, true, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
-}
-
-void save_data(string filename, vector<vector<vector<vector<float>>>>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
-    bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, false, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
-}
-
-void save_data(string filename, vector<vector<vector<float>>>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
-    bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, false, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
-}
-
-void save_data(string filename, vector<vector<float>>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
-    bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, false, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
-}
-
-void save_data(string filename, vector<float>& data, vector<int> inds, vector<int> mesh, vector<vector<float>> domain, vector<float> w_points, const vector<vector<float>>& points, bool centered) {
-    bool with_k = points.size() > 0 || mesh.size() > 0;
-    save_data_to_hdf5(filename, false, false, with_k, w_points.size() > 0, mesh.size() > 0, centered, inds, mesh, domain, infer_dimension(mesh, points), w_points, points, data);
-}
+FIREFLY_SAVE_DATA(vector<vector<vector<vector<cfloat>>>>, true)
+FIREFLY_SAVE_DATA(vector<vector<vector<cfloat>>>, true)
+FIREFLY_SAVE_DATA(vector<vector<cfloat>>, true)
+FIREFLY_SAVE_DATA(vector<cfloat>, true)
+FIREFLY_SAVE_DATA(vector<vector<vector<vector<float>>>>, false)
+FIREFLY_SAVE_DATA(vector<vector<vector<float>>>, false)
+FIREFLY_SAVE_DATA(vector<vector<float>>, false)
+FIREFLY_SAVE_DATA(vector<float>, false)
+#undef FIREFLY_SAVE_DATA
 
 void save_data(string filename, vector<float>& data, vector<float> w_points, bool centered) {
-    vector<int> tmp;
-    vector<vector<float>> tmp2;
-    save_data_to_hdf5(filename, false, false, false, w_points.size() > 0, false, centered, tmp, tmp, tmp2, 0, w_points, tmp2, data);
+    save_nested(filename, data, false, {}, {}, {}, w_points, {}, centered);
 }

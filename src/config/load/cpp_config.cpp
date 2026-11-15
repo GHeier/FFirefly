@@ -272,11 +272,21 @@ bool isDirectoryExisting(const std::string& path) {
     return std::filesystem::exists(dirPath) && std::filesystem::is_directory(dirPath);
 }
 
+// Called by the Python/Julia exports. Reuses a config already read on the C
+// side (e.g. by load_config(path)) instead of looking next to the host
+// executable, which for bindings is the python or julia binary.
 void ensure_cpp_config_loaded() {
-    if (!cpp_config_loaded) {
-        read_c_config((get_loc() + "input.cfg").c_str());
-        load_cpp_config();
+    if (cpp_config_loaded) return;
+    if (!c_config_was_read()) {
+        const char *path = firefly_config_path();
+        if (path == nullptr) {
+            std::cerr << "Error: no Firefly config found. Set FIREFLY_CONFIG=/path/to/file.cfg, "
+                         "call load_config(path) first, or run fly.x (it writes build/bin/input.cfg).\n";
+            exit(1);
+        }
+        read_c_config(path);
     }
+    load_cpp_config();
 }
 
 int run_with_config(const std::string& executable, const std::string& config_file) {

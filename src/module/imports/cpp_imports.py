@@ -5,8 +5,9 @@ from pathlib import Path
 import os
 
 # Get the project root directory (FFirefly/)
-current_file_path = os.path.abspath(__file__)
-lib_path = current_file_path.split("FFirefly")[0] + "FFirefly/build/lib/libfly.so"
+# Repo root from src/module/imports/; realpath follows the pypkg/jlpkg symlinks
+_repo_root = Path(os.path.realpath(__file__)).parents[3]
+lib_path = str(_repo_root / "build" / "lib" / "libfly.so")
 
 lib = ctypes.CDLL(lib_path)
 
@@ -1695,12 +1696,21 @@ lib.load_config_export0.restype = None  # Equivalent to Cvoid
 
 # Define the wrapper function
 def load_config(path: str) -> None:
+    """Load a config file into the C/C++ side, and into firefly.config when the
+    package is in use, so both sides see the same values."""
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Config file not found: {path}")
     lib.load_config_export0(path.encode("utf-8"))
+    import sys
+    for name in ("firefly.src.config.load.config", "config"):
+        module = sys.modules.get(name)
+        if module is not None and hasattr(module, "config_path"):
+            module.load_config(path)
 
 # Save data functions
 def save_data(filename: str, data: np.ndarray, mesh=None, domain=None,
               w_points=None, inds=None, n_indices=None, dim_indices=None,
-              centered: bool = True, is_complex: bool = None):
+              centered: bool = True, is_complex: bool = None, attrs=None):
     """Save data to HDF5 file with automatic dispatch based on data type.
 
     Args:
@@ -1715,6 +1725,9 @@ def save_data(filename: str, data: np.ndarray, mesh=None, domain=None,
         centered: Whether coordinates are centered (default True)
         is_complex: Override the complex/real dtype inferred from data (default:
             inferred via np.iscomplexobj)
+        attrs: Optional dict of metadata stored as HDF5 attributes, e.g.
+            {"quantity": "Sigma", "units": "eV", "frequency_axis": "matsubara",
+             "temperature": 0.01}. Values are stored as strings.
     """
     # Set defaults
     if mesh is None:
@@ -1768,6 +1781,27 @@ def save_data(filename: str, data: np.ndarray, mesh=None, domain=None,
     else:
         # Scalar data (rank == 0)
         save_data_scalar(filename, data, is_complex, mesh, domain, w_points, centered)
+
+    if attrs:
+        set_attrs(filename, attrs)
+
+
+lib.field_attribute_set_export0.argtypes = [c_char_p, c_char_p, c_char_p]
+lib.field_attribute_set_export0.restype = c_int
+
+def set_attrs(filename: str, attrs: dict) -> None:
+    """Add or replace metadata attributes on an existing field file."""
+    for key, value in attrs.items():
+        status = lib.field_attribute_set_export0(filename.encode("utf-8"),
+                                                 str(key).encode("utf-8"),
+                                                 str(value).encode("utf-8"))
+        if status != 0:
+            raise RuntimeError(f"Could not set attribute {key!r} on {filename}")
+
+
+def read_attrs(filename: str) -> dict:
+    """Metadata attributes stored in a field file, as a dict of strings."""
+    return BaseData(filename).attrs
 
 lib.save_data_scalar_export0.argtypes = [
     c_char_p, POINTER(c_float), c_int, c_bool,
@@ -2167,6 +2201,14 @@ lib.BaseData_get_nk.argtypes = [c_void_p]
 lib.BaseData_get_nk.restype = c_int
 lib.BaseData_get_nw.argtypes = [c_void_p]
 lib.BaseData_get_nw.restype = c_int
+lib.BaseData_get_format_version.argtypes = [c_void_p]
+lib.BaseData_get_format_version.restype = c_int
+lib.BaseData_get_attr_count.argtypes = [c_void_p]
+lib.BaseData_get_attr_count.restype = c_int
+lib.BaseData_get_attr_key.argtypes = [c_void_p, c_int]
+lib.BaseData_get_attr_key.restype = c_char_p
+lib.BaseData_get_attr_value.argtypes = [c_void_p, c_int]
+lib.BaseData_get_attr_value.restype = c_char_p
 
 # BaseData array getters
 lib.BaseData_get_mesh_size.argtypes = [c_void_p]
@@ -2269,6 +2311,12 @@ class BaseData:
         self.dimension = lib.BaseData_get_dimension(self.ptr)
         self.nk = lib.BaseData_get_nk(self.ptr)
         self.nw = lib.BaseData_get_nw(self.ptr)
+        self.format_version = lib.BaseData_get_format_version(self.ptr)
+        self.attrs = {
+            lib.BaseData_get_attr_key(self.ptr, i).decode("utf-8"):
+                lib.BaseData_get_attr_value(self.ptr, i).decode("utf-8")
+            for i in range(lib.BaseData_get_attr_count(self.ptr))
+        }
 
         # Load mesh
         mesh_size = lib.BaseData_get_mesh_size(self.ptr)
@@ -2344,7 +2392,8 @@ class BaseData:
 
         # Use save_data() to save the data
         save_data(filename, shaped_data, mesh=self.mesh, domain=self.domain,
-                  w_points=self.w_points, inds=list(self.inds))
+                  w_points=self.w_points, inds=list(self.inds),
+                  centered=self.centered, attrs=self.attrs)
 
     @property
     def data(self):

@@ -106,8 +106,12 @@ This will install the packages sufficient for base functionality. The complete l
 The easiest way to run Ffirefly is with a `.cfg` input file:
 
 ```bash
-fly.x < input_file.cfg
+fly.x input_file.cfg      # or: fly.x < input_file.cfg
+fly.x --help
 ```
+
+Lines starting with `#`, `;` or `!` are comments, and spaces around `=` are optional.
+An unknown variable name stops the run with the file and line number.
 
 A basic example is provided in `sample.cfg`. Use this file as a reference for the expected input format.
 
@@ -160,6 +164,8 @@ An example can be found in
 ```bash
 scripts/eliashberg.py
 ```
+
+When `firefly` is imported from Python or Julia, it reads the config from `$FIREFLY_CONFIG` if set, otherwise from `build/bin/input.cfg` (written by the last `fly.x` run). `load_config(path)` / `load_config!(path)` switch to another file.
 
 ---
 
@@ -215,7 +221,13 @@ Ffirefly is designed to make testing easy across all calculation categories. Goo
 
 ### Running Tests
 
-When `fly.x` is run with no input file, the default test suite is executed. If any tests fail, Ffirefly will print which tests failed.
+Run every test suite (C++, Python bindings, Julia bindings) with:
+
+```bash
+./scripts/test-all.sh            # add --no-build to skip rebuilding
+```
+
+`fly.x --test [all|objects|algorithms]` runs just the C++ unit tests. Both exit nonzero if any test fails, and print which tests failed.
 
 To test beyond the default suite, navigate to a project's test folder and run the test file. It will output success or failure based on the test conditions set by the developer.
 
