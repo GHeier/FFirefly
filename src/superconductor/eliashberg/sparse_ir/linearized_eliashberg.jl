@@ -51,7 +51,7 @@ if bcs_debug
     printstyled("BCS Debug Session enabled\n"; color = :blue)
     if nw % 2 != 0
         println("Remember to make nw even")
-        exit()
+        exit(1)
     end
 end
 
@@ -87,7 +87,7 @@ end
 
 function fill_V_rt(vertex, iv, mesh)
     bnw = length(iv)
-    V = Array{ComplexF32}(undef, bnw, nx, ny, nz)
+    V = Array{MatsubaraComplex}(undef, bnw, nx, ny, nz)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:bnw
         q = get_kvec(i - 1, j - 1, k - 1)
         w = imag(iv[l])
@@ -104,7 +104,7 @@ end
 function fill_V_rt_from_chi(chi, iv, mesh)
     """Compute V_singlet directly from chi like fulltest.jl does"""
     bnw = length(iv)
-    V = Array{ComplexF32}(undef, bnw, nx, ny, nz)
+    V = Array{MatsubaraComplex}(undef, bnw, nx, ny, nz)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:bnw
         q = get_kvec(i - 1, j - 1, k - 1)
         w = imag(iv[l])
@@ -121,7 +121,7 @@ end
 
 function create_energy_mesh(band, iw, Sigma, with_sigma=true)
     nw = length(iw)
-    e_arr = zeros(ComplexF32, nw, nx, ny, nz)
+    e_arr = zeros(MatsubaraComplex, nw, nx, ny, nz)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:nw
         kvec = get_kvec(i - 1, j - 1, k - 1)
         if with_sigma
@@ -148,9 +148,9 @@ end
 
 function power_iteration(iw, V_rt, e, mesh = 0)
     println("Beginning Power Iteration")
-    deflate = Vector{Array{ComplexF32, 4}}()
+    deflate = Vector{Array{MatsubaraComplex, 4}}()
     eig, iters, max_iters = -1, 0, 5
-    phi = Array{ComplexF32, 4}
+    phi = Array{MatsubaraComplex, 4}
     while real(eig) < 0 && iters < max_iters
         eig, phi = linearized_eliashberg_loop(iw, V_rt, e, deflate, mesh)
         println("eig$iters = $eig")
@@ -171,7 +171,6 @@ function save!(filename, phi, iw)
         mesh = mesh[1:end-1]
         BZ = BZ[1:end-1, 1:end-1]
     end
-    phi .= ComplexF32.(phi)
     save_data!(filename, phi, mesh, BZ, w_points=imag.(iw))
     println("Saved to ", filename)
     #save_field!(filename, phi, BZ, mesh, imag.(iw))
@@ -180,8 +179,8 @@ end
 
 function linearized_eliashberg_loop(iw, V_rt, e, deflates, mesh = 0)
     phinw = length(iw)
-    phi = rand(ComplexF32, phinw, nx, ny, nz)
-    #phi = ones(ComplexF32, phinw, nx, ny, nz)
+    phi = rand(MatsubaraComplex, phinw, nx, ny, nz)
+    #phi = ones(MatsubaraComplex, phinw, nx, ny, nz)
     for iy in 1:ny, ix in 1:nx, iw in 1:phinw
         kx, ky = get_kvec(ix - 1, iy - 1, 0)
         #kx::Float64 = (2*π*(ix-1))/nx
@@ -314,7 +313,7 @@ function eigenvalue_computation()
         V_rt = fill_V_rt(vertex, iv, mesh)
         println("Max V_rt: ", maximum(abs.(V_rt)))
     else
-        #V = -1.0 .* ones(Complex{Float32}, bnw, nx, ny, nz)
+        #V = -1.0 .* ones(MatsubaraComplex, bnw, nx, ny, nz)
         #V_rt = fft(V)
         vertex = Field_C(outdir * prefix * "_vertex.h5")
         V_rt = fill_V_rt(vertex, iv, 0)
@@ -344,8 +343,8 @@ end
 
 
 function get_iw_iv_bcs()
-    iw = Array{ComplexF32}(undef, nw)
-    iv = Array{ComplexF32}(undef, nw)
+    iw = Array{MatsubaraComplex}(undef, nw)
+    iv = Array{MatsubaraComplex}(undef, nw)
     for i in 1:nw
         n = -nw / 2 + i
         iw[i] = pi / beta * (2 * n + 1) * im
@@ -361,9 +360,9 @@ end
 
 
 function get_projections(fnw, nx, ny, nz, num_projs)
-    projections = Vector{Array{Float32}}(undef, num_projs)
+    projections = Vector{Array{MatsubaraFloat}}(undef, num_projs)
     for i in 1:num_projs
-        phi = Array{Float32}(undef, fnw, nx, ny, nz)
+        phi = Array{MatsubaraFloat}(undef, fnw, nx, ny, nz)
         for j in 1:nx, k in 1:ny, l in 1:nz
             kvec = get_kvec(j - 1, k - 1, l - 1)
             if projs[i] == 's'
@@ -384,7 +383,7 @@ function linearized_eliashberg_projections(projections, iw, V_rt, e, mesh)
     nw = length(iw)
     num_projs = length(projections)
     eigs = zeros(num_projs)
-    c_vals = Vector{Array{Float32}}(undef, num_projs)
+    c_vals = Vector{Array{MatsubaraFloat}}(undef, num_projs)
     conv_thresh = 1e-4
     conv_iters = 2
     errs = ones(conv_iters)

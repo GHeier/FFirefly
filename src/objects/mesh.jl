@@ -23,6 +23,13 @@ export tau_to_wn, wn_to_tau, k_to_r, r_to_k, kw_to_rtau, rtau_to_kw, IR_Mesh
 export k_to_r!, r_to_k!, kw_to_rtau!, rtau_to_kw!, IR_Mesh
 export prepare_ir, project_kernel, smpl_obj
 export MultiField, make_MultiField
+export MatsubaraFloat, MatsubaraComplex
+
+# Working precision for Matsubara-frequency arrays: G(iw), chi(iv), Sigma(iw), the
+# vertex in (r, tau) and the gap kernels. IR fits and frequency sums run in double
+# precision; save_data! converts to Float32 when the result is written.
+const MatsubaraFloat = Float64
+const MatsubaraComplex = Complex{MatsubaraFloat}
 
 """
 Holding struct for k-mesh and sparsely sampled imaginary time 'tau' / Matsubara frequency 'iw_n' grids.
@@ -268,8 +275,8 @@ function get_iw_iv(mesh)
     fnw, bnw, fntau, bntau = mesh.fnw, mesh.bnw, mesh.fntau, mesh.bntau
     println("fnw: ", fnw, " bnw: ", bnw, " fntau: ", fntau, " bntau: ", bntau)
     println("Created IRMesh")
-    iw = Array{ComplexF32}(undef, fnw)
-    iv = Array{ComplexF32}(undef, bnw)
+    iw = Array{MatsubaraComplex}(undef, fnw)
+    iv = Array{MatsubaraComplex}(undef, bnw)
     for i in 1:fnw
         iw[i] = valueim(mesh.IR_basis_set.smpl_wn_f.sampling_points[i], beta)
     end
@@ -289,11 +296,11 @@ function prepare_ir(mesh::Mesh, stats)
     fntau_lshape = (mesh.fntau, mesh.nk1, mesh.nk2, mesh.nk3)
     bntau_lshape = (mesh.bntau, mesh.nk1, mesh.nk2, mesh.nk3)
     if stats == Fermionic()
-        obj_l_wn = zeros(ComplexF32, fnw_lshape)
-        obj_l_tau = zeros(ComplexF32, fntau_lshape)
+        obj_l_wn = zeros(MatsubaraComplex, fnw_lshape)
+        obj_l_tau = zeros(MatsubaraComplex, fntau_lshape)
     else
-        obj_l_wn = zeros(ComplexF32, bnw_lshape)
-        obj_l_tau = zeros(ComplexF32, bntau_lshape)
+        obj_l_wn = zeros(MatsubaraComplex, bnw_lshape)
+        obj_l_tau = zeros(MatsubaraComplex, bntau_lshape)
     end
     #println("Sample object sizes:")
     #println(size(obj_l_wn))
@@ -326,7 +333,7 @@ function allocate_rt_boson(mesh)
 end
 
 struct BlockArray
-    data :: Array{Array{ComplexF32, 4}}
+    data :: Array{Array{MatsubaraComplex, 4}}
     dim  :: Int64
 end
 

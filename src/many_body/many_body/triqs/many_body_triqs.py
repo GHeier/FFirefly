@@ -64,7 +64,7 @@ def FLEX():
         S.G.save(pref + '_G.h5')
         S.X.save(pref + '_chi.h5')
         print("FLEX calculation diverged due to magnetic instability. Results are unreliable.")
-        exit()
+        exit(1)
 
     loc_sigma = make_local(S.Sigma.obj_wk.data)
     renorm = get_renorm(loc_sigma, S.Sigma.w_points)
@@ -100,7 +100,7 @@ def FLEX_DMFT():
         S.solve_FLEX_DMFT(S.FLEX, S.IPT)
     if S.diverged:
         print("FLEX calculation diverged due to magnetic instability. Results are unreliable.")
-        exit()
+        exit(1)
     if hasattr(S, 'V'):
         print(f"Final Max Chi: {np.max(np.abs(S.FLEX.X.obj_wk.data)):.4f}")
         print(f"Final Max Vertex: {np.max(np.abs(S.FLEX.V.obj_wk.data)):.4f}")

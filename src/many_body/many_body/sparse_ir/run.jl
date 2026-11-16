@@ -108,14 +108,14 @@ mutable struct ManyBodySolver
     mix      ::Float64
     verbose  ::Bool
     mu       ::Float64
-    Gkw      ::Array{ComplexF32, 4}
-    Grt      ::Array{ComplexF32, 4}
-    Xkw      ::Array{ComplexF32, 4}
-    Vrt      ::Array{ComplexF32, 4}
-    Ekw      ::Array{ComplexF32, 4}
-    Ekw_bubble      ::Array{ComplexF32, 4}
-    iw       ::Array{ComplexF32,4}
-    iv       ::Array{ComplexF32,4}
+    Gkw      ::Array{MatsubaraComplex, 4}
+    Grt      ::Array{MatsubaraComplex, 4}
+    Xkw      ::Array{MatsubaraComplex, 4}
+    Vrt      ::Array{MatsubaraComplex, 4}
+    Ekw      ::Array{MatsubaraComplex, 4}
+    Ekw_bubble      ::Array{MatsubaraComplex, 4}
+    iw       ::Array{MatsubaraComplex,4}
+    iv       ::Array{MatsubaraComplex,4}
     ek       ::Array{Float32, 4}
     dim      ::Int64
     nk       ::Int64
@@ -130,7 +130,7 @@ function make_ManyBodySolver(
         U         ::Float64,
         mu        ::Float64,
         n         ::Float64,
-        sigma_init::Array{ComplexF32, 4};
+        sigma_init::Array{MatsubaraComplex, 4};
         sfc_tol   ::Float64=1e-4,
         maxiter   ::Int64  =100,
         U_maxiter ::Int64  =10,
@@ -140,13 +140,13 @@ function make_ManyBodySolver(
     
         #n::Float64 = 0.0
     
-        #Gkw = Array{Array{ComplexF32,4},4}(undef, mesh.fnw, 
-        Gkw  = zeros(ComplexF32, mesh.fnw, nk1, nk2, nk3)
-        Grt  = zeros(ComplexF32, mesh.fntau, nk1, nk2, nk3)
-        Xkw  = zeros(ComplexF32, mesh.bnw, nk1, nk2, nk3)
-        V    = zeros(ComplexF32, mesh.bntau, nk1, nk2, nk3)
+        #Gkw = Array{Array{MatsubaraComplex,4},4}(undef, mesh.fnw, 
+        Gkw  = zeros(MatsubaraComplex, mesh.fnw, nk1, nk2, nk3)
+        Grt  = zeros(MatsubaraComplex, mesh.fntau, nk1, nk2, nk3)
+        Xkw  = zeros(MatsubaraComplex, mesh.bnw, nk1, nk2, nk3)
+        V    = zeros(MatsubaraComplex, mesh.bntau, nk1, nk2, nk3)
         Ekw = sigma_init
-        Ekw_bubble = zeros(ComplexF32, mesh.fnw, nk1, nk2, nk3)
+        Ekw_bubble = zeros(MatsubaraComplex, mesh.fnw, nk1, nk2, nk3)
 
     
         iw, iv = get_iw_iv(mesh)
@@ -252,7 +252,7 @@ function FLEX_loop!(S::ManyBodySolver, comm)
 end
 
 function DMFT_Sigma(solver::ManyBodySolver)
-    proj = ones(ComplexF32, nx, ny, nz)
+    proj = ones(MatsubaraComplex, nx, ny, nz)
     g_loc = project_kernel(proj, solver.Gkw)
     gt = wn_to_tau(solver.mesh, Fermionic(), g_loc)
     sigma_t = solver.U^2 * gt.^3
@@ -261,9 +261,9 @@ function DMFT_Sigma(solver::ManyBodySolver)
 end
 
 function FLEX_local_Sigma(solver::ManyBodySolver)
-    proj = ones(ComplexF32, nx, ny, nz)
-    xw = zeros(ComplexF32, solver.mesh.bnw)
-    gt = zeros(ComplexF32, solver.mesh.fnw)
+    proj = ones(MatsubaraComplex, nx, ny, nz)
+    xw = zeros(MatsubaraComplex, solver.mesh.bnw)
+    gt = zeros(MatsubaraComplex, solver.mesh.fnw)
     g_loc = project_kernel(proj, solver.Gkw)
     gt .= wn_to_tau(solver.mesh, Fermionic(), g_loc)
     xt = gt .* reverse(gt)
@@ -271,7 +271,7 @@ function FLEX_local_Sigma(solver::ManyBodySolver)
     vw = similar(xw)
     V_FLEX!(solver.U, xw, vw)
     vt = wn_to_tau(solver.mesh, Bosonic(), vw)
-    sigmaw = zeros(ComplexF32, nbnd, solver.mesh.fnw)
+    sigmaw = zeros(MatsubaraComplex, nbnd, solver.mesh.fnw)
     sigmat = vt .* gt
     sigmaw .= tau_to_wn(solver.mesh, Fermionic(), sigmat)
     return sigmaw
@@ -330,7 +330,7 @@ function loop!(solver::ManyBodySolver)
         DFMT_FLEX!(solver)
     else
         println("Interaction $interaction not available")
-        exit()
+        exit(1)
     end
 end
 
@@ -458,7 +458,7 @@ function main()
     mesh = IR_Mesh(1.2*D)
 
     iw, iv = get_iw_iv(mesh)
-    sigma_init = zeros(ComplexF32, mesh.fnw, nk1, nk2, nk3)
+    sigma_init = zeros(MatsubaraComplex, mesh.fnw, nk1, nk2, nk3)
 
     verbose = cfg.verbosity == "high" 
     solver = make_ManyBodySolver(mesh, beta, ek, U, mu, n, sigma_init, sfc_tol=sfc_tol, maxiter=maxiter, U_maxiter=U_maxiter, mix=mix, verbose=verbose)
@@ -492,7 +492,7 @@ function main()
     Grt = kw_to_rtau(Gkw, 'F', mesh)
     Ert = U^2 .* kw_to_rtau(solver.Xkw, 'B', mesh) .* Grt
     Ekw = rtau_to_kw(Ert, 'F', mesh)
-    sig2 = zeros(ComplexF32, mesh.fnw)
+    sig2 = zeros(MatsubaraComplex, mesh.fnw)
     for i in 1:mesh.fnw
         sig2[i] = sum(Ekw[i, :, :, :]) / nk
     end
@@ -503,7 +503,7 @@ function main()
 
 
     ind = find_zero_freq(iw)
-    sig = zeros(ComplexF32, mesh.fnw)
+    sig = zeros(MatsubaraComplex, mesh.fnw)
     for i in 1:mesh.fnw
         sig[i] = sum(solver.Ekw[i, :, :, :]) / nk 
     end

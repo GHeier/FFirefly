@@ -44,8 +44,8 @@ function get_kvec(ix, iy, iz, nx, ny, nz)
 end
 
 function get_iw_iv_bcs()
-    iw = Array{ComplexF32}(undef, nw)
-    iv = Array{ComplexF32}(undef, nw)
+    iw = Array{MatsubaraComplex}(undef, nw)
+    iv = Array{MatsubaraComplex}(undef, nw)
     for i in 1:nw
         n = -nw / 2 + i
         iw[i] = pi / beta * (2 * n + 1) * im
@@ -71,7 +71,7 @@ end
 
 
 function get_ek(band)
-    e = Array{ComplexF32}(undef, 1, nx, ny, nz)
+    e = Array{MatsubaraComplex}(undef, 1, nx, ny, nz)
     for ix in 1:nx, iy in 1:ny, iz in 1:nz
         kvec = get_kvec(ix - 1, iy - 1, iz - 1, nx, ny, nz)
         e[1, ix, iy, iz] = band(1, kvec)
@@ -83,8 +83,8 @@ end
 function get_G_V(iw, iv, ek)
     fnw = length(iw)
     bnw = length(iv)
-    G = Array{ComplexF32}(undef, fnw, nx, ny, nz)
-    V = Array{ComplexF32}(undef, bnw, nx, ny, nz)
+    G = Array{MatsubaraComplex}(undef, fnw, nx, ny, nz)
+    V = Array{MatsubaraComplex}(undef, bnw, nx, ny, nz)
     println("Getting vertex")
     vertex = Vertex()
     println("Filling arrays")
@@ -128,7 +128,7 @@ function get_self_energy()
         V_rt = p_fft * V
         V_rt .*= G_rt
         sigma = fftshift(p_ifft * V_rt) / (beta * nx * ny * nz)
-        #sigma = ones(ComplexF32, nw, nx, ny, nz)
+        #sigma = ones(MatsubaraComplex, nw, nx, ny, nz)
         N = Field_R(outdir * prefix * "_DOS." + filetype) 
         println("Predicted BCS sigma = ", 1 * N(mu) * wc / 2)
     else

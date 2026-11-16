@@ -49,7 +49,7 @@ end
 
 function fill_sigma_mesh(sigma, iw)
     nw = length(iw)
-    Ekw = Array{ComplexF32}(undef, nw, nx, ny, nz)
+    Ekw = Array{MatsubaraComplex}(undef, nw, nx, ny, nz)
     for i in 1:nx, j in 1:ny, k in 1:nz, l in 1:nw
         kvec = get_kvec(i - 1, j - 1, k - 1, nx, ny, nz)
         Ekw[i, j, k] = sigma(kvec, imag(iw[l]))

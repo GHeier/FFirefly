@@ -345,11 +345,37 @@ string get_loc() {
     return "./";
 }
 
+// Exit statuses of the methods launched below, so fly.x can report a failed run
+static int methods_launched = 0;
+static int methods_failed = 0;
+
+static int record_method_status(const string& what, int status) {
+    methods_launched++;
+    if (status != 0) {
+        methods_failed++;
+        std::cerr << "Error: " << category << "/" << calculation << "/" << what
+                  << " failed (exit status " << status << ")\n";
+    }
+    return status;
+}
+
+extern "C" int firefly_methods_launched(void) { return methods_launched; }
+extern "C" int firefly_methods_failed(void) { return methods_failed; }
+
+// Runs a shell command and returns its exit code (128 + signal if it was killed)
+static int system_status(const string& cmd) {
+    int result = std::system(cmd.c_str());
+    if (result == -1) return -1;
+    if (WIFEXITED(result)) return WEXITSTATUS(result);
+    if (WIFSIGNALED(result)) return 128 + WTERMSIG(result);
+    return -1;
+}
+
 int run_cpp_method(const string& method_name) {
     string loc = get_loc();
     string exe = loc + category + "_" + calculation + "_" + method_name + ".exe";
     string config_path = loc + "input.cfg";
-    return run_with_config(exe, config_path);
+    return record_method_status(method_name, run_with_config(exe, config_path));
 }
 
 // Helper function to run a command and pipe its output to stdout
@@ -398,115 +424,50 @@ static string build_python_command(const string& script_path, bool mpi_capable) 
     return "python3 " + script_path;
 }
 
-int run_python_method(const string& method_name, bool mpi_capable) {
+// src/ directory of the repo, found from build/bin/ (or any .../bin/); "" if not found
+static string source_dir() {
     string loc = get_loc();
-    string config_path = loc + "input.cfg";
-    // Go up from build/bin/ to project root, then to src/
-    size_t build_pos = loc.find("/build/bin/");
-    if (build_pos != string::npos) {
-        // Found build/bin/, go to project root
-        string src_dir = loc.substr(0, build_pos) + "/src/";
-        string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.py";
-        string exe = build_python_command(script_path, mpi_capable);
-        int result = std::system(exe.c_str());
-        return result;
+    size_t pos = loc.find("/build/bin/");
+    if (pos == string::npos) pos = loc.find("/bin/");
+    if (pos == string::npos) return "";
+    return loc.substr(0, pos) + "/src/";
+}
+
+// Runs src/<category>/<calculation>/<method>/<script> with `interpreter` and records its status
+static int run_script(const string& method_name, const string& script, const string& label,
+                      const string& interpreter, bool mpi_capable = false) {
+    string src_dir = source_dir();
+    if (src_dir.empty()) {
+        std::cerr << "Error: could not locate the src/ directory from " << get_loc() << "\n";
+        return record_method_status(label, -1);
     }
-    // Fallback: try simple /bin/ pattern (for non-build locations)
-    size_t bin_pos = loc.find("/bin/");
-    if (bin_pos != string::npos) {
-        string src_dir = loc.substr(0, bin_pos) + "/src/";
-        string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.py";
-        string exe = build_python_command(script_path, mpi_capable);
-        int result = std::system(exe.c_str());
-        return result;
-    }
-    return -1;  // Error: couldn't find src directory
+    string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/" + script;
+    string cmd = interpreter == "python3" ? build_python_command(script_path, mpi_capable)
+                                          : interpreter + " " + script_path;
+    return record_method_status(label, system_status(cmd));
+}
+
+int run_python_method(const string& method_name, bool mpi_capable) {
+    return run_script(method_name, "run.py", method_name, "python3", mpi_capable);
 }
 
 int run_julia_method(const string& method_name) {
-    string loc = get_loc();
-    string config_path = loc + "input.cfg";
-    // Go up from build/bin/ to project root, then to src/
-    size_t build_pos = loc.find("/build/bin/");
-    if (build_pos != string::npos) {
-        // Found build/bin/, go to project root
-        string src_dir = loc.substr(0, build_pos) + "/src/";
-        string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.jl";
-        string exe = "julia " + script_path;
-        int result = std::system(exe.c_str());
-        return result;
-    }
-    // Fallback: try simple /bin/ pattern (for non-build locations)
-    size_t bin_pos = loc.find("/bin/");
-    if (bin_pos != string::npos) {
-        string src_dir = loc.substr(0, bin_pos) + "/src/";
-        string script_path = src_dir + category + "/" + calculation + "/" + method_name + "/run.jl";
-        string exe = "julia " + script_path;
-        int result = std::system(exe.c_str());
-        return result;
-    }
-    return -1;  // Error: couldn't find src directory
+    return run_script(method_name, "run.jl", method_name, "julia");
 }
 
 int run_cpp_test(const string& test_name) {
     string loc = get_loc();
     string exe = loc + category + "_" + calculation + "_" + test_name + ".exe";
     string config_path = loc + "input.cfg";
-    return run_with_config(exe, config_path);
+    return record_method_status(test_name + " test", run_with_config(exe, config_path));
 }
 
 int run_python_test(const string& test_name) {
-    string loc = get_loc();
-    string config_path = loc + "input.cfg";
-    // Go up from build/bin/ to project root, then to src/
-    size_t build_pos = loc.find("/build/bin/");
-    if (build_pos != string::npos) {
-        // Found build/bin/, go to project root
-        string src_dir = loc.substr(0, build_pos) + "/src/";
-        string script_path = src_dir + category + "/" + calculation + "/" + test_name + "/tests/test.py";
-        string exe = "python3 " + script_path;
-        int result = std::system(exe.c_str());
-        return result;
-        //return run_with_config(exe, config_path);
-    }
-    // Fallback: try simple /bin/ pattern (for non-build locations)
-    size_t bin_pos = loc.find("/bin/");
-    if (bin_pos != string::npos) {
-        string src_dir = loc.substr(0, bin_pos) + "/src/";
-        string script_path = src_dir + category + "/" + calculation + "/" + test_name + "/tests/test.py";
-        string exe = "python3 " + script_path;
-        int result = std::system(exe.c_str());
-        return result;
-        //return run_with_config(exe, config_path);
-    }
-    return -1;  // Error: couldn't find src directory
+    return run_script(test_name, "tests/test.py", test_name + " test", "python3");
 }
 
 int run_julia_test(const string& test_name) {
-    string loc = get_loc();
-    string config_path = loc + "input.cfg";
-    // Go up from build/bin/ to project root, then to src/
-    size_t build_pos = loc.find("/build/bin/");
-    if (build_pos != string::npos) {
-        // Found build/bin/, go to project root
-        string src_dir = loc.substr(0, build_pos) + "/src/";
-        string script_path = src_dir + category + "/" + calculation + "/" + test_name + "/tests/test.jl";
-        string exe = "julia " + script_path;
-        int result = std::system(exe.c_str());
-        return result;
-        //return run_with_config(exe, config_path);
-    }
-    // Fallback: try simple /bin/ pattern (for non-build locations)
-    size_t bin_pos = loc.find("/bin/");
-    if (bin_pos != string::npos) {
-        string src_dir = loc.substr(0, bin_pos) + "/src/";
-        string script_path = src_dir + category + "/" + calculation + "/" + test_name + "tests/test.jl";
-        string exe = "julia " + script_path;
-        int result = std::system(exe.c_str());
-        return result;
-        //return run_with_config(exe, config_path);
-    }
-    return -1;  // Error: couldn't find src directory
+    return run_script(test_name, "tests/test.jl", test_name + " test", "julia");
 }
 
 // Method2 implementations - pure shell-based execution

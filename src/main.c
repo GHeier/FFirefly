@@ -52,7 +52,7 @@ void print_banner_bottom(time_t now) {
     printf("╚══════════════════════════════════════╝\n");
 }
 
-// Process exit status: nonzero if any requested test suite failed
+// Process exit status: nonzero if a requested test suite or a method failed
 static int exit_status = 0;
 
 // Test suite selected with --test (default: all)
@@ -86,6 +86,7 @@ static void print_usage(const char *prog) {
     printf("\nThe config is copied to input.cfg next to %s, where method\n", prog);
     printf("executables and the Python/Julia loaders read it.\n");
     printf("Run every test suite (C++, Python, Julia) with scripts/test-all.sh\n");
+    printf("\nExit status: 0 on success, 1 if a test, the config or a method failed, 2 for bad arguments.\n");
 }
 
 int main(int argc, char **argv) {
@@ -193,7 +194,10 @@ int main(int argc, char **argv) {
             ind = ccount - 1;
         if (c_calculation[0] != '\0')
             c_calculation = calc_tokens[ind];
+        c_category = category;  // this stage only, so launchers build the right paths
         load_cpp_config();
+        int launched_before = firefly_methods_launched();
+        int failed_before = firefly_methods_failed();
     /*
         * ADDING A CATEGORY OCCURS BELOW
         * FOLLOW THE PATTERN
@@ -208,6 +212,23 @@ int main(int argc, char **argv) {
             test();
         else
             printf("Unknown Category %s\n", category);
+
+        // A stage fails if its method exited nonzero or no method matched;
+        // later stages depend on its output, so they are skipped
+        bool stage_failed = false;
+        if (strcmp(category, "test") && firefly_methods_launched() == launched_before) {
+            fprintf(stderr, "Error: no method was run for category '%s', calculation '%s', method '%s'\n",
+                    category, c_calculation, c_method);
+            stage_failed = true;
+        }
+        if (firefly_methods_failed() > failed_before)
+            stage_failed = true;
+        if (stage_failed) {
+            exit_status = 1;
+            if (i + 1 < count)
+                fprintf(stderr, "Skipping the remaining %d stage(s)\n", count - i - 1);
+            break;
+        }
     }
 
     // unload_c_config(); // Free memory allocated for global c variables

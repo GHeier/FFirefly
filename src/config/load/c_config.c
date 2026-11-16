@@ -1,4 +1,6 @@
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE  // dladdr
+#endif
 #include <dlfcn.h>
 #include <errno.h>
 #include <limits.h>

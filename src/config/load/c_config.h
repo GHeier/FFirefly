@@ -144,6 +144,10 @@ void read_c_config(const char *path);
 const char *firefly_config_path(void);
 // True once read_c_config() has succeeded
 bool c_config_was_read(void);
+// Methods started by the category wrappers (run_*_method/run_*_test), and how
+// many of them exited nonzero
+int firefly_methods_launched(void);
+int firefly_methods_failed(void);
 void printcolor(Color color, const char *format, ...);
 bool print_test_results(bool all_tests[], int num_tests, const char *test_name);
 void load_cpp_config();
